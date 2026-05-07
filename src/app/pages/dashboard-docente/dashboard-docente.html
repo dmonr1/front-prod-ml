@@ -1,0 +1,21 @@
+<app-shell>
+  <app-header title="Panel del docente" />
+  <section class="kpi-grid">
+    @for (kpi of data.docenteKpis; track kpi.label) {
+      <app-kpi-card [kpi]="kpi" />
+    }
+  </section>
+  <section class="content-grid teacher-grid">
+    <app-chart-card title="Rendimiento por curso" [bars]="data.coursePerformance" />
+    <app-chart-card title="Distribución de riesgo" type="donut" [bars]="data.riskBars" />
+  </section>
+  <section class="split-grid">
+    <app-student-table title="Estudiantes en riesgo alto" [students]="data.highRiskStudents" />
+    <article class="chart-card recommendations">
+      <div class="card-title"><h2>Recomendaciones</h2></div>
+      <div class="recommendation-row"><span>1</span><strong>Refuerzo focalizado</strong><small>Priorizar bases de matemática para 18 estudiantes.</small></div>
+      <div class="recommendation-row"><span>2</span><strong>Seguimiento semanal</strong><small>Activar tutorías para caída de asistencia.</small></div>
+      <div class="recommendation-row"><span>3</span><strong>Evaluación temprana</strong><small>Aplicar práctica diagnóstica al cierre de la unidad.</small></div>
+    </article>
+  </section>
+</app-shell>

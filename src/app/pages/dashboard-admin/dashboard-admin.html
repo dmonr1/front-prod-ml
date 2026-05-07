@@ -1,0 +1,30 @@
+<app-shell>
+  <app-header title="Panel administrativo del colegio" />
+  <section class="kpi-grid five">
+    @for (kpi of data.adminKpis; track kpi.label) {
+      <app-kpi-card [kpi]="kpi" />
+    }
+  </section>
+  <section class="content-grid">
+    <app-chart-card title="Distribución de riesgo" type="donut" [bars]="data.riskBars" />
+    <app-chart-card title="Tendencia de riesgo" subtitle="Últimos 6 bimestres" type="line" [series]="data.riskTrend" />
+    <app-chart-card title="Rendimiento promedio por grado" [bars]="data.programPerformance" />
+    <article class="chart-card">
+      <div class="card-title"><h2>Alertas recientes</h2><a>Ver todas</a></div>
+      <div class="alert-list">
+        @for (alert of data.alerts; track alert.title) {
+          <div class="alert-item" [class]="alert.tone"><span>!</span><strong>{{ alert.title }}</strong><small>{{ alert.meta }}</small></div>
+        }
+      </div>
+    </article>
+  </section>
+  <section class="split-grid">
+    <app-student-table [students]="data.highRiskStudents" />
+    <article class="chart-card quick-actions">
+      <div class="card-title"><h2>Acciones rápidas</h2></div>
+      <button class="secondary-button">Entrenar modelo predictivo</button>
+      <button class="secondary-button">Crear alerta escolar</button>
+      <button class="secondary-button">Generar reporte institucional</button>
+    </article>
+  </section>
+</app-shell>

@@ -1,0 +1,28 @@
+<app-shell>
+  <app-header title="Reportes escolares" />
+  <app-report-filter />
+  <section class="kpi-grid five">
+    @for (kpi of data.reportKpis; track kpi.label) {
+      <app-kpi-card [kpi]="kpi" />
+    }
+  </section>
+  <section class="content-grid">
+    <app-chart-card title="Rendimiento por grado escolar" [bars]="data.programPerformance" />
+    <app-chart-card title="Tendencia de rendimiento general" type="line" [series]="data.performanceTrend" />
+  </section>
+  <article class="table-card">
+    <div class="card-title"><h2>Detalle del reporte</h2></div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>Grado y sección</th><th>Estudiantes</th><th>Promedio</th><th>Riesgo alto</th><th>Riesgo medio</th><th>Riesgo bajo</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>5to A Secundaria</td><td>145</td><td>78.3%</td><td>19 (13.1%)</td><td>34 (23.4%)</td><td>92 (63.5%)</td></tr>
+          <tr><td>4to B Secundaria</td><td>132</td><td>74.1%</td><td>17 (12.9%)</td><td>32 (24.2%)</td><td>83 (62.9%)</td></tr>
+          <tr><td>3ro C Secundaria</td><td>128</td><td>73.2%</td><td>18 (14.1%)</td><td>31 (24.2%)</td><td>79 (61.7%)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </article>
+</app-shell>

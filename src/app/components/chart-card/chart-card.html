@@ -1,0 +1,42 @@
+<article class="chart-card">
+  <div class="card-title">
+    <h2>{{ title() }}</h2>
+    @if (subtitle()) {
+      <span>{{ subtitle() }}</span>
+    }
+  </div>
+
+  @if (type() === 'donut') {
+    <div class="donut-layout">
+      <div class="donut" [style.--a]="donut()[0]" [style.--b]="donut()[1]" [style.--c]="donut()[2]"></div>
+      <div class="legend">
+        @for (item of bars(); track item.label) {
+          <span><i [style.background]="item.tone"></i>{{ item.label }} <b>{{ item.value }}%</b></span>
+        }
+      </div>
+    </div>
+  } @else if (type() === 'line') {
+    <svg class="line-chart" viewBox="0 0 320 160" role="img" aria-label="Gráfico de tendencia">
+      <polyline [attr.points]="linePoints()" fill="none" stroke="url(#lineGradient)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+      @for (point of pointList(); track point) {
+        <circle [attr.cx]="point.split(',')[0]" [attr.cy]="point.split(',')[1]" r="4" fill="#7c4dff" />
+      }
+      <defs>
+        <linearGradient id="lineGradient" x1="0" x2="1">
+          <stop stop-color="#2f8bff" />
+          <stop offset="1" stop-color="#9a5cff" />
+        </linearGradient>
+      </defs>
+    </svg>
+  } @else {
+    <div class="bars">
+      @for (item of bars(); track item.label) {
+        <div class="bar-row">
+          <span>{{ item.label }}</span>
+          <div><i [style.width.%]="item.value" [style.background]="item.tone || barColor()"></i></div>
+          <b>{{ item.value }}%</b>
+        </div>
+      }
+    </div>
+  }
+</article>

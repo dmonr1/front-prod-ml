@@ -1,0 +1,8 @@
+<article class="kpi-card" [class]="kpi().tone">
+  <div class="kpi-icon"><i [class]="iconGlyph[kpi().icon] || 'fa-solid fa-circle'"></i></div>
+  <div>
+    <span>{{ kpi().label }}</span>
+    <strong>{{ kpi().value }}</strong>
+    <small>{{ kpi().detail }}</small>
+  </div>
+</article>

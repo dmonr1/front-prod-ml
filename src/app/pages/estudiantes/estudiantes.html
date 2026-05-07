@@ -1,0 +1,75 @@
+<app-shell>
+  <app-header title="Lista de estudiantes" />
+
+  <section class="student-list-toolbar">
+    <label>
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="search" placeholder="Buscar por nombre, código, grado o sección" />
+    </label>
+    <select aria-label="Filtrar por grado">
+      <option>Todos los grados</option>
+      <option>1ro de secundaria</option>
+      <option>2do de secundaria</option>
+      <option>3ro de secundaria</option>
+      <option>4to de secundaria</option>
+      <option>5to de secundaria</option>
+    </select>
+    <select aria-label="Filtrar por riesgo">
+      <option>Todos los riesgos</option>
+      <option>Riesgo alto</option>
+      <option>Riesgo medio</option>
+      <option>Riesgo bajo</option>
+    </select>
+  </section>
+
+  <article class="table-card students-table-card">
+    <div class="card-title">
+      <h2>Listado de estudiantes</h2>
+      <span>{{ data.students.length }} registros mock</span>
+    </div>
+    <div class="table-scroll">
+      <table class="students-table">
+        <thead>
+          <tr>
+            <th>Estudiante</th>
+            <th>Código</th>
+            <th>Grado y sección</th>
+            <th>Nivel</th>
+            <th>Promedio</th>
+            <th>Asistencia</th>
+            <th>Riesgo</th>
+            <th>Prob.</th>
+            <th>Ficha</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (student of data.students; track student.code) {
+            <tr [routerLink]="['/alumno']" class="clickable-row">
+              <td>
+                <div class="student-cell">
+                  <span>{{ student.name.slice(0, 1) }}{{ student.name.split(' ')[1].slice(0, 1) }}</span>
+                  <div>
+                    <strong>{{ student.name }}</strong>
+                    <small>{{ student.status }}</small>
+                  </div>
+                </div>
+              </td>
+              <td>{{ student.code }}</td>
+              <td>{{ student.program }}</td>
+              <td>{{ student.semester }}</td>
+              <td>{{ student.average }}%</td>
+              <td>{{ student.attendance }}%</td>
+              <td><app-risk-badge [risk]="student.risk" /></td>
+              <td>{{ student.probability }}%</td>
+              <td>
+                <a class="open-profile" routerLink="/alumno" aria-label="Abrir ficha">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                </a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </article>
+</app-shell>

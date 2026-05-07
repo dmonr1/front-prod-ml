@@ -1,0 +1,41 @@
+<aside class="sidebar" [class.collapsed]="collapsed()">
+  <div class="sidebar-head">
+    <app-brand-mark [compact]="collapsed()" />
+    <button class="sidebar-toggle" type="button" (click)="toggleCollapsed()" aria-label="Colapsar menú">
+      <i class="fa-solid" [class.fa-angles-left]="!collapsed()" [class.fa-angles-right]="collapsed()"></i>
+    </button>
+  </div>
+
+  <nav>
+    @for (item of items(); track item.path) {
+      <a
+        [routerLink]="item.path"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        [title]="collapsed() ? item.label : ''"
+      >
+        <span class="nav-icon"><i [class]="item.icon"></i></span>
+        <span class="nav-label">{{ item.label }}</span>
+      </a>
+    }
+  </nav>
+
+  <div class="sidebar-footer">
+    <a class="sidebar-action" routerLink="/admin" [title]="collapsed() ? 'Notificaciones' : ''">
+      <span class="nav-icon"><i class="fa-solid fa-bell"></i></span>
+      <span class="nav-label">Notificaciones</span>
+    </a>
+    <a class="sidebar-action user-sidebar-card" routerLink="/usuario" [title]="collapsed() ? 'Administrador' : ''">
+      <span class="nav-icon user-avatar-icon"><i class="fa-solid fa-circle-user"></i></span>
+      <span class="nav-label user-summary">
+        <strong>Administrador</strong>
+        <small>Perfil del sistema</small>
+      </span>
+      <i class="fa-solid fa-chevron-right user-enter-icon"></i>
+    </a>
+    <a class="logout" routerLink="/login" [title]="collapsed() ? 'Cerrar sesión' : ''">
+      <i class="fa-solid fa-right-from-bracket"></i>
+      <span class="nav-label">Cerrar sesión</span>
+    </a>
+  </div>
+</aside>

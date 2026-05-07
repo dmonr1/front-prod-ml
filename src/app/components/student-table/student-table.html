@@ -1,0 +1,30 @@
+<article class="table-card">
+  <div class="card-title">
+    <h2>{{ title() }}</h2>
+    <a>Ver todos</a>
+  </div>
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>Estudiante</th>
+              <th>Grado y sección</th>
+          <th>Curso</th>
+          <th>Riesgo</th>
+          <th>Prob.</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (student of students(); track student.name) {
+          <tr>
+            <td><strong>{{ student.name }}</strong></td>
+            <td>{{ student.program }}</td>
+            <td>{{ student.course }}</td>
+            <td><app-risk-badge [risk]="student.risk" /></td>
+            <td>{{ student.probability }}%</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</article>
