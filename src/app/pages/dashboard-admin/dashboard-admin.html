@@ -1,30 +1,30 @@
 <app-shell>
-  <app-header title="Panel administrativo del colegio" />
-  <section class="kpi-grid five">
-    @for (kpi of data.adminKpis; track kpi.label) {
-      <app-kpi-card [kpi]="kpi" />
-    }
-  </section>
-  <section class="content-grid">
-    <app-chart-card title="Distribución de riesgo" type="donut" [bars]="data.riskBars" />
-    <app-chart-card title="Tendencia de riesgo" subtitle="Últimos 6 bimestres" type="line" [series]="data.riskTrend" />
-    <app-chart-card title="Rendimiento promedio por grado" [bars]="data.programPerformance" />
-    <article class="chart-card">
-      <div class="card-title"><h2>Alertas recientes</h2><a>Ver todas</a></div>
-      <div class="alert-list">
-        @for (alert of data.alerts; track alert.title) {
-          <div class="alert-item" [class]="alert.tone"><span>!</span><strong>{{ alert.title }}</strong><small>{{ alert.meta }}</small></div>
-        }
+
+  <section class="dashboard-grid">
+    <article class="card dashboard-card">
+      <span class="eyebrow">Orden sugerido</span>
+      <h2>Empieza por los datos maestros.</h2>
+      <p>
+        Antes de cargar asignaciones, evaluaciones y predicciones, primero completa la
+        configuracion academica del colegio.
+      </p>
+      <div class="dashboard-actions">
+        <a class="primary-button" routerLink="/configuracion-academica">Ir a configuracion academica</a>
+        <a class="secondary-button" routerLink="/periodos-academicos">Abrir periodos academicos</a>
       </div>
     </article>
-  </section>
-  <section class="split-grid">
-    <app-student-table [students]="data.highRiskStudents" />
-    <article class="chart-card quick-actions">
-      <div class="card-title"><h2>Acciones rápidas</h2></div>
-      <button class="secondary-button">Entrenar modelo predictivo</button>
-      <button class="secondary-button">Crear alerta escolar</button>
-      <button class="secondary-button">Generar reporte institucional</button>
+
+    <article class="card dashboard-card">
+      <span class="eyebrow">Siguiente bloque</span>
+      <h2>Luego registra usuarios y flujo operativo.</h2>
+      <p>
+        Cuando los maestros esten listos, continua con usuarios, docentes, asignaciones y
+        tutorias.
+      </p>
+      <div class="dashboard-actions">
+        <a class="secondary-button" routerLink="/usuario">Usuarios y acceso</a>
+        <a class="secondary-button" routerLink="/mis-asignaciones">Asignaciones y flujo</a>
+      </div>
     </article>
   </section>
 </app-shell>

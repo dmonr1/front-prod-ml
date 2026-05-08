@@ -1,41 +1,75 @@
 <aside class="sidebar" [class.collapsed]="collapsed()">
   <div class="sidebar-head">
-    <app-brand-mark [compact]="collapsed()" />
-    <button class="sidebar-toggle" type="button" (click)="toggleCollapsed()" aria-label="Colapsar menú">
-      <i class="fa-solid" [class.fa-angles-left]="!collapsed()" [class.fa-angles-right]="collapsed()"></i>
-    </button>
+    @if (collapsed()) {
+      <button class="brand-toggle" type="button" (click)="toggleCollapsed()" aria-label="Expandir menu">
+        <app-brand-mark [compact]="true" />
+      </button>
+    } @else {
+      <app-brand-mark [compact]="false" />
+      <button class="sidebar-toggle" type="button" (click)="toggleCollapsed()" aria-label="Colapsar menu">
+        <i class="fa-solid fa-angles-left"></i>
+      </button>
+    }
   </div>
 
   <nav>
-    @for (item of items(); track item.path) {
-      <a
-        [routerLink]="item.path"
-        routerLinkActive="active"
-        [routerLinkActiveOptions]="{ exact: true }"
-        [title]="collapsed() ? item.label : ''"
-      >
-        <span class="nav-icon"><i [class]="item.icon"></i></span>
-        <span class="nav-label">{{ item.label }}</span>
-      </a>
+    @for (item of items(); track item.id) {
+      @if (item.children?.length) {
+        <section class="nav-section" [class.open]="isExpanded(item)">
+          <button
+            class="nav-parent"
+            type="button"
+            [class.active]="isParentActive(item)"
+            [title]="collapsed() ? item.label : ''"
+            (click)="toggleSection(item)"
+          >
+            <span class="nav-icon"><i [class]="item.icon"></i></span>
+            <span class="nav-label">{{ item.label }}</span>
+            <i class="fa-solid fa-chevron-down nav-chevron"></i>
+          </button>
+
+          @if (!collapsed() && isExpanded(item)) {
+            <div class="nav-children">
+              @for (child of item.children; track child.path) {
+                <a
+                  class="nav-child"
+                  [routerLink]="child.path"
+                  routerLinkActive="active"
+                  [routerLinkActiveOptions]="{ exact: true }"
+                >
+                  <span class="nav-icon child-icon"><i [class]="child.icon"></i></span>
+                  <span class="nav-label">{{ child.label }}</span>
+                </a>
+              }
+            </div>
+          }
+        </section>
+      } @else {
+        <a
+          [routerLink]="item.path ?? '/admin'"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          [title]="collapsed() ? item.label : ''"
+        >
+          <span class="nav-icon"><i [class]="item.icon"></i></span>
+          <span class="nav-label">{{ item.label }}</span>
+        </a>
+      }
     }
   </nav>
 
   <div class="sidebar-footer">
-    <a class="sidebar-action" routerLink="/admin" [title]="collapsed() ? 'Notificaciones' : ''">
-      <span class="nav-icon"><i class="fa-solid fa-bell"></i></span>
-      <span class="nav-label">Notificaciones</span>
-    </a>
-    <a class="sidebar-action user-sidebar-card" routerLink="/usuario" [title]="collapsed() ? 'Administrador' : ''">
+    <a class="sidebar-action user-sidebar-card" routerLink="/usuario" [title]="collapsed() ? userName() : ''">
       <span class="nav-icon user-avatar-icon"><i class="fa-solid fa-circle-user"></i></span>
       <span class="nav-label user-summary">
-        <strong>Administrador</strong>
-        <small>Perfil del sistema</small>
+        <strong>{{ userName() }}</strong>
+        <small>{{ roleLabel() }}</small>
       </span>
       <i class="fa-solid fa-chevron-right user-enter-icon"></i>
     </a>
-    <a class="logout" routerLink="/login" [title]="collapsed() ? 'Cerrar sesión' : ''">
+    <button class="logout" type="button" [title]="collapsed() ? 'Cerrar sesion' : ''" (click)="cerrarSesion()">
       <i class="fa-solid fa-right-from-bracket"></i>
-      <span class="nav-label">Cerrar sesión</span>
-    </a>
+      <span class="nav-label">Cerrar sesion</span>
+    </button>
   </div>
 </aside>

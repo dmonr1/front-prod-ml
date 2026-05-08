@@ -1,0 +1,130 @@
+:host {
+  display: block;
+}
+
+.setup-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.setup-card {
+  display: grid;
+  gap: 18px;
+  min-height: 100%;
+  padding: 24px;
+  border: 1px solid rgba(17, 32, 51, 0.08);
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 14px 35px rgba(15, 23, 42, 0.05);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+.setup-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+}
+
+.setup-card.prioridad {
+  border-color: rgba(47, 110, 219, 0.18);
+  background:
+    linear-gradient(180deg, rgba(244, 248, 255, 0.98), rgba(255, 255, 255, 0.95)),
+    #ffffff;
+}
+
+.setup-card h3 {
+  margin: 8px 0 6px;
+  color: #112033;
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.setup-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.setup-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.setup-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 18px;
+  color: #fff;
+  background: #2159b6;
+  box-shadow: 0 10px 20px rgba(47, 110, 219, 0.18);
+}
+
+.setup-state {
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: #2f6edb;
+  background: #edf4ff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.setup-state.pending {
+  color: #7a5a1e;
+  background: #fff4dd;
+}
+
+.setup-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.module-type {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.module-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid #d4e4fb;
+  border-radius: 12px;
+  color: #1d5fc4;
+  background: #eef5ff;
+  font-weight: 600;
+  font-size: 15px;
+  text-decoration: none;
+  transition:
+    background 180ms ease,
+    color 180ms ease,
+    border-color 180ms ease;
+}
+
+.module-link:hover {
+  background: #dfeeff;
+  color: #11448e;
+  border-color: #c1d8fa;
+}
+
+@media (max-width: 860px) {
+  .setup-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .setup-card-foot {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

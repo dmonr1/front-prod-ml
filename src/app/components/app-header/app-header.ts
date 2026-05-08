@@ -6,5 +6,5 @@ import { Component, input } from '@angular/core';
   styleUrl: './app-header.scss'
 })
 export class AppHeader {
-  readonly title = input.required<string>();
+  readonly title = input<string>('');
 }

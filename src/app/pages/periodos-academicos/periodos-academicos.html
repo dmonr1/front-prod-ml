@@ -1,0 +1,84 @@
+<app-shell>
+
+  <section class="master-layout">
+    <article class="panel period-form-card">
+      <div class="panel-head">
+        <span class="panel-kicker">Formulario base</span>
+        <h2>Registrar periodo academico</h2>
+        <p>Primer dato maestro del sistema.</p>
+      </div>
+
+      <form class="period-form">
+        <label>
+          Nombre del periodo
+          <input type="text" placeholder="Ejemplo: Periodo Academico 2026" />
+        </label>
+
+        <div class="form-two-columns">
+          <label>
+            Anio
+            <input type="number" placeholder="2026" />
+          </label>
+
+          <label>
+            Estado
+            <select>
+              <option>ACTIVO</option>
+              <option>INACTIVO</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="form-two-columns">
+          <label>
+            Fecha inicio
+            <input type="date" />
+          </label>
+
+          <label>
+            Fecha fin
+            <input type="date" />
+          </label>
+        </div>
+
+        <div class="form-actions">
+          <button class="action-button primary" type="button">Guardar periodo</button>
+          <button class="action-button secondary" type="button">Limpiar</button>
+        </div>
+      </form>
+    </article>
+
+    <article class="panel panel-table">
+      <div class="panel-head">
+        <span class="panel-kicker">Vista previa</span>
+        <h2>Vista previa de periodos</h2>
+        <p>Mientras conectamos el backend real.</p>
+      </div>
+
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Anio</th>
+              <th>Fecha inicio</th>
+              <th>Fecha fin</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (periodo of periodos; track periodo.nombre) {
+              <tr>
+                <td>{{ periodo.nombre }}</td>
+                <td>{{ periodo.anio }}</td>
+                <td>{{ periodo.fechaInicio }}</td>
+                <td>{{ periodo.fechaFin }}</td>
+                <td>{{ periodo.estado }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </section>
+</app-shell>

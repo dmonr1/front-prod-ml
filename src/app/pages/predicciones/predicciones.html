@@ -1,0 +1,272 @@
+<app-shell>
+  <section class="predictions-page">
+    <div class="hero-card">
+      <div class="hero-copy">
+        <span class="hero-kicker">Machine learning</span>
+        <h2>Predicciones academicas</h2>
+        <p>Vista operativa para revisar riesgo global y riesgo por curso, con foco en seguimiento tutorial, alertas y accion pedagogica.</p>
+      </div>
+
+      <div class="hero-actions">
+        <button
+          class="view-toggle"
+          type="button"
+          [class.active]="vistaActiva() === 'global'"
+          (click)="cambiarVista('global')">
+          Riesgo global
+        </button>
+        <button
+          class="view-toggle"
+          type="button"
+          [class.active]="vistaActiva() === 'curso'"
+          (click)="cambiarVista('curso')">
+          Riesgo por curso
+        </button>
+      </div>
+    </div>
+
+    <section class="filter-card">
+      <label>
+        Periodo
+        <select [value]="periodoSeleccionado()" (change)="periodoSeleccionado.set($any($event.target).value)">
+          @for (periodo of periodos; track periodo.value) {
+            <option [value]="periodo.value">{{ periodo.label }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Bimestre
+        <select [value]="bimestreSeleccionado()" (change)="bimestreSeleccionado.set($any($event.target).value)">
+          @for (bimestre of bimestres; track bimestre.value) {
+            <option [value]="bimestre.value">{{ bimestre.label }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Seccion
+        <select [value]="seccionSeleccionada()" (change)="seccionSeleccionada.set($any($event.target).value)">
+          @for (seccion of secciones; track seccion.value) {
+            <option [value]="seccion.value">{{ seccion.label }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="search-field">
+        Buscar alumno
+        <input
+          type="text"
+          placeholder="Nombre, codigo o curso"
+          [value]="busqueda()"
+          (input)="busqueda.set($any($event.target).value)" />
+      </label>
+    </section>
+
+    <section class="kpi-grid">
+      <article class="kpi-card">
+        <span class="kpi-label">Registros evaluados</span>
+        <strong>{{ resumen().total }}</strong>
+        <small>{{ vistaActiva() === 'global' ? 'alumnos en monitoreo' : 'predicciones por curso' }}</small>
+      </article>
+
+      <article class="kpi-card high">
+        <span class="kpi-label">Riesgo alto</span>
+        <strong>{{ resumen().alto }}</strong>
+        <small>prioridad inmediata</small>
+      </article>
+
+      <article class="kpi-card medium">
+        <span class="kpi-label">Riesgo medio</span>
+        <strong>{{ resumen().medio }}</strong>
+        <small>seguimiento cercano</small>
+      </article>
+
+      <article class="kpi-card">
+        <span class="kpi-label">Indice de riesgo promedio</span>
+        <strong>{{ resumen().promedio }}</strong>
+        <small>escala consolidada del filtro actual</small>
+      </article>
+    </section>
+
+    <div class="workspace-grid">
+      <article class="panel-card panel-card--table">
+        <div class="panel-head">
+          <span class="panel-kicker">Lista priorizada</span>
+          <h3>{{ vistaActiva() === 'global' ? 'Predicciones globales' : 'Predicciones por curso' }}</h3>
+          <p>Selecciona un registro para ver su alerta, recomendacion y factores asociados.</p>
+        </div>
+
+        @if (!prediccionesFiltradas().length) {
+          <div class="table-state">
+            <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
+            <span>No hay predicciones para los filtros seleccionados.</span>
+            <small>Cuando conectemos backend, este estado dependera de los periodos, secciones y resultados reales del modelo.</small>
+          </div>
+        } @else {
+          <div class="table-scroll predictions-table">
+            <table class="app-table">
+              <thead>
+                <tr>
+                  <th>Alumno</th>
+                  <th>Seccion</th>
+                  @if (vistaActiva() === 'curso') {
+                    <th>Curso</th>
+                  }
+                  <th>Indice de riesgo</th>
+                  <th>Riesgo</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (prediccion of prediccionesFiltradas(); track prediccion.id) {
+                  <tr
+                    class="selectable-row"
+                    [class.selected-row]="prediccionSeleccionada()?.id === prediccion.id"
+                    (click)="seleccionarPrediccion(prediccion.id)">
+                    <td>
+                      <div class="student-cell">
+                        <strong>{{ prediccion.alumno }}</strong>
+                        <small>{{ prediccion.codigo }}</small>
+                      </div>
+                    </td>
+                    <td>{{ prediccion.seccion }}</td>
+                    @if (vistaActiva() === 'curso') {
+                      <td>{{ prediccion.curso }}</td>
+                    }
+                    <td>{{ prediccion.indiceRiesgo }}/100</td>
+                    <td>
+                      <span
+                        class="status-badge"
+                        [class.high]="prediccion.nivel === 'ALTO'"
+                        [class.pending]="prediccion.nivel === 'MEDIO'"
+                        [class.active]="prediccion.nivel === 'BAJO'">
+                        {{ prediccion.nivel }}
+                      </span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </article>
+
+      <aside class="detail-column">
+        <article class="panel-card detail-card">
+          <div class="panel-head">
+            <span class="panel-kicker">Detalle seleccionado</span>
+            <h3>{{ prediccionSeleccionada()?.alumno || 'Sin seleccion' }}</h3>
+            <p>{{ prediccionSeleccionada()?.codigo }} · {{ prediccionSeleccionada()?.seccion }}</p>
+          </div>
+
+          @if (prediccionSeleccionada()) {
+            <div class="detail-metrics">
+              <div>
+                <span>Indice de riesgo</span>
+                <strong>{{ prediccionSeleccionada()!.indiceRiesgo }}/100</strong>
+              </div>
+              <div>
+                <span>Asistencia</span>
+                <strong>{{ prediccionSeleccionada()!.asistencia }}%</strong>
+              </div>
+              <div>
+                <span>Promedio academico</span>
+                <strong>{{ prediccionSeleccionada()!.promedioAcademico }}</strong>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <span class="block-label">Nivel de riesgo</span>
+              <span
+                class="status-badge"
+                [class.high]="prediccionSeleccionada()!.nivel === 'ALTO'"
+                [class.pending]="prediccionSeleccionada()!.nivel === 'MEDIO'"
+                [class.active]="prediccionSeleccionada()!.nivel === 'BAJO'">
+                {{ prediccionSeleccionada()!.nivel }}
+              </span>
+            </div>
+
+            @if (vistaActiva() === 'curso') {
+              <div class="detail-block">
+                <span class="block-label">Curso observado</span>
+                <strong>{{ prediccionSeleccionada()!.curso }}</strong>
+              </div>
+            }
+
+            <div class="detail-block">
+              <span class="block-label">Alerta generada</span>
+              <p>{{ prediccionSeleccionada()!.alerta }}</p>
+            </div>
+
+            <div class="detail-block">
+              <span class="block-label">Accion sugerida</span>
+              <p>{{ prediccionSeleccionada()!.recomendacion }}</p>
+            </div>
+
+            <div class="detail-block">
+              <span class="block-label">Factores asociados</span>
+              <ul class="factor-list">
+                @for (factor of prediccionSeleccionada()!.factores; track factor) {
+                  <li>{{ factor }}</li>
+                }
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <span class="block-label">Tendencia</span>
+              <div class="trend-chip" [class.up]="prediccionSeleccionada()!.tendencia === 'Sube'" [class.down]="prediccionSeleccionada()!.tendencia === 'Baja'">
+                {{ prediccionSeleccionada()!.tendencia }}
+              </div>
+            </div>
+          }
+        </article>
+
+        <article class="panel-card compact-card">
+          <div class="panel-head">
+            <span class="panel-kicker">Distribucion</span>
+            <h3>Riesgo por categoria</h3>
+          </div>
+
+          <div class="distribution-list">
+            @for (item of distribucion(); track item.label) {
+              <div class="distribution-item">
+                <div class="distribution-copy">
+                  <strong>{{ item.label }}</strong>
+                  <small>{{ item.value }} registros</small>
+                </div>
+                <div class="distribution-bar">
+                  <span class="distribution-fill" [class.high]="item.tone === 'high'" [class.medium]="item.tone === 'medium'" [class.low]="item.tone === 'low'" [style.width.%]="item.percent"></span>
+                </div>
+                <span class="distribution-percent">{{ item.percent }}%</span>
+              </div>
+            }
+          </div>
+        </article>
+      </aside>
+    </div>
+
+    <section class="insights-grid">
+      <article class="panel-card compact-card">
+        <div class="panel-head">
+          <span class="panel-kicker">Lectura rapida</span>
+          <h3>Indicadores del bimestre</h3>
+        </div>
+
+        <div class="trend-list">
+          @for (item of tendencias; track item.label) {
+            <div class="trend-item">
+              <span>{{ item.label }}</span>
+              <strong [class.high-text]="item.tone === 'high'" [class.medium-text]="item.tone === 'medium'" [class.low-text]="item.tone === 'low'">
+                {{ item.value }}
+              </strong>
+            </div>
+          }
+        </div>
+      </article>
+
+      <article class="panel-card compact-card">
+        
+      </article>
+    </section>
+  </section>
+</app-shell>

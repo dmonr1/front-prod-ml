@@ -1,68 +1,14 @@
 <app-shell>
   <header class="student-topbar">
-    <a routerLink="/estudiantes">← Volver a estudiantes</a>
-    <button class="primary-button">Generar reporte</button>
+    <a routerLink="/estudiantes">Volver a estudiantes</a>
   </header>
 
-  <section class="student-layout">
-    <aside class="student-profile card">
-      <div class="avatar">JP</div>
-      <h1>Juan Pablo Torres</h1>
-      <p>Código: EST-2024-001</p>
-      <strong>5to A Secundaria</strong>
-      <span>Nivel secundaria</span>
-      <nav>
-        <a class="active">Resumen</a>
-        <a>Información escolar</a>
-        <a>Historial de calificaciones</a>
-        <a>Predicción y riesgo</a>
-        <a>Recomendaciones</a>
-      </nav>
-    </aside>
-
-    <main class="student-main">
-      <section class="kpi-grid">
-        <article class="mini-metric"><span>Promedio general</span><strong>75.6</strong><small>Bueno</small></article>
-        <article class="mini-metric"><span>Riesgo escolar</span><strong class="danger">Alto</strong><small>Probabilidad 86%</small></article>
-        <article class="mini-metric"><span>Tendencia</span><strong>En descenso</strong><small>Últimos 3 meses</small></article>
-        <article class="mini-metric"><span>Asistencia</span><strong>88%</strong><small>Regular</small></article>
-      </section>
-
-      <section class="content-grid">
-        <article class="chart-card risk-gauge">
-          <div class="card-title"><h2>Predicción de riesgo escolar</h2></div>
-          <div class="gauge"><span>86%</span></div>
-          <app-risk-badge risk="Alto" />
-          <p>Existe una alta probabilidad de que el estudiante no alcance el rendimiento esperado al final del bimestre escolar.</p>
-        </article>
-        <article class="chart-card">
-          <div class="card-title"><h2>Factores que influyen en el riesgo</h2></div>
-          <div class="factor-list">
-            <div><span>Promedio de calificaciones actual</span><i style="width: 68%"></i><b>Bajo</b></div>
-            <div><span>Asistencia</span><i style="width: 54%"></i><b>Medio</b></div>
-            <div><span>Entrega de tareas</span><i style="width: 66%"></i><b>Bajo</b></div>
-            <div><span>Historial escolar previo</span><i style="width: 72%"></i><b>Alto</b></div>
-          </div>
-        </article>
-        <app-chart-card title="Evolución del riesgo" type="line" [series]="[82, 72, 69, 68, 55, 47]" />
-      </section>
-
-      <section class="split-grid">
-        <article class="table-card">
-          <div class="card-title"><h2>Últimas calificaciones</h2></div>
-          <div class="grade-list">
-            <div><strong>Matemática</strong><span>14.5</span></div>
-            <div><strong>Comunicación</strong><span>12.8</span></div>
-            <div><strong>Ciencia y Tecnología</strong><span>11.6</span></div>
-          </div>
-        </article>
-        <article class="chart-card recommendations">
-          <div class="card-title"><h2>Recomendaciones personalizadas</h2></div>
-          <div class="recommendation-row"><span>1</span><strong>Mejora tu asistencia</strong><small>Tu porcentaje está por debajo del promedio recomendado.</small></div>
-          <div class="recommendation-row"><span>2</span><strong>Organiza tu tiempo</strong><small>Planifica entregas y sesiones de estudio.</small></div>
-          <div class="recommendation-row"><span>3</span><strong>Refuerza tus bases</strong><small>Repasar temas clave de cursos con bajo desempeño.</small></div>
-        </article>
-      </section>
-    </main>
+  <section class="state-card card">
+    <span class="eyebrow">Perfil del alumno</span>
+    <h2>Esta ficha se construira con informacion real del backend.</h2>
+    <p>
+      Cuando terminemos la lista de alumnos por seccion y el bloque de predicciones, aqui mostraremos
+      el detalle del estudiante, cursos, riesgo, alertas y recomendaciones.
+    </p>
   </section>
 </app-shell>

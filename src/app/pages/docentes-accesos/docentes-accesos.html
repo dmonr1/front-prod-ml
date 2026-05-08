@@ -1,0 +1,147 @@
+<app-shell>
+  <section class="catalog-card">
+    <div class="catalog-head">
+      <div class="panel-head">
+        <span class="panel-kicker">Gestion institucional</span>
+        <h2>Docentes y accesos</h2>
+        <p>Administra el personal docente y prepara su vinculacion con usuarios y roles del sistema.</p>
+      </div>
+    </div>
+
+    <div class="catalog-body">
+      <article class="table-panel">
+        <div class="panel-head section-head">
+          <div>
+            <h3>Docentes registrados</h3>
+            <p>Base para asignaciones, tutorias y acceso al sistema.</p>
+          </div>
+          <span class="records-chip">{{ docentes().length }} registros</span>
+        </div>
+
+        <ng-container>
+          @if (cargando()) {
+            <div class="table-scroll">
+              <table class="app-table">
+                <thead>
+                  <tr>
+                    <th>Docente</th>
+                    <th>DNI</th>
+                    <th>Especialidad</th>
+                    <th>Usuario</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of skeletonRows; track row) {
+                    <tr>
+                      <td><span class="skeleton-line long"></span></td>
+                      <td><span class="skeleton-line short"></span></td>
+                      <td><span class="skeleton-line medium"></span></td>
+                      <td><span class="skeleton-line short"></span></td>
+                      <td><span class="skeleton-line short"></span></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else if (error()) {
+            <div class="table-state error">
+              <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
+              <span>{{ error() }}</span>
+              <button class="action-button secondary" type="button" (click)="cargarDocentes()">Reintentar</button>
+            </div>
+          } @else if (!docentes().length) {
+            <div class="table-state">
+              <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
+              <span>No hay docentes cargados todavia.</span>
+              <small>Registra docentes en la base o desde este modulo cuando terminemos el guardado real.</small>
+            </div>
+          } @else {
+            <div class="table-scroll">
+              <table class="app-table">
+                <thead>
+                  <tr>
+                    <th>Docente</th>
+                    <th>DNI</th>
+                    <th>Especialidad</th>
+                    <th>Usuario</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (docente of docentes(); track docente.id) {
+                    <tr>
+                      <td>{{ docente.apellidos }}, {{ docente.nombres }}</td>
+                      <td>{{ docente.dni || 'Sin DNI' }}</td>
+                      <td>{{ docente.especialidad || 'Sin especialidad' }}</td>
+                      <td>{{ docente.username || 'Sin usuario' }}</td>
+                      <td>
+                        <span
+                          class="status-badge"
+                          [class.active]="(docente.estado || 'ACTIVO') === 'ACTIVO'"
+                          [class.inactive]="(docente.estado || 'ACTIVO') === 'INACTIVO'">
+                          {{ docente.estado || 'ACTIVO' }}
+                        </span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </ng-container>
+      </article>
+
+      <aside class="form-panel">
+        <div class="panel-head">
+          <span class="panel-kicker">Registro</span>
+          <h3>Registrar docente</h3>
+          <p>Agrega un docente para luego asignarle cursos, secciones y acceso al sistema.</p>
+        </div>
+
+        <form class="master-form">
+          <div class="form-two-columns">
+            <label>
+              Nombres
+              <input type="text" placeholder="Ejemplo: Juan Carlos" />
+            </label>
+
+            <label>
+              Apellidos
+              <input type="text" placeholder="Ejemplo: Perez Lopez" />
+            </label>
+          </div>
+
+          <div class="form-two-columns">
+            <label>
+              DNI
+              <input type="text" placeholder="12345678" />
+            </label>
+
+            <label>
+              Telefono
+              <input type="text" placeholder="987654321" />
+            </label>
+          </div>
+
+          <label>
+            Especialidad
+            <input type="text" placeholder="Ejemplo: Matematica" />
+          </label>
+
+          <label>
+            Usuario vinculado
+            <select>
+              <option>Sin vincular por ahora</option>
+            </select>
+          </label>
+
+          <div class="form-actions">
+            <button class="action-button primary" type="button">Guardar docente</button>
+            <button class="action-button secondary" type="button">Limpiar</button>
+          </div>
+        </form>
+      </aside>
+    </div>
+  </section>
+</app-shell>

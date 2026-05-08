@@ -1,0 +1,126 @@
+<app-shell>
+
+  <section class="catalog-card">
+    <div class="catalog-head">
+      <div class="panel-head">
+        <span class="panel-kicker">Catalogo institucional</span>
+        <h2>Gestion de cursos</h2>
+        <p>Consulta los cursos registrados y agrega nuevos cursos desde el panel lateral.</p>
+      </div>
+    </div>
+
+    <div class="catalog-body">
+      <article class="table-panel">
+        <div class="panel-head section-head">
+          <div>
+            <h3>Cursos registrados</h3>
+            <p>Base para asignaciones y prediccion por curso.</p>
+          </div>
+          <span class="records-chip">{{ cursos().length }} registros</span>
+        </div>
+
+        <ng-container>
+          @if (cargando()) {
+            <div class="table-scroll">
+              <table class="app-table">
+                <thead>
+                  <tr>
+                    <th>Curso</th>
+                    <th>Nivel</th>
+                    <th>Descripcion</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of skeletonRows; track row) {
+                    <tr>
+                      <td><span class="skeleton-line medium"></span></td>
+                      <td><span class="skeleton-line short"></span></td>
+                      <td><span class="skeleton-line long"></span></td>
+                      <td><span class="skeleton-line short"></span></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else if (error()) {
+            <div class="table-state error">
+              <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
+              <span>{{ error() }}</span>
+              <button class="action-button secondary" type="button" (click)="cargarCursos()">Reintentar</button>
+            </div>
+          } @else if (!cursos().length) {
+            <div class="table-state">
+              <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
+              <span>No hay cursos registrados todavia.</span>
+              <small>Cuando registres cursos en el sistema, apareceran aqui automaticamente.</small>
+            </div>
+          } @else {
+            <div class="table-scroll">
+              <table class="app-table">
+                <thead>
+                  <tr>
+                    <th>Curso</th>
+                    <th>Nivel</th>
+                    <th>Descripcion</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (curso of cursos(); track curso.id) {
+                    <tr>
+                      <td>{{ curso.nombre }}</td>
+                      <td>{{ curso.nivelNombre }}</td>
+                      <td>{{ curso.descripcion || 'Sin descripcion' }}</td>
+                      <td>
+                        <span
+                          class="status-badge"
+                          [class.active]="(curso.estado || 'ACTIVO') === 'ACTIVO'"
+                          [class.inactive]="(curso.estado || 'ACTIVO') === 'INACTIVO'">
+                          {{ curso.estado || 'ACTIVO' }}
+                        </span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </ng-container>
+      </article>
+
+      <aside class="form-panel">
+        <div class="panel-head">
+          <span class="panel-kicker">Registro</span>
+          <h3>Registrar curso</h3>
+          <p>Agrega un nuevo curso al catalogo academico institucional.</p>
+        </div>
+
+        <form class="master-form">
+          <label>
+            Nivel
+            <select>
+              <option>Secundaria</option>
+              <option>Primaria</option>
+            </select>
+          </label>
+
+          <label>
+            Nombre del curso
+            <input type="text" placeholder="Ejemplo: Matematica" />
+          </label>
+
+          <label>
+            Descripcion
+            <input type="text" placeholder="Descripcion breve del curso" />
+          </label>
+
+          <div class="form-actions">
+            <button class="action-button primary" type="button">Guardar curso</button>
+            <button class="action-button secondary" type="button">Limpiar</button>
+          </div>
+        </form>
+      </aside>
+    </div>
+  </section>
+</app-shell>

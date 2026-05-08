@@ -1,5 +1,9 @@
 <div class="app-shell">
-  <app-sidebar [items]="items()" />
+  <app-sidebar
+    [items]="menuItems()"
+    [userName]="nombreUsuario()"
+    [roleLabel]="rolUsuario()"
+  />
   <main class="workspace">
     <ng-content />
   </main>

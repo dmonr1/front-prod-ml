@@ -1,11 +1,20 @@
-import { Component, input, signal } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Component, inject, input, signal } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { BrandMark } from '../brand-mark/brand-mark';
+import { AuthService } from '../../services/auth/auth.service';
 
-export interface SidebarItem {
+export interface SidebarChildItem {
   label: string;
   path: string;
   icon: string;
+}
+
+export interface SidebarItem {
+  id: string;
+  label: string;
+  icon: string;
+  path?: string;
+  children?: SidebarChildItem[];
 }
 
 @Component({
@@ -15,14 +24,15 @@ export interface SidebarItem {
   styleUrl: './sidebar.scss'
 })
 export class Sidebar {
+  private readonly router = inject(Router);
+  private readonly authService = inject(AuthService);
+  private readonly storageKey = 'academic-analytics-sidebar-open';
+
   readonly collapsed = signal(localStorage.getItem('academic-analytics-sidebar') === 'collapsed');
-  readonly role = input<'admin' | 'docente'>('admin');
-  readonly items = input<SidebarItem[]>([
-    { label: 'Dashboard', path: '/admin', icon: 'fa-solid fa-chart-pie' },
-    { label: 'Estudiantes', path: '/estudiantes', icon: 'fa-solid fa-user-graduate' },
-    { label: 'Docentes', path: '/docente', icon: 'fa-solid fa-chalkboard-user' },
-    { label: 'Reportes', path: '/reportes', icon: 'fa-solid fa-file-lines' }
-  ]);
+  readonly expandedSections = signal(this.obtenerSeccionesIniciales());
+  readonly items = input<SidebarItem[]>([]);
+  readonly userName = input('Usuario del sistema');
+  readonly roleLabel = input('Acceso institucional');
 
   toggleCollapsed(): void {
     this.collapsed.update((value) => {
@@ -30,5 +40,91 @@ export class Sidebar {
       localStorage.setItem('academic-analytics-sidebar', next ? 'collapsed' : 'expanded');
       return next;
     });
+  }
+
+  toggleSection(item: SidebarItem): void {
+    if (!item.children?.length) {
+      if (item.path) {
+        void this.router.navigateByUrl(item.path);
+      }
+      return;
+    }
+
+    this.expandedSections.update((current) => {
+      const next = current.includes(item.id)
+        ? current.filter((id) => id !== item.id)
+        : [...current, item.id];
+      localStorage.setItem(this.storageKey, JSON.stringify(next));
+      return next;
+    });
+  }
+
+  isExpanded(item: SidebarItem): boolean {
+    if (!item.children?.length) {
+      return false;
+    }
+
+    return this.expandedSections().includes(item.id);
+  }
+
+  isParentActive(item: SidebarItem): boolean {
+    return item.path ? this.isRouteActive(item.path) : false;
+  }
+
+  isRouteActive(path: string): boolean {
+    return this.router.url === path;
+  }
+
+  cerrarSesion(): void {
+    this.authService.cerrarSesion();
+    void this.router.navigateByUrl('/login');
+  }
+
+  private obtenerSeccionesIniciales(): string[] {
+    const guardada = localStorage.getItem(this.storageKey);
+    if (guardada !== null) {
+      try {
+        const parsed = JSON.parse(guardada);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((value): value is string => typeof value === 'string');
+        }
+      } catch {
+        if (guardada.trim()) {
+          return [guardada];
+        }
+      }
+    }
+
+    const ruta = this.router.url;
+
+    if (
+      ruta.startsWith('/configuracion-academica') ||
+      ruta.startsWith('/periodos-academicos') ||
+      ruta.startsWith('/bimestres') ||
+      ruta.startsWith('/estructura-academica') ||
+      ruta.startsWith('/cursos') ||
+      ruta.startsWith('/docentes-accesos') ||
+      ruta.startsWith('/asignaciones-tutorias')
+    ) {
+      return ['configuracion-academica'];
+    }
+
+    if (ruta.startsWith('/mis-asignaciones') || ruta.startsWith('/estudiantes')) {
+      return ['academico'];
+    }
+
+    if (ruta.startsWith('/alumno')) {
+      return ['seguimiento'];
+    }
+
+    if (ruta.startsWith('/predicciones') || ruta.startsWith('/reportes')) {
+      return ['analitica'];
+    }
+
+    if (ruta.startsWith('/usuario')) {
+      return ['administracion'];
+    }
+
+    return [];
   }
 }

@@ -1,0 +1,70 @@
+<app-shell>
+
+  <section class="assignment-toolbar card">
+    <div>
+      <span class="eyebrow">Flujo docente</span>
+      <h2>Cursos y secciones asignadas</h2>
+      <p>
+        Desde aqui el docente entra a sus cursos para registrar evaluaciones, notas y asistencia.
+      </p>
+    </div>
+    <button class="secondary-button" type="button" (click)="cargarAsignaciones()">
+      Actualizar
+    </button>
+  </section>
+
+  @if (cargando()) {
+    <section class="state-card card">
+      <strong>Cargando asignaciones...</strong>
+      <p>Estamos consultando el backend con tus asignaciones activas.</p>
+    </section>
+  } @else if (error()) {
+    <section class="state-card card state-error">
+      <strong>No se pudo cargar la informacion</strong>
+      <p>{{ error() }}</p>
+    </section>
+  } @else if (!asignaciones().length) {
+    <section class="state-card card">
+      <strong>No tienes asignaciones registradas</strong>
+      <p>No se encontraron cursos o secciones para el periodo academico actual.</p>
+    </section>
+  } @else {
+    <section class="assignments-grid">
+      @for (asignacion of asignaciones(); track asignacion.asignacionId) {
+        <article class="assignment-card card">
+          <div class="assignment-head">
+            <span class="assignment-icon"><i class="fa-solid fa-book-open"></i></span>
+            <div>
+              <h3>{{ asignacion.curso }}</h3>
+              <p>{{ obtenerDescripcion(asignacion) }}</p>
+            </div>
+          </div>
+
+          <dl class="assignment-meta">
+            <div>
+              <dt>Periodo</dt>
+              <dd>{{ asignacion.periodoAcademico }}</dd>
+            </div>
+            <div>
+              <dt>Docente</dt>
+              <dd>{{ asignacion.docenteNombreCompleto }}</dd>
+            </div>
+            <div>
+              <dt>Seccion</dt>
+              <dd>{{ asignacion.seccion }}</dd>
+            </div>
+            <div>
+              <dt>Grado</dt>
+              <dd>{{ asignacion.grado }}</dd>
+            </div>
+          </dl>
+
+          <div class="assignment-actions">
+            <a class="primary-button" routerLink="/docente">Ingresar</a>
+            <a class="secondary-button" routerLink="/estudiantes">Ver alumnos</a>
+          </div>
+        </article>
+      }
+    </section>
+  }
+</app-shell>
