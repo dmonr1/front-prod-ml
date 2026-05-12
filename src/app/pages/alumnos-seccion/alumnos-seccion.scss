@@ -1,0 +1,225 @@
+:host { display:block; }
+
+.section-students-page { margin-top:8px; }
+
+.page-card {
+  display:grid;
+  align-content:start;
+  gap:20px;
+  min-height:calc(100vh - 170px);
+  padding:22px;
+  border:1px solid rgba(17,32,51,.08);
+  border-radius:28px;
+  background:#fff;
+  box-shadow:0 18px 45px rgba(15,23,42,.06);
+}
+
+.page-slide-in { animation: slide-in 240ms ease; }
+
+@keyframes slide-in {
+  from { opacity:0; transform:translateX(18px); }
+  to { opacity:1; transform:translateX(0); }
+}
+
+.card-head { padding-bottom:18px; border-bottom:1px solid #e8eef5; }
+.card-head-inline, .section-head, .modal-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+.panel-head { display:grid; gap:2px; }
+.panel-kicker { display:inline-flex; align-items:center; gap:8px; color:#2f6edb; font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+.panel-head h2, .panel-head h3 { margin:8px 0 6px; color:#112033; font-weight:700; line-height:1.25; }
+.panel-head p { margin:0; color:var(--muted); font-size:14px; line-height:1.55; }
+.back-link { display:inline-flex; align-items:center; gap:8px; color:#2159b6; text-decoration:none; font-size:13px; font-weight:600; }
+.period-chip, .records-chip { display:inline-flex; align-items:center; justify-content:center; padding:6px 10px; border-radius:999px; background:#eaf3ff; color:#1d5fc4; font-size:11px; font-weight:700; }
+
+.overview-strip {
+  display:grid;
+  grid-template-columns:repeat(4, minmax(0, 1fr));
+  gap:14px;
+}
+
+.overview-card {
+  display:grid;
+  gap:6px;
+  min-height:104px;
+  padding:16px 18px;
+  border:1px solid rgba(17,32,51,.08);
+  border-radius:20px;
+  background:#fbfdff;
+}
+
+.overview-label {
+  color:#6b7a99;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+
+.overview-card strong {
+  color:#112033;
+  font-size:18px;
+  font-weight:700;
+  line-height:1.25;
+}
+
+.overview-card small {
+  color:#6b7a99;
+  font-size:12px;
+  line-height:1.45;
+}
+
+.detail-grid { display:grid; grid-template-columns:minmax(0,1.55fr) 380px; gap:18px; align-items:stretch; min-height:0; }
+.table-panel, .actions-panel, .form-panel, .quick-panel, .expand-panel {
+  display:grid; gap:16px; min-height:0; padding:20px; border:1px solid rgba(17,32,51,.08); border-radius:24px; background:#fbfdff;
+}
+.table-panel {
+  grid-template-rows:auto minmax(0,1fr);
+  min-height:calc(100vh - 340px);
+  overflow:hidden;
+}
+
+.table-panel-body {
+  min-height:0;
+  overflow:hidden;
+}
+
+.table-panel .table-scroll {
+  height:100%;
+  min-height:0;
+}
+
+.actions-panel {
+  min-height:calc(100vh - 340px);
+  align-content:start;
+  overflow:auto;
+}
+
+.quick-panel {
+  padding:18px;
+}
+
+.quick-actions {
+  display:grid;
+  gap:10px;
+}
+
+.inline-feedback {
+  display:grid;
+  gap:10px;
+}
+
+.expand-panel {
+  padding:0;
+  overflow:hidden;
+}
+
+.expand-summary {
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+  padding:18px;
+  cursor:pointer;
+  list-style:none;
+}
+
+.expand-summary::-webkit-details-marker {
+  display:none;
+}
+
+.expand-summary strong {
+  display:block;
+  margin:6px 0 4px;
+  color:#112033;
+  font-size:15px;
+  font-weight:700;
+}
+
+.expand-summary small {
+  color:#6b7a99;
+  font-size:12px;
+  line-height:1.45;
+}
+
+.expand-summary i {
+  color:#6b7a99;
+  font-size:13px;
+  transition:transform 160ms ease;
+}
+
+.expand-panel[open] .expand-summary i {
+  transform:rotate(180deg);
+}
+
+.expand-body {
+  display:grid;
+  gap:12px;
+  padding:0 18px 18px;
+  border-top:1px solid #e6edf5;
+}
+
+.panel-stack, .master-form, .form-two-columns { display:grid; gap:12px; }
+.form-two-columns { grid-template-columns:repeat(2, minmax(0,1fr)); }
+.readonly-note, .selected-box {
+  display:grid; gap:6px; padding:14px 16px; border-radius:16px; background:#f8fafc; border:1px solid #dbe5f1;
+}
+.readonly-note { grid-template-columns:28px 1fr; align-items:start; }
+.readonly-note strong, .selected-box strong { color:#112033; font-size:14px; }
+.readonly-note p, .selected-box small { margin:0; color:#6b7a99; font-size:12px; line-height:1.5; }
+
+label { display:grid; gap:8px; color:#334155; font-size:14px; font-weight:600; }
+input, select {
+  width:100%; padding:11px 13px; border:1px solid #d6e1ef; border-radius:14px; background:#fff; color:#112033; font:inherit; outline:none;
+}
+input:focus, select:focus { border-color:#2f6edb; box-shadow:0 0 0 4px rgba(47,110,219,.12); }
+.feedback { padding:10px 12px; border-radius:12px; font-size:14px; line-height:1.45; }
+.feedback.error { background:#fff1f1; color:#b42318; }
+.feedback.success { background:#ecfdf3; color:#027a48; }
+.form-actions { display:flex; flex-wrap:wrap; gap:10px; }
+.action-button {
+  display:inline-flex; align-items:center; justify-content:center; min-width:120px; padding:10px 14px; border:1px solid transparent; border-radius:12px; background:#fff; font:inherit; font-size:14px; font-weight:600; cursor:pointer;
+}
+.action-button:disabled { opacity:.72; cursor:wait; }
+.action-button.primary { color:#fff; border-color:#2159b6; background:#2159b6; }
+.action-button.secondary { color:#1d5fc4; border-color:#d4e4fb; background:#eef5ff; }
+.full-button { width:100%; }
+.compact { padding:12px; }
+
+.modal-backdrop { position:fixed; inset:0; z-index:30; display:grid; place-items:center; padding:24px; background:rgba(15,23,42,.38); }
+.modal-card { display:grid; gap:16px; width:min(920px,100%); padding:20px; border-radius:24px; background:#fff; box-shadow:0 28px 60px rgba(15,23,42,.2); }
+.modal-close { display:inline-grid; place-items:center; width:38px; height:38px; border:1px solid #d6e1ef; border-radius:12px; background:#fff; color:#52657c; cursor:pointer; }
+.modal-search input { background:#fbfdff; }
+.modal-table { max-height:420px; }
+.selectable-row { cursor:pointer; }
+.selectable-row:hover { background:#eef5ff; }
+
+@media (max-width: 1280px) {
+  .overview-strip {
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+  }
+
+  .detail-grid {
+    grid-template-columns:minmax(0,1fr) 340px;
+  }
+}
+
+@media (max-width: 1120px) {
+  .detail-grid {
+    grid-template-columns:1fr;
+  }
+
+  .table-panel,
+  .actions-panel {
+    min-height:auto;
+  }
+
+  .actions-panel {
+    overflow:visible;
+  }
+}
+
+@media (max-width: 960px) {
+  .card-head-inline, .section-head, .modal-head, .form-two-columns { flex-direction:column; grid-template-columns:1fr; }
+  .overview-strip { grid-template-columns:1fr; }
+  .modal-backdrop { padding:14px; }
+  .modal-card { padding:16px; }
+}

@@ -42,13 +42,11 @@ export class Shell {
         label: 'Configuracion academica',
         icon: 'fa-solid fa-sliders',
         children: [
-          { label: 'Centro de configuracion', path: '/configuracion-academica', icon: 'fa-solid fa-grid-2' },
-          { label: 'Periodos academicos', path: '/periodos-academicos', icon: 'fa-solid fa-calendar-days' },
-          { label: 'Bimestres', path: '/bimestres', icon: 'fa-solid fa-table-cells-large' },
-          { label: 'Niveles, grados y secciones', path: '/estructura-academica', icon: 'fa-solid fa-sitemap' },
+          { label: 'Gestion estudiantil', path: '/gestion-estudiantil', icon: 'fa-solid fa-user-graduate' },
           { label: 'Cursos', path: '/cursos', icon: 'fa-solid fa-book-open-reader' },
           { label: 'Docentes y accesos', path: '/docentes-accesos', icon: 'fa-solid fa-user-gear' },
-          { label: 'Asignaciones y tutorias', path: '/asignaciones-tutorias', icon: 'fa-solid fa-chalkboard-user' }
+          { label: 'Asignaciones docentes', path: '/asignaciones-docente', icon: 'fa-solid fa-chalkboard-user' },
+          { label: 'Tutorias por seccion', path: '/tutorias-seccion', icon: 'fa-solid fa-people-roof' }
         ]
       });
     }
@@ -95,7 +93,8 @@ export class Shell {
         icon: 'fa-solid fa-screwdriver-wrench',
         children: [
           { label: 'Panel administrativo', path: '/admin', icon: 'fa-solid fa-chart-pie' },
-          { label: 'Asignaciones y flujo', path: '/asignaciones-tutorias', icon: 'fa-solid fa-diagram-project' }
+          { label: 'Asignaciones docentes', path: '/asignaciones-docente', icon: 'fa-solid fa-diagram-project' },
+          { label: 'Tutorias por seccion', path: '/tutorias-seccion', icon: 'fa-solid fa-people-roof' }
         ]
       });
     }

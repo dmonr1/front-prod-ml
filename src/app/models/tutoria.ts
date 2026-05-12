@@ -1,9 +1,7 @@
-export interface AsignacionDocente {
+export interface Tutoria {
   id: number;
   docenteId: number;
   docenteNombreCompleto: string;
-  cursoId: number;
-  curso: string;
   seccionId: number;
   seccion: string;
   grado: string;

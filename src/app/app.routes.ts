@@ -17,6 +17,35 @@ export const routes: Routes = [
       )
   },
   {
+    path: 'gestion-estudiantil/periodo/:periodoId/seccion/:seccionId',
+    loadComponent: () =>
+      import('./pages/alumnos-seccion/alumnos-seccion').then((m) => m.AlumnosSeccion)
+  },
+  {
+    path: 'gestion-estudiantil/periodo/:periodoId',
+    loadComponent: () =>
+      import('./pages/alumnos-periodo/alumnos-periodo').then((m) => m.AlumnosPeriodo)
+  },
+  {
+    path: 'gestion-estudiantil',
+    loadComponent: () => import('./pages/alumnos/alumnos').then((m) => m.Alumnos)
+  },
+  {
+    path: 'alumnos/periodo/:periodoId/seccion/:seccionId',
+    redirectTo: 'gestion-estudiantil/periodo/:periodoId/seccion/:seccionId',
+    pathMatch: 'full'
+  },
+  {
+    path: 'alumnos/periodo/:periodoId',
+    redirectTo: 'gestion-estudiantil/periodo/:periodoId',
+    pathMatch: 'full'
+  },
+  {
+    path: 'alumnos',
+    redirectTo: 'gestion-estudiantil',
+    pathMatch: 'full'
+  },
+  {
     path: 'periodos-academicos',
     loadComponent: () =>
       import('./pages/periodos-academicos/periodos-academicos').then(
@@ -25,7 +54,8 @@ export const routes: Routes = [
   },
   {
     path: 'bimestres',
-    loadComponent: () => import('./pages/bimestres/bimestres').then((m) => m.Bimestres)
+    redirectTo: 'periodos-academicos',
+    pathMatch: 'full'
   },
   {
     path: 'estructura-academica',
@@ -44,11 +74,28 @@ export const routes: Routes = [
       import('./pages/docentes-accesos/docentes-accesos').then((m) => m.DocentesAccesos)
   },
   {
-    path: 'asignaciones-tutorias',
+    path: 'asignaciones-docente',
     loadComponent: () =>
-      import('./pages/asignaciones-tutorias/asignaciones-tutorias').then(
-        (m) => m.AsignacionesTutorias
+      import('./pages/asignaciones-docente/asignaciones-docente').then(
+        (m) => m.AsignacionesDocente
       )
+  },
+  {
+    path: 'tutorias-seccion',
+    loadComponent: () =>
+      import('./pages/tutorias-seccion/tutorias-seccion').then(
+        (m) => m.TutoriasSeccion
+      )
+  },
+  {
+    path: 'asignaciones-tutorias',
+    redirectTo: 'asignaciones-docente',
+    pathMatch: 'full'
+  },
+  {
+    path: 'matriculas-periodo',
+    redirectTo: 'alumnos',
+    pathMatch: 'full'
   },
   {
     path: 'docente',

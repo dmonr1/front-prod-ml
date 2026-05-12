@@ -72,7 +72,7 @@ export class Sidebar {
   }
 
   isRouteActive(path: string): boolean {
-    return this.router.url === path;
+    return this.router.url === path || this.router.url.startsWith(`${path}/`);
   }
 
   cerrarSesion(): void {
@@ -103,8 +103,13 @@ export class Sidebar {
       ruta.startsWith('/bimestres') ||
       ruta.startsWith('/estructura-academica') ||
       ruta.startsWith('/cursos') ||
+      ruta.startsWith('/gestion-estudiantil') ||
+      ruta.startsWith('/alumnos') ||
+      ruta.startsWith('/matriculas-periodo') ||
       ruta.startsWith('/docentes-accesos') ||
-      ruta.startsWith('/asignaciones-tutorias')
+      ruta.startsWith('/asignaciones-tutorias') ||
+      ruta.startsWith('/asignaciones-docente') ||
+      ruta.startsWith('/tutorias-seccion')
     ) {
       return ['configuracion-academica'];
     }

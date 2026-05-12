@@ -407,49 +407,4 @@
   background: transparent;
 }
 
-@media (max-width: 860px) {
-  .sidebar {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    width: 100%;
-    height: auto;
-    grid-template-columns: auto 1fr;
-    grid-template-rows: auto auto;
-    gap: 12px;
-    padding: 10px;
-  }
 
-  .sidebar.collapsed {
-    width: 100%;
-  }
-
-  .sidebar-toggle {
-    display: none;
-  }
-
-  .brand-toggle {
-    display: none;
-  }
-
-  .sidebar .nav-label {
-    display: inline;
-  }
-
-  .sidebar nav {
-    display: flex;
-    overflow-x: auto;
-    overflow-y: hidden;
-    gap: 8px;
-    padding-right: 0;
-  }
-
-  .sidebar nav a,
-  .nav-parent {
-    flex: 0 0 auto;
-  }
-
-  .logout {
-    display: none;
-  }
-}

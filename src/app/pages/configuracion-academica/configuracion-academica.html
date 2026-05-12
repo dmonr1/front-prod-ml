@@ -1,10 +1,24 @@
 <app-shell>
-  <section class="setup-grid">
+  <section class="setup-page">
+    <div class="page-head">
+      <div class="panel-head">
+        <span class="panel-kicker">Configuracion academica</span>
+        <h2>Base operativa del sistema</h2>
+        <p>Organiza los modulos principales para avanzar desde la gestion estudiantil hasta la operacion docente.</p>
+      </div>
+    </div>
+
+    <div class="setup-grid">
     @for (modulo of modulos; track modulo.key) {
       <article class="setup-card" [class.prioridad]="modulo.status === 'prioridad'">
         <div class="setup-card-head">
           <span class="setup-icon"><i [class]="modulo.icon"></i></span>
-          <span class="setup-state" [class.pending]="modulo.status === 'pendiente'">{{ modulo.helper }}</span>
+          <span
+            class="setup-state"
+            [class.pending]="modulo.status === 'pendiente'"
+            [class.operativo]="modulo.status === 'operativo'">
+            {{ modulo.helper }}
+          </span>
         </div>
 
         <div>
@@ -13,7 +27,9 @@
         </div>
 
         <div class="setup-card-foot">
-          <span class="module-type">{{ modulo.status === 'prioridad' ? 'Arranque principal' : 'Configuracion siguiente' }}</span>
+          <span class="module-type">
+            {{ modulo.status === 'prioridad' ? 'Configuracion base' : modulo.status === 'operativo' ? 'Configuracion operativa' : 'Configuracion siguiente' }}
+          </span>
           <a class="module-link" [routerLink]="modulo.route">
             Abrir modulo
             <i class="fa-solid fa-arrow-right"></i>
@@ -21,5 +37,6 @@
         </div>
       </article>
     }
+    </div>
   </section>
 </app-shell>

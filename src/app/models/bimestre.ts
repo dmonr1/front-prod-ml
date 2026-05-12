@@ -1,12 +1,10 @@
-export interface Seccion {
+export interface Bimestre {
   id: number;
   nombre: string;
-  capacidad: number | null;
+  numero: number;
+  fechaInicio: string;
+  fechaFin: string;
   estado: string | null;
-  gradoId: number | null;
-  gradoNombre: string | null;
-  nivelId: number | null;
-  nivelNombre: string | null;
   periodoAcademicoId: number | null;
   periodoAcademicoNombre: string | null;
   anioAcademico: number | null;

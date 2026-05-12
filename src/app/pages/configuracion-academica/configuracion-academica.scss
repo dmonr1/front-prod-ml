@@ -2,6 +2,48 @@
   display: block;
 }
 
+.setup-page {
+  display: grid;
+  gap: 18px;
+  min-height: calc(100vh - 170px);
+  margin-top: 8px;
+}
+
+.page-head {
+  padding: 22px;
+  border: 1px solid rgba(17, 32, 51, 0.08);
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 14px 35px rgba(15, 23, 42, 0.05);
+}
+
+.panel-head {
+  display: grid;
+  gap: 4px;
+}
+
+.panel-kicker {
+  color: #2f6edb;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.page-head h2 {
+  margin: 4px 0;
+  color: #112033;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.page-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
 .setup-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -12,7 +54,7 @@
   display: grid;
   gap: 18px;
   min-height: 100%;
-  padding: 24px;
+  padding: 22px;
   border: 1px solid rgba(17, 32, 51, 0.08);
   border-radius: 24px;
   background: #ffffff;
@@ -30,22 +72,20 @@
 
 .setup-card.prioridad {
   border-color: rgba(47, 110, 219, 0.18);
-  background:
-    linear-gradient(180deg, rgba(244, 248, 255, 0.98), rgba(255, 255, 255, 0.95)),
-    #ffffff;
+  background: #fbfdff;
 }
 
 .setup-card h3 {
   margin: 8px 0 6px;
   color: #112033;
-  font-size: 19px;
+  font-size: 18px;
   font-weight: 700;
 }
 
 .setup-card p {
   margin: 0;
   color: var(--muted);
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.55;
 }
 
@@ -59,12 +99,11 @@
 .setup-icon {
   display: grid;
   place-items: center;
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   border-radius: 18px;
   color: #fff;
   background: #2159b6;
-  box-shadow: 0 10px 20px rgba(47, 110, 219, 0.18);
 }
 
 .setup-state {
@@ -81,6 +120,11 @@
   background: #fff4dd;
 }
 
+.setup-state.operativo {
+  color: #1f6646;
+  background: #e8f7ee;
+}
+
 .setup-card-foot {
   display: flex;
   align-items: center;
@@ -90,7 +134,7 @@
 
 .module-type {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -104,7 +148,7 @@
   color: #1d5fc4;
   background: #eef5ff;
   font-weight: 600;
-  font-size: 15px;
+  font-size: 14px;
   text-decoration: none;
   transition:
     background 180ms ease,
@@ -121,6 +165,10 @@
 @media (max-width: 860px) {
   .setup-grid {
     grid-template-columns: 1fr;
+  }
+
+  .page-head {
+    padding: 18px;
   }
 
   .setup-card-foot {

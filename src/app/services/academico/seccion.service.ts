@@ -6,8 +6,14 @@ import { Seccion } from '../../models/seccion';
 
 export interface SeccionPayload {
   gradoId: number;
+  periodoAcademicoId?: number | null;
   nombre: string;
   capacidad: number | null;
+}
+
+export interface SeccionPeriodoAnteriorPayload {
+  gradoId: number;
+  periodoAcademicoId: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -15,11 +21,16 @@ export class SeccionService {
   private readonly http = inject(HttpClient);
   private readonly api = `${environment.apiUrl}/secciones`;
 
-  listar(): Observable<Seccion[]> {
-    return this.http.get<Seccion[]>(this.api);
+  listar(periodoAcademicoId?: number | null): Observable<Seccion[]> {
+    const params = periodoAcademicoId ? { periodoAcademicoId } : undefined;
+    return this.http.get<Seccion[]>(this.api, { params });
   }
 
   crear(payload: SeccionPayload): Observable<Seccion> {
     return this.http.post<Seccion>(this.api, payload);
+  }
+
+  copiarPeriodoAnterior(payload: SeccionPeriodoAnteriorPayload): Observable<Seccion[]> {
+    return this.http.post<Seccion[]>(`${this.api}/copiar-periodo-anterior`, payload);
   }
 }

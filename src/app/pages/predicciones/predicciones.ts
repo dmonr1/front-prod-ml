@@ -33,6 +33,7 @@ interface PrediccionMock {
   templateUrl: './predicciones.html',
   styleUrl: './predicciones.scss'
 })
+
 export class Predicciones {
   readonly vistaActiva = signal<VistaPrediccion>('global');
   readonly periodoSeleccionado = signal('2026');

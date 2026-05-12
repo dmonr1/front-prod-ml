@@ -8,7 +8,7 @@ interface ModuloMaestro {
   description: string;
   route: string;
   icon: string;
-  status: 'prioridad' | 'pendiente';
+  status: 'prioridad' | 'operativo' | 'pendiente';
   helper: string;
 }
 
@@ -21,31 +21,13 @@ interface ModuloMaestro {
 export class ConfiguracionAcademica {
   readonly modulos: ModuloMaestro[] = [
     {
-      key: 'periodos',
-      title: 'Periodos academicos',
-      description: 'Define el anio escolar y las ventanas de trabajo principales del sistema.',
-      route: '/periodos-academicos',
-      icon: 'fa-solid fa-calendar-days',
+      key: 'gestion-estudiantil',
+      title: 'Gestion estudiantil',
+      description: 'Centraliza periodos, grados, secciones y registro de alumnos dentro de un solo flujo por periodo academico.',
+      route: '/gestion-estudiantil',
+      icon: 'fa-solid fa-user-graduate',
       status: 'prioridad',
-      helper: 'Primero'
-    },
-    {
-      key: 'bimestres',
-      title: 'Bimestres',
-      description: 'Configura los bimestres vinculados a cada periodo academico.',
-      route: '/bimestres',
-      icon: 'fa-solid fa-table-cells-large',
-      status: 'pendiente',
-      helper: 'Dependiente'
-    },
-    {
-      key: 'estructura',
-      title: 'Niveles, grados y secciones',
-      description: 'Estructura la organizacion academica del colegio antes de matricular estudiantes.',
-      route: '/estructura-academica',
-      icon: 'fa-solid fa-sitemap',
-      status: 'pendiente',
-      helper: 'Pendiente'
+      helper: 'Arranque'
     },
     {
       key: 'cursos',
@@ -53,8 +35,8 @@ export class ConfiguracionAcademica {
       description: 'Registra los cursos que luego se asignaran a docentes y secciones.',
       route: '/cursos',
       icon: 'fa-solid fa-book-open-reader',
-      status: 'pendiente',
-      helper: 'Pendiente'
+      status: 'operativo',
+      helper: 'Catalogo'
     },
     {
       key: 'docentes',
@@ -62,17 +44,26 @@ export class ConfiguracionAcademica {
       description: 'Relaciona usuarios, docentes y multiples roles dentro del sistema.',
       route: '/docentes-accesos',
       icon: 'fa-solid fa-user-gear',
-      status: 'pendiente',
-      helper: 'Pendiente'
+      status: 'operativo',
+      helper: 'Accesos'
     },
     {
-      key: 'asignaciones',
-      title: 'Asignaciones y tutorias',
-      description: 'Une docentes, cursos, secciones y periodos para habilitar el flujo operativo.',
-      route: '/asignaciones-tutorias',
+      key: 'asignaciones-docente',
+      title: 'Asignaciones docentes',
+      description: 'Une docentes, cursos, secciones y periodos para habilitar evaluaciones, notas y asistencia.',
+      route: '/asignaciones-docente',
       icon: 'fa-solid fa-chalkboard-user',
-      status: 'pendiente',
+      status: 'operativo',
       helper: 'Operativo'
+    },
+    {
+      key: 'tutorias',
+      title: 'Tutorias por seccion',
+      description: 'Relaciona cada seccion con su docente tutor para el seguimiento global del aula.',
+      route: '/tutorias-seccion',
+      icon: 'fa-solid fa-people-roof',
+      status: 'operativo',
+      helper: 'Seguimiento'
     }
   ];
 }

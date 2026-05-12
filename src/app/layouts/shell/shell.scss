@@ -21,12 +21,3 @@
   padding: 24px;
 }
 
-@media (max-width: 860px) {
-  .app-shell {
-    grid-template-columns: 1fr;
-  }
-
-  .workspace {
-    padding: 18px;
-  }
-}

@@ -1,0 +1,220 @@
+<app-shell>
+  <section class="period-detail-page">
+    <div class="page-card page-slide-in">
+      <div class="card-head">
+        <div class="card-head-inline">
+          <div class="panel-head">
+            <a class="back-link" routerLink="/gestion-estudiantil">
+              <i class="fa-solid fa-arrow-left"></i>
+              Volver a periodos
+            </a>
+            <span class="panel-kicker">Explorador academico</span>
+            <h2>{{ periodo()?.nombre || 'Periodo academico' }}</h2>
+            <p>Selecciona un grado y luego una seccion para continuar al registro de alumnos.</p>
+          </div>
+
+          @if (periodo()) {
+            <span class="period-chip">{{ esPeriodoEditable() ? 'Periodo editable' : 'Solo consulta' }}</span>
+          }
+        </div>
+      </div>
+
+      <div class="level-tabs">
+        <button
+          class="tab-button"
+          type="button"
+          [class.active]="nivelSeleccionadoId() === 1"
+          (click)="seleccionarNivel(1)">
+          Primaria
+        </button>
+        <button
+          class="tab-button"
+          type="button"
+          [class.active]="nivelSeleccionadoId() === 2"
+          (click)="seleccionarNivel(2)">
+          Secundaria
+        </button>
+      </div>
+
+      <section class="cards-section">
+        <div class="section-head">
+          <div class="panel-head">
+            <h3>Grados</h3>
+            <p>Selecciona un grado para abrir sus secciones.</p>
+          </div>
+        </div>
+
+        @if (cargandoGrados()) {
+          <div class="cards-grid">
+            @for (row of [0, 1, 2, 3]; track row) {
+              <article class="flow-card skeleton-card">
+                <span class="skeleton-line medium"></span>
+                <span class="skeleton-line short"></span>
+              </article>
+            }
+          </div>
+        } @else if (errorGrados()) {
+          <div class="table-state error">
+            <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
+            <span>{{ errorGrados() }}</span>
+          </div>
+        } @else {
+          <div class="cards-grid">
+            @for (grado of gradosFiltrados(); track grado.id) {
+              <button
+                class="flow-card"
+                type="button"
+                [class.active]="gradoSeleccionadoId() === grado.id"
+                (click)="seleccionarGrado(grado.id)">
+                <div class="flow-card-top">
+                  <span class="flow-title">{{ grado.nombre }}</span>
+                  <span class="status-badge active">{{ totalSeccionesGrado(grado.id) }} secciones</span>
+                </div>
+                <strong>
+                  {{ grado.nivelNombre || (nivelSeleccionadoId() === 1 ? 'Primaria' : 'Secundaria') }}
+                </strong>
+                <small>{{ totalMatriculadosGrado(grado.id) }} matriculados en este periodo</small>
+              </button>
+            }
+          </div>
+        }
+      </section>
+
+      <section class="cards-section">
+        <div class="section-head">
+          <div class="panel-head">
+            <h3>Secciones</h3>
+            <p>{{ gradoSeleccionado()?.nombre || 'Selecciona un grado para continuar' }}</p>
+          </div>
+
+          @if (gradoSeleccionado() && esPeriodoEditable()) {
+            <div class="head-actions">
+              <button
+                class="action-button secondary"
+                type="button"
+                [disabled]="!periodoAnterior() || cargandoSeccionesAnteriores()"
+                (click)="cargarSeccionesPeriodoAnterior()">
+                {{ cargandoSeccionesAnteriores() ? 'Cargando...' : 'Cargar secciones del periodo anterior' }}
+              </button>
+              <button class="action-button primary" type="button" (click)="abrirModalSeccion()">
+                Agregar seccion
+              </button>
+            </div>
+          }
+        </div>
+
+        @if (errorGuardarSeccion()) {
+          <div class="feedback error">{{ errorGuardarSeccion() }}</div>
+        }
+
+        @if (exitoGuardarSeccion()) {
+          <div class="feedback success">{{ exitoGuardarSeccion() }}</div>
+        }
+
+        @if (cargandoSecciones()) {
+          <div class="cards-grid">
+            @for (row of [0, 1, 2]; track row) {
+              <article class="flow-card skeleton-card">
+                <span class="skeleton-line medium"></span>
+                <span class="skeleton-line short"></span>
+              </article>
+            }
+          </div>
+        } @else if (errorSecciones()) {
+          <div class="table-state error">
+            <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
+            <span>{{ errorSecciones() }}</span>
+          </div>
+        } @else if (!gradoSeleccionado()) {
+          <div class="table-state">
+            <span class="table-state-icon"><i class="fa-solid fa-arrow-up"></i></span>
+            <span>Selecciona un grado para ver sus secciones.</span>
+          </div>
+        } @else if (!seccionesDelGrado().length) {
+          <div class="table-state">
+            <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
+            <span>Este grado todavia no tiene secciones registradas en este periodo.</span>
+          </div>
+        } @else {
+          <div class="cards-grid">
+            @for (seccion of seccionesDelGrado(); track seccion.id) {
+              <button class="flow-card" type="button" (click)="abrirSeccion(seccion.id)">
+                <div class="flow-card-top">
+                  <span class="flow-title">Seccion {{ seccion.nombre }}</span>
+                  <span
+                    class="status-badge"
+                    [class.active]="esPeriodoEditable()"
+                    [class.inactive]="!esPeriodoEditable()">
+                    {{ esPeriodoEditable() ? 'Editable' : 'Consulta' }}
+                  </span>
+                </div>
+                <strong>{{ gradoSeleccionado()?.nombre }}</strong>
+                <small>
+                  {{ totalMatriculadosSeccion(seccion.id) }} matriculados - Capacidad
+                  {{ seccion.capacidad ?? 'ND' }}
+                </small>
+              </button>
+            }
+          </div>
+        }
+      </section>
+    </div>
+
+    @if (modalSeccionAbierto()) {
+      <div class="modal-backdrop" (click)="cerrarModalSeccion()">
+        <div class="modal-card modal-card--compact" (click)="$event.stopPropagation()">
+          <div class="modal-head">
+            <div class="panel-head">
+              <span class="panel-kicker">Nueva seccion</span>
+              <h3>Agregar seccion al periodo</h3>
+              <p>
+                {{ gradoSeleccionado()?.nombre || 'Grado seleccionado' }} -
+                {{ periodo()?.nombre || 'Periodo actual' }}
+              </p>
+            </div>
+            <button class="modal-close" type="button" (click)="cerrarModalSeccion()">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <form class="master-form">
+            <div class="form-two-columns">
+              <label>
+                Nombre de la seccion
+                <input
+                  type="text"
+                  [ngModel]="formSeccionNombre()"
+                  (ngModelChange)="formSeccionNombre.set($event)"
+                  name="nombreSeccion"
+                  placeholder="Ejemplo: A o UNICA" />
+              </label>
+
+              <label>
+                Capacidad
+                <input
+                  type="number"
+                  [ngModel]="formSeccionCapacidad()"
+                  (ngModelChange)="formSeccionCapacidad.set($event)"
+                  name="capacidadSeccion"
+                  placeholder="Opcional" />
+              </label>
+            </div>
+
+            <div class="form-actions">
+              <button
+                class="action-button primary"
+                type="button"
+                [disabled]="guardandoSeccion()"
+                (click)="guardarSeccion()">
+                {{ guardandoSeccion() ? 'Guardando...' : 'Guardar seccion' }}
+              </button>
+              <button class="action-button secondary" type="button" (click)="cerrarModalSeccion()">
+                Cerrar
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    }
+  </section>
+</app-shell>

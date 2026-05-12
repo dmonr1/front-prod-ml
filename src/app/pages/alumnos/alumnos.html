@@ -1,0 +1,144 @@
+<app-shell>
+  <section class="periods-page">
+    <div class="page-card page-slide-in">
+      <div class="card-head">
+        <div class="card-head-inline">
+          <div class="panel-head">
+            <span class="panel-kicker">Gestion estudiantil</span>
+            <h2>Gestion estudiantil por periodo academico</h2>
+            <p>Selecciona un periodo academico para abrir grados, secciones y luego el registro de alumnos.</p>
+          </div>
+
+          <div class="head-actions">
+            <a class="action-button secondary" routerLink="/periodos-academicos">
+              Periodo y bimestres
+            </a>
+            <button class="action-button secondary" type="button" (click)="abrirModalPeriodo()">
+              Nuevo periodo academico
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <section class="periods-panel">
+        <div class="panel-head section-head">
+          <div>
+            <h3>Periodos academicos</h3>
+            <p>Haz clic en un periodo para continuar al siguiente nivel del flujo.</p>
+          </div>
+        </div>
+
+        @if (cargandoPeriodos()) {
+          <div class="periods-grid">
+            @for (row of [0,1,2]; track row) {
+              <article class="period-card skeleton-card">
+                <span class="skeleton-line short"></span>
+                <span class="skeleton-line medium"></span>
+                <span class="skeleton-line long"></span>
+              </article>
+            }
+          </div>
+        } @else if (errorPeriodos()) {
+          <div class="table-state error">
+            <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
+            <span>{{ errorPeriodos() }}</span>
+          </div>
+        } @else {
+          <div class="periods-grid">
+            @for (periodo of periodos(); track periodo.id) {
+              <button class="period-card" type="button" (click)="abrirPeriodo(periodo.id)">
+                <div class="period-card-top">
+                  <span class="period-year">{{ periodo.anio }}</span>
+                  <span
+                    class="status-badge"
+                    [class.active]="periodo.anio === currentYear"
+                    [class.inactive]="periodo.anio !== currentYear">
+                    {{ periodo.anio === currentYear ? 'Editable' : 'Historico' }}
+                  </span>
+                </div>
+                <strong>{{ periodo.nombre }}</strong>
+                <small>{{ periodo.fechaInicio }} - {{ periodo.fechaFin }}</small>
+              </button>
+            }
+          </div>
+        }
+      </section>
+    </div>
+
+    @if (modalPeriodoAbierto()) {
+      <div class="modal-backdrop" (click)="cerrarModalPeriodo()">
+        <div class="modal-card modal-card--compact" (click)="$event.stopPropagation()">
+          <div class="modal-head">
+            <div class="panel-head">
+              <span class="panel-kicker">Nuevo periodo</span>
+              <h3>Registrar periodo academico</h3>
+              <p>Crea un nuevo ano academico para luego organizar alumnos, asignaciones y bimestres.</p>
+            </div>
+            <button class="modal-close" type="button" (click)="cerrarModalPeriodo()">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <form class="master-form">
+            <div class="form-two-columns">
+              <label>
+                Nombre
+                <input
+                  type="text"
+                  [ngModel]="formPeriodo().nombre"
+                  (ngModelChange)="actualizarCampoPeriodo('nombre', $event)"
+                  name="nombrePeriodo"
+                  placeholder="Ejemplo: Periodo 2026" />
+              </label>
+
+              <label>
+                Ano
+                <input
+                  type="number"
+                  [ngModel]="formPeriodo().anio"
+                  (ngModelChange)="actualizarCampoPeriodo('anio', +$event)"
+                  name="anioPeriodo"
+                  placeholder="2026" />
+              </label>
+            </div>
+
+            <div class="form-two-columns">
+              <label>
+                Fecha de inicio
+                <input
+                  type="date"
+                  [ngModel]="formPeriodo().fechaInicio"
+                  (ngModelChange)="actualizarCampoPeriodo('fechaInicio', $event)"
+                  name="fechaInicioPeriodo" />
+              </label>
+
+              <label>
+                Fecha de fin
+                <input
+                  type="date"
+                  [ngModel]="formPeriodo().fechaFin"
+                  (ngModelChange)="actualizarCampoPeriodo('fechaFin', $event)"
+                  name="fechaFinPeriodo" />
+              </label>
+            </div>
+
+            @if (errorPeriodoNuevo()) {
+              <div class="feedback error">{{ errorPeriodoNuevo() }}</div>
+            }
+
+            @if (exitoPeriodoNuevo()) {
+              <div class="feedback success">{{ exitoPeriodoNuevo() }}</div>
+            }
+
+            <div class="form-actions">
+              <button class="action-button primary" type="button" [disabled]="guardandoPeriodo()" (click)="guardarPeriodo()">
+                {{ guardandoPeriodo() ? 'Guardando...' : 'Guardar periodo' }}
+              </button>
+              <button class="action-button secondary" type="button" (click)="limpiarFormularioPeriodo()">Limpiar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    }
+  </section>
+</app-shell>
