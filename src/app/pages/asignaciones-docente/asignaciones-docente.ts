@@ -1,4 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { CustomAlertComponent, CustomAlertType } from '../../components/custom-alert/custom-alert';
 import { Shell } from '../../layouts/shell/shell';
 import { AsignacionDocente } from '../../models/asignacion';
 import { Curso } from '../../models/curso';
@@ -11,9 +12,19 @@ import { PeriodoAcademicoService } from '../../services/academico/periodo-academ
 import { SeccionService } from '../../services/academico/seccion.service';
 import { AsignacionAcademicaService } from '../../services/asignaciones/asignacion-academica.service';
 
+interface AlertState {
+  open: boolean;
+  type: CustomAlertType;
+  title: string;
+  message: string;
+  confirmText: string | null;
+  cancelText: string | null;
+  autoCloseMs: number | null;
+}
+
 @Component({
   selector: 'app-asignaciones-docente',
-  imports: [Shell],
+  imports: [Shell, CustomAlertComponent],
   templateUrl: './asignaciones-docente.html',
   styleUrl: './asignaciones-docente.scss'
 })
@@ -23,6 +34,7 @@ export class AsignacionesDocente {
   private readonly seccionService = inject(SeccionService);
   private readonly periodoAcademicoService = inject(PeriodoAcademicoService);
   private readonly asignacionAcademicaService = inject(AsignacionAcademicaService);
+  readonly currentYear = new Date().getFullYear();
 
   readonly docentes = signal<Docente[]>([]);
   readonly cursos = signal<Curso[]>([]);
@@ -42,8 +54,15 @@ export class AsignacionesDocente {
   readonly errorSecciones = signal<string | null>(null);
   readonly errorPeriodos = signal<string | null>(null);
   readonly errorAsignaciones = signal<string | null>(null);
-  readonly mensajeFormulario = signal<string | null>(null);
-  readonly exitoFormulario = signal<string | null>(null);
+  readonly alertState = signal<AlertState>({
+    open: false,
+    type: 'info',
+    title: '',
+    message: '',
+    confirmText: 'Aceptar',
+    cancelText: null,
+    autoCloseMs: null
+  });
 
   readonly docenteSeleccionado = signal<Docente | null>(null);
   readonly cursoSeleccionado = signal<Curso | null>(null);
@@ -124,13 +143,20 @@ export class AsignacionesDocente {
   readonly periodosModalFiltrados = computed(() => {
     const query = this.modalBusquedaPeriodo().trim().toLowerCase();
 
-    return this.periodos().filter((periodo) => {
-      if (!query) {
-        return true;
-      }
+    return [...this.periodos()]
+      .filter((periodo) => {
+        if (!query) {
+          return true;
+        }
 
-      return [periodo.nombre, periodo.anio.toString()].join(' ').toLowerCase().includes(query);
-    });
+        return [periodo.nombre, periodo.anio.toString()].join(' ').toLowerCase().includes(query);
+      })
+      .sort((a, b) => a.anio - b.anio);
+  });
+
+  readonly esPeriodoEditable = computed(() => {
+    const periodo = this.periodoSeleccionado();
+    return periodo ? periodo.anio === this.currentYear : false;
   });
 
   constructor() {
@@ -140,7 +166,6 @@ export class AsignacionesDocente {
   cargarCatalogos(): void {
     this.cargarDocentes();
     this.cargarCursos();
-    this.cargarSecciones();
     this.cargarPeriodos();
   }
 
@@ -176,11 +201,14 @@ export class AsignacionesDocente {
     });
   }
 
-  cargarSecciones(): void {
+  cargarSecciones(periodoAcademicoId?: number | null): void {
     this.cargandoSecciones.set(true);
     this.errorSecciones.set(null);
+    this.secciones.set([]);
+    this.seccionSeleccionada.set(null);
+    this.seccionQuery.set('');
 
-    this.seccionService.listar().subscribe({
+    this.seccionService.listar(periodoAcademicoId).subscribe({
       next: (response) => {
         this.secciones.set(response);
         this.cargandoSecciones.set(false);
@@ -198,14 +226,22 @@ export class AsignacionesDocente {
 
     this.periodoAcademicoService.listar().subscribe({
       next: (response) => {
-        this.periodos.set(response);
+        const periodosOrdenados = [...response].sort((a, b) => a.anio - b.anio);
+        this.periodos.set(periodosOrdenados);
         this.cargandoPeriodos.set(false);
 
-        if (!this.periodoSeleccionado() && response.length) {
-          this.seleccionarPeriodo(response[0]);
+        if (!this.periodoSeleccionado() && periodosOrdenados.length) {
+          const periodoActual =
+            periodosOrdenados.find((periodo) => periodo.anio === this.currentYear) ??
+            [...periodosOrdenados].sort((a, b) => b.anio - a.anio)[0];
+
+          if (periodoActual) {
+            this.seleccionarPeriodo(periodoActual);
+          }
           return;
         }
 
+        this.cargarSecciones(this.periodoSeleccionado()?.id ?? null);
         this.cargarAsignaciones();
       },
       error: () => {
@@ -282,6 +318,8 @@ export class AsignacionesDocente {
 
   abrirModalSeccion(): void {
     this.modalBusquedaSeccion.set('');
+    this.seccionNivelActivo.set('PRIMARIA');
+    this.cargarSecciones(this.periodoSeleccionado()?.id ?? null);
     this.modalSeccionAbierto.set(true);
   }
 
@@ -305,10 +343,20 @@ export class AsignacionesDocente {
   }
 
   seleccionarPeriodo(periodo: PeriodoAcademico): void {
+    if (periodo.anio !== this.currentYear) {
+      return;
+    }
+
     this.periodoSeleccionado.set(periodo);
     this.periodoQuery.set(this.formatearPeriodo(periodo));
     this.modalPeriodoAbierto.set(false);
+    this.seccionNivelActivo.set('PRIMARIA');
+    this.cargarSecciones(periodo.id);
     this.cargarAsignaciones();
+  }
+
+  esPeriodoSeleccionable(periodo: PeriodoAcademico): boolean {
+    return periodo.anio === this.currentYear;
   }
 
   limpiarFormulario(): void {
@@ -318,8 +366,6 @@ export class AsignacionesDocente {
     this.docenteQuery.set('');
     this.cursoQuery.set('');
     this.seccionQuery.set('');
-    this.mensajeFormulario.set(null);
-    this.exitoFormulario.set(null);
     this.dropdownActivo.set(false);
   }
 
@@ -329,12 +375,22 @@ export class AsignacionesDocente {
     const seccion = this.seccionSeleccionada();
     const periodo = this.periodoSeleccionado();
 
-    this.mensajeFormulario.set(null);
-    this.exitoFormulario.set(null);
+    if (!this.esPeriodoEditable()) {
+      this.mostrarAlerta(
+        'warning',
+        'Periodo historico',
+        'Solo puedes registrar asignaciones en el periodo academico del anio actual.',
+        { confirmText: null, autoCloseMs: 3000 }
+      );
+      return;
+    }
 
     if (!docente || !curso || !seccion || !periodo) {
-      this.mensajeFormulario.set(
-        'Selecciona docente, curso, seccion y periodo antes de guardar la asignacion.'
+      this.mostrarAlerta(
+        'warning',
+        'Completa la asignacion',
+        'Selecciona docente, curso, seccion y periodo antes de guardar la asignacion.',
+        { confirmText: null, autoCloseMs: 3000 }
       );
       return;
     }
@@ -352,17 +408,57 @@ export class AsignacionesDocente {
         next: () => {
           this.guardando.set(false);
           this.limpiarFormulario();
-          this.exitoFormulario.set('La asignacion docente se registro correctamente.');
           this.periodoQuery.set(this.formatearPeriodo(periodo));
+          this.mostrarAlerta(
+            'success',
+            'Asignacion registrada',
+            'La asignacion docente se registro correctamente.',
+            { confirmText: null, autoCloseMs: 3000 }
+          );
           this.cargarAsignaciones();
         },
         error: (error) => {
           this.guardando.set(false);
-          this.mensajeFormulario.set(
+          this.mostrarAlerta(
+            'error',
+            'No se pudo registrar',
             error?.error?.mensaje ?? 'No se pudo registrar la asignacion docente.'
           );
         }
       });
+  }
+
+  cerrarAlerta(): void {
+    this.alertState.set({
+      open: false,
+      type: 'info',
+      title: '',
+      message: '',
+      confirmText: 'Aceptar',
+      cancelText: null,
+      autoCloseMs: null
+    });
+  }
+
+  private mostrarAlerta(
+    type: CustomAlertType,
+    title: string,
+    message: string,
+    options?: {
+      confirmText?: string | null;
+      cancelText?: string | null;
+      autoCloseMs?: number | null;
+    }
+  ): void {
+    this.alertState.set({
+      open: true,
+      type,
+      title,
+      message,
+      confirmText: options?.confirmText ?? 'Aceptar',
+      cancelText: options?.cancelText ?? null,
+      autoCloseMs: options?.autoCloseMs ?? null
+    });
   }
 
   formatearDocente(docente: Docente): string {

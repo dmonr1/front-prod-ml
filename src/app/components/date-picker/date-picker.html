@@ -1,0 +1,96 @@
+<div class="date-picker" [class.open]="abierto" [class.disabled]="disabled">
+  <button class="date-picker-trigger" type="button" (click)="toggle()" [disabled]="disabled">
+    <span class="date-picker-trigger-text" [class.placeholder]="!displayValue">
+      {{ displayValue || placeholder }}
+    </span>
+    <span class="date-picker-trigger-icons">
+      @if (value && !disabled) {
+        <span class="icon-button" (click)="clear($event)">
+          <i class="fa-solid fa-xmark"></i>
+        </span>
+      }
+      <i class="fa-regular fa-calendar"></i>
+    </span>
+  </button>
+
+  @if (abierto) {
+    <div class="date-picker-panel">
+      <div class="date-picker-toolbar">
+        <button class="nav-button" type="button" (click)="previousMonth()" [disabled]="!canGoPrevious">
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+
+        <div class="toolbar-selects">
+          <div class="toolbar-dropdown" [class.open]="monthMenuOpen">
+            <button class="toolbar-dropdown-trigger" type="button" (click)="toggleMonthMenu($event)">
+              <span>{{ monthNames[visibleMonth] }}</span>
+              <i class="fa-solid fa-chevron-down"></i>
+            </button>
+
+            @if (monthMenuOpen) {
+              <div class="toolbar-dropdown-menu">
+                @for (month of monthNames; track month; let i = $index) {
+                  <button
+                    class="toolbar-dropdown-option"
+                    type="button"
+                    [class.selected]="visibleMonth === i"
+                    (click)="selectMonth(i)">
+                    {{ month }}
+                  </button>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="toolbar-dropdown" [class.open]="yearMenuOpen">
+            <button class="toolbar-dropdown-trigger" type="button" (click)="toggleYearMenu($event)">
+              <span>{{ visibleYear }}</span>
+              <i class="fa-solid fa-chevron-down"></i>
+            </button>
+
+            @if (yearMenuOpen) {
+              <div class="toolbar-dropdown-menu toolbar-dropdown-menu--years">
+                @for (year of years; track year) {
+                  <button
+                    class="toolbar-dropdown-option"
+                    type="button"
+                    [class.selected]="visibleYear === year"
+                    (click)="selectYear(year)">
+                    {{ year }}
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <button class="nav-button" type="button" (click)="nextMonth()" [disabled]="!canGoNext">
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+      </div>
+
+      <div class="calendar-grid calendar-grid--labels">
+        @for (weekDay of weekDays; track weekDay) {
+          <span class="weekday">{{ weekDay }}</span>
+        }
+      </div>
+
+      <div class="calendar-body" [class.slide-next]="calendarAnimation === 'slide-next'" [class.slide-prev]="calendarAnimation === 'slide-prev'">
+        <div class="calendar-grid">
+        @for (cell of calendarCells; track $index) {
+          <button
+            class="day-cell"
+            type="button"
+            [disabled]="!cell.inMonth"
+            [class.empty]="!cell.inMonth"
+            [class.today]="cell.isToday"
+            [class.selected]="cell.isSelected"
+            (click)="selectDate(cell)">
+            {{ cell.day ?? '' }}
+          </button>
+        }
+        </div>
+      </div>
+    </div>
+  }
+</div>

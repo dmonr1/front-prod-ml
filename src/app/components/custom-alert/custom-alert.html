@@ -1,0 +1,30 @@
+@if (rendered()) {
+  <div class="custom-alert-backdrop" [class.is-closing]="closing()">
+    <div class="custom-alert-card" [class.is-closing]="closing()" (click)="$event.stopPropagation()">
+      <div class="custom-alert-icon" [class]="type()">
+        <i [class]="iconClass()"></i>
+      </div>
+
+      <div class="custom-alert-copy">
+        <strong>{{ title() }}</strong>
+        <p>{{ message() }}</p>
+      </div>
+
+      @if (hasActions()) {
+        <div class="custom-alert-actions">
+          @if (cancelText()) {
+            <button class="custom-alert-button secondary" type="button" (click)="cancel.emit()">
+              {{ cancelText() }}
+            </button>
+          }
+
+          @if (confirmText()) {
+            <button class="custom-alert-button primary" type="button" (click)="confirm.emit()">
+              {{ confirmText() }}
+            </button>
+          }
+        </div>
+      }
+    </div>
+  </div>
+}

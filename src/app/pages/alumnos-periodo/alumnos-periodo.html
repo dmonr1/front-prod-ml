@@ -1,5 +1,17 @@
 <app-shell>
   <section class="period-detail-page">
+    <app-custom-alert
+      [open]="alertState().open"
+      [type]="alertState().type"
+      [title]="alertState().title"
+      [message]="alertState().message"
+      [confirmText]="alertState().confirmText"
+      [cancelText]="alertState().cancelText"
+      [autoCloseMs]="alertState().autoCloseMs"
+      (confirm)="confirmarCambioEstadoSeccion()"
+      (cancel)="cancelarCambioEstadoSeccion()"
+      (dismiss)="cerrarAlerta()" />
+
     <div class="page-card page-slide-in">
       <div class="card-head">
         <div class="card-head-inline">
@@ -8,32 +20,13 @@
               <i class="fa-solid fa-arrow-left"></i>
               Volver a periodos
             </a>
-            <span class="panel-kicker">Explorador academico</span>
             <h2>{{ periodo()?.nombre || 'Periodo academico' }}</h2>
-            <p>Selecciona un grado y luego una seccion para continuar al registro de alumnos.</p>
           </div>
 
           @if (periodo()) {
-            <span class="period-chip">{{ esPeriodoEditable() ? 'Periodo editable' : 'Solo consulta' }}</span>
+          <span class="period-chip">{{ esPeriodoEditable() ? 'Periodo editable' : 'Solo consulta' }}</span>
           }
         </div>
-      </div>
-
-      <div class="level-tabs">
-        <button
-          class="tab-button"
-          type="button"
-          [class.active]="nivelSeleccionadoId() === 1"
-          (click)="seleccionarNivel(1)">
-          Primaria
-        </button>
-        <button
-          class="tab-button"
-          type="button"
-          [class.active]="nivelSeleccionadoId() === 2"
-          (click)="seleccionarNivel(2)">
-          Secundaria
-        </button>
       </div>
 
       <section class="cards-section">
@@ -42,179 +35,199 @@
             <h3>Grados</h3>
             <p>Selecciona un grado para abrir sus secciones.</p>
           </div>
+
+          <div class="level-tabs">
+            <button class="tab-button" type="button" [class.active]="nivelSeleccionadoId() === 1"
+              (click)="seleccionarNivel(1)">
+              Primaria
+            </button>
+            <button class="tab-button" type="button" [class.active]="nivelSeleccionadoId() === 2"
+              (click)="seleccionarNivel(2)">
+              Secundaria
+            </button>
+          </div>
         </div>
 
         @if (cargandoGrados()) {
+        <div class="cards-surface">
           <div class="cards-grid">
-            @for (row of [0, 1, 2, 3]; track row) {
-              <article class="flow-card skeleton-card">
-                <span class="skeleton-line medium"></span>
-                <span class="skeleton-line short"></span>
-              </article>
+            @for (row of [0, 1, 2, 3, 4, 5]; track row) {
+            <article class="flow-card skeleton-card">
+              <span class="skeleton-line long"></span>
+              <span class="skeleton-line mini"></span>
+              <span class="skeleton-line short"></span>
+              <span class="skeleton-line mini"></span>
+              <span class="skeleton-line long"></span>
+              <span class="skeleton-line medium"></span>
+            </article>
             }
           </div>
+        </div>
         } @else if (errorGrados()) {
+        <div class="cards-surface state-surface">
           <div class="table-state error">
             <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
             <span>{{ errorGrados() }}</span>
           </div>
+        </div>
         } @else {
+        <div class="cards-surface">
           <div class="cards-grid">
             @for (grado of gradosFiltrados(); track grado.id) {
-              <button
-                class="flow-card"
-                type="button"
-                [class.active]="gradoSeleccionadoId() === grado.id"
-                (click)="seleccionarGrado(grado.id)">
-                <div class="flow-card-top">
-                  <span class="flow-title">{{ grado.nombre }}</span>
-                  <span class="status-badge active">{{ totalSeccionesGrado(grado.id) }} secciones</span>
-                </div>
-                <strong>
-                  {{ grado.nivelNombre || (nivelSeleccionadoId() === 1 ? 'Primaria' : 'Secundaria') }}
-                </strong>
-                <small>{{ totalMatriculadosGrado(grado.id) }} matriculados en este periodo</small>
-              </button>
+            <button class="flow-card" type="button" [class.active]="gradoSeleccionadoId() === grado.id"
+              (click)="seleccionarGrado(grado.id)">
+              <div class="flow-card-top">
+                <span class="flow-title">{{ grado.nombre }}</span>
+                <span class="status-badge active">{{ totalSeccionesGrado(grado.id) }} secciones</span>
+              </div>
+              <strong>
+                {{ grado.nivelNombre || (nivelSeleccionadoId() === 1 ? 'Primaria' : 'Secundaria') }}
+              </strong>
+              <small>{{ totalMatriculadosGrado(grado.id) }} matriculados en este periodo</small>
+            </button>
             }
           </div>
+        </div>
         }
       </section>
 
+      @if (gradoSeleccionado()) {
       <section class="cards-section">
         <div class="section-head">
           <div class="panel-head">
             <h3>Secciones</h3>
-            <p>{{ gradoSeleccionado()?.nombre || 'Selecciona un grado para continuar' }}</p>
+            <p>{{ gradoSeleccionado()!.nombre }}</p>
           </div>
 
-          @if (gradoSeleccionado() && esPeriodoEditable()) {
-            <div class="head-actions">
-              <button
-                class="action-button secondary"
-                type="button"
-                [disabled]="!periodoAnterior() || cargandoSeccionesAnteriores()"
-                (click)="cargarSeccionesPeriodoAnterior()">
-                {{ cargandoSeccionesAnteriores() ? 'Cargando...' : 'Cargar secciones del periodo anterior' }}
-              </button>
-              <button class="action-button primary" type="button" (click)="abrirModalSeccion()">
-                Agregar seccion
-              </button>
-            </div>
+          @if (esPeriodoEditable()) {
+          <div class="head-actions">
+            <button class="action-button tertiary" type="button" (click)="toggleMostrarSeccionesDeshabilitadas()">
+              <i class="fa-solid fa-eye"></i>
+              {{ mostrarSeccionesDeshabilitadas() ? 'Ocultar secciones inactivas' : 'Mostrar secciones inactivas' }}
+            </button>
+            <button class="action-button secondary" type="button"
+              [disabled]="!periodoAnterior() || cargandoSeccionesAnteriores()"
+              (click)="cargarSeccionesPeriodoAnterior()">
+              <i class="fa-solid fa-upload"></i>
+              {{ cargandoSeccionesAnteriores() ? 'Cargando...' : 'Cargar secciones del periodo anterior' }}
+            </button>
+            <button class="action-button primary" type="button" (click)="abrirModalSeccion()">
+              <i class="fa-solid fa-plus"></i>
+              Agregar sección
+            </button>
+          </div>
           }
         </div>
 
-        @if (errorGuardarSeccion()) {
-          <div class="feedback error">{{ errorGuardarSeccion() }}</div>
-        }
-
-        @if (exitoGuardarSeccion()) {
-          <div class="feedback success">{{ exitoGuardarSeccion() }}</div>
-        }
-
         @if (cargandoSecciones()) {
+        <div class="cards-surface">
           <div class="cards-grid">
             @for (row of [0, 1, 2]; track row) {
-              <article class="flow-card skeleton-card">
-                <span class="skeleton-line medium"></span>
-                <span class="skeleton-line short"></span>
-              </article>
+            <article class="flow-card skeleton-card">
+              <span class="skeleton-line medium"></span>
+              <span class="skeleton-line short"></span>
+            </article>
             }
           </div>
+        </div>
         } @else if (errorSecciones()) {
+        <div class="cards-surface state-surface">
           <div class="table-state error">
             <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
             <span>{{ errorSecciones() }}</span>
           </div>
-        } @else if (!gradoSeleccionado()) {
-          <div class="table-state">
-            <span class="table-state-icon"><i class="fa-solid fa-arrow-up"></i></span>
-            <span>Selecciona un grado para ver sus secciones.</span>
-          </div>
+        </div>
         } @else if (!seccionesDelGrado().length) {
+        <div class="cards-surface state-surface">
           <div class="table-state">
             <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
             <span>Este grado todavia no tiene secciones registradas en este periodo.</span>
           </div>
+        </div>
         } @else {
+        <div class="cards-surface">
           <div class="cards-grid">
             @for (seccion of seccionesDelGrado(); track seccion.id) {
-              <button class="flow-card" type="button" (click)="abrirSeccion(seccion.id)">
-                <div class="flow-card-top">
-                  <span class="flow-title">Seccion {{ seccion.nombre }}</span>
-                  <span
-                    class="status-badge"
-                    [class.active]="esPeriodoEditable()"
-                    [class.inactive]="!esPeriodoEditable()">
-                    {{ esPeriodoEditable() ? 'Editable' : 'Consulta' }}
-                  </span>
+            <article class="flow-card flow-card-clickable" tabindex="0" (click)="abrirSeccion(seccion.id)"
+              (keydown.enter)="abrirSeccion(seccion.id)" (keydown.space)="abrirSeccion(seccion.id); $event.preventDefault()">
+              <div class="flow-card-top">
+                <span class="flow-title">Seccion {{ seccion.nombre }}</span>
+                <div class="flow-card-actions">
+                  @if (esPeriodoEditable()) {
+                  <button
+                    class="section-switch"
+                    type="button"
+                    role="switch"
+                    [attr.aria-checked]="(seccion.estado ?? 'ACTIVO') === 'ACTIVO'"
+                    [class.is-on]="(seccion.estado ?? 'ACTIVO') === 'ACTIVO'"
+                    [class.is-loading]="actualizandoEstadoSeccionId() === seccion.id"
+                    [disabled]="actualizandoEstadoSeccionId() === seccion.id"
+                    (click)="$event.stopPropagation(); toggleEstadoSeccion(seccion)">
+                    <span class="section-switch-track">
+                      <span class="section-switch-thumb"></span>
+                    </span>
+                  </button>
+                  }
                 </div>
-                <strong>{{ gradoSeleccionado()?.nombre }}</strong>
-                <small>
-                  {{ totalMatriculadosSeccion(seccion.id) }} matriculados - Capacidad
-                  {{ seccion.capacidad ?? 'ND' }}
-                </small>
-              </button>
+              </div>
+              <strong>{{ gradoSeleccionado()?.nombre }}</strong>
+              <small>
+                {{ totalMatriculadosSeccion(seccion.id) }} matriculados - Capacidad
+                {{ seccion.capacidad ?? 'ND' }}
+              </small>
+            </article>
             }
           </div>
+        </div>
         }
       </section>
+      }
     </div>
 
     @if (modalSeccionAbierto()) {
-      <div class="modal-backdrop" (click)="cerrarModalSeccion()">
-        <div class="modal-card modal-card--compact" (click)="$event.stopPropagation()">
-          <div class="modal-head">
-            <div class="panel-head">
-              <span class="panel-kicker">Nueva seccion</span>
-              <h3>Agregar seccion al periodo</h3>
-              <p>
-                {{ gradoSeleccionado()?.nombre || 'Grado seleccionado' }} -
-                {{ periodo()?.nombre || 'Periodo actual' }}
-              </p>
-            </div>
-            <button class="modal-close" type="button" (click)="cerrarModalSeccion()">
-              <i class="fa-solid fa-xmark"></i>
-            </button>
+    <div class="modal-backdrop" (click)="cerrarModalSeccion()">
+      <div class="modal-card modal-card--compact" (click)="$event.stopPropagation()">
+        <div class="modal-head">
+          <div class="panel-head">
+            <span class="panel-kicker">Nueva seccion</span>
+            <h3>Agregar seccion al periodo</h3>
+            <p>
+              {{ gradoSeleccionado()?.nombre || 'Grado seleccionado' }} -
+              {{ periodo()?.nombre || 'Periodo actual' }}
+            </p>
+          </div>
+          <button class="modal-close" type="button" (click)="cerrarModalSeccion()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <form class="master-form">
+          <div class="form-two-columns">
+            <label>
+              Nombre de la seccion
+              <input type="text" [ngModel]="formSeccionNombre()" (ngModelChange)="formSeccionNombre.set($event)"
+                name="nombreSeccion" placeholder="Ejemplo: A o UNICA" />
+            </label>
+
+            <label>
+              Capacidad
+              <input type="number" [ngModel]="formSeccionCapacidad()" (ngModelChange)="formSeccionCapacidad.set($event)"
+                name="capacidadSeccion" placeholder="Opcional" />
+            </label>
           </div>
 
-          <form class="master-form">
-            <div class="form-two-columns">
-              <label>
-                Nombre de la seccion
-                <input
-                  type="text"
-                  [ngModel]="formSeccionNombre()"
-                  (ngModelChange)="formSeccionNombre.set($event)"
-                  name="nombreSeccion"
-                  placeholder="Ejemplo: A o UNICA" />
-              </label>
-
-              <label>
-                Capacidad
-                <input
-                  type="number"
-                  [ngModel]="formSeccionCapacidad()"
-                  (ngModelChange)="formSeccionCapacidad.set($event)"
-                  name="capacidadSeccion"
-                  placeholder="Opcional" />
-              </label>
-            </div>
-
-            <div class="form-actions">
-              <button
-                class="action-button primary"
-                type="button"
-                [disabled]="guardandoSeccion()"
-                (click)="guardarSeccion()">
-                {{ guardandoSeccion() ? 'Guardando...' : 'Guardar seccion' }}
-              </button>
-              <button class="action-button secondary" type="button" (click)="cerrarModalSeccion()">
-                Cerrar
-              </button>
-            </div>
-          </form>
-        </div>
+          <div class="form-actions">
+            <button class="action-button primary" type="button" [disabled]="guardandoSeccion()"
+              (click)="guardarSeccion()">
+              {{ guardandoSeccion() ? 'Guardando...' : 'Guardar seccion' }}
+            </button>
+            <button class="action-button secondary" type="button" (click)="cerrarModalSeccion()">
+              Cerrar
+            </button>
+          </div>
+        </form>
       </div>
+    </div>
     }
   </section>
 </app-shell>

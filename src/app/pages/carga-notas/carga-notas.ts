@@ -6,6 +6,7 @@ import { AsignacionDocente } from '../../models/asignacion';
 import { PeriodoEvaluacion } from '../../models/periodo-evaluacion';
 import { ConfiguracionEvaluacion, DetalleNotaEvaluacion, Evaluacion } from '../../models/evaluacion';
 import { Matricula } from '../../models/matricula';
+import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
 import { AuthService } from '../../services/auth/auth.service';
 import { AsignacionAcademicaService } from '../../services/asignaciones/asignacion-academica.service';
 import { PeriodoEvaluacionService } from '../../services/academico/periodo-evaluacion.service';
@@ -28,11 +29,13 @@ export class CargaNotas implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
   private readonly asignacionService = inject(AsignacionAcademicaService);
+  private readonly periodoAcademicoService = inject(PeriodoAcademicoService);
   private readonly periodoEvaluacionService = inject(PeriodoEvaluacionService);
   private readonly matriculaService = inject(MatriculaService);
   private readonly evaluacionService = inject(EvaluacionService);
 
   readonly asignacionId = Number(this.route.snapshot.paramMap.get('asignacionId'));
+  readonly currentYear = new Date().getFullYear();
   readonly cargando = signal(true);
   readonly guardandoEvaluacion = signal(false);
   readonly guardandoNotas = signal(false);
@@ -100,32 +103,53 @@ export class CargaNotas implements OnInit {
     this.error.set(null);
     this.mensaje.set(null);
 
-    forkJoin({
-      asignaciones: this.asignacionService.listarAsignaciones(docenteId, 1),
-      periodosEvaluacion: this.periodoEvaluacionService.listar()
-    }).subscribe({
-      next: ({ asignaciones, periodosEvaluacion }) => {
-        const asignacion = asignaciones.find((item) => item.id === this.asignacionId) ?? null;
-        this.asignacion.set(asignacion);
-        this.periodosEvaluacion.set(periodosEvaluacion);
-        this.cargando.set(false);
+    this.periodoAcademicoService.listar().subscribe({
+      next: (periodos) => {
+        const periodoActual =
+          periodos.find((periodo) => periodo.anio === this.currentYear) ??
+          [...periodos].sort((a, b) => b.anio - a.anio)[0] ??
+          null;
 
-        if (!asignacion) {
-          this.error.set('No se encontro la asignacion seleccionada para tu usuario.');
+        if (!periodoActual) {
+          this.cargando.set(false);
+          this.error.set('No se encontro un periodo academico para cargar la asignacion.');
           return;
         }
 
-        const primerPeriodoEvaluacion = periodosEvaluacion
-          .filter((item) => item.periodoAcademicoId === asignacion.periodoAcademicoId)
-          .sort((a, b) => a.numero - b.numero)[0];
+        forkJoin({
+          asignaciones: this.asignacionService.listarAsignaciones(docenteId, periodoActual.id),
+          periodosEvaluacion: this.periodoEvaluacionService.listar()
+        }).subscribe({
+          next: ({ asignaciones, periodosEvaluacion }) => {
+            const asignacion = asignaciones.find((item) => item.id === this.asignacionId) ?? null;
+            this.asignacion.set(asignacion);
+            this.periodosEvaluacion.set(periodosEvaluacion);
+            this.cargando.set(false);
 
-        if (primerPeriodoEvaluacion) {
-          this.seleccionarPeriodoEvaluacion(primerPeriodoEvaluacion.id);
-        }
+            if (!asignacion) {
+              this.error.set('No se encontro la asignacion seleccionada para tu usuario.');
+              return;
+            }
+
+            const primerPeriodoEvaluacion = periodosEvaluacion
+              .filter((item) => item.periodoAcademicoId === asignacion.periodoAcademicoId)
+              .sort((a, b) => a.numero - b.numero)[0];
+
+            if (primerPeriodoEvaluacion) {
+              this.seleccionarPeriodoEvaluacion(primerPeriodoEvaluacion.id);
+            }
+          },
+          error: (error) => {
+            this.cargando.set(false);
+            this.error.set(error?.error?.mensaje ?? 'No se pudo cargar la informacion inicial.');
+          }
+        });
       },
       error: (error) => {
         this.cargando.set(false);
-        this.error.set(error?.error?.mensaje ?? 'No se pudo cargar la informacion inicial.');
+        this.error.set(
+          error?.error?.mensaje ?? 'No se pudo resolver el periodo academico actual.'
+        );
       }
     });
   }
@@ -277,7 +301,7 @@ export class CargaNotas implements OnInit {
         this.guardandoNotas.set(false);
         this.notasRegistradas.set(response);
         this.prepararFilasNotas(this.matriculas(), response);
-        this.mensaje.set('Notas guardadas y promedio bimestral recalculado.');
+        this.mensaje.set('Notas guardadas y promedio del periodo recalculado.');
       },
       error: (error) => {
         this.guardandoNotas.set(false);

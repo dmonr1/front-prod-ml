@@ -57,6 +57,7 @@ a {
 .app-table {
   width: 100%;
   border-collapse: collapse;
+  text-align: center;
 }
 
 .app-table thead th {
@@ -67,18 +68,17 @@ a {
   border-bottom: 1px solid #e5edf6;
   background: #f7fbff;
   color: #607389;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.04em;
-  text-align: left;
-  text-transform: uppercase;
+  text-align: center;
 }
 
 .app-table tbody td {
   padding: 13px 16px;
   border-bottom: 1px solid #eef3f8;
   color: #112033;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 400;
   vertical-align: top;
 }
@@ -170,7 +170,7 @@ a {
 
 .skeleton-line {
   display: block;
-  height: 12px;
+  height: 14px;
   border-radius: 999px;
   background: linear-gradient(90deg, #edf3fb 0%, #f8fbff 50%, #edf3fb 100%);
   background-size: 200% 100%;
@@ -182,11 +182,15 @@ a {
 }
 
 .skeleton-line.medium {
-  width: 76%;
+  width: 70%;
+}
+
+.skeleton-line.mini {
+  width: 40%;
 }
 
 .skeleton-line.long {
-  width: 92%;
+  width: 85%;
 }
 
 @keyframes skeleton-shimmer {
@@ -196,5 +200,17 @@ a {
 
   100% {
     background-position: -200% 0;
+  }
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }

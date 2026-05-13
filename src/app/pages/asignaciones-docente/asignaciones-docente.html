@@ -1,4 +1,9 @@
 <app-shell>
+  <app-custom-alert [open]="alertState().open" [type]="alertState().type" [title]="alertState().title"
+    [message]="alertState().message" [confirmText]="alertState().confirmText" [cancelText]="alertState().cancelText"
+    [autoCloseMs]="alertState().autoCloseMs" (confirm)="cerrarAlerta()" (cancel)="cerrarAlerta()"
+    (dismiss)="cerrarAlerta()" />
+
   <section class="management-card">
     <div class="card-head">
       <div class="panel-head">
@@ -20,10 +25,7 @@
           <label>
             Docente
             <div class="lookup-field">
-              <input
-                type="text"
-                placeholder="Escribe para buscar docente"
-                [value]="docenteQuery()"
+              <input type="text" placeholder="Escribe para buscar docente" [value]="docenteQuery()"
                 (input)="onDocenteInput($any($event.target).value)" />
               <button class="lookup-button" type="button" (click)="abrirModalDocente()">
                 <i class="fa-solid fa-magnifying-glass"></i>
@@ -31,14 +33,14 @@
             </div>
 
             @if (dropdownActivo() && docentesFiltrados().length) {
-              <div class="lookup-dropdown">
-                @for (docente of docentesFiltrados(); track docente.id) {
-                  <button class="lookup-option" type="button" (mousedown)="seleccionarDocente(docente)">
-                    <strong>{{ formatearDocente(docente) }}</strong>
-                    <span>{{ docente.dni || 'Sin DNI' }} · {{ docente.especialidad || 'Sin especialidad' }}</span>
-                  </button>
-                }
-              </div>
+            <div class="lookup-dropdown">
+              @for (docente of docentesFiltrados(); track docente.id) {
+              <button class="lookup-option" type="button" (mousedown)="seleccionarDocente(docente)">
+                <strong>{{ formatearDocente(docente) }}</strong>
+                <span>{{ docente.dni || 'Sin DNI' }} · {{ docente.especialidad || 'Sin especialidad' }}</span>
+              </button>
+              }
+            </div>
             }
           </label>
 
@@ -74,14 +76,6 @@
             </div>
           </label>
 
-          @if (mensajeFormulario()) {
-            <div class="feedback error">{{ mensajeFormulario() }}</div>
-          }
-
-          @if (exitoFormulario()) {
-            <div class="feedback success">{{ exitoFormulario() }}</div>
-          }
-
           <div class="form-actions">
             <button class="action-button primary" type="button" [disabled]="guardando()" (click)="guardarAsignacion()">
               {{ guardando() ? 'Guardando...' : 'Guardar asignacion' }}
@@ -106,381 +100,410 @@
         </div>
 
         @if (cargandoAsignaciones()) {
-          <div class="table-scroll">
-            <table class="app-table">
-              <thead>
-                <tr>
-                  <th>Docente</th>
-                  <th>Curso</th>
-                  <th>Seccion</th>
-                  <th>Periodo</th>
-                  <th>Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (row of [0,1,2,3,4]; track row) {
-                  <tr>
-                    <td><span class="skeleton-line long"></span></td>
-                    <td><span class="skeleton-line medium"></span></td>
-                    <td><span class="skeleton-line short"></span></td>
-                    <td><span class="skeleton-line short"></span></td>
-                    <td><span class="skeleton-line short"></span></td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
+        <div class="table-scroll">
+          <table class="app-table">
+            <thead>
+              <tr>
+                <th>Docente</th>
+                <th>Curso</th>
+                <th>Seccion</th>
+                <th>Periodo</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of [0,1,2,3,4]; track row) {
+              <tr>
+                <td><span class="skeleton-line long"></span></td>
+                <td><span class="skeleton-line medium"></span></td>
+                <td><span class="skeleton-line short"></span></td>
+                <td><span class="skeleton-line short"></span></td>
+                <td><span class="skeleton-line short"></span></td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
         } @else if (errorAsignaciones()) {
-          <ng-container>
-            <div class="table-state error">
-              <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
-              <span>{{ errorAsignaciones() }}</span>
-            </div>
-          </ng-container>
-        } @else if (!asignaciones().length) {
-          <ng-container>
-            <div class="table-state">
-              <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-              <span>No hay asignaciones registradas para este periodo.</span>
-            </div>
-          </ng-container>
-        } @else {
-          <div class="table-scroll">
-            <table class="app-table">
-              <thead>
-                <tr>
-                  <th>Docente</th>
-                  <th>Curso</th>
-                  <th>Seccion</th>
-                  <th>Periodo</th>
-                  <th>Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (asignacion of asignaciones(); track asignacion.id) {
-                  <tr>
-                    <td>
-                      <strong>{{ asignacion.docenteNombreCompleto }}</strong>
-                      <div class="cell-help">{{ asignacion.nivel }}</div>
-                    </td>
-                    <td>{{ asignacion.curso }}</td>
-                    <td>
-                      <strong>{{ asignacion.seccion }}</strong>
-                      <div class="cell-help">{{ obtenerResumenFila(asignacion) }}</div>
-                    </td>
-                    <td>{{ asignacion.periodoAcademico }}</td>
-                    <td>
-                      <span class="status-badge active">ACTIVO</span>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
+        <ng-container>
+          <div class="table-state error">
+            <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
+            <span>{{ errorAsignaciones() }}</span>
           </div>
+        </ng-container>
+        } @else if (!asignaciones().length) {
+        <ng-container>
+          <div class="table-state">
+            <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
+            <span>No hay asignaciones registradas para este periodo.</span>
+          </div>
+        </ng-container>
+        } @else {
+        <div class="table-scroll">
+          <table class="app-table">
+            <thead>
+              <tr>
+                <th>Docente</th>
+                <th>Curso</th>
+                <th>Seccion</th>
+                <th>Periodo</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (asignacion of asignaciones(); track asignacion.id) {
+              <tr>
+                <td>
+                  <strong>{{ asignacion.docenteNombreCompleto }}</strong>
+                  <div class="cell-help">{{ asignacion.nivel }}</div>
+                </td>
+                <td>{{ asignacion.curso }}</td>
+                <td>
+                  <strong>{{ asignacion.seccion }}</strong>
+                  <div class="cell-help">{{ obtenerResumenFila(asignacion) }}</div>
+                </td>
+                <td>{{ asignacion.periodoAcademico }}</td>
+                <td>
+                  <span class="status-badge active">ACTIVO</span>
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
         }
       </article>
     </div>
   </section>
 
   @if (modalDocenteAbierto()) {
-    <div class="modal-backdrop" (click)="cerrarModalDocente()">
-      <div class="modal-card" (click)="$event.stopPropagation()">
-        <div class="modal-head">
-          <div class="panel-head">
-            <span class="panel-kicker">Busqueda completa</span>
-            <h3>Seleccionar docente</h3>
-            <p>Busca por nombre, DNI, especialidad o usuario.</p>
-          </div>
-          <button class="modal-close" type="button" (click)="cerrarModalDocente()">
-            <i class="fa-solid fa-xmark"></i>
-          </button>
+  <div class="modal-backdrop" (click)="cerrarModalDocente()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-head">
+        <div class="panel-head">
+          <span class="panel-kicker">Busqueda completa</span>
+          <h3>Seleccionar docente</h3>
+          <p>Busca por nombre, DNI, especialidad o usuario.</p>
         </div>
-
-        <div class="modal-search">
-          <input
-            type="text"
-            placeholder="Buscar docente"
-            [value]="modalBusquedaDocente()"
-            (input)="modalBusquedaDocente.set($any($event.target).value)" />
-        </div>
-
-        @if (cargandoDocentes()) {
-          <div class="table-scroll">
-            <table class="app-table">
-              <thead>
-                <tr><th>Docente</th><th>DNI</th><th>Especialidad</th><th>Usuario</th></tr>
-              </thead>
-              <tbody>
-                @for (row of [0,1,2,3,4]; track row) {
-                  <tr>
-                    <td><span class="skeleton-line long"></span></td>
-                    <td><span class="skeleton-line short"></span></td>
-                    <td><span class="skeleton-line medium"></span></td>
-                    <td><span class="skeleton-line short"></span></td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        } @else if (errorDocentes()) {
-          <div class="table-state error">
-            <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
-            <span>{{ errorDocentes() }}</span>
-          </div>
-        } @else if (!docentesModalFiltrados().length) {
-          <div class="table-state">
-            <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-            <span>No se encontraron docentes con esa busqueda.</span>
-          </div>
-        } @else {
-          <div class="table-scroll modal-table">
-            <table class="app-table">
-              <thead>
-                <tr><th>Docente</th><th>DNI</th><th>Especialidad</th><th>Usuario</th></tr>
-              </thead>
-              <tbody>
-                @for (docente of docentesModalFiltrados(); track docente.id) {
-                  <tr class="selectable-row" (click)="seleccionarDocente(docente)">
-                    <td>{{ formatearDocente(docente) }}</td>
-                    <td>{{ docente.dni || 'Sin DNI' }}</td>
-                    <td>{{ docente.especialidad || 'Sin especialidad' }}</td>
-                    <td>{{ docente.username || 'Sin usuario' }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        }
+        <button class="modal-close" type="button" (click)="cerrarModalDocente()">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
+
+      <div class="modal-search">
+        <input type="text" placeholder="Buscar docente" [value]="modalBusquedaDocente()"
+          (input)="modalBusquedaDocente.set($any($event.target).value)" />
+      </div>
+
+      @if (cargandoDocentes()) {
+      <div class="table-scroll">
+        <table class="app-table">
+          <thead>
+            <tr>
+              <th>Docente</th>
+              <th>DNI</th>
+              <th>Especialidad</th>
+              <th>Usuario</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of [0,1,2,3,4]; track row) {
+            <tr>
+              <td><span class="skeleton-line long"></span></td>
+              <td><span class="skeleton-line short"></span></td>
+              <td><span class="skeleton-line medium"></span></td>
+              <td><span class="skeleton-line short"></span></td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      } @else if (errorDocentes()) {
+      <div class="table-state error">
+        <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
+        <span>{{ errorDocentes() }}</span>
+      </div>
+      } @else if (!docentesModalFiltrados().length) {
+      <div class="table-state">
+        <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
+        <span>No se encontraron docentes con esa busqueda.</span>
+      </div>
+      } @else {
+      <div class="table-scroll modal-table">
+        <table class="app-table">
+          <thead>
+            <tr>
+              <th>Docente</th>
+              <th>DNI</th>
+              <th>Especialidad</th>
+              <th>Usuario</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (docente of docentesModalFiltrados(); track docente.id) {
+            <tr class="selectable-row" (click)="seleccionarDocente(docente)">
+              <td>{{ formatearDocente(docente) }}</td>
+              <td>{{ docente.dni || 'Sin DNI' }}</td>
+              <td>{{ docente.especialidad || 'Sin especialidad' }}</td>
+              <td>{{ docente.username || 'Sin usuario' }}</td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      }
     </div>
+  </div>
   }
 
   @if (modalCursoAbierto()) {
-    <div class="modal-backdrop" (click)="cerrarModalCurso()">
-      <div class="modal-card" (click)="$event.stopPropagation()">
-        <div class="modal-head">
-          <div class="panel-head">
-            <span class="panel-kicker">Busqueda de cursos</span>
-            <h3>Seleccionar curso</h3>
-            <p>Explora los cursos por nivel.</p>
-          </div>
-          <button class="modal-close" type="button" (click)="cerrarModalCurso()">
-            <i class="fa-solid fa-xmark"></i>
-          </button>
+  <div class="modal-backdrop" (click)="cerrarModalCurso()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-head">
+        <div class="panel-head">
+          <span class="panel-kicker">Busqueda de cursos</span>
+          <h3>Seleccionar curso</h3>
+          <p>Explora los cursos por nivel.</p>
         </div>
-
-        <div class="tabs-row">
-          <button class="tab-button" type="button" [class.active]="cursoNivelActivo() === 'PRIMARIA'" (click)="cursoNivelActivo.set('PRIMARIA')">Primaria</button>
-          <button class="tab-button" type="button" [class.active]="cursoNivelActivo() === 'SECUNDARIA'" (click)="cursoNivelActivo.set('SECUNDARIA')">Secundaria</button>
-        </div>
-
-        <div class="modal-search">
-          <input
-            type="text"
-            placeholder="Buscar curso por nombre o descripcion"
-            [value]="modalBusquedaCurso()"
-            (input)="modalBusquedaCurso.set($any($event.target).value)" />
-        </div>
-
-        @if (cargandoCursos()) {
-          <div class="table-scroll">
-            <table class="app-table">
-              <thead>
-                <tr><th>Curso</th><th>Nivel</th><th>Descripcion</th><th>Estado</th></tr>
-              </thead>
-              <tbody>
-                @for (row of [0,1,2,3,4]; track row) {
-                  <tr>
-                    <td><span class="skeleton-line medium"></span></td>
-                    <td><span class="skeleton-line short"></span></td>
-                    <td><span class="skeleton-line long"></span></td>
-                    <td><span class="skeleton-line short"></span></td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        } @else if (errorCursos()) {
-          <div class="table-state error">
-            <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
-            <span>{{ errorCursos() }}</span>
-          </div>
-        } @else if (!cursosModalFiltrados().length) {
-          <div class="table-state">
-            <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-            <span>No se encontraron cursos con esa busqueda.</span>
-          </div>
-        } @else {
-          <div class="table-scroll modal-table">
-            <table class="app-table">
-              <thead>
-                <tr><th>Curso</th><th>Nivel</th><th>Descripcion</th><th>Estado</th></tr>
-              </thead>
-              <tbody>
-                @for (curso of cursosModalFiltrados(); track curso.id) {
-                  <tr class="selectable-row" (click)="seleccionarCurso(curso)">
-                    <td>{{ curso.nombre }}</td>
-                    <td>{{ curso.nivelNombre }}</td>
-                    <td>{{ curso.descripcion || 'Sin descripcion' }}</td>
-                    <td><span class="status-badge active">{{ curso.estado || 'ACTIVO' }}</span></td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        }
+        <button class="modal-close" type="button" (click)="cerrarModalCurso()">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
+
+      <div class="tabs-row">
+        <button class="tab-button" type="button" [class.active]="cursoNivelActivo() === 'PRIMARIA'"
+          (click)="cursoNivelActivo.set('PRIMARIA')">Primaria</button>
+        <button class="tab-button" type="button" [class.active]="cursoNivelActivo() === 'SECUNDARIA'"
+          (click)="cursoNivelActivo.set('SECUNDARIA')">Secundaria</button>
+      </div>
+
+      <div class="modal-search">
+        <input type="text" placeholder="Buscar curso por nombre o descripcion" [value]="modalBusquedaCurso()"
+          (input)="modalBusquedaCurso.set($any($event.target).value)" />
+      </div>
+
+      @if (cargandoCursos()) {
+      <div class="table-scroll">
+        <table class="app-table">
+          <thead>
+            <tr>
+              <th>Curso</th>
+              <th>Nivel</th>
+              <th>Descripcion</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of [0,1,2,3,4]; track row) {
+            <tr>
+              <td><span class="skeleton-line medium"></span></td>
+              <td><span class="skeleton-line short"></span></td>
+              <td><span class="skeleton-line long"></span></td>
+              <td><span class="skeleton-line short"></span></td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      } @else if (errorCursos()) {
+      <div class="table-state error">
+        <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
+        <span>{{ errorCursos() }}</span>
+      </div>
+      } @else if (!cursosModalFiltrados().length) {
+      <div class="table-state">
+        <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
+        <span>No se encontraron cursos con esa busqueda.</span>
+      </div>
+      } @else {
+      <div class="table-scroll modal-table">
+        <table class="app-table">
+          <thead>
+            <tr>
+              <th>Curso</th>
+              <th>Nivel</th>
+              <th>Descripcion</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (curso of cursosModalFiltrados(); track curso.id) {
+            <tr class="selectable-row" (click)="seleccionarCurso(curso)">
+              <td>{{ curso.nombre }}</td>
+              <td>{{ curso.nivelNombre }}</td>
+              <td>{{ curso.descripcion || 'Sin descripcion' }}</td>
+              <td><span class="status-badge active">{{ curso.estado || 'ACTIVO' }}</span></td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      }
     </div>
+  </div>
   }
 
   @if (modalSeccionAbierto()) {
-    <div class="modal-backdrop" (click)="cerrarModalSeccion()">
-      <div class="modal-card" (click)="$event.stopPropagation()">
-        <div class="modal-head">
-          <div class="panel-head">
-            <span class="panel-kicker">Busqueda de secciones</span>
-            <h3>Seleccionar seccion</h3>
-            <p>Explora las secciones por nivel.</p>
-          </div>
-          <button class="modal-close" type="button" (click)="cerrarModalSeccion()">
-            <i class="fa-solid fa-xmark"></i>
-          </button>
+  <div class="modal-backdrop" (click)="cerrarModalSeccion()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-head">
+        <div class="panel-head">
+          <span class="panel-kicker">Busqueda de secciones</span>
+          <h3>Seleccionar seccion</h3>
+          <p>Explora las secciones por nivel.</p>
         </div>
-
-        <div class="tabs-row">
-          <button class="tab-button" type="button" [class.active]="seccionNivelActivo() === 'PRIMARIA'" (click)="seccionNivelActivo.set('PRIMARIA')">Primaria</button>
-          <button class="tab-button" type="button" [class.active]="seccionNivelActivo() === 'SECUNDARIA'" (click)="seccionNivelActivo.set('SECUNDARIA')">Secundaria</button>
-        </div>
-
-        <div class="modal-search">
-          <input
-            type="text"
-            placeholder="Buscar por grado, seccion o capacidad"
-            [value]="modalBusquedaSeccion()"
-            (input)="modalBusquedaSeccion.set($any($event.target).value)" />
-        </div>
-
-        @if (cargandoSecciones()) {
-          <div class="table-scroll">
-            <table class="app-table">
-              <thead>
-                <tr><th>Seccion</th><th>Grado</th><th>Nivel</th><th>Capacidad</th></tr>
-              </thead>
-              <tbody>
-                @for (row of [0,1,2,3,4]; track row) {
-                  <tr>
-                    <td><span class="skeleton-line short"></span></td>
-                    <td><span class="skeleton-line medium"></span></td>
-                    <td><span class="skeleton-line short"></span></td>
-                    <td><span class="skeleton-line short"></span></td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        } @else if (errorSecciones()) {
-          <div class="table-state error">
-            <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
-            <span>{{ errorSecciones() }}</span>
-          </div>
-        } @else if (!seccionesModalFiltradas().length) {
-          <div class="table-state">
-            <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-            <span>No se encontraron secciones con esa busqueda.</span>
-          </div>
-        } @else {
-          <div class="table-scroll modal-table">
-            <table class="app-table">
-              <thead>
-                <tr><th>Seccion</th><th>Grado</th><th>Nivel</th><th>Capacidad</th></tr>
-              </thead>
-              <tbody>
-                @for (seccion of seccionesModalFiltradas(); track seccion.id) {
-                  <tr class="selectable-row" (click)="seleccionarSeccion(seccion)">
-                    <td>{{ seccion.nombre }}</td>
-                    <td>{{ seccion.gradoNombre || 'Sin grado' }}</td>
-                    <td>{{ seccion.nivelNombre || 'Sin nivel' }}</td>
-                    <td>{{ seccion.capacidad ?? 'No definida' }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        }
+        <button class="modal-close" type="button" (click)="cerrarModalSeccion()">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
+
+      <div class="tabs-row">
+        <button class="tab-button" type="button" [class.active]="seccionNivelActivo() === 'PRIMARIA'"
+          (click)="seccionNivelActivo.set('PRIMARIA')">Primaria</button>
+        <button class="tab-button" type="button" [class.active]="seccionNivelActivo() === 'SECUNDARIA'"
+          (click)="seccionNivelActivo.set('SECUNDARIA')">Secundaria</button>
+      </div>
+
+      <div class="modal-search">
+        <input type="text" placeholder="Buscar por grado, seccion o capacidad" [value]="modalBusquedaSeccion()"
+          (input)="modalBusquedaSeccion.set($any($event.target).value)" />
+      </div>
+
+      @if (!periodoSeleccionado()) {
+      <div class="table-state">
+        <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
+        <span>Selecciona primero un periodo academico para cargar sus secciones.</span>
+      </div>
+      } @else if (cargandoSecciones()) {
+      <div class="table-scroll">
+        <table class="app-table">
+          <thead>
+            <tr>
+              <th>Seccion</th>
+              <th>Grado</th>
+              <th>Nivel</th>
+              <th>Capacidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of [0,1,2,3,4]; track row) {
+            <tr>
+              <td><span class="skeleton-line short"></span></td>
+              <td><span class="skeleton-line medium"></span></td>
+              <td><span class="skeleton-line short"></span></td>
+              <td><span class="skeleton-line short"></span></td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      } @else if (errorSecciones()) {
+      <div class="table-state error">
+        <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
+        <span>{{ errorSecciones() }}</span>
+      </div>
+      } @else if (!seccionesModalFiltradas().length) {
+      <div class="table-state">
+        <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
+        <span>No se encontraron secciones con esa busqueda.</span>
+      </div>
+      } @else {
+      <div class="table-scroll modal-table">
+        <table class="app-table">
+          <thead>
+            <tr>
+              <th>Seccion</th>
+              <th>Grado</th>
+              <th>Nivel</th>
+              <th>Capacidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (seccion of seccionesModalFiltradas(); track seccion.id) {
+            <tr class="selectable-row" (click)="seleccionarSeccion(seccion)">
+              <td>{{ seccion.nombre }}</td>
+              <td>{{ seccion.gradoNombre || 'Sin grado' }}</td>
+              <td>{{ seccion.nivelNombre || 'Sin nivel' }}</td>
+              <td>{{ seccion.capacidad ?? 'No definida' }}</td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      }
     </div>
+  </div>
   }
 
   @if (modalPeriodoAbierto()) {
-    <div class="modal-backdrop" (click)="cerrarModalPeriodo()">
-      <div class="modal-card modal-card--compact" (click)="$event.stopPropagation()">
-        <div class="modal-head">
-          <div class="panel-head">
-            <span class="panel-kicker">Busqueda de periodos</span>
-            <h3>Seleccionar periodo academico</h3>
-            <p>La tabla y el guardado trabajaran sobre este periodo.</p>
-          </div>
-          <button class="modal-close" type="button" (click)="cerrarModalPeriodo()">
-            <i class="fa-solid fa-xmark"></i>
-          </button>
+  <div class="modal-backdrop" (click)="cerrarModalPeriodo()">
+    <div class="modal-card modal-card--compact" (click)="$event.stopPropagation()">
+      <div class="modal-head">
+        <div class="panel-head">
+          <h3>Seleccionar periodo academico</h3>
         </div>
-
-        <div class="modal-search">
-          <input
-            type="text"
-            placeholder="Buscar por nombre o anio"
-            [value]="modalBusquedaPeriodo()"
-            (input)="modalBusquedaPeriodo.set($any($event.target).value)" />
-        </div>
-
-        @if (cargandoPeriodos()) {
-          <div class="table-scroll">
-            <table class="app-table">
-              <thead>
-                <tr><th>Periodo</th><th>Anio</th><th>Fechas</th><th>Estado</th></tr>
-              </thead>
-              <tbody>
-                @for (row of [0,1,2,3]; track row) {
-                  <tr>
-                    <td><span class="skeleton-line medium"></span></td>
-                    <td><span class="skeleton-line short"></span></td>
-                    <td><span class="skeleton-line long"></span></td>
-                    <td><span class="skeleton-line short"></span></td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        } @else if (errorPeriodos()) {
-          <div class="table-state error">
-            <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
-            <span>{{ errorPeriodos() }}</span>
-          </div>
-        } @else if (!periodosModalFiltrados().length) {
-          <div class="table-state">
-            <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-            <span>No se encontraron periodos academicos con esa busqueda.</span>
-          </div>
-        } @else {
-          <div class="table-scroll modal-table">
-            <table class="app-table">
-              <thead>
-                <tr><th>Periodo</th><th>Anio</th><th>Fechas</th><th>Estado</th></tr>
-              </thead>
-              <tbody>
-                @for (periodo of periodosModalFiltrados(); track periodo.id) {
-                  <tr class="selectable-row" (click)="seleccionarPeriodo(periodo)">
-                    <td>{{ periodo.nombre }}</td>
-                    <td>{{ periodo.anio }}</td>
-                    <td>{{ periodo.fechaInicio }} - {{ periodo.fechaFin }}</td>
-                    <td><span class="status-badge active">{{ periodo.estado || 'ACTIVO' }}</span></td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        }
+        <button class="modal-close" type="button" (click)="cerrarModalPeriodo()">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
+
+
+      @if (cargandoPeriodos()) {
+      <div class="table-scroll">
+        <table class="app-table">
+          <thead>
+            <tr>
+              <th>Periodo</th>
+              <th>Anio</th>
+              <th>Fechas</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of [0,1,2,3]; track row) {
+            <tr>
+              <td><span class="skeleton-line medium"></span></td>
+              <td><span class="skeleton-line short"></span></td>
+              <td><span class="skeleton-line long"></span></td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      } @else if (errorPeriodos()) {
+      <div class="table-state error">
+        <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
+        <span>{{ errorPeriodos() }}</span>
+      </div>
+      } @else if (!periodosModalFiltrados().length) {
+      <div class="table-state">
+        <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
+        <span>No se encontraron periodos academicos con esa busqueda.</span>
+      </div>
+      } @else {
+      <div class="table-scroll modal-table">
+        <table class="app-table">
+          <thead>
+            <tr>
+              <th>Periodo</th>
+              <th>Anio</th>
+              <th>Fechas</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (periodo of periodosModalFiltrados(); track periodo.id) {
+            <tr [class.selectable-row]="esPeriodoSeleccionable(periodo)"
+              [class.disabled-row]="!esPeriodoSeleccionable(periodo)"
+              (click)="esPeriodoSeleccionable(periodo) && seleccionarPeriodo(periodo)">
+              <td>{{ periodo.nombre }}</td>
+              <td>{{ periodo.anio }}</td>
+              <td>{{ periodo.fechaInicio }} - {{ periodo.fechaFin }}</td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      }
     </div>
+  </div>
   }
 </app-shell>

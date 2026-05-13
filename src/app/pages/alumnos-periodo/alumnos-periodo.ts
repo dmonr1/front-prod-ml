@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { CustomAlertComponent, CustomAlertType } from '../../components/custom-alert/custom-alert';
 import { Shell } from '../../layouts/shell/shell';
 import { Grado } from '../../models/grado';
 import { Matricula } from '../../models/matricula';
@@ -11,9 +12,19 @@ import { MatriculaService } from '../../services/academico/matricula.service';
 import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
 import { SeccionService } from '../../services/academico/seccion.service';
 
+interface AlertState {
+  open: boolean;
+  type: CustomAlertType;
+  title: string;
+  message: string;
+  confirmText: string | null;
+  cancelText: string | null;
+  autoCloseMs: number | null;
+}
+
 @Component({
   selector: 'app-alumnos-periodo',
-  imports: [Shell, RouterLink, FormsModule],
+  imports: [Shell, RouterLink, FormsModule, CustomAlertComponent],
   templateUrl: './alumnos-periodo.html',
   styleUrl: './alumnos-periodo.scss'
 })
@@ -35,11 +46,11 @@ export class AlumnosPeriodo {
   readonly matriculas = signal<Matricula[]>([]);
   readonly nivelSeleccionadoId = signal(1);
   readonly gradoSeleccionadoId = signal<number | null>(null);
+  readonly mostrarSeccionesDeshabilitadas = signal(false);
   readonly modalSeccionAbierto = signal(false);
   readonly guardandoSeccion = signal(false);
+  readonly actualizandoEstadoSeccionId = signal<number | null>(null);
   readonly cargandoSeccionesAnteriores = signal(false);
-  readonly errorGuardarSeccion = signal<string | null>(null);
-  readonly exitoGuardarSeccion = signal<string | null>(null);
   readonly formSeccionNombre = signal('');
   readonly formSeccionCapacidad = signal('');
 
@@ -52,6 +63,16 @@ export class AlumnosPeriodo {
   readonly errorGrados = signal<string | null>(null);
   readonly errorSecciones = signal<string | null>(null);
   readonly errorMatriculas = signal<string | null>(null);
+  readonly alertState = signal<AlertState>({
+    open: false,
+    type: 'info',
+    title: '',
+    message: '',
+    confirmText: 'Aceptar',
+    cancelText: null,
+    autoCloseMs: null
+  });
+  readonly seccionPendienteEstado = signal<{ id: number; activa: boolean } | null>(null);
 
   readonly esPeriodoEditable = computed(() => {
     const periodo = this.periodo();
@@ -70,7 +91,11 @@ export class AlumnosPeriodo {
 
   readonly seccionesDelGrado = computed(() =>
     this.secciones()
-      .filter((seccion) => seccion.gradoId === this.gradoSeleccionadoId())
+      .filter(
+        (seccion) =>
+          seccion.gradoId === this.gradoSeleccionadoId() &&
+          (this.mostrarSeccionesDeshabilitadas() || (seccion.estado ?? 'ACTIVO') === 'ACTIVO')
+      )
       .sort((a, b) => a.nombre.localeCompare(b.nombre))
   );
 
@@ -164,12 +189,16 @@ export class AlumnosPeriodo {
   seleccionarNivel(nivelId: number): void {
     this.nivelSeleccionadoId.set(nivelId);
     this.gradoSeleccionadoId.set(null);
+    this.mostrarSeccionesDeshabilitadas.set(false);
   }
 
   seleccionarGrado(gradoId: number): void {
     this.gradoSeleccionadoId.set(this.gradoSeleccionadoId() === gradoId ? null : gradoId);
-    this.errorGuardarSeccion.set(null);
-    this.exitoGuardarSeccion.set(null);
+  }
+
+  toggleMostrarSeccionesDeshabilitadas(): void {
+    this.mostrarSeccionesDeshabilitadas.update((valor) => !valor);
+    
   }
 
   abrirSeccion(seccionId: number): void {
@@ -177,8 +206,6 @@ export class AlumnosPeriodo {
   }
 
   abrirModalSeccion(): void {
-    this.errorGuardarSeccion.set(null);
-    this.exitoGuardarSeccion.set(null);
     this.modalSeccionAbierto.set(true);
   }
 
@@ -191,16 +218,23 @@ export class AlumnosPeriodo {
     const nombre = this.formSeccionNombre().trim();
     const capacidad = this.formSeccionCapacidad().trim();
 
-    this.errorGuardarSeccion.set(null);
-    this.exitoGuardarSeccion.set(null);
-
     if (!gradoId) {
-      this.errorGuardarSeccion.set('Selecciona un grado antes de crear una seccion.');
+      this.mostrarAlerta(
+        'warning',
+        'Selecciona un grado',
+        'Selecciona un grado antes de crear una seccion.',
+        { confirmText: null, autoCloseMs: 3000 }
+      );
       return;
     }
 
     if (!nombre) {
-      this.errorGuardarSeccion.set('Ingresa el nombre de la seccion.');
+      this.mostrarAlerta(
+        'warning',
+        'Falta el nombre',
+        'Ingresa el nombre de la seccion.',
+        { confirmText: null, autoCloseMs: 3000 }
+      );
       return;
     }
 
@@ -219,11 +253,19 @@ export class AlumnosPeriodo {
           this.secciones.update((actual) => [...actual, seccion]);
           this.formSeccionNombre.set('');
           this.formSeccionCapacidad.set('');
-          this.exitoGuardarSeccion.set('Seccion registrada correctamente para este periodo.');
+          this.cerrarModalSeccion();
+          this.mostrarAlerta(
+            'success',
+            'Seccion registrada',
+            'Seccion registrada correctamente para este periodo.',
+            { confirmText: null, autoCloseMs: 3000 }
+          );
         },
         error: (error) => {
           this.guardandoSeccion.set(false);
-          this.errorGuardarSeccion.set(
+          this.mostrarAlerta(
+            'error',
+            'No se pudo registrar',
             error?.error?.mensaje ?? 'No se pudo registrar la seccion.'
           );
         }
@@ -233,16 +275,23 @@ export class AlumnosPeriodo {
   cargarSeccionesPeriodoAnterior(): void {
     const gradoId = this.gradoSeleccionadoId();
 
-    this.errorGuardarSeccion.set(null);
-    this.exitoGuardarSeccion.set(null);
-
     if (!gradoId) {
-      this.errorGuardarSeccion.set('Selecciona un grado antes de cargar secciones.');
+      this.mostrarAlerta(
+        'warning',
+        'Selecciona un grado',
+        'Selecciona un grado antes de cargar secciones.',
+        { confirmText: null, autoCloseMs: 3000 }
+      );
       return;
     }
 
     if (!this.periodoAnterior()) {
-      this.errorGuardarSeccion.set('No existe un periodo anterior para copiar secciones.');
+      this.mostrarAlerta(
+        'warning',
+        'No hay periodo anterior',
+        'No existe un periodo anterior para copiar secciones.',
+        { confirmText: null, autoCloseMs: 3000 }
+      );
       return;
     }
 
@@ -257,15 +306,126 @@ export class AlumnosPeriodo {
         next: (secciones) => {
           this.cargandoSeccionesAnteriores.set(false);
           this.secciones.update((actual) => [...actual, ...secciones]);
-          this.exitoGuardarSeccion.set('Secciones del periodo anterior cargadas correctamente.');
+          this.mostrarAlerta(
+            'success',
+            'Secciones cargadas',
+            'Secciones del periodo anterior cargadas correctamente.',
+            { confirmText: null, autoCloseMs: 3000 }
+          );
         },
         error: (error) => {
           this.cargandoSeccionesAnteriores.set(false);
-          this.errorGuardarSeccion.set(
+          this.mostrarAlerta(
+            'error',
+            'No se pudieron cargar',
             error?.error?.mensaje ?? 'No se pudieron cargar las secciones del periodo anterior.'
           );
         }
       });
+  }
+
+  deshabilitarSeccion(seccionId: number): void {
+    this.actualizarEstadoSeccion(seccionId, false);
+  }
+
+  toggleEstadoSeccion(seccion: Seccion): void {
+    const activa = (seccion.estado ?? 'ACTIVO') === 'ACTIVO';
+
+    if (activa) {
+      this.seccionPendienteEstado.set({ id: seccion.id, activa: false });
+      this.mostrarAlerta(
+        'warning',
+        'Deshabilitar seccion',
+        'Esta seguro que quiere deshabilitar esta seccion para este periodo?',
+        {
+          confirmText: 'Deshabilitar',
+          cancelText: 'Cancelar'
+        }
+      );
+      return;
+    }
+
+    this.actualizarEstadoSeccion(seccion.id, true);
+  }
+
+  confirmarCambioEstadoSeccion(): void {
+    const pendiente = this.seccionPendienteEstado();
+    if (!pendiente) {
+      this.cerrarAlerta();
+      return;
+    }
+
+    this.cerrarAlerta();
+    this.actualizarEstadoSeccion(pendiente.id, pendiente.activa);
+    this.seccionPendienteEstado.set(null);
+  }
+
+  cancelarCambioEstadoSeccion(): void {
+    this.seccionPendienteEstado.set(null);
+    this.cerrarAlerta();
+  }
+
+  private actualizarEstadoSeccion(seccionId: number, activa: boolean): void {
+    this.actualizandoEstadoSeccionId.set(seccionId);
+
+    this.seccionService.actualizarEstado(seccionId, activa).subscribe({
+      next: (seccionActualizada) => {
+        this.actualizandoEstadoSeccionId.set(null);
+        this.secciones.update((actual) =>
+          actual.map((seccion) => (seccion.id === seccionId ? seccionActualizada : seccion))
+        );
+        this.mostrarAlerta(
+          'success',
+          activa ? 'Seccion habilitada' : 'Seccion deshabilitada',
+          activa
+            ? 'Seccion habilitada correctamente para este periodo.'
+            : 'Seccion deshabilitada correctamente para este periodo.',
+          { confirmText: null, autoCloseMs: 3000 }
+        );
+      },
+      error: (error) => {
+        this.actualizandoEstadoSeccionId.set(null);
+        this.mostrarAlerta(
+          'error',
+          activa ? 'No se pudo habilitar' : 'No se pudo deshabilitar',
+          error?.error?.mensaje ??
+          (activa ? 'No se pudo habilitar la seccion.' : 'No se pudo deshabilitar la seccion.')
+        );
+      }
+    });
+  }
+
+  cerrarAlerta(): void {
+    this.alertState.set({
+      open: false,
+      type: 'info',
+      title: '',
+      message: '',
+      confirmText: 'Aceptar',
+      cancelText: null,
+      autoCloseMs: null
+    });
+  }
+
+  private mostrarAlerta(
+    type: CustomAlertType,
+    title: string,
+    message: string,
+    options?: {
+      confirmText?: string | null;
+      cancelText?: string | null;
+      autoCloseMs?: number | null;
+    }
+  ): void {
+    this.alertState.set({
+      open: true,
+      type,
+      title,
+      message,
+      confirmText: options?.confirmText ?? 'Aceptar',
+      cancelText: options?.cancelText ?? null,
+      autoCloseMs: options?.autoCloseMs ?? null
+    });
   }
 
   totalMatriculadosGrado(gradoId: number): number {
@@ -273,7 +433,9 @@ export class AlumnosPeriodo {
   }
 
   totalSeccionesGrado(gradoId: number): number {
-    return this.secciones().filter((seccion) => seccion.gradoId === gradoId).length;
+    return this.secciones().filter(
+      (seccion) => seccion.gradoId === gradoId && (seccion.estado ?? 'ACTIVO') === 'ACTIVO'
+    ).length;
   }
 
   totalMatriculadosSeccion(seccionId: number): number {

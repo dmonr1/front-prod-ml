@@ -33,4 +33,10 @@ export class SeccionService {
   copiarPeriodoAnterior(payload: SeccionPeriodoAnteriorPayload): Observable<Seccion[]> {
     return this.http.post<Seccion[]>(`${this.api}/copiar-periodo-anterior`, payload);
   }
+
+  actualizarEstado(seccionId: number, activa: boolean): Observable<Seccion> {
+    return this.http.patch<Seccion>(`${this.api}/${seccionId}/estado`, null, {
+      params: { activa }
+    });
+  }
 }

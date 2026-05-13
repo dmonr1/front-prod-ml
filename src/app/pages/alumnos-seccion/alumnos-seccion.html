@@ -1,5 +1,17 @@
 <app-shell>
   <section class="section-students-page">
+    <app-custom-alert
+      [open]="alertState().open"
+      [type]="alertState().type"
+      [title]="alertState().title"
+      [message]="alertState().message"
+      [confirmText]="alertState().confirmText"
+      [cancelText]="alertState().cancelText"
+      [autoCloseMs]="alertState().autoCloseMs"
+      (confirm)="cerrarAlerta()"
+      (cancel)="cerrarAlerta()"
+      (dismiss)="cerrarAlerta()" />
+
     <div class="page-card page-slide-in">
       <div class="card-head">
         <div class="card-head-inline">
@@ -8,20 +20,28 @@
               <i class="fa-solid fa-arrow-left"></i>
               Volver a grados y secciones
             </a>
-            <span class="panel-kicker">Detalle de seccion</span>
             <h2>{{ grado()?.nombre }} - Seccion {{ seccion()?.nombre }}</h2>
-            <p>
-              @if (esPeriodoEditable()) {
-                Puedes registrar alumnos nuevos y matricular alumnos del catalogo en este periodo.
-              } @else {
-                Este periodo es historico. Solo se muestra la lista de alumnos matriculados.
-              }
-            </p>
+            
           </div>
 
-          @if (periodo()) {
-            <span class="period-chip">{{ esPeriodoEditable() ? 'Periodo editable' : 'Solo consulta' }}</span>
-          }
+          <div class="head-context">
+            <div class="context-chip">
+              <span>Periodo</span>
+              <strong>{{ periodo()?.anio || 'Sin ano' }}</strong>
+            </div>
+            <div class="context-chip">
+              <span>Grado</span>
+              <strong>{{ grado()?.nombre || 'Sin grado' }}</strong>
+            </div>
+            <div class="context-chip">
+              <span>Seccion</span>
+              <strong>{{ seccion()?.nombre || 'Sin seccion' }}</strong>
+            </div>
+            <div class="context-chip">
+              <span>Matriculados</span>
+              <strong>{{ matriculasSeccion().length }}</strong>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -31,40 +51,13 @@
           <span>{{ errorBase() }}</span>
         </div>
       } @else {
-        <section class="overview-strip">
-          <article class="overview-card">
-            <span class="overview-label">Periodo</span>
-            <strong>{{ periodo()?.nombre || 'Sin periodo' }}</strong>
-            <small>{{ esPeriodoEditable() ? 'Editable' : 'Historico' }}</small>
-          </article>
-
-          <article class="overview-card">
-            <span class="overview-label">Grado</span>
-            <strong>{{ grado()?.nombre || 'Sin grado' }}</strong>
-            <small>{{ seccion()?.nivelNombre || 'Nivel academico' }}</small>
-          </article>
-
-          <article class="overview-card">
-            <span class="overview-label">Seccion</span>
-            <strong>{{ seccion()?.nombre || 'Sin seccion' }}</strong>
-            <small>Capacidad {{ seccion()?.capacidad ?? 'ND' }}</small>
-          </article>
-
-          <article class="overview-card">
-            <span class="overview-label">Matriculados</span>
-            <strong>{{ matriculasSeccion().length }}</strong>
-            <small>Alumnos activos en esta seccion</small>
-          </article>
-        </section>
-
         <div class="detail-grid">
           <article class="table-panel">
             <div class="panel-head section-head">
-              <div>
-                <h3>Alumnos de la seccion</h3>
-                <p>Listado oficial de la seccion en {{ periodo()?.nombre }}.</p>
+              <div class="section-head-main">
+                <h3>Alumnos inscritos</h3>
+                <span class="records-chip">{{ matriculasSeccion().length }} alumnos</span>
               </div>
-              <span class="records-chip">{{ matriculasSeccion().length }} alumnos</span>
             </div>
 
             <div class="table-panel-body">
@@ -96,11 +89,6 @@
                   <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
                   <span>{{ errorMatriculas() }}</span>
                 </div>
-              } @else if (!matriculasSeccion().length) {
-                <div class="table-state">
-                  <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-                  <span>No hay alumnos matriculados en esta seccion para el periodo seleccionado.</span>
-                </div>
               } @else {
                 <div class="table-scroll">
                   <table class="app-table">
@@ -113,13 +101,19 @@
                       </tr>
                     </thead>
                     <tbody>
-                      @for (matricula of matriculasSeccion(); track matricula.id) {
+                      @if (!matriculasSeccion().length) {
                         <tr>
-                          <td>{{ matricula.alumnoNombreCompleto }}</td>
-                          <td>{{ matricula.codigoAlumno }}</td>
-                          <td>{{ matricula.fechaMatricula }}</td>
-                          <td><span class="status-badge active">ACTIVO</span></td>
+                          <td class="empty-row" colspan="4">No hay alumnos registrados en esta seccion para el periodo seleccionado.</td>
                         </tr>
+                      } @else {
+                        @for (matricula of matriculasSeccion(); track matricula.id) {
+                          <tr>
+                            <td>{{ matricula.alumnoNombreCompleto }}</td>
+                            <td>{{ matricula.codigoAlumno }}</td>
+                            <td>{{ matricula.fechaMatricula }}</td>
+                            <td><span class="status-badge active">ACTIVO</span></td>
+                          </tr>
+                        }
                       }
                     </tbody>
                   </table>
@@ -134,18 +128,126 @@
                 <span class="table-state-icon"><i class="fa-solid fa-lock"></i></span>
                 <div>
                   <strong>Periodo historico</strong>
-                  <p>Los anos pasados solo se pueden consultar. Para registrar o matricular alumnos usa el periodo actual.</p>
+                  <p>Los periodos anteriores solo quedan disponibles para consulta.</p>
                 </div>
               </div>
             } @else {
               <div class="panel-stack">
-                <section class="quick-panel">
+                <section class="form-panel form-panel--primary">
                   <div class="panel-head">
-                    <span class="panel-kicker">Carga inicial</span>
+                    <h3>Registrar alumno nuevo</h3>
+                  </div>
+
+                  <form class="master-form">
+                    <div class="form-two-columns">
+                      <label>
+                        Nombres
+                        <input
+                          type="text"
+                          [ngModel]="formAlumno().nombres"
+                          (ngModelChange)="actualizarCampoAlumno('nombres', $event)"
+                          name="nombres"
+                          placeholder="Nombres del alumno" />
+                      </label>
+
+                      <label>
+                        Apellidos
+                        <input
+                          type="text"
+                          [ngModel]="formAlumno().apellidos"
+                          (ngModelChange)="actualizarCampoAlumno('apellidos', $event)"
+                          name="apellidos"
+                          placeholder="Apellidos del alumno" />
+                      </label>
+                    </div>
+
+                    <label>
+                      DNI
+                      <input
+                        type="text"
+                        [ngModel]="formAlumno().dni"
+                        (ngModelChange)="actualizarCampoAlumno('dni', $event)"
+                        name="dni"
+                        placeholder="Opcional" />
+                    </label>
+
+                    <div class="form-two-columns">
+                      <label>
+                        Fecha de nacimiento
+                        <input
+                          type="date"
+                          [ngModel]="formAlumno().fechaNacimiento"
+                          (ngModelChange)="actualizarCampoAlumno('fechaNacimiento', $event)"
+                          name="fechaNacimiento" />
+                      </label>
+
+                      <label>
+                        Sexo
+                        <select
+                          [ngModel]="formAlumno().sexo"
+                          (ngModelChange)="actualizarCampoAlumno('sexo', $event)"
+                          name="sexo">
+                          <option [ngValue]="null">Seleccionar</option>
+                          <option value="MASCULINO">Masculino</option>
+                          <option value="FEMENINO">Femenino</option>
+                        </select>
+                      </label>
+                    </div>
+
+                    <label>
+                      Direccion
+                      <input
+                        type="text"
+                        [ngModel]="formAlumno().direccion"
+                        (ngModelChange)="actualizarCampoAlumno('direccion', $event)"
+                        name="direccion"
+                        placeholder="Direccion del alumno" />
+                    </label>
+
+                    <div class="form-two-columns">
+                      <label>
+                        Nombre del apoderado
+                        <input
+                          type="text"
+                          [ngModel]="formAlumno().nombreApoderado"
+                          (ngModelChange)="actualizarCampoAlumno('nombreApoderado', $event)"
+                          name="nombreApoderado"
+                          placeholder="Apoderado o tutor" />
+                      </label>
+
+                      <label>
+                        Telefono del apoderado
+                        <input
+                          type="text"
+                          [ngModel]="formAlumno().telefonoApoderado"
+                          (ngModelChange)="actualizarCampoAlumno('telefonoApoderado', $event)"
+                          name="telefonoApoderado"
+                          placeholder="Telefono de contacto" />
+                      </label>
+                    </div>
+
+                    <div class="form-actions">
+                      <button
+                        class="action-button primary"
+                        type="button"
+                        [disabled]="guardandoAlumno()"
+                        (click)="guardarAlumnoNuevo()">
+                        {{ guardandoAlumno() ? 'Guardando...' : 'Guardar alumno' }}
+                      </button>
+                      <button class="action-button secondary" type="button" (click)="limpiarFormularioAlumno()">
+                        Limpiar
+                      </button>
+                    </div>
+                  </form>
+                </section>
+
+                <section class="quick-panel quick-panel--secondary">
+                  <div class="panel-head">
+                    <span class="panel-kicker">Accion opcional</span>
                     <h3>Cargar alumnos del periodo anterior</h3>
                     <p>
                       @if (periodoAnterior()) {
-                        Usa esta opcion para traer los alumnos de {{ periodoAnterior()!.nombre }} a esta misma seccion.
+                        Usa esta opcion solo si quieres traer alumnos de {{ periodoAnterior()!.nombre }} a esta seccion.
                       } @else {
                         No existe un periodo anterior disponible para esta seccion.
                       }
@@ -154,230 +256,17 @@
 
                   <div class="quick-actions">
                     <button
-                      class="action-button secondary full-button"
+                      class="action-button tertiary full-button"
                       type="button"
                       [disabled]="!periodoAnterior() || cargandoPeriodoAnterior()"
                       (click)="cargarAlumnosPeriodoAnterior()">
                       {{ cargandoPeriodoAnterior() ? 'Cargando...' : 'Cargar alumnos del periodo anterior' }}
                     </button>
                   </div>
-
-                  @if (periodoAnterior()) {
-                    <div class="selected-box">
-                      <strong>{{ periodoAnterior()!.nombre }}</strong>
-                      <small>Se copiaran solo los alumnos que aun no esten en esta seccion.</small>
-                    </div>
-                  } @else {
-                    <div class="table-state compact">
-                      <span class="table-state-icon"><i class="fa-regular fa-calendar-xmark"></i></span>
-                      <span>No hay un periodo anterior para usar como base.</span>
-                    </div>
-                  }
-
-                  <div class="inline-feedback">
-                    @if (errorMatriculaNueva()) {
-                      <div class="feedback error">{{ errorMatriculaNueva() }}</div>
-                    }
-
-                    @if (exitoMatriculaNueva()) {
-                      <div class="feedback success">{{ exitoMatriculaNueva() }}</div>
-                    }
-                  </div>
-
                 </section>
-
-                <details class="expand-panel">
-                  <summary class="expand-summary">
-                    <div>
-                      <span class="panel-kicker">Catalogo</span>
-                      <strong>Crear alumno nuevo</strong>
-                      <small>Crea el alumno y el sistema lo agrega automaticamente a esta seccion.</small>
-                    </div>
-                    <i class="fa-solid fa-chevron-down"></i>
-                  </summary>
-
-                  <div class="expand-body">
-                    <form class="master-form">
-                      <div class="form-two-columns">
-                        <label>
-                          Codigo
-                          <input
-                            type="text"
-                            [ngModel]="formAlumno().codigo"
-                            (ngModelChange)="actualizarCampoAlumno('codigo', $event)"
-                            name="codigo"
-                            placeholder="Ejemplo: AL-2026-001" />
-                        </label>
-
-                        <label>
-                          DNI
-                          <input
-                            type="text"
-                            [ngModel]="formAlumno().dni"
-                            (ngModelChange)="actualizarCampoAlumno('dni', $event)"
-                            name="dni"
-                            placeholder="Opcional" />
-                        </label>
-                      </div>
-
-                      <div class="form-two-columns">
-                        <label>
-                          Nombres
-                          <input
-                            type="text"
-                            [ngModel]="formAlumno().nombres"
-                            (ngModelChange)="actualizarCampoAlumno('nombres', $event)"
-                            name="nombres"
-                            placeholder="Nombres del alumno" />
-                        </label>
-
-                        <label>
-                          Apellidos
-                          <input
-                            type="text"
-                            [ngModel]="formAlumno().apellidos"
-                            (ngModelChange)="actualizarCampoAlumno('apellidos', $event)"
-                            name="apellidos"
-                            placeholder="Apellidos del alumno" />
-                        </label>
-                      </div>
-
-                      <div class="form-two-columns">
-                        <label>
-                          Fecha de nacimiento
-                          <input
-                            type="date"
-                            [ngModel]="formAlumno().fechaNacimiento"
-                            (ngModelChange)="actualizarCampoAlumno('fechaNacimiento', $event)"
-                            name="fechaNacimiento" />
-                        </label>
-
-                        <label>
-                          Sexo
-                          <select
-                            [ngModel]="formAlumno().sexo"
-                            (ngModelChange)="actualizarCampoAlumno('sexo', $event)"
-                            name="sexo">
-                            <option [ngValue]="null">Seleccionar</option>
-                            <option value="MASCULINO">Masculino</option>
-                            <option value="FEMENINO">Femenino</option>
-                          </select>
-                        </label>
-                      </div>
-
-                      <label>
-                        Direccion
-                        <input
-                          type="text"
-                          [ngModel]="formAlumno().direccion"
-                          (ngModelChange)="actualizarCampoAlumno('direccion', $event)"
-                          name="direccion"
-                          placeholder="Direccion del alumno" />
-                      </label>
-
-                      <div class="form-two-columns">
-                        <label>
-                          Nombre del apoderado
-                          <input
-                            type="text"
-                            [ngModel]="formAlumno().nombreApoderado"
-                            (ngModelChange)="actualizarCampoAlumno('nombreApoderado', $event)"
-                            name="nombreApoderado"
-                            placeholder="Apoderado o tutor" />
-                        </label>
-
-                        <label>
-                          Telefono del apoderado
-                          <input
-                            type="text"
-                            [ngModel]="formAlumno().telefonoApoderado"
-                            (ngModelChange)="actualizarCampoAlumno('telefonoApoderado', $event)"
-                            name="telefonoApoderado"
-                            placeholder="Telefono de contacto" />
-                        </label>
-                      </div>
-
-                      @if (errorAlumnoNuevo()) {
-                        <div class="feedback error">{{ errorAlumnoNuevo() }}</div>
-                      }
-
-                      @if (exitoAlumnoNuevo()) {
-                        <div class="feedback success">{{ exitoAlumnoNuevo() }}</div>
-                      }
-
-                      <div class="form-actions">
-                        <button
-                          class="action-button primary"
-                          type="button"
-                          [disabled]="guardandoAlumno()"
-                          (click)="guardarAlumnoNuevo()">
-                          {{ guardandoAlumno() ? 'Guardando...' : 'Guardar alumno' }}
-                        </button>
-                        <button class="action-button secondary" type="button" (click)="limpiarFormularioAlumno()">
-                          Limpiar
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                </details>
               </div>
             }
           </article>
-        </div>
-      }
-
-      @if (modalAlumnoAbierto()) {
-        <div class="modal-backdrop" (click)="cerrarModalAlumno()">
-          <div class="modal-card" (click)="$event.stopPropagation()">
-            <div class="modal-head">
-              <div class="panel-head">
-                <span class="panel-kicker">Catalogo de alumnos</span>
-                <h3>Seleccionar alumno para matricula</h3>
-                <p>Se muestran solo alumnos que aun no estan matriculados en este periodo academico.</p>
-              </div>
-              <button class="modal-close" type="button" (click)="cerrarModalAlumno()">
-                <i class="fa-solid fa-xmark"></i>
-              </button>
-            </div>
-
-            <div class="modal-search">
-              <input
-                type="text"
-                placeholder="Buscar por codigo, DNI o nombre"
-                [value]="busquedaAlumnoCatalogo()"
-                (input)="busquedaAlumnoCatalogo.set($any($event.target).value)" />
-            </div>
-
-            @if (!alumnosCatalogoFiltrados().length) {
-              <div class="table-state">
-                <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-                <span>No hay alumnos disponibles en el catalogo para este periodo.</span>
-              </div>
-            } @else {
-              <div class="table-scroll modal-table">
-                <table class="app-table">
-                  <thead>
-                    <tr>
-                      <th>Alumno</th>
-                      <th>Codigo</th>
-                      <th>DNI</th>
-                      <th>Estado</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (alumno of alumnosCatalogoFiltrados(); track alumno.id) {
-                      <tr class="selectable-row" (click)="seleccionarAlumno(alumno)">
-                        <td>{{ formatearAlumno(alumno) }}</td>
-                        <td>{{ alumno.codigo }}</td>
-                        <td>{{ alumno.dni || 'Sin DNI' }}</td>
-                        <td><span class="status-badge active">{{ alumno.estado || 'ACTIVO' }}</span></td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            }
-          </div>
         </div>
       }
     </div>

@@ -2,8 +2,8 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
+import { CustomAlertComponent, CustomAlertType } from '../../components/custom-alert/custom-alert';
 import { Shell } from '../../layouts/shell/shell';
-import { Alumno } from '../../models/alumno';
 import { Grado } from '../../models/grado';
 import { Matricula } from '../../models/matricula';
 import { PeriodoAcademico } from '../../models/periodo-academico';
@@ -14,9 +14,19 @@ import { MatriculaService } from '../../services/academico/matricula.service';
 import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
 import { SeccionService } from '../../services/academico/seccion.service';
 
+interface AlertState {
+  open: boolean;
+  type: CustomAlertType;
+  title: string;
+  message: string;
+  confirmText: string | null;
+  cancelText: string | null;
+  autoCloseMs: number | null;
+}
+
 @Component({
   selector: 'app-alumnos-seccion',
-  imports: [Shell, FormsModule, RouterLink],
+  imports: [Shell, FormsModule, RouterLink, CustomAlertComponent],
   templateUrl: './alumnos-seccion.html',
   styleUrl: './alumnos-seccion.scss'
 })
@@ -32,31 +42,31 @@ export class AlumnosSeccion {
   readonly periodoId = Number(this.route.snapshot.paramMap.get('periodoId'));
   readonly seccionId = Number(this.route.snapshot.paramMap.get('seccionId'));
 
-  readonly alumnos = signal<Alumno[]>([]);
   readonly periodos = signal<PeriodoAcademico[]>([]);
   readonly periodo = signal<PeriodoAcademico | null>(null);
   readonly grado = signal<Grado | null>(null);
   readonly seccion = signal<Seccion | null>(null);
   readonly matriculas = signal<Matricula[]>([]);
-  readonly alumnoSeleccionado = signal<Alumno | null>(null);
-  readonly busquedaAlumnoCatalogo = signal('');
-  readonly modalAlumnoAbierto = signal(false);
+  readonly alertState = signal<AlertState>({
+    open: false,
+    type: 'info',
+    title: '',
+    message: '',
+    confirmText: 'Aceptar',
+    cancelText: null,
+    autoCloseMs: null
+  });
 
   readonly cargandoBase = signal(true);
   readonly cargandoMatriculas = signal(true);
   readonly guardandoAlumno = signal(false);
-  readonly guardandoMatricula = signal(false);
   readonly cargandoPeriodoAnterior = signal(false);
 
   readonly errorBase = signal<string | null>(null);
   readonly errorMatriculas = signal<string | null>(null);
-  readonly errorAlumnoNuevo = signal<string | null>(null);
-  readonly exitoAlumnoNuevo = signal<string | null>(null);
-  readonly errorMatriculaNueva = signal<string | null>(null);
-  readonly exitoMatriculaNueva = signal<string | null>(null);
 
   readonly formAlumno = signal<AlumnoPayload>({
-    codigo: '',
+    codigo: null,
     dni: null,
     nombres: '',
     apellidos: '',
@@ -77,18 +87,6 @@ export class AlumnosSeccion {
       .filter((matricula) => matricula.seccionId === this.seccionId)
       .sort((a, b) => a.alumnoNombreCompleto.localeCompare(b.alumnoNombreCompleto))
   );
-
-  readonly alumnosDisponiblesPeriodo = computed(() => {
-    const matriculados = new Set(this.matriculas().map((matricula) => matricula.alumnoId));
-    return this.alumnos()
-      .filter((alumno) => !matriculados.has(alumno.id))
-      .sort((a, b) => this.formatearAlumno(a).localeCompare(this.formatearAlumno(b)));
-  });
-
-  readonly alumnosCatalogoFiltrados = computed(() => {
-    const query = this.busquedaAlumnoCatalogo().trim().toLowerCase();
-    return this.alumnosDisponiblesPeriodo().filter((alumno) => this.coincideAlumno(alumno, query));
-  });
 
   readonly periodoAnterior = computed(() => {
     const actual = this.periodo();
@@ -122,17 +120,7 @@ export class AlumnosSeccion {
                 const seccion = secciones.find((item) => item.id === this.seccionId) ?? null;
                 this.seccion.set(seccion);
                 this.grado.set(grados.find((item) => item.id === seccion?.gradoId) ?? null);
-
-                this.alumnoService.listar().subscribe({
-                  next: (alumnos) => {
-                    this.alumnos.set(alumnos);
-                    this.cargandoBase.set(false);
-                  },
-                  error: () => {
-                    this.errorBase.set('No se pudieron cargar los alumnos del catalogo.');
-                    this.cargandoBase.set(false);
-                  }
-                });
+                this.cargandoBase.set(false);
               },
               error: () => {
                 this.errorBase.set('No se pudo cargar la seccion.');
@@ -169,63 +157,16 @@ export class AlumnosSeccion {
     });
   }
 
-  abrirModalAlumno(): void {
-    this.busquedaAlumnoCatalogo.set('');
-    this.modalAlumnoAbierto.set(true);
-  }
-
-  cerrarModalAlumno(): void {
-    this.modalAlumnoAbierto.set(false);
-  }
-
-  seleccionarAlumno(alumno: Alumno): void {
-    this.alumnoSeleccionado.set(alumno);
-    this.modalAlumnoAbierto.set(false);
-    this.exitoMatriculaNueva.set(null);
-    this.errorMatriculaNueva.set(null);
-  }
-
-  guardarMatriculaAlumnoSeleccionado(): void {
-    const alumno = this.alumnoSeleccionado();
-
-    this.errorMatriculaNueva.set(null);
-    this.exitoMatriculaNueva.set(null);
-
-    if (!alumno) {
-      this.errorMatriculaNueva.set('Selecciona un alumno del catalogo antes de agregarlo a la seccion.');
-      return;
-    }
-
-    this.guardandoMatricula.set(true);
-
-    this.matriculaService
-      .crear({
-        alumnoId: alumno.id,
-        seccionId: this.seccionId,
-        periodoAcademicoId: this.periodoId
-      })
-      .subscribe({
-        next: () => {
-          this.guardandoMatricula.set(false);
-          this.alumnoSeleccionado.set(null);
-          this.exitoMatriculaNueva.set('El alumno se agrego correctamente a la seccion.');
-          this.cargarMatriculas();
-        },
-        error: (error) => {
-          this.guardandoMatricula.set(false);
-          this.errorMatriculaNueva.set(error?.error?.mensaje ?? 'No se pudo agregar el alumno a la seccion.');
-        }
-      });
-  }
-
   cargarAlumnosPeriodoAnterior(): void {
     const periodoAnterior = this.periodoAnterior();
 
-    this.errorMatriculaNueva.set(null);
-    this.exitoMatriculaNueva.set(null);
-
     if (!periodoAnterior) {
-      this.errorMatriculaNueva.set('No existe un periodo anterior disponible para esta seccion.');
+      this.mostrarAlerta(
+        'warning',
+        'No hay periodo anterior',
+        'No existe un periodo anterior disponible para esta seccion.',
+        { confirmText: null, autoCloseMs: 3000 }
+      );
       return;
     }
 
@@ -235,8 +176,11 @@ export class AlumnosSeccion {
       next: (matriculasAnteriores) => {
         if (!matriculasAnteriores.length) {
           this.cargandoPeriodoAnterior.set(false);
-          this.errorMatriculaNueva.set(
-            'La seccion no tiene alumnos cargados en el periodo anterior.'
+          this.mostrarAlerta(
+            'warning',
+            'Sin alumnos previos',
+            'La seccion no tiene alumnos cargados en el periodo anterior.',
+            { confirmText: null, autoCloseMs: 3000 }
           );
           return;
         }
@@ -248,8 +192,11 @@ export class AlumnosSeccion {
 
         if (!pendientes.length) {
           this.cargandoPeriodoAnterior.set(false);
-          this.exitoMatriculaNueva.set(
-            'Los alumnos del periodo anterior ya fueron cargados en esta seccion.'
+          this.mostrarAlerta(
+            'info',
+            'Sin cambios',
+            'Los alumnos del periodo anterior ya fueron cargados en esta seccion.',
+            { confirmText: null, autoCloseMs: 3000 }
           );
           return;
         }
@@ -265,14 +212,19 @@ export class AlumnosSeccion {
         ).subscribe({
           next: () => {
             this.cargandoPeriodoAnterior.set(false);
-            this.exitoMatriculaNueva.set(
-              'Se cargaron los alumnos del periodo anterior en esta seccion.'
+            this.mostrarAlerta(
+              'success',
+              'Alumnos cargados',
+              'Se cargaron los alumnos del periodo anterior en esta seccion.',
+              { confirmText: null, autoCloseMs: 3000 }
             );
             this.cargarMatriculas();
           },
           error: (error) => {
             this.cargandoPeriodoAnterior.set(false);
-            this.errorMatriculaNueva.set(
+            this.mostrarAlerta(
+              'error',
+              'No se pudieron cargar',
               error?.error?.mensaje ??
                 'No se pudieron cargar los alumnos del periodo anterior.'
             );
@@ -281,7 +233,9 @@ export class AlumnosSeccion {
       },
       error: () => {
         this.cargandoPeriodoAnterior.set(false);
-        this.errorMatriculaNueva.set(
+        this.mostrarAlerta(
+          'error',
+          'No se pudieron consultar',
           'No se pudieron consultar los alumnos del periodo anterior.'
         );
       }
@@ -297,7 +251,7 @@ export class AlumnosSeccion {
 
   limpiarFormularioAlumno(): void {
     this.formAlumno.set({
-      codigo: '',
+      codigo: null,
       dni: null,
       nombres: '',
       apellidos: '',
@@ -307,20 +261,18 @@ export class AlumnosSeccion {
       nombreApoderado: null,
       telefonoApoderado: null
     });
-    this.errorAlumnoNuevo.set(null);
-    this.exitoAlumnoNuevo.set(null);
   }
 
   guardarAlumnoNuevo(): void {
     const payload = this.normalizarAlumno(this.formAlumno());
 
-    this.errorAlumnoNuevo.set(null);
-    this.exitoAlumnoNuevo.set(null);
-    this.errorMatriculaNueva.set(null);
-    this.exitoMatriculaNueva.set(null);
-
-    if (!payload.codigo || !payload.nombres || !payload.apellidos) {
-      this.errorAlumnoNuevo.set('Completa codigo, nombres y apellidos antes de registrar el alumno.');
+    if (!payload.nombres || !payload.apellidos) {
+      this.mostrarAlerta(
+        'warning',
+        'Completa los datos',
+        'Completa nombres y apellidos antes de registrar el alumno.',
+        { confirmText: null, autoCloseMs: 3000 }
+      );
       return;
     }
 
@@ -335,10 +287,12 @@ export class AlumnosSeccion {
       .subscribe({
         next: (matricula) => {
           this.guardandoAlumno.set(false);
-          this.alumnoSeleccionado.set(null);
           this.limpiarFormularioAlumno();
-          this.exitoAlumnoNuevo.set(
-            'El alumno se creo y se agrego automaticamente a esta seccion.'
+          this.mostrarAlerta(
+            'success',
+            'Alumno registrado',
+            'El alumno se creo y se agrego automaticamente a esta seccion.',
+            { confirmText: null, autoCloseMs: 3000 }
           );
           this.matriculas.update((actual) => [...actual, matricula]);
           this.cargarBase();
@@ -346,26 +300,46 @@ export class AlumnosSeccion {
         },
         error: (error) => {
           this.guardandoAlumno.set(false);
-          this.errorAlumnoNuevo.set(
+          this.mostrarAlerta(
+            'error',
+            'No se pudo registrar',
             error?.error?.mensaje ?? 'No se pudo crear y agregar el alumno a la seccion.'
           );
         }
       });
   }
 
-  formatearAlumno(alumno: Alumno): string {
-    return `${alumno.apellidos}, ${alumno.nombres}`;
+  cerrarAlerta(): void {
+    this.alertState.set({
+      open: false,
+      type: 'info',
+      title: '',
+      message: '',
+      confirmText: 'Aceptar',
+      cancelText: null,
+      autoCloseMs: null
+    });
   }
 
-  private coincideAlumno(alumno: Alumno, query: string): boolean {
-    if (!query) {
-      return true;
+  private mostrarAlerta(
+    type: CustomAlertType,
+    title: string,
+    message: string,
+    options?: {
+      confirmText?: string | null;
+      cancelText?: string | null;
+      autoCloseMs?: number | null;
     }
-
-    return [alumno.codigo, alumno.dni ?? '', alumno.nombres, alumno.apellidos]
-      .join(' ')
-      .toLowerCase()
-      .includes(query);
+  ): void {
+    this.alertState.set({
+      open: true,
+      type,
+      title,
+      message,
+      confirmText: options?.confirmText ?? 'Aceptar',
+      cancelText: options?.cancelText ?? null,
+      autoCloseMs: options?.autoCloseMs ?? null
+    });
   }
 
   private normalizarAlumno(payload: AlumnoPayload): AlumnoPayload {
@@ -379,7 +353,7 @@ export class AlumnosSeccion {
     };
 
     return {
-      codigo: payload.codigo.trim(),
+      codigo: limpiar(payload.codigo),
       dni: limpiar(payload.dni),
       nombres: payload.nombres.trim(),
       apellidos: payload.apellidos.trim(),

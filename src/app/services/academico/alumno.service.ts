@@ -6,7 +6,7 @@ import { Alumno } from '../../models/alumno';
 import { Matricula } from '../../models/matricula';
 
 export interface AlumnoPayload {
-  codigo: string;
+  codigo: string | null;
   dni: string | null;
   nombres: string;
   apellidos: string;
