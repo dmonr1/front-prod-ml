@@ -1,4 +1,4 @@
-export interface Bimestre {
+export interface PeriodoEvaluacion {
   id: number;
   nombre: string;
   numero: number;

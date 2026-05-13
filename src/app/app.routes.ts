@@ -47,14 +47,12 @@ export const routes: Routes = [
   },
   {
     path: 'periodos-academicos',
-    loadComponent: () =>
-      import('./pages/periodos-academicos/periodos-academicos').then(
-        (m) => m.PeriodosAcademicos
-      )
+    redirectTo: 'gestion-estudiantil',
+    pathMatch: 'full'
   },
   {
-    path: 'bimestres',
-    redirectTo: 'periodos-academicos',
+    path: 'periodos-evaluacion',
+    redirectTo: 'gestion-estudiantil',
     pathMatch: 'full'
   },
   {
@@ -104,6 +102,10 @@ export const routes: Routes = [
   {
     path: 'mis-asignaciones',
     loadComponent: () => import('./pages/mis-asignaciones/mis-asignaciones').then((m) => m.MisAsignaciones)
+  },
+  {
+    path: 'mis-asignaciones/:asignacionId/notas',
+    loadComponent: () => import('./pages/carga-notas/carga-notas').then((m) => m.CargaNotas)
   },
   {
     path: 'estudiantes',

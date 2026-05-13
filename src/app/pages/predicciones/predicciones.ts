@@ -14,7 +14,7 @@ interface PrediccionMock {
   alumno: string;
   codigo: string;
   seccion: string;
-  bimestre: string;
+  periodoEvaluacion: string;
   indiceRiesgo: number;
   nivel: NivelRiesgo;
   asistencia: number;
@@ -37,7 +37,7 @@ interface PrediccionMock {
 export class Predicciones {
   readonly vistaActiva = signal<VistaPrediccion>('global');
   readonly periodoSeleccionado = signal('2026');
-  readonly bimestreSeleccionado = signal('II BIMESTRE');
+  readonly periodoEvaluacionSeleccionado = signal('Segundo periodo');
   readonly seccionSeleccionada = signal('TODAS');
   readonly busqueda = signal('');
   readonly prediccionSeleccionadaId = signal<number>(101);
@@ -47,11 +47,11 @@ export class Predicciones {
     { label: '2025', value: '2025' }
   ];
 
-  readonly bimestres: FiltroOption[] = [
-    { label: 'I BIMESTRE', value: 'I BIMESTRE' },
-    { label: 'II BIMESTRE', value: 'II BIMESTRE' },
-    { label: 'III BIMESTRE', value: 'III BIMESTRE' },
-    { label: 'IV BIMESTRE', value: 'IV BIMESTRE' }
+  readonly periodosEvaluacion: FiltroOption[] = [
+    { label: 'Primer periodo', value: 'Primer periodo' },
+    { label: 'Segundo periodo', value: 'Segundo periodo' },
+    { label: 'Tercer periodo', value: 'Tercer periodo' },
+    { label: 'Cuarto periodo', value: 'Cuarto periodo' }
   ];
 
   readonly secciones: FiltroOption[] = [
@@ -67,7 +67,7 @@ export class Predicciones {
       alumno: 'Luis Ramirez Soto',
       codigo: 'AL-0051',
       seccion: '5TO A',
-      bimestre: 'II BIMESTRE',
+      periodoEvaluacion: 'Segundo periodo',
       indiceRiesgo: 87,
       nivel: 'ALTO',
       asistencia: 68,
@@ -83,15 +83,15 @@ export class Predicciones {
       alumno: 'Maria Fernandez Rojas',
       codigo: 'AL-0058',
       seccion: '5TO A',
-      bimestre: 'II BIMESTRE',
+      periodoEvaluacion: 'Segundo periodo',
       indiceRiesgo: 64,
       nivel: 'MEDIO',
       asistencia: 81,
       promedioAcademico: 12.7,
       cursosRiesgo: 2,
-      alerta: 'Rendimiento irregular en el bimestre y descenso en cursos clave.',
+      alerta: 'Rendimiento irregular en el periodo de evaluacion y descenso en cursos clave.',
       recomendacion: 'Monitoreo quincenal y seguimiento del plan lector.',
-      factores: ['Descenso frente al bimestre anterior', 'Dos cursos en observacion', 'Participacion inestable'],
+      factores: ['Descenso frente al periodo de evaluacion anterior', 'Dos cursos en observacion', 'Participacion inestable'],
       tendencia: 'Estable'
     },
     {
@@ -99,7 +99,7 @@ export class Predicciones {
       alumno: 'Jose Quispe Huaman',
       codigo: 'AL-0064',
       seccion: '5TO B',
-      bimestre: 'II BIMESTRE',
+      periodoEvaluacion: 'Segundo periodo',
       indiceRiesgo: 42,
       nivel: 'BAJO',
       asistencia: 91,
@@ -115,7 +115,7 @@ export class Predicciones {
       alumno: 'Ana Lucero Vega',
       codigo: 'AL-0033',
       seccion: '3RO A',
-      bimestre: 'II BIMESTRE',
+      periodoEvaluacion: 'Segundo periodo',
       indiceRiesgo: 79,
       nivel: 'ALTO',
       asistencia: 73,
@@ -134,7 +134,7 @@ export class Predicciones {
       alumno: 'Luis Ramirez Soto',
       codigo: 'AL-0051',
       seccion: '5TO A',
-      bimestre: 'II BIMESTRE',
+      periodoEvaluacion: 'Segundo periodo',
       indiceRiesgo: 92,
       nivel: 'ALTO',
       asistencia: 68,
@@ -151,7 +151,7 @@ export class Predicciones {
       alumno: 'Maria Fernandez Rojas',
       codigo: 'AL-0058',
       seccion: '5TO A',
-      bimestre: 'II BIMESTRE',
+      periodoEvaluacion: 'Segundo periodo',
       indiceRiesgo: 71,
       nivel: 'MEDIO',
       asistencia: 81,
@@ -168,7 +168,7 @@ export class Predicciones {
       alumno: 'Jose Quispe Huaman',
       codigo: 'AL-0064',
       seccion: '5TO B',
-      bimestre: 'II BIMESTRE',
+      periodoEvaluacion: 'Segundo periodo',
       indiceRiesgo: 39,
       nivel: 'BAJO',
       asistencia: 91,
@@ -185,7 +185,7 @@ export class Predicciones {
       alumno: 'Ana Lucero Vega',
       codigo: 'AL-0033',
       seccion: '3RO A',
-      bimestre: 'II BIMESTRE',
+      periodoEvaluacion: 'Segundo periodo',
       indiceRiesgo: 84,
       nivel: 'ALTO',
       asistencia: 73,
@@ -206,11 +206,11 @@ export class Predicciones {
   readonly prediccionesFiltradas = computed(() => {
     const query = this.busqueda().trim().toLowerCase();
     const seccion = this.seccionSeleccionada();
-    const bimestre = this.bimestreSeleccionado();
+    const periodoEvaluacion = this.periodoEvaluacionSeleccionado();
 
     return this.datasetActivo().filter((item) => {
       const coincideSeccion = seccion === 'TODAS' || item.seccion === seccion;
-      const coincideBimestre = item.bimestre === bimestre;
+      const coincidePeriodoEvaluacion = item.periodoEvaluacion === periodoEvaluacion;
       const coincideBusqueda =
         !query ||
         [item.alumno, item.codigo, item.seccion, item.curso ?? '']
@@ -218,7 +218,7 @@ export class Predicciones {
           .toLowerCase()
           .includes(query);
 
-      return coincideSeccion && coincideBimestre && coincideBusqueda;
+      return coincideSeccion && coincidePeriodoEvaluacion && coincideBusqueda;
     });
   });
 

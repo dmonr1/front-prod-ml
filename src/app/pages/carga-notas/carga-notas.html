@@ -1,0 +1,221 @@
+<app-shell>
+  <section class="grades-page">
+    <div class="grades-toolbar card">
+      <div>
+        <span class="eyebrow">Registro de notas</span>
+        <h2>{{ asignacion()?.curso || 'Curso asignado' }}</h2>
+        <p>
+          {{ asignacion()?.grado || 'Grado' }} - Seccion {{ asignacion()?.seccion || '-' }}
+        </p>
+      </div>
+      <div class="toolbar-actions">
+        <a class="secondary-button" routerLink="/mis-asignaciones">Volver</a>
+        <button class="secondary-button" type="button" (click)="cargarBase()">Actualizar</button>
+      </div>
+    </div>
+
+    @if (cargando()) {
+      <section class="state-card card">
+        <strong>Cargando modulo de notas...</strong>
+        <p>Estamos preparando periodos, alumnos y evaluaciones disponibles.</p>
+      </section>
+    } @else if (error()) {
+      <section class="state-card card state-error">
+        <strong>Revisa el flujo</strong>
+        <p>{{ error() }}</p>
+      </section>
+    }
+
+    @if (!cargando() && asignacion()) {
+      <section class="grades-grid">
+        <article class="panel-card">
+          <div class="panel-head">
+            <span class="panel-kicker">Periodo de evaluacion</span>
+            <h3>Selecciona el periodo de registro</h3>
+            <p>Las evaluaciones se organizan por periodo de evaluacion y curso.</p>
+          </div>
+
+          <div class="segmented-list">
+            @for (periodoEvaluacion of periodosEvaluacionPeriodo(); track periodoEvaluacion.id) {
+              <button
+                type="button"
+                [class.active]="periodoEvaluacionSeleccionadoId() === periodoEvaluacion.id"
+                (click)="seleccionarPeriodoEvaluacion(periodoEvaluacion.id)">
+                <span>{{ periodoEvaluacion.nombre }}</span>
+                <small>{{ periodoEvaluacion.fechaInicio }} - {{ periodoEvaluacion.fechaFin }}</small>
+              </button>
+            } @empty {
+              <div class="table-state">
+                <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
+                <span>No hay periodos registrados para esta asignacion.</span>
+              </div>
+            }
+          </div>
+        </article>
+
+        <article class="panel-card">
+          <div class="panel-head">
+            <span class="panel-kicker">Nueva evaluacion</span>
+            <h3>Crear evaluacion</h3>
+            <p>Usa una configuracion activa para este curso y periodo de evaluacion.</p>
+          </div>
+
+          <form class="module-form">
+            <label>
+              Configuracion
+              <select
+                [value]="configuracionSeleccionadaId() || ''"
+                (change)="seleccionarConfiguracion(+$any($event.target).value)">
+                @for (configuracion of configuraciones(); track configuracion.id) {
+                  <option [value]="configuracion.id">
+                    {{ configuracion.nombreTipoEvaluacion }} - {{ configuracion.cantidadEvaluaciones }} eval.
+                  </option>
+                }
+              </select>
+            </label>
+
+            <div class="form-two-columns">
+              <label>
+                Numero
+                <input
+                  type="number"
+                  min="1"
+                  [value]="numeroEvaluacion()"
+                  (input)="numeroEvaluacion.set($any($event.target).value)" />
+              </label>
+
+              <label>
+                Fecha
+                <input
+                  type="date"
+                  [value]="fechaEvaluacion()"
+                  (input)="fechaEvaluacion.set($any($event.target).value)" />
+              </label>
+            </div>
+
+            <label>
+              Nombre
+              <input
+                type="text"
+                placeholder="Ejemplo: Practica calificada 1"
+                [value]="nombreEvaluacion()"
+                (input)="nombreEvaluacion.set($any($event.target).value)" />
+            </label>
+
+            <div class="form-actions">
+              <button
+                class="action-button primary"
+                type="button"
+                [disabled]="guardandoEvaluacion() || !configuraciones().length"
+                (click)="guardarEvaluacion()">
+                {{ guardandoEvaluacion() ? 'Creando...' : 'Crear evaluacion' }}
+              </button>
+            </div>
+          </form>
+        </article>
+      </section>
+
+      <section class="panel-card">
+        <div class="panel-head panel-head-row">
+          <div>
+            <span class="panel-kicker">Evaluaciones</span>
+            <h3>Evaluaciones del periodo de evaluacion</h3>
+          </div>
+          <span class="summary-pill">{{ evaluaciones().length }} registradas</span>
+        </div>
+
+        <div class="evaluations-row">
+          @for (evaluacion of evaluaciones(); track evaluacion.id) {
+            <button
+              type="button"
+              class="evaluation-chip"
+              [class.active]="evaluacionSeleccionadaId() === evaluacion.id"
+              (click)="seleccionarEvaluacion(evaluacion.id)">
+              <strong>{{ evaluacion.nombre }}</strong>
+              <span>{{ evaluacion.tipoEvaluacion }} {{ evaluacion.numeroEvaluacion }}</span>
+            </button>
+          } @empty {
+            <div class="table-state">
+              <span class="table-state-icon"><i class="fa-solid fa-clipboard-list"></i></span>
+              <span>Aun no hay evaluaciones creadas para este periodo de evaluacion.</span>
+            </div>
+          }
+        </div>
+      </section>
+
+      <section class="panel-card">
+        <div class="panel-head panel-head-row">
+          <div>
+            <span class="panel-kicker">Notas</span>
+            <h3>{{ evaluacionSeleccionada()?.nombre || 'Selecciona una evaluacion' }}</h3>
+            <p>{{ resumenNotas().registradas }} de {{ resumenNotas().total }} notas ingresadas</p>
+          </div>
+          <span class="summary-pill">Promedio {{ resumenNotas().promedio }}</span>
+        </div>
+
+        @if (mensaje()) {
+          <div class="inline-feedback success">{{ mensaje() }}</div>
+        }
+
+        <div class="table-scroll grades-table">
+          <table class="app-table">
+            <thead>
+              <tr>
+                <th>Alumno</th>
+                <th>Codigo</th>
+                <th>Nota</th>
+                <th>Observacion</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (fila of filasNotas(); track fila.matricula.id) {
+                <tr>
+                  <td>{{ fila.matricula.alumnoNombreCompleto }}</td>
+                  <td>{{ fila.matricula.codigoAlumno }}</td>
+                  <td>
+                    <input
+                      class="grade-input"
+                      type="number"
+                      min="0"
+                      max="20"
+                      step="0.01"
+                      [value]="fila.nota"
+                      [disabled]="!evaluacionSeleccionadaId()"
+                      (input)="actualizarNota(fila.matricula.id, $any($event.target).value)" />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      placeholder="Opcional"
+                      [value]="fila.observacion"
+                      [disabled]="!evaluacionSeleccionadaId()"
+                      (input)="actualizarObservacion(fila.matricula.id, $any($event.target).value)" />
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="4">
+                    <div class="table-state">
+                      <span class="table-state-icon"><i class="fa-solid fa-users"></i></span>
+                      <span>No hay alumnos matriculados en esta seccion.</span>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="form-actions footer-actions">
+          <button
+            class="action-button primary"
+            type="button"
+            [disabled]="guardandoNotas() || !evaluacionSeleccionadaId() || !filasNotas().length"
+            (click)="guardarNotas()">
+            {{ guardandoNotas() ? 'Guardando...' : 'Guardar notas' }}
+          </button>
+        </div>
+      </section>
+    }
+  </section>
+</app-shell>

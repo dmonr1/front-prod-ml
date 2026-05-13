@@ -1,70 +1,71 @@
 <app-shell>
+  <section class="assignments-page">
+    <div class="page-card page-slide-in">
+      <div class="card-head">
+        <div class="card-head-inline">
+          <div class="panel-head">
+            <span class="panel-kicker">Flujo docente</span>
+            <h2>Mis cursos asignados</h2>
+            <p>Selecciona un curso para abrir el detalle de la seccion y registrar evaluaciones, notas y asistencia.</p>
+          </div>
 
-  <section class="assignment-toolbar card">
-    <div>
-      <span class="eyebrow">Flujo docente</span>
-      <h2>Cursos y secciones asignadas</h2>
-      <p>
-        Desde aqui el docente entra a sus cursos para registrar evaluaciones, notas y asistencia.
-      </p>
+          <div class="head-actions">
+            <button class="action-button secondary" type="button" (click)="cargarAsignaciones()">
+              Actualizar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <section class="cards-section">
+        <div class="section-head">
+          <div class="panel-head">
+            <h3>Cursos y secciones</h3>
+            <p>Haz clic en una tarjeta para continuar al detalle del curso.</p>
+          </div>
+        </div>
+
+        @if (cargando()) {
+          <div class="cards-grid">
+            @for (row of [0,1,2,3]; track row) {
+              <article class="flow-card skeleton-card">
+                <span class="skeleton-line medium"></span>
+                <span class="skeleton-line short"></span>
+                <span class="skeleton-line long"></span>
+              </article>
+            }
+          </div>
+        } @else if (error()) {
+          <div class="table-state error">
+            <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
+            <span>{{ error() }}</span>
+          </div>
+        } @else if (!asignaciones().length) {
+          <div class="table-state">
+            <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
+            <span>No tienes cursos o secciones asignadas para el periodo academico actual.</span>
+          </div>
+        } @else {
+          <div class="cards-grid">
+            @for (asignacion of asignaciones(); track asignacion.id) {
+              <a class="flow-card" [routerLink]="['/mis-asignaciones', asignacion.id, 'notas']">
+                <div class="flow-card-top">
+                  <span class="flow-title">{{ asignacion.curso }}</span>
+                  <span class="status-badge active">{{ asignacion.nivel }}</span>
+                </div>
+
+                <strong>{{ obtenerDescripcion(asignacion) }}</strong>
+                <small>{{ asignacion.periodoAcademico }} - {{ asignacion.docenteNombreCompleto }}</small>
+
+                <div class="flow-card-footer">
+                  <span><i class="fa-solid fa-users"></i> Seccion {{ asignacion.seccion }}</span>
+                  <span><i class="fa-solid fa-pen-to-square"></i> Registrar notas</span>
+                </div>
+              </a>
+            }
+          </div>
+        }
+      </section>
     </div>
-    <button class="secondary-button" type="button" (click)="cargarAsignaciones()">
-      Actualizar
-    </button>
   </section>
-
-  @if (cargando()) {
-    <section class="state-card card">
-      <strong>Cargando asignaciones...</strong>
-      <p>Estamos consultando el backend con tus asignaciones activas.</p>
-    </section>
-  } @else if (error()) {
-    <section class="state-card card state-error">
-      <strong>No se pudo cargar la informacion</strong>
-      <p>{{ error() }}</p>
-    </section>
-  } @else if (!asignaciones().length) {
-    <section class="state-card card">
-      <strong>No tienes asignaciones registradas</strong>
-      <p>No se encontraron cursos o secciones para el periodo academico actual.</p>
-    </section>
-  } @else {
-    <section class="assignments-grid">
-      @for (asignacion of asignaciones(); track asignacion.id) {
-        <article class="assignment-card card">
-          <div class="assignment-head">
-            <span class="assignment-icon"><i class="fa-solid fa-book-open"></i></span>
-            <div>
-              <h3>{{ asignacion.curso }}</h3>
-              <p>{{ obtenerDescripcion(asignacion) }}</p>
-            </div>
-          </div>
-
-          <dl class="assignment-meta">
-            <div>
-              <dt>Periodo</dt>
-              <dd>{{ asignacion.periodoAcademico }}</dd>
-            </div>
-            <div>
-              <dt>Docente</dt>
-              <dd>{{ asignacion.docenteNombreCompleto }}</dd>
-            </div>
-            <div>
-              <dt>Seccion</dt>
-              <dd>{{ asignacion.seccion }}</dd>
-            </div>
-            <div>
-              <dt>Grado</dt>
-              <dd>{{ asignacion.grado }}</dd>
-            </div>
-          </dl>
-
-          <div class="assignment-actions">
-            <a class="primary-button" routerLink="/docente">Ingresar</a>
-            <a class="secondary-button" routerLink="/estudiantes">Ver alumnos</a>
-          </div>
-        </article>
-      }
-    </section>
-  }
 </app-shell>

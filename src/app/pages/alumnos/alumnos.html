@@ -6,13 +6,10 @@
           <div class="panel-head">
             <span class="panel-kicker">Gestion estudiantil</span>
             <h2>Gestion estudiantil por periodo academico</h2>
-            <p>Selecciona un periodo academico para abrir grados, secciones y luego el registro de alumnos.</p>
+            <p>Administra periodos academicos y configura sus periodos de evaluacion antes de organizar grados, secciones y alumnos.</p>
           </div>
 
           <div class="head-actions">
-            <a class="action-button secondary" routerLink="/periodos-academicos">
-              Periodo y bimestres
-            </a>
             <button class="action-button secondary" type="button" (click)="abrirModalPeriodo()">
               Nuevo periodo academico
             </button>
@@ -20,49 +17,257 @@
         </div>
       </div>
 
-      <section class="periods-panel">
-        <div class="panel-head section-head">
-          <div>
-            <h3>Periodos academicos</h3>
-            <p>Haz clic en un periodo para continuar al siguiente nivel del flujo.</p>
-          </div>
-        </div>
+      <div class="level-tabs">
+        <button
+          class="tab-button"
+          type="button"
+          [class.active]="tabActivo() === 'periodos'"
+          (click)="tabActivo.set('periodos')">
+          Periodos academicos
+        </button>
+        <button
+          class="tab-button"
+          type="button"
+          [class.active]="tabActivo() === 'periodos-evaluacion'"
+          (click)="tabActivo.set('periodos-evaluacion')">
+          Periodos de evaluacion
+        </button>
+      </div>
 
-        @if (cargandoPeriodos()) {
-          <div class="periods-grid">
-            @for (row of [0,1,2]; track row) {
-              <article class="period-card skeleton-card">
-                <span class="skeleton-line short"></span>
-                <span class="skeleton-line medium"></span>
-                <span class="skeleton-line long"></span>
-              </article>
-            }
+      @if (tabActivo() === 'periodos') {
+        <section class="periods-panel">
+          <div class="panel-head section-head">
+            <div>
+              <h3>Periodos academicos</h3>
+              <p>Haz clic en el periodo para continuar al flujo de grados y secciones.</p>
+            </div>
           </div>
-        } @else if (errorPeriodos()) {
-          <div class="table-state error">
-            <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
-            <span>{{ errorPeriodos() }}</span>
-          </div>
-        } @else {
-          <div class="periods-grid">
-            @for (periodo of periodos(); track periodo.id) {
-              <button class="period-card" type="button" (click)="abrirPeriodo(periodo.id)">
-                <div class="period-card-top">
-                  <span class="period-year">{{ periodo.anio }}</span>
+
+          @if (cargandoPeriodos()) {
+            <div class="periods-grid">
+              @for (row of [0,1,2]; track row) {
+                <article class="period-card skeleton-card">
+                  <span class="skeleton-line short"></span>
+                  <span class="skeleton-line medium"></span>
+                  <span class="skeleton-line long"></span>
+                </article>
+              }
+            </div>
+          } @else if (errorPeriodos()) {
+            <div class="table-state error">
+              <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
+              <span>{{ errorPeriodos() }}</span>
+            </div>
+          } @else {
+            <div class="periods-grid">
+              @for (periodo of periodos(); track periodo.id) {
+                <button class="period-card" type="button" (click)="abrirPeriodo(periodo.id)">
+                  <div class="period-card-top">
+                    <span class="period-year">{{ periodo.anio }}</span>
+                    <span
+                      class="status-badge"
+                      [class.active]="periodo.anio === currentYear"
+                      [class.inactive]="periodo.anio !== currentYear">
+                      {{ periodo.anio === currentYear ? 'Editable' : 'Historico' }}
+                    </span>
+                  </div>
+                  <strong>{{ periodo.nombre }}</strong>
+                  <small>{{ periodo.fechaInicio }} - {{ periodo.fechaFin }}</small>
+                  <small>{{ nombreEsquemaPeriodoEvaluacion(periodo.tipoPeriodoEvaluacion) }}</small>
+                  <div class="period-card-footer">
+                    <span><i class="fa-solid fa-calendar-days"></i> {{ totalPeriodosEvaluacionPeriodo(periodo.id) }} periodos</span>
+                    <span
+                      class="bimester-state"
+                      [class.complete]="totalPeriodosEvaluacionPeriodo(periodo.id) > 0">
+                      {{ totalPeriodosEvaluacionPeriodo(periodo.id) > 0 ? 'Configurado' : 'Sin periodos' }}
+                    </span>
+                  </div>
                   <span
-                    class="status-badge"
-                    [class.active]="periodo.anio === currentYear"
-                    [class.inactive]="periodo.anio !== currentYear">
-                    {{ periodo.anio === currentYear ? 'Editable' : 'Historico' }}
+                    class="period-link"
+                    (click)="abrirConfiguracionPeriodosEvaluacion(periodo.id); $event.stopPropagation()">
+                    Configurar periodos
                   </span>
+                </button>
+              }
+            </div>
+          }
+        </section>
+      } @else {
+        <section class="bimester-tab">
+          <article class="period-picker">
+            <div class="panel-head">
+              <span class="panel-kicker">Seleccion</span>
+              <h3>Periodo academico</h3>
+              <p>Elige una card para configurar los periodos de ese periodo.</p>
+            </div>
+
+            <div class="periods-grid bimesters-period-grid">
+              @for (periodo of periodos(); track periodo.id) {
+                <button
+                  type="button"
+                  class="period-card"
+                  [class.active]="periodoSeleccionadoId() === periodo.id"
+                  (click)="seleccionarPeriodo(periodo.id)">
+                  <div class="period-card-top">
+                    <span class="period-year">{{ periodo.anio }}</span>
+                    <span
+                      class="status-badge"
+                      [class.active]="totalPeriodosEvaluacionPeriodo(periodo.id) > 0"
+                      [class.inactive]="totalPeriodosEvaluacionPeriodo(periodo.id) === 0">
+                      {{ totalPeriodosEvaluacionPeriodo(periodo.id) > 0 ? 'Configurado' : 'Pendiente' }}
+                    </span>
+                  </div>
+                  <strong>{{ periodo.nombre }}</strong>
+                  <small>{{ periodo.fechaInicio }} - {{ periodo.fechaFin }}</small>
+                  <small>{{ nombreEsquemaPeriodoEvaluacion(periodo.tipoPeriodoEvaluacion) }}</small>
+                  <div class="period-card-footer">
+                    <span><i class="fa-solid fa-calendar-days"></i> {{ totalPeriodosEvaluacionPeriodo(periodo.id) }} periodos</span>
+                    <span
+                      class="bimester-state"
+                      [class.complete]="periodoSeleccionadoId() === periodo.id">
+                      {{ periodoSeleccionadoId() === periodo.id ? 'Seleccionado' : 'Elegir' }}
+                    </span>
+                  </div>
+                </button>
+              } @empty {
+                <div class="table-state">
+                  <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
+                  <span>No hay periodos academicos registrados.</span>
                 </div>
-                <strong>{{ periodo.nombre }}</strong>
-                <small>{{ periodo.fechaInicio }} - {{ periodo.fechaFin }}</small>
-              </button>
+              }
+            </div>
+          </article>
+
+          <article class="bimester-panel">
+            <div class="panel-head">
+              <span class="panel-kicker">Evaluacion</span>
+              <h3>Periodos de evaluacion</h3>
+              <p>
+                @if (periodoSeleccionado()) {
+                  {{ periodoSeleccionado()!.nombre }}
+                } @else {
+                  Selecciona un periodo academico
+                }
+              </p>
+            </div>
+
+            @if (periodoSeleccionado()) {
+              <div class="selected-summary">
+                <strong>{{ periodoSeleccionado()!.nombre }}</strong>
+                <span>{{ periodoSeleccionado()!.fechaInicio }} - {{ periodoSeleccionado()!.fechaFin }}</span>
+              </div>
             }
-          </div>
-        }
-      </section>
+
+            <form class="master-form">
+              <div class="form-two-columns">
+                <label>
+                  Nombre del periodo de evaluacion
+                  <input
+                    type="text"
+                    [value]="periodoEvaluacionNombre()"
+                    [disabled]="!periodoSeleccionado()"
+                    (input)="periodoEvaluacionNombre.set($any($event.target).value)"
+                    placeholder="Ejemplo: Primer trimestre" />
+                </label>
+
+                <label>
+                  Numero
+                  <input
+                    type="number"
+                    [value]="periodoEvaluacionNumero()"
+                    [disabled]="!periodoSeleccionado()"
+                    (input)="periodoEvaluacionNumero.set($any($event.target).value)"
+                    placeholder="1" />
+                </label>
+              </div>
+
+              <div class="form-two-columns">
+                <label>
+                  Fecha inicio
+                  <input
+                    type="date"
+                    [value]="periodoEvaluacionFechaInicio()"
+                    [disabled]="!periodoSeleccionado()"
+                    (input)="periodoEvaluacionFechaInicio.set($any($event.target).value)" />
+                </label>
+
+                <label>
+                  Fecha fin
+                  <input
+                    type="date"
+                    [value]="periodoEvaluacionFechaFin()"
+                    [disabled]="!periodoSeleccionado()"
+                    (input)="periodoEvaluacionFechaFin.set($any($event.target).value)" />
+                </label>
+              </div>
+
+              @if (errorGuardarPeriodoEvaluacion()) {
+                <div class="feedback error">{{ errorGuardarPeriodoEvaluacion() }}</div>
+              }
+
+              @if (mensajePeriodoEvaluacion()) {
+                <div class="feedback success">{{ mensajePeriodoEvaluacion() }}</div>
+              }
+
+              <div class="form-actions">
+                <button
+                  class="action-button primary"
+                  type="button"
+                  [disabled]="guardandoPeriodoEvaluacion() || !periodoSeleccionado()"
+                  (click)="guardarPeriodoEvaluacion()">
+                  {{ guardandoPeriodoEvaluacion() ? 'Guardando...' : 'Guardar periodo' }}
+                </button>
+                <button class="action-button secondary" type="button" (click)="limpiarFormularioPeriodoEvaluacion()">
+                  Limpiar
+                </button>
+              </div>
+            </form>
+
+            <div class="bimester-list-head">
+              <strong>Lista de periodos</strong>
+              <span>{{ periodosEvaluacionDelPeriodo().length }} registrados</span>
+            </div>
+
+            @if (cargandoPeriodosEvaluacion()) {
+              <div class="bimester-list">
+                @for (row of [0,1,2]; track row) {
+                  <article class="bimester-item skeleton-card">
+                    <span class="skeleton-line medium"></span>
+                    <span class="skeleton-line short"></span>
+                  </article>
+                }
+              </div>
+            } @else if (errorPeriodosEvaluacion()) {
+              <div class="table-state error">
+                <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
+                <span>{{ errorPeriodosEvaluacion() }}</span>
+              </div>
+            } @else if (!periodoSeleccionado()) {
+              <div class="table-state">
+                <span class="table-state-icon"><i class="fa-solid fa-arrow-left"></i></span>
+                <span>Selecciona un periodo para ver sus periodos.</span>
+              </div>
+            } @else if (!periodosEvaluacionDelPeriodo().length) {
+              <div class="table-state">
+                <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
+                <span>Este periodo todavia no tiene periodos registrados.</span>
+              </div>
+            } @else {
+              <div class="bimester-list">
+                @for (periodoEvaluacion of periodosEvaluacionDelPeriodo(); track periodoEvaluacion.id) {
+                  <article class="bimester-item">
+                    <div>
+                      <strong>{{ periodoEvaluacion.nombre }}</strong>
+                      <span>{{ periodoEvaluacion.fechaInicio }} - {{ periodoEvaluacion.fechaFin }}</span>
+                    </div>
+                    <span class="bimester-number">{{ periodoEvaluacion.numero }}</span>
+                  </article>
+                }
+              </div>
+            }
+          </article>
+        </section>
+      }
     </div>
 
     @if (modalPeriodoAbierto()) {
@@ -72,7 +277,7 @@
             <div class="panel-head">
               <span class="panel-kicker">Nuevo periodo</span>
               <h3>Registrar periodo academico</h3>
-              <p>Crea un nuevo ano academico para luego organizar alumnos, asignaciones y bimestres.</p>
+              <p>Crea un nuevo ano academico para luego organizar alumnos, asignaciones y periodos.</p>
             </div>
             <button class="modal-close" type="button" (click)="cerrarModalPeriodo()">
               <i class="fa-solid fa-xmark"></i>
@@ -120,6 +325,54 @@
                   (ngModelChange)="actualizarCampoPeriodo('fechaFin', $event)"
                   name="fechaFinPeriodo" />
               </label>
+            </div>
+
+            <label>
+              Esquema de evaluacion
+              <select
+                [ngModel]="tipoPeriodoEvaluacion()"
+                (ngModelChange)="cambiarTipoPeriodoEvaluacion($event)"
+                name="tipoPeriodoEvaluacion">
+                @for (esquema of esquemasPeriodoEvaluacion; track esquema.tipo) {
+                  <option [value]="esquema.tipo">{{ esquema.nombre }} · {{ esquema.cantidad }} periodos</option>
+                }
+              </select>
+            </label>
+
+            <div class="evaluation-draft">
+              <div class="bimester-list-head">
+                <strong>Periodos de evaluacion</strong>
+                <span>{{ periodosEvaluacionBorrador().length }} por crear</span>
+              </div>
+
+              <div class="evaluation-draft-list">
+                @for (periodoEvaluacion of periodosEvaluacionBorrador(); track periodoEvaluacion.numero; let i = $index) {
+                  <article class="evaluation-draft-row">
+                    <div class="draft-period-name">
+                      <span class="bimester-number">{{ periodoEvaluacion.numero }}</span>
+                      <strong>{{ periodoEvaluacion.nombre }}</strong>
+                    </div>
+
+                    <label>
+                      Inicio
+                      <input
+                        type="date"
+                        [ngModel]="periodoEvaluacion.fechaInicio"
+                        (ngModelChange)="actualizarFechaBorrador(i, 'fechaInicio', $event)"
+                        [name]="'fechaInicioEvaluacion' + periodoEvaluacion.numero" />
+                    </label>
+
+                    <label>
+                      Fin
+                      <input
+                        type="date"
+                        [ngModel]="periodoEvaluacion.fechaFin"
+                        (ngModelChange)="actualizarFechaBorrador(i, 'fechaFin', $event)"
+                        [name]="'fechaFinEvaluacion' + periodoEvaluacion.numero" />
+                    </label>
+                  </article>
+                }
+              </div>
             </div>
 
             @if (errorPeriodoNuevo()) {

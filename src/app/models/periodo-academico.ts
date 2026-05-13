@@ -4,5 +4,6 @@ export interface PeriodoAcademico {
   anio: number;
   fechaInicio: string;
   fechaFin: string;
+  tipoPeriodoEvaluacion: string | null;
   estado: string | null;
 }

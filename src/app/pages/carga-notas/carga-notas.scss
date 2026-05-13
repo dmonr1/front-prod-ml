@@ -1,0 +1,204 @@
+:host {
+  display: block;
+}
+
+.grades-page {
+  display: grid;
+  gap: 18px;
+}
+
+.grades-toolbar,
+.state-card,
+.panel-card {
+  padding: 22px;
+}
+
+.grades-toolbar,
+.panel-head-row,
+.toolbar-actions,
+.form-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.grades-toolbar h2,
+.panel-head h3 {
+  margin: 8px 0 6px;
+}
+
+.grades-toolbar p,
+.panel-head p,
+.state-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.state-card {
+  display: grid;
+  gap: 8px;
+}
+
+.state-error {
+  border: 1px solid rgba(240, 82, 107, 0.2);
+  background: rgba(255, 241, 241, 0.92);
+}
+
+.grades-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  gap: 16px;
+}
+
+.panel-card {
+  display: grid;
+  gap: 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+
+.panel-kicker,
+.eyebrow {
+  color: var(--blue);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.module-form {
+  display: grid;
+  gap: 14px;
+}
+
+.module-form label {
+  display: grid;
+  gap: 8px;
+  color: var(--text);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.module-form input,
+.module-form select,
+.app-table input {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fbfdff;
+  color: var(--text);
+  outline: none;
+}
+
+.module-form input:focus,
+.module-form select:focus,
+.app-table input:focus {
+  border-color: rgba(47, 139, 255, 0.65);
+  box-shadow: 0 0 0 3px rgba(47, 139, 255, 0.1);
+}
+
+.form-two-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.segmented-list,
+.evaluations-row {
+  display: grid;
+  gap: 10px;
+}
+
+.segmented-list button,
+.evaluation-chip {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fbfdff;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.segmented-list button {
+  display: grid;
+  gap: 4px;
+}
+
+.segmented-list button span,
+.evaluation-chip strong {
+  font-weight: 800;
+}
+
+.segmented-list button small,
+.evaluation-chip span {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.segmented-list button.active,
+.evaluation-chip.active {
+  border-color: rgba(47, 139, 255, 0.42);
+  background: #eef5ff;
+}
+
+.evaluations-row {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.summary-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid #d4e4fb;
+  background: #eef5ff;
+  color: #1d5fc4;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.inline-feedback {
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.inline-feedback.success {
+  border: 1px solid #cfe7d8;
+  background: #e8f7ee;
+  color: #1f6646;
+}
+
+.grade-input {
+  max-width: 110px;
+}
+
+.footer-actions {
+  justify-content: flex-end;
+}
+
+@media (max-width: 960px) {
+  .grades-toolbar,
+  .panel-head-row,
+  .toolbar-actions,
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .grades-grid,
+  .evaluations-row,
+  .form-two-columns {
+    grid-template-columns: 1fr;
+  }
+}

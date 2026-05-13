@@ -95,6 +95,34 @@
   margin-top: 18px;
 }
 
+.level-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tab-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 170px;
+  padding: 9px 14px;
+  border: 1px solid #d6e1ef;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #52657c;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tab-button.active {
+  border-color: #2159b6;
+  background: #2159b6;
+  color: #ffffff;
+}
+
 .period-card {
   display: grid;
   align-content: start;
@@ -115,6 +143,55 @@
 .period-card:hover {
   transform: translateY(-3px);
   box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
+}
+
+.period-card.active {
+  border-color: #2159b6;
+  box-shadow: 0 18px 34px rgba(33, 89, 182, 0.14);
+}
+
+.period-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #e8eef5;
+  color: #6b7a99;
+  font-size: 12px;
+}
+
+.period-card-footer span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.bimester-state {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #fff6df;
+  color: #8c6417;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.bimester-state.complete {
+  background: #e8f7ee;
+  color: #1f6646;
+}
+
+.period-link {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 4px;
+  color: #2159b6;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .period-card-top {
@@ -154,7 +231,8 @@ label {
   font-weight: 600;
 }
 
-input {
+input,
+select {
   width: 100%;
   padding: 11px 13px;
   border: 1px solid #d6e1ef;
@@ -165,9 +243,141 @@ input {
   outline: none;
 }
 
-input:focus {
+input:disabled,
+select:disabled {
+  color: #8290a4;
+  background: #f4f7fb;
+  cursor: not-allowed;
+}
+
+input:focus,
+select:focus {
   border-color: #2f6edb;
   box-shadow: 0 0 0 4px rgba(47, 110, 219, 0.12);
+}
+
+select {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #52657c 50%),
+    linear-gradient(135deg, #52657c 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) 50%,
+    calc(100% - 13px) 50%;
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+}
+
+.bimester-tab {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 380px);
+  gap: 18px;
+  align-items: start;
+}
+
+.period-picker,
+.bimester-panel {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid rgba(17, 32, 51, 0.08);
+  border-radius: 24px;
+  background: #fbfdff;
+}
+
+.bimester-panel {
+  background: #ffffff;
+}
+
+.bimester-list {
+  display: grid;
+  gap: 10px;
+}
+
+.evaluation-draft {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #dce7f5;
+  border-radius: 16px;
+  background: #f8fbff;
+}
+
+.evaluation-draft-list {
+  display: grid;
+  gap: 10px;
+}
+
+.evaluation-draft-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) repeat(2, minmax(0, 150px));
+  gap: 10px;
+  align-items: end;
+  padding: 12px;
+  border: 1px solid #d8e3f0;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.draft-period-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+}
+
+.selected-summary span,
+.bimester-list-head span,
+.bimester-item span {
+  color: #6b7a99;
+  font-size: 13px;
+}
+
+.bimesters-period-grid {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 260px));
+  margin-top: 0;
+}
+
+.selected-summary {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid #dce7f5;
+  border-radius: 14px;
+  background: #f7fbff;
+}
+
+.bimester-list-head,
+.bimester-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.bimester-item {
+  padding: 13px 14px;
+  border: 1px solid #d8e3f0;
+  border-radius: 16px;
+  background: #fbfdff;
+}
+
+.bimester-item div {
+  display: grid;
+  gap: 4px;
+}
+
+.bimester-number {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: #eaf3ff;
+  color: #1d5fc4 !important;
+  font-weight: 800;
 }
 
 .feedback {
@@ -262,14 +472,16 @@ input:focus {
 }
 
 @media (max-width: 960px) {
-  .periods-grid {
+  .periods-grid,
+  .bimester-tab {
     grid-template-columns: 1fr;
   }
 
   .card-head-inline,
   .section-head,
   .modal-head,
-  .form-two-columns {
+  .form-two-columns,
+  .evaluation-draft-row {
     grid-template-columns: 1fr;
     flex-direction: column;
   }

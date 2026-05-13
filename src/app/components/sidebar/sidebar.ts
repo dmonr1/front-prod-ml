@@ -100,7 +100,7 @@ export class Sidebar {
     if (
       ruta.startsWith('/configuracion-academica') ||
       ruta.startsWith('/periodos-academicos') ||
-      ruta.startsWith('/bimestres') ||
+      ruta.startsWith('/periodos-evaluacion') ||
       ruta.startsWith('/estructura-academica') ||
       ruta.startsWith('/cursos') ||
       ruta.startsWith('/gestion-estudiantil') ||
