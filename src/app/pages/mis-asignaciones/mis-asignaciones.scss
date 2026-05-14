@@ -208,6 +208,30 @@
   border-top: 1px solid #e8eef5;
 }
 
+.flow-card-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.flow-link-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: #eef5ff;
+  color: #1d5fc4;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.flow-link-button.secondary {
+  background: #f4f8fb;
+  color: #42526d;
+}
+
 .action-button {
   display: inline-flex;
   align-items: center;

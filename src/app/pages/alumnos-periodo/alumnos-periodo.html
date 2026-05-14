@@ -23,9 +23,17 @@
             <h2>{{ periodo()?.nombre || 'Periodo academico' }}</h2>
           </div>
 
-          @if (periodo()) {
-          <span class="period-chip">{{ esPeriodoEditable() ? 'Periodo editable' : 'Solo consulta' }}</span>
-          }
+          <div class="head-actions">
+            @if (esPeriodoEditable()) {
+              <a class="action-button tertiary" [routerLink]="['/gestion-estudiantil/periodo', periodoId, 'evaluaciones-cursos']">
+                <i class="fa-solid fa-clipboard-list"></i>
+                Evaluaciones por curso
+              </a>
+            }
+            @if (periodo()) {
+              <span class="period-chip">{{ esPeriodoEditable() ? 'Periodo editable' : 'Solo consulta' }}</span>
+            }
+          </div>
         </div>
       </div>
 

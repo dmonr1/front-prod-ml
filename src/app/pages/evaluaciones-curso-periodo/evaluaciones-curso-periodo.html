@@ -1,0 +1,218 @@
+<app-shell>
+  <section class="course-config-page">
+    <app-custom-alert
+      [open]="alertState().open"
+      [type]="alertState().type"
+      [title]="alertState().title"
+      [message]="alertState().message"
+      [confirmText]="alertState().confirmText"
+      [cancelText]="alertState().cancelText"
+      [autoCloseMs]="alertState().autoCloseMs"
+      (confirm)="cerrarAlerta()"
+      (cancel)="cerrarAlerta()"
+      (dismiss)="cerrarAlerta()" />
+
+    <div class="page-card page-slide-in">
+      <div class="card-head">
+        <div class="card-head-inline">
+          <div class="panel-head">
+            <a class="back-link" [routerLink]="['/gestion-estudiantil/periodo', periodoId]">
+              <i class="fa-solid fa-arrow-left"></i>
+              Volver al periodo
+            </a>
+            <h2>Evaluaciones por curso</h2>
+            <p>{{ periodo()?.nombre || 'Periodo academico' }}</p>
+          </div>
+
+          @if (periodo()) {
+            <span class="period-chip">{{ esPeriodoEditable() ? 'Periodo editable' : 'Solo consulta' }}</span>
+          }
+        </div>
+      </div>
+
+      <div class="content-grid">
+        <section class="courses-panel">
+          <div class="section-head">
+           
+
+            <div class="level-tabs">
+              <button
+                class="tab-button"
+                type="button"
+                [class.active]="nivelSeleccionado() === 'PRIMARIA'"
+                (click)="seleccionarNivel('PRIMARIA')">
+                Primaria
+              </button>
+              <button
+                class="tab-button"
+                type="button"
+                [class.active]="nivelSeleccionado() === 'SECUNDARIA'"
+                (click)="seleccionarNivel('SECUNDARIA')">
+                Secundaria
+              </button>
+            </div>
+          </div>
+
+          <label>
+            Buscar curso
+            <input
+              type="text"
+              [ngModel]="filtroCursos()"
+              (ngModelChange)="actualizarFiltroCursos($event)"
+              name="filtroCursosConfiguracion"
+              placeholder="Nombre, descripcion o nivel" />
+          </label>
+
+          @if (cargandoCursos()) {
+            <div class="cards-surface">
+              <div class="cards-grid">
+                @for (row of [0, 1, 2, 3]; track row) {
+                  <article class="flow-card skeleton-card">
+                    <span class="skeleton-line long"></span>
+                    <span class="skeleton-line medium"></span>
+                    <span class="skeleton-line short"></span>
+                  </article>
+                }
+              </div>
+            </div>
+          } @else if (errorCursos()) {
+            <div class="cards-surface state-surface">
+              <div class="table-state error">
+                <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
+                <span>{{ errorCursos() }}</span>
+              </div>
+            </div>
+          } @else if (!cursosFiltrados().length) {
+            <div class="cards-surface state-surface">
+              <div class="table-state">
+                <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
+                <span>No hay cursos para mostrar en este periodo.</span>
+              </div>
+            </div>
+          } @else {
+            <div class="cards-surface">
+              <div class="cards-grid">
+                @for (curso of cursosFiltrados(); track curso.cursoId) {
+                  <button
+                    class="flow-card"
+                    type="button"
+                    [class.active]="cursoSeleccionadoId() === curso.cursoId"
+                    (click)="seleccionarCurso(curso.cursoId)">
+                    <div class="flow-card-top">
+                      <span class="flow-title">{{ curso.nombreCurso }}</span>
+                      <span
+                        class="status-badge"
+                        [class.active]="curso.usaConfiguracionPersonalizada"
+                        [class.inactive]="!curso.usaConfiguracionPersonalizada">
+                        {{ curso.usaConfiguracionPersonalizada ? 'Personalizada' : 'General' }}
+                      </span>
+                    </div>
+                    <strong>{{ curso.nivelNombre }}</strong>
+                    <small>{{ curso.descripcionCurso || 'Sin descripcion adicional.' }}</small>
+                    <small>{{ curso.totalTiposConfigurados }} tipos configurados</small>
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        </section>
+
+        <section class="editor-panel">
+          <div class="section-head">
+            <div class="panel-head">
+              <h3>{{ detalleCurso()?.nombreCurso || 'Configuracion del curso' }}</h3>
+              <p>
+                @if (detalleCurso()) {
+                  {{ detalleCurso()!.usaConfiguracionPersonalizada ? 'Este curso ya usa una configuracion propia.' : 'Este curso usa la plantilla general del periodo.' }}
+                } @else {
+                  Selecciona un curso para editar sus evaluaciones.
+                }
+              </p>
+            </div>
+
+            @if (detalleCurso() && esPeriodoEditable()) {
+              <div class="head-actions">
+                <button class="action-button tertiary" type="button" (click)="restaurarPlantillaGeneral()">
+                  Restaurar plantilla general
+                </button>
+                <button class="action-button primary" type="button" [disabled]="guardando()" (click)="guardarConfiguracion()">
+                  {{ guardando() ? 'Guardando...' : 'Guardar cambios' }}
+                </button>
+              </div>
+            }
+          </div>
+
+          @if (cargandoDetalle()) {
+            <div class="cards-surface">
+              <div class="editor-list">
+                @for (row of [0, 1, 2, 3, 4, 5]; track row) {
+                  <article class="editor-row skeleton-card">
+                    <span class="skeleton-line long"></span>
+                    <span class="skeleton-line short"></span>
+                  </article>
+                }
+              </div>
+            </div>
+          } @else if (errorDetalle()) {
+            <div class="cards-surface state-surface">
+              <div class="table-state error">
+                <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
+                <span>{{ errorDetalle() }}</span>
+              </div>
+            </div>
+          } @else if (!detalleCurso()) {
+            <div class="cards-surface state-surface">
+              <div class="table-state">
+                <span class="table-state-icon"><i class="fa-solid fa-clipboard-list"></i></span>
+                <span>Selecciona un curso para abrir su configuracion.</span>
+              </div>
+            </div>
+          } @else {
+            <div class="cards-surface">
+              <div class="editor-list">
+                @for (configuracion of configuracionesEditables(); track configuracion.tipoEvaluacionId) {
+                  <article class="editor-row" [class.removed]="configuracion.cantidadActual === 0">
+                    <div class="editor-type">
+                      <strong>{{ configuracion.nombreTipoEvaluacion }}</strong>
+                      <small>{{ configuracion.descripcionTipoEvaluacion || 'Sin descripcion adicional.' }}</small>
+                    </div>
+
+                    <div class="editor-values">
+                      <span class="editor-base">Base: {{ configuracion.cantidadBasePeriodo }}</span>
+                      <div class="editor-actions-row">
+                        <label class="editor-quantity-field">
+                          <span>Cantidad</span>
+                          <input
+                            type="number"
+                            min="0"
+                            [disabled]="!esPeriodoEditable()"
+                            [ngModel]="configuracion.cantidadActual"
+                            (ngModelChange)="actualizarCantidad(configuracion.tipoEvaluacionId, $event)"
+                            [name]="'config-curso-' + configuracion.tipoEvaluacionId" />
+                        </label>
+
+                        @if (esPeriodoEditable()) {
+                          <button
+                            class="icon-action-button"
+                            type="button"
+                            [class.is-remove]="configuracion.cantidadActual > 0"
+                            [class.is-restore]="configuracion.cantidadActual === 0"
+                            (click)="alternarTipo(configuracion)">
+                            <i
+                              class="fa-solid"
+                              [class.fa-trash]="configuracion.cantidadActual > 0"
+                              [class.fa-rotate-left]="configuracion.cantidadActual === 0"></i>
+                          </button>
+                        }
+                      </div>
+                    </div>
+                  </article>
+                }
+              </div>
+            </div>
+          }
+        </section>
+      </div>
+    </div>
+  </section>
+</app-shell>

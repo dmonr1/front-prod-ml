@@ -17,6 +17,13 @@ export const routes: Routes = [
       )
   },
   {
+    path: 'gestion-estudiantil/periodo/:periodoId/evaluaciones-cursos',
+    loadComponent: () =>
+      import('./pages/evaluaciones-curso-periodo/evaluaciones-curso-periodo').then(
+        (m) => m.EvaluacionesCursoPeriodo
+      )
+  },
+  {
     path: 'gestion-estudiantil/periodo/:periodoId/seccion/:seccionId',
     loadComponent: () =>
       import('./pages/alumnos-seccion/alumnos-seccion').then((m) => m.AlumnosSeccion)
@@ -106,6 +113,11 @@ export const routes: Routes = [
   {
     path: 'mis-asignaciones/:asignacionId/notas',
     loadComponent: () => import('./pages/carga-notas/carga-notas').then((m) => m.CargaNotas)
+  },
+  {
+    path: 'mis-asignaciones/:asignacionId/asistencias',
+    loadComponent: () =>
+      import('./pages/carga-asistencias/carga-asistencias').then((m) => m.CargaAsistencias)
   },
   {
     path: 'estudiantes',

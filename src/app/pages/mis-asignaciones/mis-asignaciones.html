@@ -56,7 +56,7 @@
           <div class="cards-surface">
             <div class="cards-grid">
               @for (asignacion of asignaciones(); track asignacion.id) {
-                <a class="flow-card" [routerLink]="['/mis-asignaciones', asignacion.id, 'notas']">
+                <article class="flow-card">
                   <div class="flow-card-top">
                     <span class="flow-title">{{ asignacion.curso }}</span>
                     <span class="status-badge active">{{ asignacion.nivel }}</span>
@@ -67,9 +67,18 @@
 
                   <div class="flow-card-footer">
                     <span><i class="fa-solid fa-users"></i> Seccion {{ asignacion.seccion }}</span>
-                    <span><i class="fa-solid fa-pen-to-square"></i> Registrar notas</span>
+                    <div class="flow-card-actions">
+                      <a class="flow-link-button" [routerLink]="['/mis-asignaciones', asignacion.id, 'notas']">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        <span>Notas</span>
+                      </a>
+                      <a class="flow-link-button secondary" [routerLink]="['/mis-asignaciones', asignacion.id, 'asistencias']">
+                        <i class="fa-solid fa-calendar-check"></i>
+                        <span>Asistencia</span>
+                      </a>
+                    </div>
                   </div>
-                </a>
+                </article>
               }
             </div>
           </div>

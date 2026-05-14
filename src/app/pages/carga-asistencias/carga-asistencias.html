@@ -1,31 +1,31 @@
 <app-shell>
-  <section class="grades-page">
+  <section class="attendance-page">
     <app-custom-alert [open]="alertState().open" [type]="alertState().type" [title]="alertState().title"
       [message]="alertState().message" [confirmText]="alertState().confirmText" [cancelText]="alertState().cancelText"
       [autoCloseMs]="alertState().autoCloseMs" (confirm)="cerrarAlerta()" (cancel)="cerrarAlerta()"
       (dismiss)="cerrarAlerta()" />
 
-    <div class="grades-toolbar card">
-      <div class="grades-toolbar-inline">
+    <div class="attendance-toolbar card">
+      <div class="attendance-toolbar-inline">
         <a class="back-link-button" [routerLink]="['/mis-asignaciones']">
           <i class="fa-solid fa-arrow-left"></i>
           <span>Volver</span>
         </a>
-        <span class="eyebrow">Registro de notas</span>
+        <span class="eyebrow">Registro de asistencia</span>
         <h2>{{ asignacion()?.curso || 'Curso asignado' }}</h2>
         <p>{{ asignacion()?.grado || 'Grado' }}</p>
         <p>Seccion {{ asignacion()?.seccion || '-' }}</p>
-        <p>{{ resumenNotas().registradas }} de {{ resumenNotas().total }} notas ingresadas</p>
+        <p>{{ resumenAsistencia().registradas }} de {{ resumenAsistencia().total }} alumnos con asistencia</p>
       </div>
       <div class="panel-head panel-head-row">
-        <span class="summary-pill">Promedio {{ resumenNotas().promedio }}</span>
+        <span class="summary-pill">Promedio {{ resumenAsistencia().promedio }}%</span>
       </div>
     </div>
 
     @if (cargando()) {
     <section class="state-card card">
-      <strong>Cargando modulo de notas...</strong>
-      <p>Estamos preparando periodos, alumnos y evaluaciones disponibles.</p>
+      <strong>Cargando modulo de asistencia...</strong>
+      <p>Estamos preparando periodos y alumnos disponibles.</p>
     </section>
     } @else if (error()) {
     <section class="state-card card state-error">
@@ -35,10 +35,8 @@
     }
 
     @if (!cargando() && asignacion()) {
-    <section class="panel-card notes-card">
-      <div class="panel-head panel-head-row notes-card-head">
-
-
+    <section class="panel-card attendance-card">
+      <div class="panel-head panel-head-row attendance-card-head">
         @if (periodosEvaluacionPeriodo().length) {
         <div class="period-switcher">
           <button class="calendar-nav" type="button" [disabled]="indicePeriodoEvaluacionSeleccionado() <= 0"
@@ -62,6 +60,17 @@
           </button>
         </div>
         }
+
+        <label class="common-config-field">
+          <span>Clases programadas</span>
+          <input class="attendance-input common-input" type="text" inputmode="numeric" autocomplete="off"
+            [value]="clasesProgramadasGeneral()"
+            (input)="onClasesProgramadasInput($event)"
+            (blur)="onClasesProgramadasBlur()"
+            (wheel)="bloquearCambioNumero($event)"
+            (keydown.arrowUp)="bloquearCambioNumero($event)"
+            (keydown.arrowDown)="bloquearCambioNumero($event)" />
+        </label>
       </div>
 
       @if (!periodosEvaluacionPeriodo().length) {
@@ -70,35 +79,37 @@
         <span>No hay periodos registrados para esta asignacion.</span>
       </div>
       } @else {
-
-
-      <div class="table-scroll grades-table">
+      <div class="table-scroll attendance-table">
         <table class="app-table">
           <thead>
             <tr>
               <th>Alumno</th>
-              @for (evaluacion of evaluaciones(); track evaluacion.id) {
-              <th [title]="evaluacion.nombre">{{ abreviaturaEvaluacion(evaluacion) }}</th>
-              }
+              <th>Asistidas</th>
+              <th>% Asistencia</th>
             </tr>
           </thead>
           <tbody>
-            @for (fila of filasNotas(); track fila.matricula.id) {
+            @for (fila of filasAsistencia(); track fila.matricula.id) {
             <tr>
               <td>{{ fila.matricula.alumnoNombreCompleto }}</td>
-              @for (evaluacion of evaluaciones(); track evaluacion.id) {
               <td>
-                <input class="grade-input" type="text" inputmode="decimal" autocomplete="off"
-                  [value]="fila.notas[evaluacion.id] || ''"
-                  (input)="onNotaInput(fila.matricula.id, evaluacion.id, $event)" (wheel)="bloquearCambioNota($event)"
-                  (keydown.arrowUp)="bloquearCambioNota($event)" (keydown.arrowDown)="bloquearCambioNota($event)"
-                  (blur)="onNotaBlur(fila.matricula.id, evaluacion.id)" />
+                <input class="attendance-input" type="text" inputmode="numeric" autocomplete="off"
+                  [value]="fila.clasesAsistidas"
+                  (input)="onAsistenciaInput(fila.matricula.id, $event)"
+                  (blur)="onAsistenciaBlur(fila.matricula.id)"
+                  (wheel)="bloquearCambioNumero($event)"
+                  (keydown.arrowUp)="bloquearCambioNumero($event)"
+                  (keydown.arrowDown)="bloquearCambioNumero($event)" />
               </td>
-              }
+              <td>
+                <span class="attendance-percent">
+                  {{ fila.porcentajeAsistencia === null ? '--' : fila.porcentajeAsistencia + '%' }}
+                </span>
+              </td>
             </tr>
             } @empty {
             <tr>
-              <td [attr.colspan]="evaluaciones().length + 1">
+              <td colspan="3">
                 <div class="table-state">
                   <span class="table-state-icon"><i class="fa-solid fa-users"></i></span>
                   <span>No hay alumnos matriculados en esta seccion.</span>
@@ -109,20 +120,6 @@
           </tbody>
         </table>
       </div>
-
-      @if (leyendaEvaluaciones().length) {
-      <div class="notes-legend">
-        <span class="notes-legend-label">Leyenda:</span>
-        <div class="notes-legend-list">
-          @for (item of leyendaEvaluaciones(); track item.abreviatura) {
-          <span class="notes-legend-item">
-            <strong>{{ item.abreviatura }}</strong>
-            <small>{{ item.nombre }}</small>
-          </span>
-          }
-        </div>
-      </div>
-      }
 
       <div class="form-actions footer-actions">
         <span class="autosave-hint">Los cambios se guardan automaticamente.</span>

@@ -3,26 +3,26 @@
   height: 100%;
 }
 
-.grades-page {
+.attendance-page {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
   min-height: 100%;
-  background: #f1faff;
+  background: #ffffff;
   padding: 25px;
   border-radius: 28px;
   box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
 }
 
-.grades-toolbar,
-.state-card{
-  padding: 0px 22px 15px;
+.attendance-toolbar,
+.state-card {
+  padding: 0 22px 15px;
 }
 
 .panel-card {
   padding: 20px 30px;
 }
 
-.grades-toolbar,
+.attendance-toolbar,
 .panel-head-row,
 .toolbar-actions,
 .form-actions {
@@ -32,12 +32,12 @@
   gap: 14px;
 }
 
-.grades-toolbar h2,
+.attendance-toolbar h2,
 .panel-head h3 {
   margin: 8px 0 6px;
 }
 
-.grades-toolbar p,
+.attendance-toolbar p,
 .panel-head p,
 .state-card p {
   margin: 0;
@@ -45,7 +45,7 @@
   line-height: 1.55;
 }
 
-.grades-toolbar-inline {
+.attendance-toolbar-inline {
   display: inline-flex;
   align-items: center;
   gap: 12px;
@@ -53,18 +53,18 @@
   flex-wrap: wrap;
 }
 
-.grades-toolbar-inline .eyebrow,
-.grades-toolbar-inline h2,
-.grades-toolbar-inline p {
+.attendance-toolbar-inline .eyebrow,
+.attendance-toolbar-inline h2,
+.attendance-toolbar-inline p {
   margin: 0;
 }
 
-.grades-toolbar-inline h2 {
+.attendance-toolbar-inline h2 {
   font-size: 1.35rem;
   white-space: nowrap;
 }
 
-.grades-toolbar-inline p {
+.attendance-toolbar-inline p {
   white-space: nowrap;
 }
 
@@ -94,12 +94,12 @@
 .panel-card {
   display: grid;
   gap: 18px;
+  border: 1px solid var(--line);
   border-radius: 18px;
   background: #fff;
   box-shadow: var(--shadow);
 }
 
-.panel-kicker,
 .eyebrow {
   color: var(--blue);
   font-size: 0.78rem;
@@ -108,50 +108,26 @@
   text-transform: uppercase;
 }
 
-.module-form {
-  display: grid;
-  gap: 14px;
+.attendance-card {
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr) auto;
 }
 
-.module-form label {
-  display: grid;
+.attendance-card-head {
+  align-items: center;
+}
+
+.common-config-field {
+  display: inline-grid;
   gap: 8px;
-  color: var(--text);
-  font-size: 0.86rem;
+  min-width: 170px;
+  color: #112033;
+  font-size: 12px;
   font-weight: 700;
 }
 
-.module-form input,
-.module-form select,
-.app-table input {
-  width: 100%;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: #fbfdff;
-  color: var(--text);
-  outline: none;
-}
-
-.module-form input:focus,
-.module-form select:focus,
-.app-table input:focus {
-  border-color: rgba(47, 139, 255, 0.65);
-  box-shadow: 0 0 0 3px rgba(47, 139, 255, 0.1);
-}
-
-.form-two-columns {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.notes-card {
-  min-height: 0;
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
-}
-
-.notes-card-head {
-  align-items: center;
+.common-input {
+  max-width: 120px;
 }
 
 .period-switcher {
@@ -188,14 +164,6 @@
   text-align: center;
 }
 
-.calendar-label {
-  color: #6b7a99;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 .calendar-current strong {
   color: #112033;
   font-size: 22px;
@@ -221,33 +189,7 @@
   font-weight: 800;
 }
 
-.grade-input {
-  min-width: 58px;
-  max-width: 68px;
-  min-height: 36px;
-  padding: 6px 8px;
-  appearance: textfield;
-  -moz-appearance: textfield;
-  text-align: center;
-}
-
-.grade-input::-webkit-outer-spin-button,
-.grade-input::-webkit-inner-spin-button {
-  margin: 0;
-  -webkit-appearance: none;
-}
-
-.footer-actions {
-  justify-content: flex-end;
-}
-
-.autosave-hint {
-  color: #5f6f8e;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.grades-table {
+.attendance-table {
   min-height: 0;
   height: 100%;
   overflow-y: auto;
@@ -255,49 +197,9 @@
 }
 
 .app-table {
+  width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-}
-
-.notes-legend {
-  display: grid;
-  gap: 10px;
-}
-
-.notes-legend-label {
-  color: #5f6f8e;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.notes-legend-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.notes-legend-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border: 1px solid #d8e5f7;
-  border-radius: 12px;
-  background: #f7fbff;
-  color: #112033;
-}
-
-.notes-legend-item strong {
-  color: #1d5fc4;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.notes-legend-item small {
-  color: #5f6f8e;
-  font-size: 12px;
 }
 
 .app-table th,
@@ -315,32 +217,77 @@
   box-shadow: inset 0 -1px 0 #d8e5f7;
 }
 
-.app-table th:not(:first-child),
-.app-table td:not(:first-child) {
-  min-width: 50px;
-  width: 50px;
-  padding-left: 4px;
-  padding-right: 4px;
-}
-
 .app-table th:first-child,
 .app-table td:first-child {
   text-align: left;
-  width: 180px;
-  min-width: 180px;
-  max-width: 180px;
+  width: 220px;
+  min-width: 220px;
+  max-width: 220px;
+}
+
+.app-table th:not(:first-child),
+.app-table td:not(:first-child) {
+  min-width: 110px;
+  width: 110px;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+.attendance-input {
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fbfdff;
+  color: var(--text);
+  outline: none;
+  text-align: center;
+}
+
+.attendance-input:focus {
+  border-color: rgba(47, 139, 255, 0.65);
+  box-shadow: 0 0 0 3px rgba(47, 139, 255, 0.1);
+}
+
+.attendance-percent {
+  color: #2159b6;
+  font-weight: 700;
+}
+
+.footer-actions {
+  justify-content: flex-end;
+}
+
+.autosave-hint {
+  color: #5f6f8e;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.table-state {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.table-state-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  background: rgba(238, 245, 255, 0.9);
+  color: #2159b6;
 }
 
 @media (max-width: 960px) {
-  .grades-toolbar,
+  .attendance-toolbar,
   .panel-head-row,
   .toolbar-actions,
   .form-actions {
     flex-direction: column;
-  }
-
-  .form-two-columns {
-    grid-template-columns: 1fr;
   }
 
   .period-switcher {
@@ -353,13 +300,13 @@
     flex: 1;
   }
 
-  .grades-toolbar-inline {
+  .attendance-toolbar-inline {
     width: 100%;
     align-items: flex-start;
   }
 
-  .grades-toolbar-inline h2,
-  .grades-toolbar-inline p {
+  .attendance-toolbar-inline h2,
+  .attendance-toolbar-inline p {
     white-space: normal;
   }
 }

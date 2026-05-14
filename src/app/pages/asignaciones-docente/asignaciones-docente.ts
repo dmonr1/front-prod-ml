@@ -3,10 +3,11 @@ import { CustomAlertComponent, CustomAlertType } from '../../components/custom-a
 import { Shell } from '../../layouts/shell/shell';
 import { AsignacionDocente } from '../../models/asignacion';
 import { Curso } from '../../models/curso';
+import { CursoPeriodoAcademico } from '../../models/curso-periodo-academico';
 import { Docente } from '../../models/docente';
 import { PeriodoAcademico } from '../../models/periodo-academico';
 import { Seccion } from '../../models/seccion';
-import { CursoService } from '../../services/academico/curso.service';
+import { CursoPeriodoAcademicoService } from '../../services/academico/curso-periodo-academico.service';
 import { DocenteService } from '../../services/academico/docente.service';
 import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
 import { SeccionService } from '../../services/academico/seccion.service';
@@ -30,7 +31,7 @@ interface AlertState {
 })
 export class AsignacionesDocente {
   private readonly docenteService = inject(DocenteService);
-  private readonly cursoService = inject(CursoService);
+  private readonly cursoPeriodoAcademicoService = inject(CursoPeriodoAcademicoService);
   private readonly seccionService = inject(SeccionService);
   private readonly periodoAcademicoService = inject(PeriodoAcademicoService);
   private readonly asignacionAcademicaService = inject(AsignacionAcademicaService);
@@ -38,6 +39,7 @@ export class AsignacionesDocente {
 
   readonly docentes = signal<Docente[]>([]);
   readonly cursos = signal<Curso[]>([]);
+  readonly cursosPeriodo = signal<CursoPeriodoAcademico[]>([]);
   readonly secciones = signal<Seccion[]>([]);
   readonly periodos = signal<PeriodoAcademico[]>([]);
   readonly asignaciones = signal<AsignacionDocente[]>([]);
@@ -165,7 +167,6 @@ export class AsignacionesDocente {
 
   cargarCatalogos(): void {
     this.cargarDocentes();
-    this.cargarCursos();
     this.cargarPeriodos();
   }
 
@@ -185,17 +186,37 @@ export class AsignacionesDocente {
     });
   }
 
-  cargarCursos(): void {
+  cargarCursos(periodoAcademicoId?: number | null): void {
     this.cargandoCursos.set(true);
     this.errorCursos.set(null);
+    this.cursos.set([]);
+    this.cursoSeleccionado.set(null);
+    this.cursoQuery.set('');
 
-    this.cursoService.listar().subscribe({
+    this.cursoPeriodoAcademicoService.listar(periodoAcademicoId).subscribe({
       next: (response) => {
-        this.cursos.set(response);
+        this.cursosPeriodo.set(response);
+        this.cursos.set(
+          response
+            .filter((cursoPeriodo) => cursoPeriodo.estado !== 'INACTIVO')
+            .map((cursoPeriodo) => ({
+              id: cursoPeriodo.cursoId,
+              nivelId: cursoPeriodo.nivelId,
+              nivelNombre: cursoPeriodo.nivelNombre,
+              nombre: cursoPeriodo.cursoNombre,
+              descripcion: cursoPeriodo.cursoDescripcion,
+              estado: cursoPeriodo.estado
+            }))
+            .sort(
+              (a, b) =>
+                a.nivelNombre.localeCompare(b.nivelNombre) ||
+                a.nombre.localeCompare(b.nombre)
+            )
+        );
         this.cargandoCursos.set(false);
       },
       error: () => {
-        this.errorCursos.set('No se pudieron cargar los cursos.');
+        this.errorCursos.set('No se pudieron cargar los cursos habilitados para este periodo.');
         this.cargandoCursos.set(false);
       }
     });
@@ -241,6 +262,7 @@ export class AsignacionesDocente {
           return;
         }
 
+        this.cargarCursos(this.periodoSeleccionado()?.id ?? null);
         this.cargarSecciones(this.periodoSeleccionado()?.id ?? null);
         this.cargarAsignaciones();
       },
@@ -351,6 +373,7 @@ export class AsignacionesDocente {
     this.periodoQuery.set(this.formatearPeriodo(periodo));
     this.modalPeriodoAbierto.set(false);
     this.seccionNivelActivo.set('PRIMARIA');
+    this.cargarCursos(periodo.id);
     this.cargarSecciones(periodo.id);
     this.cargarAsignaciones();
   }
