@@ -1,0 +1,441 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.grades-page {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  min-height: 100%;
+  background: #f1faff;
+  padding: 25px;
+  border-radius: 28px;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
+}
+
+.grades-toolbar,
+.state-card {
+  padding: 0 22px 15px;
+}
+
+.tutorias-selector {
+  display: grid;
+  gap: 16px;
+  padding: 20px 22px 22px;
+}
+
+.panel-card {
+  padding: 20px 30px;
+}
+
+.grades-toolbar,
+.panel-head-row,
+.form-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.grades-toolbar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+}
+
+.grades-toolbar h2,
+.panel-head h3 {
+  margin: 8px 0 6px;
+}
+
+.grades-toolbar p,
+.panel-head p,
+.state-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.grades-toolbar-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.grades-toolbar-main {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.grades-toolbar-main h2,
+.grades-toolbar-main p {
+  margin: 0;
+}
+
+.grades-toolbar-main h2 {
+  font-size: 1.35rem;
+  color: #1d5fc4;
+}
+
+.grades-toolbar-main p {
+  color: var(--muted);
+}
+
+.section-meta {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.section-meta strong {
+  color: #112033;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.section-meta span {
+  color: #64748b;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.back-link-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: #eef5ff;
+  color: #1d5fc4;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.state-card {
+  display: grid;
+  gap: 8px;
+}
+
+.tutorias-surface {
+  padding: 20px;
+  border-radius: 18px;
+  background: #f1faff;
+}
+
+.tutorias-grid {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 320px;
+  gap: 20px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 6px;
+  justify-content: start;
+}
+
+.flow-card {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-height: 156px;
+  padding: 16px;
+  border: none;
+  border-radius: 18px;
+  background: #ffffff;
+  color: #112033;
+  text-align: left;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.flow-card-top,
+.flow-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.flow-title {
+  color: #0f766e;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.flow-card strong {
+  color: #112033;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.flow-card small,
+.flow-card-footer {
+  color: #6b7a99;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.flow-card-footer {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #e8eef5;
+}
+
+.tutoria-card-option {
+  cursor: pointer;
+}
+
+.tutoria-card-option:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
+}
+
+.tutoria-card-option.active {
+  background: linear-gradient(180deg, #ffffff 0%, #f4f9ff 100%);
+  box-shadow: 0 10px 22px rgba(29, 95, 196, 0.12);
+  outline: 2px solid rgba(33, 89, 182, 0.14);
+}
+
+.flow-select-label {
+  color: #2159b6;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tutorias-grid::-webkit-scrollbar {
+  height: 9px;
+}
+
+.tutorias-grid::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #c8d9f3;
+}
+
+.tutorias-grid::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: #edf4ff;
+}
+
+.state-error {
+  border: 1px solid rgba(240, 82, 107, 0.2);
+  background: rgba(255, 241, 241, 0.92);
+}
+
+.panel-card {
+  display: grid;
+  gap: 18px;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+
+.panel-kicker,
+.eyebrow {
+  color: var(--blue);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.notes-card {
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.notes-card-head {
+  align-items: center;
+}
+
+.period-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.calendar-nav {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid #d4e4fb;
+  border-radius: 12px;
+  background: #eef5ff;
+  color: #1d5fc4;
+  cursor: pointer;
+}
+
+.calendar-nav:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.calendar-current {
+  display: grid;
+  gap: 2px;
+  min-width: 210px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  text-align: center;
+}
+
+.calendar-current strong {
+  color: #112033;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.calendar-current small {
+  color: #6b7a99;
+  font-size: 12px;
+}
+
+.summary-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid #d4e4fb;
+  background: #eef5ff;
+  color: #1d5fc4;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.table-pill {
+  min-width: 92px;
+}
+
+.grades-table {
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+.app-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.grade-pill {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  min-width: 92px;
+  padding: 8px 10px;
+  border: 1px solid #d8e5f7;
+  border-radius: 14px;
+  background: #f7fbff;
+}
+
+.grade-pill.empty {
+  background: #fbfdff;
+}
+
+.grade-pill strong {
+  color: #112033;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.grade-pill small {
+  color: #5f6f8e;
+  font-size: 11px;
+}
+
+.table-state {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 18px;
+  text-align: center;
+}
+
+.table-state-icon {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 999px;
+  background: #eef5ff;
+  color: #1d5fc4;
+  font-size: 22px;
+}
+
+.app-table th,
+.app-table td {
+  text-align: center;
+  vertical-align: middle;
+  font-size: 12px !important;
+}
+
+.app-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #f7fbff;
+  box-shadow: inset 0 -1px 0 #d8e5f7;
+}
+
+.app-table th,
+.app-table td {
+  padding: 10px 8px;
+}
+
+.app-table th:first-child,
+.app-table td:first-child {
+  min-width: 220px;
+  max-width: 220px;
+  text-align: left;
+}
+
+.app-table th:nth-child(2),
+.app-table td:nth-child(2) {
+  min-width: 110px;
+}
+
+@media (max-width: 960px) {
+  .grades-toolbar,
+  .panel-head-row,
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .grades-toolbar {
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+  }
+
+  .period-switcher {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .calendar-current {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .grades-toolbar-inline {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .grades-toolbar-main {
+    justify-items: start;
+    text-align: left;
+  }
+}

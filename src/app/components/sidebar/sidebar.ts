@@ -7,6 +7,7 @@ export interface SidebarChildItem {
   label: string;
   path: string;
   icon: string;
+  activePaths?: string[];
 }
 
 export interface SidebarItem {
@@ -68,11 +69,26 @@ export class Sidebar {
   }
 
   isParentActive(item: SidebarItem): boolean {
-    return item.path ? this.isRouteActive(item.path) : false;
+    if (item.path && this.isRouteActive(item.path)) {
+      return true;
+    }
+
+    return item.children?.some((child) => this.isChildActive(child)) ?? false;
   }
 
   isRouteActive(path: string): boolean {
     return this.router.url === path || this.router.url.startsWith(`${path}/`);
+  }
+
+  isChildActive(child: SidebarChildItem): boolean {
+    const coincideRutaBase =
+      this.router.url === child.path || this.router.url.startsWith(`${child.path}?`);
+
+    if (coincideRutaBase) {
+      return true;
+    }
+
+    return (child.activePaths ?? []).some((ruta) => this.isRouteActive(ruta));
   }
 
   cerrarSesion(): void {
@@ -108,26 +124,21 @@ export class Sidebar {
       ruta.startsWith('/matriculas-periodo') ||
       ruta.startsWith('/docentes-accesos') ||
       ruta.startsWith('/asignaciones-tutorias') ||
-      ruta.startsWith('/asignaciones-docente') ||
-      ruta.startsWith('/tutorias-seccion')
+      ruta.startsWith('/asignaciones-docente')
     ) {
       return ['configuracion-academica'];
     }
 
-    if (ruta.startsWith('/mis-asignaciones') || ruta.startsWith('/estudiantes')) {
-      return ['academico'];
+    if (ruta.startsWith('/mis-asignaciones/tutorias') || ruta.startsWith('/seccion-tutorada')) {
+      return ['seguimiento'];
     }
 
-    if (ruta.startsWith('/alumno')) {
-      return ['seguimiento'];
+    if (ruta.startsWith('/mis-asignaciones')) {
+      return ['academico'];
     }
 
     if (ruta.startsWith('/predicciones') || ruta.startsWith('/reportes')) {
       return ['analitica'];
-    }
-
-    if (ruta.startsWith('/usuario')) {
-      return ['administracion'];
     }
 
     return [];

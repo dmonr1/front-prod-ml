@@ -2,9 +2,12 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Shell } from '../../layouts/shell/shell';
 import { AsignacionDocente } from '../../models/asignacion';
+import { Tutoria } from '../../models/tutoria';
 import { AuthService } from '../../services/auth/auth.service';
 import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
 import { AsignacionAcademicaService } from '../../services/asignaciones/asignacion-academica.service';
+import { TutoriaService } from '../../services/asignaciones/tutoria.service';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-mis-asignaciones',
@@ -16,6 +19,7 @@ export class MisAsignaciones implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly asignacionService = inject(AsignacionAcademicaService);
   private readonly periodoAcademicoService = inject(PeriodoAcademicoService);
+  private readonly tutoriaService = inject(TutoriaService);
 
   readonly usuario = computed(() => this.authService.obtenerUsuario());
   readonly cargando = signal(true);
@@ -23,6 +27,7 @@ export class MisAsignaciones implements OnInit {
   readonly currentYear = new Date().getFullYear();
   readonly periodoAcademicoId = signal<number | null>(null);
   readonly asignaciones = signal<AsignacionDocente[]>([]);
+  readonly seccionesTutoradas = signal<Tutoria[]>([]);
 
   ngOnInit(): void {
     this.resolverPeriodoYCargarAsignaciones();
@@ -76,23 +81,31 @@ export class MisAsignaciones implements OnInit {
     this.cargando.set(true);
     this.error.set('');
 
-    this.asignacionService
-      .listarAsignaciones(docenteId, periodoAcademicoId)
-      .subscribe({
-        next: (asignaciones) => {
-          this.asignaciones.set(asignaciones);
-          this.cargando.set(false);
-        },
-        error: (error) => {
-          this.error.set(
-            error?.error?.mensaje ?? 'No se pudieron cargar las asignaciones del docente.'
-          );
-          this.cargando.set(false);
-        }
-      });
+    forkJoin({
+      asignaciones: this.asignacionService.listarAsignaciones(docenteId, periodoAcademicoId),
+      tutorias: this.tutoriaService.listarPorDocente(docenteId, periodoAcademicoId)
+    }).subscribe({
+      next: ({ asignaciones, tutorias }) => {
+        this.asignaciones.set(asignaciones);
+        this.seccionesTutoradas.set(
+          tutorias.filter((tutoria) => (tutoria.estado ?? 'ACTIVO') === 'ACTIVO')
+        );
+        this.cargando.set(false);
+      },
+      error: (error) => {
+        this.error.set(
+          error?.error?.mensaje ?? 'No se pudieron cargar las asignaciones del docente.'
+        );
+        this.cargando.set(false);
+      }
+    });
   }
 
   obtenerDescripcion(asignacion: AsignacionDocente): string {
     return `${asignacion.grado} - Seccion ${asignacion.seccion}`;
+  }
+
+  obtenerDescripcionTutoria(tutoria: Tutoria): string {
+    return `${tutoria.grado} - Seccion ${tutoria.seccion}`;
   }
 }

@@ -38,4 +38,12 @@ export class AsignacionAcademicaService {
       }
     );
   }
+
+  actualizarEstado(asignacionId: number, activo: boolean): Observable<AsignacionDocente> {
+    return this.http.patch<AsignacionDocente>(`${this.api}/asignaciones-docente/${asignacionId}/estado`, null, {
+      params: {
+        activo
+      }
+    });
+  }
 }

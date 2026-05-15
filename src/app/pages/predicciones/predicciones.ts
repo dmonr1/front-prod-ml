@@ -1,203 +1,97 @@
-import { Component, computed, signal } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
+import { Component, computed, inject, signal } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import { Shell } from '../../layouts/shell/shell';
+import { PeriodoAcademico } from '../../models/periodo-academico';
+import { PeriodoEvaluacion } from '../../models/periodo-evaluacion';
+import { Seccion } from '../../models/seccion';
+import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
+import { PeriodoEvaluacionService } from '../../services/academico/periodo-evaluacion.service';
+import { SeccionService } from '../../services/academico/seccion.service';
+import {
+  AlertaSeguimiento,
+  AlertaSeguimientoService,
+  RecomendacionSeguimiento
+} from '../../services/alerta/alerta-seguimiento.service';
+import { AuthService } from '../../services/auth/auth.service';
+import { TutoriaService } from '../../services/asignaciones/tutoria.service';
+import {
+  PrediccionRiesgo,
+  PrediccionService,
+  ResumenPrediccion
+} from '../../services/prediccion/prediccion.service';
 
-type NivelRiesgo = 'ALTO' | 'MEDIO' | 'BAJO';
 type VistaPrediccion = 'global' | 'curso';
+type NivelRiesgo = 'ALTO' | 'MEDIO' | 'BAJO';
 
-interface FiltroOption {
-  label: string;
-  value: string;
-}
-
-interface PrediccionMock {
-  id: number;
-  alumno: string;
-  codigo: string;
-  seccion: string;
-  periodoEvaluacion: string;
-  indiceRiesgo: number;
-  nivel: NivelRiesgo;
-  asistencia: number;
-  promedioAcademico: number;
-  cursosRiesgo: number;
-  curso?: string;
-  alerta: string;
-  recomendacion: string;
+interface PrediccionVista extends PrediccionRiesgo {
+  nivelRiesgoNormalizado: NivelRiesgo;
+  puntaje: number;
   factores: string[];
-  tendencia: 'Sube' | 'Estable' | 'Baja';
+  alertaPrincipal: string;
+  recomendacionPrincipal: string;
+  tendencia: 'Critico' | 'Controlado';
 }
 
 @Component({
   selector: 'app-predicciones',
-  imports: [Shell],
+  imports: [Shell, DecimalPipe],
   templateUrl: './predicciones.html',
   styleUrl: './predicciones.scss'
 })
-
 export class Predicciones {
+  private readonly authService = inject(AuthService);
+  private readonly periodoAcademicoService = inject(PeriodoAcademicoService);
+  private readonly periodoEvaluacionService = inject(PeriodoEvaluacionService);
+  private readonly seccionService = inject(SeccionService);
+  private readonly tutoriaService = inject(TutoriaService);
+  private readonly prediccionService = inject(PrediccionService);
+  private readonly alertaSeguimientoService = inject(AlertaSeguimientoService);
+  private readonly currentYear = new Date().getFullYear();
+
   readonly vistaActiva = signal<VistaPrediccion>('global');
-  readonly periodoSeleccionado = signal('2026');
-  readonly periodoEvaluacionSeleccionado = signal('Segundo periodo');
-  readonly seccionSeleccionada = signal('TODAS');
+  readonly cargandoFiltros = signal(true);
+  readonly cargandoVista = signal(false);
+  readonly error = signal<string | null>(null);
+
+  readonly periodosEvaluacion = signal<PeriodoEvaluacion[]>([]);
+  readonly secciones = signal<Seccion[]>([]);
+  readonly periodoEvaluacionSeleccionadoId = signal<number | null>(null);
+  readonly seccionSeleccionadaId = signal<number | null>(null);
   readonly busqueda = signal('');
-  readonly prediccionSeleccionadaId = signal<number>(101);
+  readonly prediccionSeleccionadaId = signal<number | null>(null);
 
-  readonly periodos: FiltroOption[] = [
-    { label: '2026', value: '2026' },
-    { label: '2025', value: '2025' }
-  ];
+  readonly resumenApi = signal<ResumenPrediccion | null>(null);
+  readonly prediccionesGlobales = signal<PrediccionVista[]>([]);
+  readonly prediccionesCurso = signal<PrediccionVista[]>([]);
 
-  readonly periodosEvaluacion: FiltroOption[] = [
-    { label: 'Primer periodo', value: 'Primer periodo' },
-    { label: 'Segundo periodo', value: 'Segundo periodo' },
-    { label: 'Tercer periodo', value: 'Tercer periodo' },
-    { label: 'Cuarto periodo', value: 'Cuarto periodo' }
-  ];
+  constructor() {
+    this.cargarFiltros();
+  }
 
-  readonly secciones: FiltroOption[] = [
-    { label: 'Todas', value: 'TODAS' },
-    { label: '5TO A', value: '5TO A' },
-    { label: '5TO B', value: '5TO B' },
-    { label: '3RO A', value: '3RO A' }
-  ];
+  readonly periodoEvaluacionSeleccionado = computed(
+    () =>
+      this.periodosEvaluacionDisponibles().find(
+        (periodo) => periodo.id === this.periodoEvaluacionSeleccionadoId()
+      ) ?? null
+  );
 
-  readonly prediccionesGlobales = signal<PrediccionMock[]>([
-    {
-      id: 101,
-      alumno: 'Luis Ramirez Soto',
-      codigo: 'AL-0051',
-      seccion: '5TO A',
-      periodoEvaluacion: 'Segundo periodo',
-      indiceRiesgo: 87,
-      nivel: 'ALTO',
-      asistencia: 68,
-      promedioAcademico: 10.9,
-      cursosRiesgo: 4,
-      alerta: 'Riesgo alto por baja asistencia y 4 cursos con rendimiento critico.',
-      recomendacion: 'Coordinar entrevista con tutor y reforzamiento en Matematica y Comunicacion.',
-      factores: ['Asistencia menor a 70%', 'Promedio general bajo', 'Multiples cursos desaprobados'],
-      tendencia: 'Sube'
-    },
-    {
-      id: 102,
-      alumno: 'Maria Fernandez Rojas',
-      codigo: 'AL-0058',
-      seccion: '5TO A',
-      periodoEvaluacion: 'Segundo periodo',
-      indiceRiesgo: 64,
-      nivel: 'MEDIO',
-      asistencia: 81,
-      promedioAcademico: 12.7,
-      cursosRiesgo: 2,
-      alerta: 'Rendimiento irregular en el periodo de evaluacion y descenso en cursos clave.',
-      recomendacion: 'Monitoreo quincenal y seguimiento del plan lector.',
-      factores: ['Descenso frente al periodo de evaluacion anterior', 'Dos cursos en observacion', 'Participacion inestable'],
-      tendencia: 'Estable'
-    },
-    {
-      id: 103,
-      alumno: 'Jose Quispe Huaman',
-      codigo: 'AL-0064',
-      seccion: '5TO B',
-      periodoEvaluacion: 'Segundo periodo',
-      indiceRiesgo: 42,
-      nivel: 'BAJO',
-      asistencia: 91,
-      promedioAcademico: 15.8,
-      cursosRiesgo: 0,
-      alerta: 'Sin alerta critica. Seguimiento ordinario.',
-      recomendacion: 'Mantener acompanamiento y reconocer constancia.',
-      factores: ['Asistencia estable', 'Promedio favorable', 'Sin cursos desaprobados'],
-      tendencia: 'Baja'
-    },
-    {
-      id: 104,
-      alumno: 'Ana Lucero Vega',
-      codigo: 'AL-0033',
-      seccion: '3RO A',
-      periodoEvaluacion: 'Segundo periodo',
-      indiceRiesgo: 79,
-      nivel: 'ALTO',
-      asistencia: 73,
-      promedioAcademico: 11.6,
-      cursosRiesgo: 3,
-      alerta: 'Comportamiento academico en deterioro sostenido.',
-      recomendacion: 'Reunion con familia y plan de accion por curso.',
-      factores: ['Tendencia descendente', 'Tres cursos en riesgo', 'Asistencia vulnerable'],
-      tendencia: 'Sube'
+  readonly seccionSeleccionada = computed(
+    () => this.secciones().find((seccion) => seccion.id === this.seccionSeleccionadaId()) ?? null
+  );
+
+  readonly periodosEvaluacionDisponibles = computed(() => {
+    const seccion = this.seccionSeleccionada();
+    const periodos = this.periodosEvaluacion();
+
+    if (!seccion?.periodoAcademicoId) {
+      return periodos;
     }
-  ]);
 
-  readonly prediccionesCurso = signal<PrediccionMock[]>([
-    {
-      id: 201,
-      alumno: 'Luis Ramirez Soto',
-      codigo: 'AL-0051',
-      seccion: '5TO A',
-      periodoEvaluacion: 'Segundo periodo',
-      indiceRiesgo: 92,
-      nivel: 'ALTO',
-      asistencia: 68,
-      promedioAcademico: 9.4,
-      cursosRiesgo: 1,
-      curso: 'MATEMATICA',
-      alerta: 'Riesgo alto en Matematica por acumulacion de evaluaciones desaprobadas.',
-      recomendacion: 'Refuerzo inmediato en aritmetica y razonamiento matematico.',
-      factores: ['Promedio de curso menor a 10', 'Pocas evaluaciones aprobadas', 'Baja asistencia'],
-      tendencia: 'Sube'
-    },
-    {
-      id: 202,
-      alumno: 'Maria Fernandez Rojas',
-      codigo: 'AL-0058',
-      seccion: '5TO A',
-      periodoEvaluacion: 'Segundo periodo',
-      indiceRiesgo: 71,
-      nivel: 'MEDIO',
-      asistencia: 81,
-      promedioAcademico: 11.8,
-      cursosRiesgo: 1,
-      curso: 'COMUNICACION',
-      alerta: 'Riesgo medio en Comunicacion por desempeno irregular.',
-      recomendacion: 'Trabajar comprension lectora y revision de cuaderno.',
-      factores: ['Variacion de notas', 'Plan lector inconsistente', 'Participacion media'],
-      tendencia: 'Estable'
-    },
-    {
-      id: 203,
-      alumno: 'Jose Quispe Huaman',
-      codigo: 'AL-0064',
-      seccion: '5TO B',
-      periodoEvaluacion: 'Segundo periodo',
-      indiceRiesgo: 39,
-      nivel: 'BAJO',
-      asistencia: 91,
-      promedioAcademico: 16.2,
-      cursosRiesgo: 0,
-      curso: 'INGLES',
-      alerta: 'Sin alerta critica para el curso.',
-      recomendacion: 'Continuar seguimiento regular.',
-      factores: ['Buen promedio', 'Asistencia estable', 'Sin incidencias'],
-      tendencia: 'Baja'
-    },
-    {
-      id: 204,
-      alumno: 'Ana Lucero Vega',
-      codigo: 'AL-0033',
-      seccion: '3RO A',
-      periodoEvaluacion: 'Segundo periodo',
-      indiceRiesgo: 84,
-      nivel: 'ALTO',
-      asistencia: 73,
-      promedioAcademico: 10.7,
-      cursosRiesgo: 1,
-      curso: 'CIENCIA Y TECNOLOGIA',
-      alerta: 'Riesgo alto por bajo promedio y tareas incompletas.',
-      recomendacion: 'Plan de recuperacion y monitoreo semanal.',
-      factores: ['Entregas incompletas', 'Promedio de curso bajo', 'Asistencia justa'],
-      tendencia: 'Sube'
-    }
-  ]);
+    return periodos
+      .filter((periodo) => periodo.periodoAcademicoId === seccion.periodoAcademicoId)
+      .sort((a, b) => a.numero - b.numero);
+  });
 
   readonly datasetActivo = computed(() =>
     this.vistaActiva() === 'global' ? this.prediccionesGlobales() : this.prediccionesCurso()
@@ -205,69 +99,399 @@ export class Predicciones {
 
   readonly prediccionesFiltradas = computed(() => {
     const query = this.busqueda().trim().toLowerCase();
-    const seccion = this.seccionSeleccionada();
-    const periodoEvaluacion = this.periodoEvaluacionSeleccionado();
 
     return this.datasetActivo().filter((item) => {
-      const coincideSeccion = seccion === 'TODAS' || item.seccion === seccion;
-      const coincidePeriodoEvaluacion = item.periodoEvaluacion === periodoEvaluacion;
-      const coincideBusqueda =
-        !query ||
-        [item.alumno, item.codigo, item.seccion, item.curso ?? '']
-          .join(' ')
-          .toLowerCase()
-          .includes(query);
+      if (!query) {
+        return true;
+      }
 
-      return coincideSeccion && coincidePeriodoEvaluacion && coincideBusqueda;
+      return [
+        item.alumnoNombreCompleto,
+        item.codigoAlumno,
+        item.curso ?? '',
+        item.grado ?? '',
+        item.seccion ?? ''
+      ]
+        .join(' ')
+        .toLowerCase()
+        .includes(query);
     });
   });
 
-  readonly prediccionSeleccionada = computed(
-    () =>
-      this.prediccionesFiltradas().find((item) => item.id === this.prediccionSeleccionadaId()) ??
-      this.prediccionesFiltradas()[0] ??
-      null
-  );
+  readonly prediccionSeleccionada = computed(() => {
+    const seleccionada = this.prediccionesFiltradas().find(
+      (item) => item.id === this.prediccionSeleccionadaId()
+    );
+    return seleccionada ?? this.prediccionesFiltradas()[0] ?? null;
+  });
 
   readonly resumen = computed(() => {
+    const resumen = this.resumenApi();
     const registros = this.prediccionesFiltradas();
-    const total = registros.length;
-    const alto = registros.filter((item) => item.nivel === 'ALTO').length;
-    const medio = registros.filter((item) => item.nivel === 'MEDIO').length;
-    const bajo = registros.filter((item) => item.nivel === 'BAJO').length;
-    const promedio = total
-      ? Math.round((registros.reduce((acc, item) => acc + item.indiceRiesgo, 0) / total) * 10) / 10
-      : 0;
 
-    return { total, alto, medio, bajo, promedio };
+    if (!resumen) {
+      return {
+        total: registros.length,
+        alto: registros.filter((item) => item.nivelRiesgoNormalizado === 'ALTO').length,
+        medio: registros.filter((item) => item.nivelRiesgoNormalizado === 'MEDIO').length,
+        bajo: registros.filter((item) => item.nivelRiesgoNormalizado === 'BAJO').length,
+        promedio: this.promedio(registros.map((item) => item.puntaje))
+      };
+    }
+
+    return {
+      total: resumen.totalPredicciones ?? 0,
+      alto: resumen.totalRiesgoAlto ?? 0,
+      medio: resumen.totalRiesgoMedio ?? 0,
+      bajo: resumen.totalRiesgoBajo ?? 0,
+      promedio: Number(resumen.promedioPuntajeRiesgo ?? 0)
+    };
   });
 
   readonly distribucion = computed(() => {
-    const { alto, medio, bajo, total } = this.resumen();
-    const porcentaje = (valor: number) => (total ? Math.round((valor / total) * 100) : 0);
-
+    const resumen = this.resumen();
+    const total = resumen.total || 1;
     return [
-      { label: 'Riesgo alto', value: alto, percent: porcentaje(alto), tone: 'high' },
-      { label: 'Riesgo medio', value: medio, percent: porcentaje(medio), tone: 'medium' },
-      { label: 'Riesgo bajo', value: bajo, percent: porcentaje(bajo), tone: 'low' }
+      {
+        label: 'Riesgo alto',
+        value: resumen.alto,
+        percent: Math.round((resumen.alto / total) * 100),
+        tone: 'high'
+      },
+      {
+        label: 'Riesgo medio',
+        value: resumen.medio,
+        percent: Math.round((resumen.medio / total) * 100),
+        tone: 'medium'
+      },
+      {
+        label: 'Riesgo bajo',
+        value: resumen.bajo,
+        percent: Math.round((resumen.bajo / total) * 100),
+        tone: 'low'
+      }
     ];
   });
 
-  readonly tendencias = [
-    { label: 'Asistencia baja', value: '31%', tone: 'high' },
-    { label: 'Cursos criticos', value: '18 cursos', tone: 'medium' },
-    { label: 'Alumnos estables', value: '42%', tone: 'low' }
-  ];
+  readonly indicadores = computed(() => {
+    const registros = this.prediccionesFiltradas();
+    return [
+      {
+        label: 'Alumnos criticos',
+        value: registros.filter((item) => item.nivelRiesgoNormalizado === 'ALTO').length.toString(),
+        tone: 'high'
+      },
+      {
+        label: 'Promedio riesgo',
+        value: this.formatearNumero(this.resumen().promedio),
+        tone: 'medium'
+      },
+      {
+        label: 'Modelo activo',
+        value: this.prediccionSeleccionada()?.modeloVersion || 'Sin version',
+        tone: 'low'
+      }
+    ];
+  });
 
   cambiarVista(vista: VistaPrediccion): void {
-    this.vistaActiva.set(vista);
-    const primerRegistro = (vista === 'global' ? this.prediccionesGlobales() : this.prediccionesCurso())[0];
-    if (primerRegistro) {
-      this.prediccionSeleccionadaId.set(primerRegistro.id);
+    if (this.vistaActiva() === vista) {
+      return;
     }
+
+    this.vistaActiva.set(vista);
+    this.asegurarSeleccion();
+  }
+
+  onPeriodoEvaluacionChange(value: string): void {
+    this.periodoEvaluacionSeleccionadoId.set(Number(value));
+    this.cargarVista();
+  }
+
+  onSeccionChange(value: string): void {
+    this.seccionSeleccionadaId.set(Number(value));
+    this.ajustarPeriodoSegunSeccion();
+    this.cargarVista();
+  }
+
+  onBusqueda(value: string): void {
+    this.busqueda.set(value);
+    this.asegurarSeleccion();
   }
 
   seleccionarPrediccion(id: number): void {
     this.prediccionSeleccionadaId.set(id);
+  }
+
+  private cargarFiltros(): void {
+    this.cargandoFiltros.set(true);
+    this.error.set(null);
+
+    forkJoin({
+      periodosEvaluacion: this.periodoEvaluacionService.listar(),
+      secciones: this.seccionService.listar(),
+      periodosAcademicos: this.periodoAcademicoService.listar()
+    }).subscribe({
+      next: ({ periodosEvaluacion, secciones, periodosAcademicos }) => {
+        const periodosActivos = [...periodosEvaluacion]
+          .filter((periodo) => periodo.estado !== 'INACTIVO')
+          .sort((a, b) => {
+            const anio = (b.anioAcademico ?? 0) - (a.anioAcademico ?? 0);
+            return anio !== 0 ? anio : a.numero - b.numero;
+          });
+
+        const seccionesActivas = [...secciones]
+          .filter((seccion) => seccion.estado !== 'INACTIVO')
+          .sort((a, b) =>
+            `${a.nivelNombre ?? ''}${a.gradoNombre ?? ''}${a.nombre}`.localeCompare(
+              `${b.nivelNombre ?? ''}${b.gradoNombre ?? ''}${b.nombre}`
+            )
+          );
+
+        const usuario = this.authService.obtenerUsuario();
+        const esTutor = Boolean(
+          usuario?.esTutor || usuario?.roles.includes('DOCENTE_TUTOR')
+        );
+        const docenteId = usuario?.docenteId;
+
+        if (esTutor && docenteId) {
+          const periodoActual = this.obtenerPeriodoActual(periodosAcademicos);
+
+          if (!periodoActual) {
+            this.configurarFiltros(periodosActivos, seccionesActivas);
+            return;
+          }
+
+          this.tutoriaService.listarPorDocente(docenteId, periodoActual.id).subscribe({
+            next: (tutorias) => {
+              const seccionesTutoradasIds = new Set(
+                tutorias
+                  .filter((tutoria) => (tutoria.estado ?? 'ACTIVO') === 'ACTIVO')
+                  .map((tutoria) => tutoria.seccionId)
+              );
+
+              const seccionesTutoradas = seccionesActivas.filter((seccion) =>
+                seccionesTutoradasIds.has(seccion.id)
+              );
+
+              this.configurarFiltros(
+                periodosActivos,
+                seccionesTutoradas.length ? seccionesTutoradas : seccionesActivas
+              );
+            },
+            error: () => {
+              this.configurarFiltros(periodosActivos, seccionesActivas);
+            }
+          });
+          return;
+        }
+
+        this.configurarFiltros(periodosActivos, seccionesActivas);
+      },
+      error: () => {
+        this.cargandoFiltros.set(false);
+        this.error.set('No se pudieron cargar los filtros de prediccion.');
+      }
+    });
+  }
+
+  private cargarVista(): void {
+    const periodoEvaluacionId = this.periodoEvaluacionSeleccionadoId();
+    const seccionId = this.seccionSeleccionadaId();
+
+    if (!periodoEvaluacionId || !seccionId) {
+      return;
+    }
+
+    this.cargandoVista.set(true);
+    this.error.set(null);
+
+    forkJoin({
+      resumen: this.prediccionService.obtenerResumen(periodoEvaluacionId, seccionId),
+      globales: this.prediccionService.listarGlobales(periodoEvaluacionId, seccionId),
+      cursos: this.prediccionService.listarCursos(periodoEvaluacionId, seccionId),
+      alertas: this.alertaSeguimientoService.listarAlertas(periodoEvaluacionId, seccionId),
+      recomendaciones: this.alertaSeguimientoService.listarRecomendaciones(periodoEvaluacionId, seccionId)
+    }).subscribe({
+      next: ({ resumen, globales, cursos, alertas, recomendaciones }) => {
+        this.resumenApi.set(resumen);
+        this.prediccionesGlobales.set(
+          globales.map((item) => this.mapearPrediccion(item, alertas, recomendaciones))
+        );
+        this.prediccionesCurso.set(
+          cursos.map((item) => this.mapearPrediccion(item, alertas, recomendaciones))
+        );
+        this.cargandoVista.set(false);
+        this.asegurarSeleccion();
+      },
+      error: (error) => {
+        this.cargandoVista.set(false);
+        this.error.set(error?.error?.mensaje ?? 'No se pudieron cargar las predicciones.');
+      }
+    });
+  }
+
+  private asegurarSeleccion(): void {
+    const primera = this.prediccionesFiltradas()[0] ?? null;
+    const existe = this.prediccionesFiltradas().some(
+      (item) => item.id === this.prediccionSeleccionadaId()
+    );
+
+    if (!existe) {
+      this.prediccionSeleccionadaId.set(primera?.id ?? null);
+    }
+  }
+
+  private mapearPrediccion(
+    item: PrediccionRiesgo,
+    alertas: AlertaSeguimiento[],
+    recomendaciones: RecomendacionSeguimiento[]
+  ): PrediccionVista {
+    const nivel = this.normalizarNivel(item.nivelRiesgo);
+    const alerta = this.buscarAlerta(item, alertas);
+    const recomendacion = this.buscarRecomendacion(item, recomendaciones);
+
+    return {
+      ...item,
+      nivelRiesgoNormalizado: nivel,
+      puntaje: Number(item.puntajeRiesgo ?? 0),
+      factores: this.extraerFactores(item.variablesEntrada),
+      alertaPrincipal:
+        alerta?.mensaje ??
+        (nivel === 'ALTO'
+          ? 'Riesgo alto detectado por el modelo.'
+          : nivel === 'MEDIO'
+            ? 'Riesgo medio con necesidad de seguimiento.'
+            : 'Sin alerta critica para este registro.'),
+      recomendacionPrincipal:
+        recomendacion?.descripcion ??
+        (item.cursoId != null
+          ? 'Aplicar seguimiento focalizado por curso y revisar evaluaciones recientes.'
+          : 'Mantener monitoreo tutorial y seguimiento academico general.'),
+      tendencia: nivel === 'ALTO' ? 'Critico' : 'Controlado'
+    };
+  }
+
+  private buscarAlerta(item: PrediccionRiesgo, alertas: AlertaSeguimiento[]): AlertaSeguimiento | undefined {
+    return alertas.find((alerta) => {
+      const coincideAlumno = alerta.alumnoId === item.alumnoId;
+      const coincideCurso =
+        item.cursoId == null ? alerta.cursoId == null : alerta.cursoId === item.cursoId;
+      return coincideAlumno && coincideCurso;
+    });
+  }
+
+  private buscarRecomendacion(
+    item: PrediccionRiesgo,
+    recomendaciones: RecomendacionSeguimiento[]
+  ): RecomendacionSeguimiento | undefined {
+    return recomendaciones.find((recomendacion) => {
+      const coincideAlumno = recomendacion.alumnoId === item.alumnoId;
+      const coincideCurso =
+        item.cursoId == null
+          ? recomendacion.cursoId == null
+          : recomendacion.cursoId === item.cursoId;
+      return coincideAlumno && coincideCurso;
+    });
+  }
+
+  private normalizarNivel(nivel: string | null | undefined): NivelRiesgo {
+    if (nivel === 'ALTO' || nivel === 'MEDIO') {
+      return nivel;
+    }
+    return 'BAJO';
+  }
+
+  private extraerFactores(raw: string | null): string[] {
+    if (!raw) {
+      return ['Modelo sin variables explicativas visibles'];
+    }
+
+    try {
+      const data = JSON.parse(raw) as Record<string, unknown>;
+      const entries = Object.entries(data).slice(0, 6);
+      if (!entries.length) {
+        return ['Variables registradas sin detalle interpretable'];
+      }
+
+      return entries.map(([key, value]) => `${this.humanizarKey(key)}: ${String(value)}`);
+    } catch {
+      return raw
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .slice(0, 6);
+    }
+  }
+
+  private humanizarKey(value: string): string {
+    return value
+      .replace(/_/g, ' ')
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/^./, (char) => char.toUpperCase());
+  }
+
+  private promedio(values: number[]): number {
+    if (!values.length) {
+      return 0;
+    }
+
+    return Math.round((values.reduce((acc, value) => acc + value, 0) / values.length) * 10) / 10;
+  }
+
+  formatearNumero(value: number | null | undefined): string {
+    return Number(value ?? 0).toFixed(1);
+  }
+
+  etiquetaSeccion(seccion: Seccion | null): string {
+    if (!seccion) {
+      return 'Sin seccion';
+    }
+
+    return `${seccion.gradoNombre ?? ''} ${seccion.nombre}`.trim();
+  }
+
+  tonoNivel(nivel: NivelRiesgo): 'high' | 'medium' | 'low' {
+    if (nivel === 'ALTO') {
+      return 'high';
+    }
+
+    if (nivel === 'MEDIO') {
+      return 'medium';
+    }
+
+    return 'low';
+  }
+
+  private configurarFiltros(periodos: PeriodoEvaluacion[], secciones: Seccion[]): void {
+    this.periodosEvaluacion.set(periodos);
+    this.secciones.set(secciones);
+    this.seccionSeleccionadaId.set(secciones[0]?.id ?? null);
+    this.ajustarPeriodoSegunSeccion();
+    this.cargandoFiltros.set(false);
+
+    if (this.periodoEvaluacionSeleccionadoId() && this.seccionSeleccionadaId()) {
+      this.cargarVista();
+    }
+  }
+
+  private ajustarPeriodoSegunSeccion(): void {
+    const periodoActual = this.periodoEvaluacionSeleccionadoId();
+    const disponibles = this.periodosEvaluacionDisponibles();
+    const existe = disponibles.some((periodo) => periodo.id === periodoActual);
+
+    if (!existe) {
+      this.periodoEvaluacionSeleccionadoId.set(disponibles[0]?.id ?? null);
+    }
+  }
+
+  private obtenerPeriodoActual(periodos: PeriodoAcademico[]): PeriodoAcademico | null {
+    return (
+      periodos.find((periodo) => periodo.anio === this.currentYear) ??
+      [...periodos].sort((a, b) => b.anio - a.anio)[0] ??
+      null
+    );
   }
 }

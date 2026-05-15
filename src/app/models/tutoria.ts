@@ -9,4 +9,5 @@ export interface Tutoria {
   periodoAcademicoId: number;
   periodoAcademico: string;
   anioAcademico: number;
+  estado?: string | null;
 }

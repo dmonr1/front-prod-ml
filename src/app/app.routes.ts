@@ -82,15 +82,13 @@ export const routes: Routes = [
     path: 'asignaciones-docente',
     loadComponent: () =>
       import('./pages/asignaciones-docente/asignaciones-docente').then(
-        (m) => m.AsignacionesDocente
+        (m) => m.AsignacionesTutorias
       )
   },
   {
     path: 'tutorias-seccion',
-    loadComponent: () =>
-      import('./pages/tutorias-seccion/tutorias-seccion').then(
-        (m) => m.TutoriasSeccion
-      )
+    redirectTo: 'asignaciones-tutorias',
+    pathMatch: 'full'
   },
   {
     path: 'asignaciones-tutorias',
@@ -120,8 +118,14 @@ export const routes: Routes = [
       import('./pages/carga-asistencias/carga-asistencias').then((m) => m.CargaAsistencias)
   },
   {
-    path: 'estudiantes',
-    loadComponent: () => import('./pages/estudiantes/estudiantes').then((m) => m.Estudiantes)
+    path: 'mis-asignaciones/tutorias/:tutoriaId',
+    loadComponent: () =>
+      import('./pages/seccion-tutorada/seccion-tutorada').then((m) => m.SeccionTutorada)
+  },
+  {
+    path: 'seccion-tutorada',
+    loadComponent: () =>
+      import('./pages/seccion-tutorada/seccion-tutorada').then((m) => m.SeccionTutorada)
   },
   {
     path: 'alumno',

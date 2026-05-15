@@ -34,8 +34,7 @@
                 <a
                   class="nav-child"
                   [routerLink]="child.path"
-                  routerLinkActive="active"
-                  [routerLinkActiveOptions]="{ exact: true }"
+                  [class.active]="isChildActive(child)"
                 >
                   <span class="nav-icon child-icon"><i [class]="child.icon"></i></span>
                   <span class="nav-label">{{ child.label }}</span>

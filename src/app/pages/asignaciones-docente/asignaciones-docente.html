@@ -1,198 +1,408 @@
 <app-shell>
   <app-custom-alert [open]="alertState().open" [type]="alertState().type" [title]="alertState().title"
     [message]="alertState().message" [confirmText]="alertState().confirmText" [cancelText]="alertState().cancelText"
-    [autoCloseMs]="alertState().autoCloseMs" (confirm)="cerrarAlerta()" (cancel)="cerrarAlerta()"
-    (dismiss)="cerrarAlerta()" />
+    [autoCloseMs]="alertState().autoCloseMs" (confirm)="confirmarCambioEstadoTutoria()"
+    (cancel)="cancelarCambioEstadoTutoria()" (dismiss)="cerrarAlerta()" />
 
-  <section class="management-card">
+  <section class="assignment-card">
     <div class="card-head">
       <div class="panel-head">
-        <span class="panel-kicker">Configuracion operativa</span>
-        <h2>Asignaciones docentes</h2>
-        <p>Relaciona docente, curso, seccion y periodo para habilitar el trabajo academico del aula.</p>
+        <h2>Asignaciones academicas</h2>
       </div>
     </div>
 
-    <div class="management-grid">
-      <article class="panel form-panel">
+    <div class="tabs-row section-tabs">
+      <button class="tab-button" type="button" [class.active]="vistaActiva() === 'asignaciones'"
+        (click)="vistaActiva.set('asignaciones')">
+        Asignaciones docentes
+      </button>
+      <button class="tab-button" type="button" [class.active]="vistaActiva() === 'tutorias'"
+        (click)="vistaActiva.set('tutorias')">
+        Tutorias por seccion
+      </button>
+    </div>
+
+    @if (vistaActiva() === 'asignaciones') {
+    <article class="assignment-panel">
+      <div class="section-head">
         <div class="panel-head">
-          <span class="panel-kicker">Nuevo registro</span>
-          <h3>Registrar asignacion de curso</h3>
-          <p>Usa el buscador y luego confirma la asignacion para el periodo seleccionado.</p>
+          <span class="panel-kicker">Asignaciones de docentes por curso</span>
+          <p>Asigne un docente a cada curso para gestionar el registro de notas, asistencia y seguimiento académico.</p>
         </div>
 
-        <form class="module-form">
-          <label>
-            Docente
-            <div class="lookup-field">
-              <input type="text" placeholder="Escribe para buscar docente" [value]="docenteQuery()"
-                (input)="onDocenteInput($any($event.target).value)" />
-              <button class="lookup-button" type="button" (click)="abrirModalDocente()">
-                <i class="fa-solid fa-magnifying-glass"></i>
-              </button>
-            </div>
+        <div class="toolbar-inline">
+          <span class="period-chip">{{ asignacionPeriodo()?.nombre || 'Sin periodo' }}</span>
+          <button class="action-button secondary" type="button" (click)="cargarAsignaciones()">Actualizar</button>
+        </div>
+      </div>
 
-            @if (dropdownActivo() && docentesFiltrados().length) {
-            <div class="lookup-dropdown">
-              @for (docente of docentesFiltrados(); track docente.id) {
-              <button class="lookup-option" type="button" (mousedown)="seleccionarDocente(docente)">
-                <strong>{{ formatearDocente(docente) }}</strong>
-                <span>{{ docente.dni || 'Sin DNI' }} · {{ docente.especialidad || 'Sin especialidad' }}</span>
-              </button>
+      <div class="content">
+        <div class="form-cont">
+          <form class="module-form">
+            <label>
+              Docente
+              <div class="lookup-field">
+                <input type="text" placeholder="Escribe para buscar docente" [value]="asignacionQuery()"
+                  (input)="onDocenteInput('asignacion', $any($event.target).value)" />
+                <button class="lookup-button" type="button" (click)="abrirModal('asignacion')">
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                </button>
+              </div>
+
+              @if (dropdownActivo() === 'asignacion' && docentesFiltrados('asignacion').length) {
+              <div class="lookup-dropdown">
+                @for (docente of docentesFiltrados('asignacion'); track docente.id) {
+                <button class="lookup-option" type="button" (mousedown)="seleccionarDocente('asignacion', docente)">
+                  <strong>{{ formatearDocente(docente) }}</strong>
+                  <span>{{ docente.dni || 'Sin DNI' }} Â· {{ docente.especialidad || 'Sin especialidad' }}</span>
+                </button>
+                }
+              </div>
               }
-            </div>
-            }
-          </label>
+            </label>
 
-          <div class="form-two-columns">
+            <div class="form-two-columns">
+              <label>
+                Curso
+                <div class="lookup-field">
+                  <input type="text" placeholder="Seleccionar curso" [value]="cursoQuery()" readonly />
+                  <button class="lookup-button" type="button" (click)="abrirModalCurso()">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                  </button>
+                </div>
+              </label>
+
+              <label>
+                Seccion
+                <div class="lookup-field">
+                  <input type="text" placeholder="Seleccionar una o varias secciones" [value]="asignacionSeccionQuery()"
+                    readonly />
+                  <button class="lookup-button" type="button" (click)="abrirModalSeccion('asignacion')">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                  </button>
+                </div>
+              </label>
+
+            </div>
+
             <label>
-              Curso
+              Periodo academico
               <div class="lookup-field">
-                <input type="text" placeholder="Seleccionar curso" [value]="cursoQuery()" readonly />
-                <button class="lookup-button" type="button" (click)="abrirModalCurso()">
+                <input type="text" placeholder="Seleccionar periodo academico" [value]="asignacionPeriodoQuery()"
+                  readonly />
+                <button class="lookup-button" type="button" (click)="abrirModalPeriodo('asignacion')">
                   <i class="fa-solid fa-magnifying-glass"></i>
                 </button>
               </div>
             </label>
+          </form>
 
-            <label>
-              Seccion
-              <div class="lookup-field">
-                <input type="text" placeholder="Seleccionar seccion" [value]="seccionQuery()" readonly />
-                <button class="lookup-button" type="button" (click)="abrirModalSeccion()">
-                  <i class="fa-solid fa-magnifying-glass"></i>
-                </button>
-              </div>
-            </label>
-          </div>
-
-          <label>
-            Periodo academico
-            <div class="lookup-field">
-              <input type="text" placeholder="Seleccionar periodo" [value]="periodoQuery()" readonly />
-              <button class="lookup-button" type="button" (click)="abrirModalPeriodo()">
-                <i class="fa-solid fa-magnifying-glass"></i>
-              </button>
+          @if (asignacionSecciones().length) {
+          <section class="selected-sections-card">
+            <div class="selected-sections-head">
+              <strong>Secciones seleccionadas</strong>
+              <span>{{ asignacionSecciones().length }} elegidas</span>
             </div>
-          </label>
+
+            <div class="selected-sections-table">
+              <div class="selected-sections-body">
+                <table class="selected-sections-native-table">
+                  <thead>
+                    <tr>
+                      <th>Seccion</th>
+                      <th>Nivel</th>
+                      <th>Accion</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                  @for (seccion of asignacionSecciones(); track seccion.id) {
+                    <tr class="selected-sections-row">
+                      <td>{{ etiquetaSeccion(seccion) }}</td>
+                      <td>{{ seccion.nivelNombre || 'Sin nivel' }}</td>
+                      <td class="selected-sections-action">
+                      <button class="mini-remove-button" type="button" (click)="removerSeccionAsignacion(seccion.id)">
+                        Quitar
+                      </button>
+                      </td>
+                    </tr>
+                  }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+          }
 
           <div class="form-actions">
-            <button class="action-button primary" type="button" [disabled]="guardando()" (click)="guardarAsignacion()">
-              {{ guardando() ? 'Guardando...' : 'Guardar asignacion' }}
+            <button class="action-button primary" type="button" [disabled]="guardandoAsignacion()"
+              (click)="guardarAsignacion()">
+              {{ guardandoAsignacion() ? 'Guardando...' : 'Guardar asignacion' }}
             </button>
-            <button class="action-button secondary" type="button" (click)="limpiarFormulario()">Limpiar</button>
-          </div>
-        </form>
-      </article>
-
-      <article class="panel table-panel">
-        <div class="table-panel-head">
-          <div class="panel-head">
-            <span class="panel-kicker">Consulta</span>
-            <h3>Asignaciones registradas</h3>
-            <p>La tabla muestra el periodo actualmente seleccionado en el formulario.</p>
-          </div>
-
-          <div class="toolbar-inline">
-            <span class="period-chip">{{ periodoSeleccionado()?.nombre || 'Sin periodo' }}</span>
-            <button class="action-button secondary" type="button" (click)="cargarAsignaciones()">Actualizar</button>
+            <button class="action-button secondary" type="button" (click)="limpiarAsignacion()">Limpiar</button>
           </div>
         </div>
 
-        @if (cargandoAsignaciones()) {
-        <div class="table-scroll">
-          <table class="app-table">
-            <thead>
-              <tr>
-                <th>Docente</th>
-                <th>Curso</th>
-                <th>Seccion</th>
-                <th>Periodo</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (row of [0,1,2,3,4]; track row) {
-              <tr>
-                <td><span class="skeleton-line long"></span></td>
-                <td><span class="skeleton-line medium"></span></td>
-                <td><span class="skeleton-line short"></span></td>
-                <td><span class="skeleton-line short"></span></td>
-                <td><span class="skeleton-line short"></span></td>
-              </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-        } @else if (errorAsignaciones()) {
-        <ng-container>
+        <div class="table-cont">
+          @if (cargandoAsignaciones()) {
+          <div class="table-scroll assignment-results-scroll">
+            <table class="app-table">
+              <thead>
+                <tr>
+                  <th>Docente</th>
+                  <th>Curso</th>
+                  <th>Seccion</th>
+                  <th>Estado</th>
+                  <th>Accion</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of [0,1,2,3]; track row) {
+                <tr>
+                  <td><span class="skeleton-line long"></span></td>
+                  <td><span class="skeleton-line medium"></span></td>
+                  <td><span class="skeleton-line medium"></span></td>
+                  <td><span class="skeleton-line short"></span></td>
+                  <td><span class="skeleton-line short"></span></td>
+                </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          } @else if (errorAsignaciones()) {
           <div class="table-state error">
             <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
             <span>{{ errorAsignaciones() }}</span>
           </div>
-        </ng-container>
-        } @else if (!asignaciones().length) {
-        <ng-container>
+          } @else if (!asignaciones().length) {
           <div class="table-state">
             <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
             <span>No hay asignaciones registradas para este periodo.</span>
           </div>
-        </ng-container>
-        } @else {
-        <div class="table-scroll">
-          <table class="app-table">
-            <thead>
-              <tr>
-                <th>Docente</th>
-                <th>Curso</th>
-                <th>Seccion</th>
-                <th>Periodo</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (asignacion of asignaciones(); track asignacion.id) {
-              <tr>
-                <td>
-                  <strong>{{ asignacion.docenteNombreCompleto }}</strong>
-                  <div class="cell-help">{{ asignacion.nivel }}</div>
-                </td>
-                <td>{{ asignacion.curso }}</td>
-                <td>
-                  <strong>{{ asignacion.seccion }}</strong>
-                  <div class="cell-help">{{ obtenerResumenFila(asignacion) }}</div>
-                </td>
-                <td>{{ asignacion.periodoAcademico }}</td>
-                <td>
-                  <span class="status-badge active">ACTIVO</span>
-                </td>
-              </tr>
-              }
-            </tbody>
-          </table>
+          } @else {
+          <div class="table-scroll assignment-results-scroll">
+            <table class="app-table">
+              <thead>
+                <tr>
+                  <th>Docente</th>
+                  <th>Curso</th>
+                  <th>Seccion</th>
+                  <th>Estado</th>
+                  <th>Accion</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (asignacion of asignaciones(); track asignacion.id) {
+                <tr>
+                  <td>
+                    <strong>{{ asignacion.docenteNombreCompleto }}</strong>
+                    <div class="cell-help">{{ asignacion.nivel }}</div>
+                  </td>
+                  <td>{{ asignacion.curso }}</td>
+                  <td>
+                    <strong>{{ asignacion.seccion }}</strong>
+                    <div class="cell-help">{{ obtenerResumenAsignacion(asignacion) }}</div>
+                  </td>
+                  <td>
+                    <span class="status-badge" [class.active]="(asignacion.estado ?? 'ACTIVO') === 'ACTIVO'"
+                      [class.inactive]="(asignacion.estado ?? 'ACTIVO') === 'INACTIVO'">
+                      {{ asignacion.estado ?? 'ACTIVO' }}
+                    </span>
+                  </td>
+                  <td>
+                    <button class="state-action" type="button"
+                      [disabled]="actualizandoEstadoAsignacionId() === asignacion.id"
+                      (click)="toggleEstadoAsignacion(asignacion)">
+                      {{
+                      actualizandoEstadoAsignacionId() === asignacion.id
+                      ? 'Actualizando...'
+                      : ((asignacion.estado ?? 'ACTIVO') === 'ACTIVO' ? 'Deshabilitar' : 'Habilitar')
+                      }}
+                    </button>
+                  </td>
+                </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          }
         </div>
-        }
-      </article>
-    </div>
+      </div>
+    </article>
+    }
+
+    @if (vistaActiva() === 'tutorias') {
+    <article class="assignment-panel">
+      <div class="section-head">
+        <div class="panel-head">
+          <span class="panel-kicker">Asignaciones de tutorias por sección</span>
+          <p>Docente responsable del seguimiento global de la seccion durante el periodo.</p>
+        </div>
+
+        <div class="toolbar-inline">
+          <span class="period-chip">{{ tutoriaPeriodo()?.nombre || 'Sin periodo' }}</span>
+          <button class="action-button secondary" type="button" (click)="cargarTutorias()">Actualizar</button>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="form-cont">
+          <form class="module-form">
+            <label>
+              Docente tutor
+              <div class="lookup-field">
+                <input type="text" placeholder="Escribe para buscar tutor" [value]="tutoriaQuery()"
+                  (input)="onDocenteInput('tutoria', $any($event.target).value)" />
+                <button class="lookup-button" type="button" (click)="abrirModal('tutoria')">
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                </button>
+              </div>
+
+              @if (dropdownActivo() === 'tutoria' && docentesFiltrados('tutoria').length) {
+              <div class="lookup-dropdown">
+                @for (docente of docentesFiltrados('tutoria'); track docente.id) {
+                <button class="lookup-option" type="button" (mousedown)="seleccionarDocente('tutoria', docente)">
+                  <strong>{{ formatearDocente(docente) }}</strong>
+                  <span>{{ docente.dni || 'Sin DNI' }} Â· {{ docente.especialidad || 'Sin especialidad' }}</span>
+                </button>
+                }
+              </div>
+              }
+            </label>
+
+            <div class="form-two-columns">
+              <label>
+                Seccion
+                <div class="lookup-field">
+                  <input type="text" placeholder="Seleccionar seccion" [value]="tutoriaSeccionQuery()" readonly />
+                  <button class="lookup-button" type="button" (click)="abrirModalSeccion('tutoria')">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                  </button>
+                </div>
+              </label>
+
+              <label>
+                Periodo
+                <div class="lookup-field">
+                  <input type="text" placeholder="Seleccionar periodo" [value]="tutoriaPeriodoQuery()" readonly />
+                  <button class="lookup-button" type="button" (click)="abrirModalPeriodo('tutoria')">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                  </button>
+                </div>
+              </label>
+            </div>
+
+            <div class="form-actions">
+              <button class="action-button primary" type="button" [disabled]="guardandoTutoria()"
+                (click)="guardarTutoria()">
+                {{ guardandoTutoria() ? 'Guardando...' : 'Guardar tutoria' }}
+              </button>
+              <button class="action-button secondary" type="button" (click)="limpiarTutoria()">Limpiar</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="table-cont">
+          @if (cargandoTutorias()) {
+          <div class="table-scroll">
+            <table class="app-table">
+              <thead>
+                <tr>
+                  <th>Docente tutor</th>
+                  <th>Seccion</th>
+                  <th>Periodo</th>
+                  <th>Estado</th>
+                  <th>Accion</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of [0,1,2,3]; track row) {
+                <tr>
+                  <td><span class="skeleton-line long"></span></td>
+                  <td><span class="skeleton-line medium"></span></td>
+                  <td><span class="skeleton-line short"></span></td>
+                  <td><span class="skeleton-line short"></span></td>
+                  <td><span class="skeleton-line short"></span></td>
+                </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          } @else if (errorTutorias()) {
+          <div class="table-state error">
+            <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
+            <span>{{ errorTutorias() }}</span>
+          </div>
+          } @else if (!tutorias().length) {
+          <div class="table-state">
+            <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
+            <span>No hay tutorias registradas para este periodo.</span>
+          </div>
+          } @else {
+          <div class="table-scroll">
+            <table class="app-table">
+              <thead>
+                <tr>
+                  <th>Docente tutor</th>
+                  <th>Seccion</th>
+                  <th>Periodo</th>
+                  <th>Estado</th>
+                  <th>Accion</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (tutoria of tutorias(); track tutoria.id) {
+                <tr>
+                  <td><strong>{{ tutoria.docenteNombreCompleto }}</strong></td>
+                  <td>
+                    <strong>{{ tutoria.seccion }}</strong>
+                    <div class="cell-help">{{ tutoria.grado }} Â· {{ tutoria.nivel }}</div>
+                  </td>
+                  <td>{{ tutoria.periodoAcademico }}</td>
+                  <td>
+                    <span class="status-badge" [class.active]="(tutoria.estado ?? 'ACTIVO') === 'ACTIVO'"
+                      [class.inactive]="(tutoria.estado ?? 'ACTIVO') === 'INACTIVO'">
+                      {{ tutoria.estado ?? 'ACTIVO' }}
+                    </span>
+                  </td>
+                  <td>
+                    <button class="state-action" type="button" [disabled]="actualizandoEstadoTutoriaId() === tutoria.id"
+                      (click)="toggleEstadoTutoria(tutoria)">
+                      {{
+                      actualizandoEstadoTutoriaId() === tutoria.id
+                      ? 'Actualizando...'
+                      : ((tutoria.estado ?? 'ACTIVO') === 'ACTIVO' ? 'Deshabilitar' : 'Habilitar')
+                      }}
+                    </button>
+                  </td>
+                </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          }
+        </div>
+      </div>
+    </article>
+    }
   </section>
 
-  @if (modalDocenteAbierto()) {
-  <div class="modal-backdrop" (click)="cerrarModalDocente()">
+  @if (modalContexto()) {
+  <div class="modal-backdrop" (click)="cerrarModal()">
     <div class="modal-card" (click)="$event.stopPropagation()">
       <div class="modal-head">
         <div class="panel-head">
           <span class="panel-kicker">Busqueda completa</span>
           <h3>Seleccionar docente</h3>
-          <p>Busca por nombre, DNI, especialidad o usuario.</p>
+          <p>Busca y selecciona un docente de la lista completa.</p>
         </div>
-        <button class="modal-close" type="button" (click)="cerrarModalDocente()">
+        <button class="modal-close" type="button" (click)="cerrarModal()">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
 
       <div class="modal-search">
-        <input type="text" placeholder="Buscar docente" [value]="modalBusquedaDocente()"
-          (input)="modalBusquedaDocente.set($any($event.target).value)" />
+        <input type="text" placeholder="Buscar por nombre, DNI, especialidad o usuario" [value]="modalBusqueda()"
+          (input)="modalBusqueda.set($any($event.target).value)" />
       </div>
 
       @if (cargandoDocentes()) {
@@ -222,6 +432,7 @@
       <div class="table-state error">
         <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
         <span>{{ errorDocentes() }}</span>
+        <button class="action-button secondary" type="button" (click)="cargarDocentes()">Reintentar</button>
       </div>
       } @else if (!docentesModalFiltrados().length) {
       <div class="table-state">
@@ -241,7 +452,7 @@
           </thead>
           <tbody>
             @for (docente of docentesModalFiltrados(); track docente.id) {
-            <tr class="selectable-row" (click)="seleccionarDocente(docente)">
+            <tr class="selectable-row" (click)="seleccionarDocente(modalContexto()!, docente)">
               <td>{{ formatearDocente(docente) }}</td>
               <td>{{ docente.dni || 'Sin DNI' }}</td>
               <td>{{ docente.especialidad || 'Sin especialidad' }}</td>
@@ -256,14 +467,14 @@
   </div>
   }
 
-  @if (modalCursoAbierto()) {
+  @if (cursoModalAbierto()) {
   <div class="modal-backdrop" (click)="cerrarModalCurso()">
     <div class="modal-card" (click)="$event.stopPropagation()">
       <div class="modal-head">
         <div class="panel-head">
           <span class="panel-kicker">Busqueda de cursos</span>
           <h3>Seleccionar curso</h3>
-          <p>Explora los cursos por nivel.</p>
+          <p>Explora los cursos por nivel y selecciona el que corresponda a la asignacion.</p>
         </div>
         <button class="modal-close" type="button" (click)="cerrarModalCurso()">
           <i class="fa-solid fa-xmark"></i>
@@ -278,8 +489,8 @@
       </div>
 
       <div class="modal-search">
-        <input type="text" placeholder="Buscar curso por nombre o descripcion" [value]="modalBusquedaCurso()"
-          (input)="modalBusquedaCurso.set($any($event.target).value)" />
+        <input type="text" placeholder="Buscar curso por nombre o descripcion" [value]="cursoModalBusqueda()"
+          (input)="cursoModalBusqueda.set($any($event.target).value)" />
       </div>
 
       @if (cargandoCursos()) {
@@ -309,11 +520,12 @@
       <div class="table-state error">
         <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
         <span>{{ errorCursos() }}</span>
+        <button class="action-button secondary" type="button" (click)="cargarCursos()">Reintentar</button>
       </div>
       } @else if (!cursosModalFiltrados().length) {
       <div class="table-state">
         <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-        <span>No se encontraron cursos con esa busqueda.</span>
+        <span>No se encontraron cursos en este nivel con esa busqueda.</span>
       </div>
       } @else {
       <div class="table-scroll modal-table">
@@ -332,7 +544,12 @@
               <td>{{ curso.nombre }}</td>
               <td>{{ curso.nivelNombre }}</td>
               <td>{{ curso.descripcion || 'Sin descripcion' }}</td>
-              <td><span class="status-badge active">{{ curso.estado || 'ACTIVO' }}</span></td>
+              <td>
+                <span class="status-badge" [class.active]="(curso.estado || 'ACTIVO') === 'ACTIVO'"
+                  [class.inactive]="(curso.estado || 'ACTIVO') === 'INACTIVO'">
+                  {{ curso.estado || 'ACTIVO' }}
+                </span>
+              </td>
             </tr>
             }
           </tbody>
@@ -343,14 +560,16 @@
   </div>
   }
 
-  @if (modalSeccionAbierto()) {
+  @if (seccionModalContexto()) {
   <div class="modal-backdrop" (click)="cerrarModalSeccion()">
     <div class="modal-card" (click)="$event.stopPropagation()">
       <div class="modal-head">
         <div class="panel-head">
           <span class="panel-kicker">Busqueda de secciones</span>
           <h3>Seleccionar seccion</h3>
-          <p>Explora las secciones por nivel.</p>
+          <p>@if (seccionModalContexto() === 'asignacion') { Explora las secciones por nivel y marca una o varias para
+            la asignacion docente. } @else { Explora las secciones por nivel y elige la que corresponda a la tutoria. }
+          </p>
         </div>
         <button class="modal-close" type="button" (click)="cerrarModalSeccion()">
           <i class="fa-solid fa-xmark"></i>
@@ -365,20 +584,18 @@
       </div>
 
       <div class="modal-search">
-        <input type="text" placeholder="Buscar por grado, seccion o capacidad" [value]="modalBusquedaSeccion()"
-          (input)="modalBusquedaSeccion.set($any($event.target).value)" />
+        <input type="text" placeholder="Buscar por grado, seccion o capacidad" [value]="seccionModalBusqueda()"
+          (input)="seccionModalBusqueda.set($any($event.target).value)" />
       </div>
 
-      @if (!periodoSeleccionado()) {
-      <div class="table-state">
-        <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-        <span>Selecciona primero un periodo academico para cargar sus secciones.</span>
-      </div>
-      } @else if (cargandoSecciones()) {
+      @if (cargandoSecciones()) {
       <div class="table-scroll">
         <table class="app-table">
           <thead>
             <tr>
+              @if (seccionModalContexto() === 'asignacion') {
+              <th>Sel.</th>
+              }
               <th>Seccion</th>
               <th>Grado</th>
               <th>Nivel</th>
@@ -388,6 +605,9 @@
           <tbody>
             @for (row of [0,1,2,3,4]; track row) {
             <tr>
+              @if (seccionModalContexto() === 'asignacion') {
+              <td><span class="skeleton-line short"></span></td>
+              }
               <td><span class="skeleton-line short"></span></td>
               <td><span class="skeleton-line medium"></span></td>
               <td><span class="skeleton-line short"></span></td>
@@ -401,17 +621,21 @@
       <div class="table-state error">
         <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
         <span>{{ errorSecciones() }}</span>
+        <button class="action-button secondary" type="button" (click)="cargarSecciones()">Reintentar</button>
       </div>
       } @else if (!seccionesModalFiltradas().length) {
       <div class="table-state">
         <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-        <span>No se encontraron secciones con esa busqueda.</span>
+        <span>No se encontraron secciones en este nivel con esa busqueda.</span>
       </div>
       } @else {
       <div class="table-scroll modal-table">
         <table class="app-table">
           <thead>
             <tr>
+              @if (seccionModalContexto() === 'asignacion') {
+              <th>Sel.</th>
+              }
               <th>Seccion</th>
               <th>Grado</th>
               <th>Nivel</th>
@@ -420,7 +644,14 @@
           </thead>
           <tbody>
             @for (seccion of seccionesModalFiltradas(); track seccion.id) {
-            <tr class="selectable-row" (click)="seleccionarSeccion(seccion)">
+            <tr class="selectable-row"
+              [class.selected-row]="seccionModalContexto() === 'asignacion' && seccionAsignacionSeleccionada(seccion.id)"
+              (click)="seleccionarSeccion(seccionModalContexto()!, seccion)">
+              @if (seccionModalContexto() === 'asignacion') {
+              <td>
+                <span class="selection-indicator" [class.selected]="seccionAsignacionSeleccionada(seccion.id)"></span>
+              </td>
+              }
               <td>{{ seccion.nombre }}</td>
               <td>{{ seccion.gradoNombre || 'Sin grado' }}</td>
               <td>{{ seccion.nivelNombre || 'Sin nivel' }}</td>
@@ -430,23 +661,35 @@
           </tbody>
         </table>
       </div>
+
+      @if (seccionModalContexto() === 'asignacion') {
+      <div class="form-actions">
+        <button class="action-button primary" type="button" (click)="confirmarSeleccionSeccionesAsignacion()">
+          Confirmar secciones
+        </button>
+        <button class="action-button secondary" type="button" (click)="limpiarSeccionesAsignacion()">
+          Limpiar seleccion
+        </button>
+      </div>
+      }
       }
     </div>
   </div>
   }
 
-  @if (modalPeriodoAbierto()) {
+  @if (periodoModalContexto()) {
   <div class="modal-backdrop" (click)="cerrarModalPeriodo()">
     <div class="modal-card modal-card--compact" (click)="$event.stopPropagation()">
       <div class="modal-head">
         <div class="panel-head">
+          <span class="panel-kicker">Busqueda de periodos</span>
           <h3>Seleccionar periodo academico</h3>
+          <p>Elige el periodo en el que la asignacion o la tutoria quedaran activas.</p>
         </div>
         <button class="modal-close" type="button" (click)="cerrarModalPeriodo()">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
-
 
       @if (cargandoPeriodos()) {
       <div class="table-scroll">
@@ -473,6 +716,7 @@
       <div class="table-state error">
         <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
         <span>{{ errorPeriodos() }}</span>
+        <button class="action-button secondary" type="button" (click)="cargarPeriodos()">Reintentar</button>
       </div>
       } @else if (!periodosModalFiltrados().length) {
       <div class="table-state">
@@ -493,7 +737,7 @@
             @for (periodo of periodosModalFiltrados(); track periodo.id) {
             <tr [class.selectable-row]="esPeriodoSeleccionable(periodo)"
               [class.disabled-row]="!esPeriodoSeleccionable(periodo)"
-              (click)="esPeriodoSeleccionable(periodo) && seleccionarPeriodo(periodo)">
+              (click)="esPeriodoSeleccionable(periodo) && seleccionarPeriodo(periodoModalContexto()!, periodo)">
               <td>{{ periodo.nombre }}</td>
               <td>{{ periodo.anio }}</td>
               <td>{{ periodo.fechaInicio }} - {{ periodo.fechaFin }}</td>

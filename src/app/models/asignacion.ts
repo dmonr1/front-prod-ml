@@ -11,4 +11,5 @@ export interface AsignacionDocente {
   periodoAcademicoId: number;
   periodoAcademico: string;
   anioAcademico: number;
+  estado?: string;
 }

@@ -45,8 +45,7 @@ export class Shell {
           { label: 'Gestion estudiantil', path: '/gestion-estudiantil', icon: 'fa-solid fa-user-graduate' },
           { label: 'Cursos', path: '/cursos', icon: 'fa-solid fa-book-open-reader' },
           { label: 'Docentes y accesos', path: '/docentes-accesos', icon: 'fa-solid fa-user-gear' },
-          { label: 'Asignaciones docentes', path: '/asignaciones-docente', icon: 'fa-solid fa-chalkboard-user' },
-          { label: 'Tutorias por seccion', path: '/tutorias-seccion', icon: 'fa-solid fa-people-roof' }
+          { label: 'Asignaciones docentes', path: '/asignaciones-docente', icon: 'fa-solid fa-chalkboard-user' }
         ]
       });
     }
@@ -57,8 +56,7 @@ export class Shell {
         label: 'Gestion academica',
         icon: 'fa-solid fa-graduation-cap',
         children: [
-          { label: 'Mis asignaciones', path: '/mis-asignaciones', icon: 'fa-solid fa-chalkboard-user' },
-          { label: 'Estudiantes', path: '/estudiantes', icon: 'fa-solid fa-user-graduate' }
+          { label: 'Mis asignaciones', path: '/mis-asignaciones', icon: 'fa-solid fa-chalkboard-user' }
         ]
       });
     }
@@ -69,8 +67,12 @@ export class Shell {
         label: 'Seguimiento',
         icon: 'fa-solid fa-shield-heart',
         children: [
-          { label: 'Seccion tutorada', path: '/estudiantes', icon: 'fa-solid fa-users' },
-          { label: 'Perfil del alumno', path: '/alumno', icon: 'fa-solid fa-address-card' }
+          {
+            label: 'Seccion tutorada',
+            path: '/seccion-tutorada',
+            icon: 'fa-solid fa-users',
+            activePaths: ['/mis-asignaciones/tutorias']
+          }
         ]
       });
     }
@@ -80,24 +82,9 @@ export class Shell {
       label: 'Analitica y reportes',
       icon: 'fa-solid fa-chart-line',
       children: [
-        { label: 'Predicciones', path: '/predicciones', icon: 'fa-solid fa-wave-square' },
-        { label: 'Alertas y hallazgos', path: '/reportes', icon: 'fa-solid fa-triangle-exclamation' },
-        { label: 'Reportes', path: '/reportes', icon: 'fa-solid fa-file-lines' }
+        { label: 'Predicciones', path: '/predicciones', icon: 'fa-solid fa-wave-square' }
       ]
     });
-
-    if (esAdmin) {
-      items.push({
-        id: 'administracion',
-        label: 'Administracion',
-        icon: 'fa-solid fa-screwdriver-wrench',
-        children: [
-          { label: 'Panel administrativo', path: '/admin', icon: 'fa-solid fa-chart-pie' },
-          { label: 'Asignaciones docentes', path: '/asignaciones-docente', icon: 'fa-solid fa-diagram-project' },
-          { label: 'Tutorias por seccion', path: '/tutorias-seccion', icon: 'fa-solid fa-people-roof' }
-        ]
-      });
-    }
 
     return items;
   }

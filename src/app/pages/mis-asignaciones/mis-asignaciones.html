@@ -84,6 +84,63 @@
           </div>
         }
       </section>
+
+      <section class="cards-section">
+        <div class="section-head">
+          <div class="panel-head">
+            <h3>Secciones tutoradas</h3>
+            <p>Revisa las secciones donde tienes seguimiento tutorial durante este periodo.</p>
+          </div>
+        </div>
+
+        @if (cargando()) {
+          <div class="cards-surface">
+            <div class="cards-grid">
+              @for (row of [0, 1]; track row) {
+                <article class="flow-card skeleton-card">
+                  <span class="skeleton-line long"></span>
+                  <span class="skeleton-line mini"></span>
+                  <span class="skeleton-line short"></span>
+                  <span class="skeleton-line mini"></span>
+                </article>
+              }
+            </div>
+          </div>
+        } @else if (!seccionesTutoradas().length) {
+          <div class="cards-surface state-surface">
+            <div class="table-state">
+              <span class="table-state-icon"><i class="fa-solid fa-people-roof"></i></span>
+              <span>No tienes secciones tutoradas en el periodo academico actual.</span>
+            </div>
+          </div>
+        } @else {
+          <div class="cards-surface">
+            <div class="cards-grid">
+              @for (tutoria of seccionesTutoradas(); track tutoria.id) {
+                <article class="flow-card tutoria-card">
+                  <div class="flow-card-top">
+                    <span class="flow-title">Seccion {{ tutoria.seccion }}</span>
+                    <span class="status-badge active">{{ tutoria.nivel }}</span>
+                  </div>
+
+                  <strong>{{ obtenerDescripcionTutoria(tutoria) }}</strong>
+                  <small>{{ tutoria.periodoAcademico }} - {{ tutoria.docenteNombreCompleto }}</small>
+
+                  <div class="flow-card-footer">
+                    <span><i class="fa-solid fa-users"></i> Seguimiento tutorial</span>
+                    <div class="flow-card-actions">
+                      <a class="flow-link-button" [routerLink]="['/mis-asignaciones/tutorias', tutoria.id]">
+                        <i class="fa-solid fa-arrow-right"></i>
+                        <span>Abrir</span>
+                      </a>
+                    </div>
+                  </div>
+                </article>
+              }
+            </div>
+          </div>
+        }
+      </section>
     </div>
   </section>
 </app-shell>
