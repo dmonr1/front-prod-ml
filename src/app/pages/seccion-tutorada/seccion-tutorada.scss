@@ -7,21 +7,17 @@
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
   min-height: 100%;
-  background: #f1faff;
+  background: #ffffff;
   padding: 25px;
   border-radius: 28px;
   box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
+  gap: 20px;
 }
 
-.grades-toolbar,
-.state-card {
-  padding: 0 22px 15px;
-}
 
 .tutorias-selector {
   display: grid;
   gap: 16px;
-  padding: 20px 22px 22px;
 }
 
 .panel-card {
@@ -123,7 +119,6 @@
 }
 
 .tutorias-surface {
-  padding: 20px;
   border-radius: 18px;
   background: #f1faff;
 }
@@ -137,6 +132,7 @@
   overflow-y: hidden;
   padding-bottom: 6px;
   justify-content: start;
+  padding: 20px;
 }
 
 .flow-card {
@@ -201,7 +197,7 @@
 .tutoria-card-option.active {
   background: linear-gradient(180deg, #ffffff 0%, #f4f9ff 100%);
   box-shadow: 0 10px 22px rgba(29, 95, 196, 0.12);
-  outline: 2px solid rgba(33, 89, 182, 0.14);
+  outline: 2px solid rgba(33, 90, 182, 0.562);
 }
 
 .flow-select-label {
@@ -333,9 +329,9 @@
 .grade-pill {
   display: grid;
   justify-items: center;
-  gap: 4px;
-  min-width: 92px;
-  padding: 8px 10px;
+  gap: 8px;
+  min-width: 140px;
+  padding: 10px 12px;
   border: 1px solid #d8e5f7;
   border-radius: 14px;
   background: #f7fbff;
@@ -351,9 +347,66 @@
   font-weight: 800;
 }
 
-.grade-pill small {
+.attendance-pill {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  min-width: 92px;
+  padding: 8px 10px;
+  border: 1px solid #d8e5f7;
+  border-radius: 14px;
+  background: #f7fbff;
+}
+
+.attendance-pill strong {
+  color: #112033;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.attendance-pill small {
   color: #5f6f8e;
   font-size: 11px;
+}
+
+.notes-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+}
+
+.notes-grid.empty {
+  display: block;
+  text-align: center;
+}
+
+.notes-grid small {
+  color: #5f6f8e;
+  font-size: 11px;
+}
+
+.note-chip {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 5px 4px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #e1ebf8;
+}
+
+.note-chip span {
+  color: #6a7b96;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.note-chip strong {
+  color: #112033;
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .table-state {
@@ -407,6 +460,11 @@
   min-width: 110px;
 }
 
+.app-table th:nth-child(3),
+.app-table td:nth-child(3) {
+  min-width: 120px;
+}
+
 @media (max-width: 960px) {
   .grades-toolbar,
   .panel-head-row,
@@ -437,5 +495,9 @@
   .grades-toolbar-main {
     justify-items: start;
     text-align: left;
+  }
+
+  .notes-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }

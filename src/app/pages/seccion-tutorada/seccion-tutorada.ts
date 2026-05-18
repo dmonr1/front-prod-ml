@@ -207,8 +207,23 @@ export class SeccionTutorada implements OnInit {
     return promedio === null ? 'Sin notas' : promedio.toFixed(2);
   }
 
-  formatearNotas(notas: number[]): string {
-    return notas.length ? notas.join(' / ') : 'Sin notas';
+  obtenerNotasEtiquetadas(notas: number[]): Array<{ etiqueta: string; valor: string }> {
+    return notas.map((nota, indice) => ({
+      etiqueta: `ED${indice + 1}`,
+      valor: nota.toFixed(0)
+    }));
+  }
+
+  obtenerAsistenciaTexto(clasesAsistidas: number, clasesProgramadas: number): string {
+    if (!clasesProgramadas) {
+      return 'Sin registro';
+    }
+
+    return `${clasesAsistidas}/${clasesProgramadas}`;
+  }
+
+  obtenerAsistenciaPorcentaje(porcentaje: number | null): string {
+    return porcentaje === null ? '--' : `${porcentaje.toFixed(0)}%`;
   }
 
   private cargarPrimerPeriodoDisponible(): void {

@@ -72,6 +72,12 @@ export class Shell {
             path: '/seccion-tutorada',
             icon: 'fa-solid fa-users',
             activePaths: ['/mis-asignaciones/tutorias']
+          },
+          {
+            label: 'Perfil del alumno',
+            path: '/alumno',
+            icon: 'fa-solid fa-address-card',
+            activePaths: ['/alumno']
           }
         ]
       });
@@ -79,10 +85,10 @@ export class Shell {
 
     items.push({
       id: 'analitica',
-      label: 'Analitica y reportes',
+      label: 'Seguimiento',
       icon: 'fa-solid fa-chart-line',
       children: [
-        { label: 'Predicciones', path: '/predicciones', icon: 'fa-solid fa-wave-square' }
+        { label: 'Seguimiento de riesgo', path: '/predicciones', icon: 'fa-solid fa-wave-square' }
       ]
     });
 

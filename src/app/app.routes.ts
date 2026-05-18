@@ -132,6 +132,10 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/perfil-alumno/perfil-alumno').then((m) => m.PerfilAlumno)
   },
   {
+    path: 'alumno/:alumnoId',
+    loadComponent: () => import('./pages/perfil-alumno/perfil-alumno').then((m) => m.PerfilAlumno)
+  },
+  {
     path: 'usuario',
     loadComponent: () => import('./pages/usuario/usuario').then((m) => m.Usuario)
   },

@@ -1,14 +1,147 @@
 <app-shell>
-  <header class="student-topbar">
-    <a routerLink="/seccion-tutorada">Volver a seccion tutorada</a>
-  </header>
+  <section class="student-profile-page">
+    <div class="profile-card">
+      <div class="profile-head">
+        <a class="back-link-button" routerLink="/predicciones">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>Volver a seguimiento</span>
+        </a>
 
-  <section class="state-card card">
-    <span class="eyebrow">Perfil del alumno</span>
-    <h2>Esta ficha se construira con informacion real del backend.</h2>
-    <p>
-      Cuando terminemos la lista de alumnos por seccion y el bloque de predicciones, aqui mostraremos
-      el detalle del estudiante, cursos, riesgo, alertas y recomendaciones.
-    </p>
+        <div class="profile-title">
+          <span class="eyebrow">Perfil del alumno</span>
+          <h2>{{ prediccionSeleccionada()?.alumnoNombreCompleto || 'Ficha del alumno' }}</h2>
+          <p>
+            @if (prediccionSeleccionada()) {
+              {{ prediccionSeleccionada()!.codigoAlumno }} · {{ prediccionSeleccionada()!.grado }} ·
+              Seccion {{ prediccionSeleccionada()!.seccion }}
+            } @else {
+              Selecciona un alumno desde Predicciones para revisar su ficha completa.
+            }
+          </p>
+        </div>
+      </div>
+
+      @if (cargando()) {
+      <section class="state-card">
+        <strong>Cargando ficha del alumno...</strong>
+        <p>Estamos reuniendo predicciones, alertas y recomendaciones.</p>
+      </section>
+      } @else if (error()) {
+      <section class="state-card state-error">
+        <strong>Revisa el flujo</strong>
+        <p>{{ error() }}</p>
+      </section>
+      } @else if (prediccionSeleccionada(); as detalle) {
+      <div class="summary-grid">
+        <article class="summary-tile">
+          <span>Predicciones</span>
+          <strong>{{ resumen().total }}</strong>
+        </article>
+        <article class="summary-tile">
+          <span>Riesgo alto</span>
+          <strong class="tone-high">{{ resumen().alto }}</strong>
+        </article>
+        <article class="summary-tile">
+          <span>Riesgo medio</span>
+          <strong class="tone-medium">{{ resumen().medio }}</strong>
+        </article>
+        <article class="summary-tile">
+          <span>Riesgo promedio</span>
+          <strong>{{ resumen().promedio | number:'1.0-1' }}%</strong>
+        </article>
+      </div>
+
+      <div class="profile-grid">
+        <aside class="prediction-list-card">
+          <div class="section-head">
+            <span class="eyebrow">Casos detectados</span>
+            <h3>Predicciones del alumno</h3>
+          </div>
+
+          <div class="case-list">
+            @for (item of predicciones(); track item.id) {
+            <button type="button" class="case-row" [class.active]="seleccionadaId() === item.id"
+              (click)="seleccionarPrediccion(item.id)">
+              <div class="case-main">
+                <strong>{{ item.curso || 'Riesgo global' }}</strong>
+                <span>{{ item.nombrePeriodoEvaluacion }}</span>
+              </div>
+              <span class="risk-badge" [class.high]="item.nivelRiesgoNormalizado === 'ALTO'"
+                [class.medium]="item.nivelRiesgoNormalizado === 'MEDIO'"
+                [class.low]="item.nivelRiesgoNormalizado === 'BAJO'">
+                {{ item.nivelRiesgoNormalizado }}
+              </span>
+            </button>
+            }
+          </div>
+        </aside>
+
+        <section class="detail-panel">
+          <div class="detail-hero">
+            <div class="detail-score">
+              <span>Probabilidad de fracaso estimada</span>
+              <div class="score-ring" [class.high]="detalle.nivelRiesgoNormalizado === 'ALTO'"
+                [class.medium]="detalle.nivelRiesgoNormalizado === 'MEDIO'"
+                [class.low]="detalle.nivelRiesgoNormalizado === 'BAJO'">
+                {{ detalle.puntaje | number:'1.0-0' }}%
+              </div>
+            </div>
+            <div class="detail-tags">
+              <span class="risk-badge" [class.high]="detalle.nivelRiesgoNormalizado === 'ALTO'"
+                [class.medium]="detalle.nivelRiesgoNormalizado === 'MEDIO'"
+                [class.low]="detalle.nivelRiesgoNormalizado === 'BAJO'">
+                {{ detalle.nivelRiesgoNormalizado }}
+              </span>
+              <span class="soft-chip">{{ detalle.nombrePeriodoEvaluacion }}</span>
+              @if (detalle.curso) {
+              <span class="soft-chip">{{ detalle.curso }}</span>
+              }
+            </div>
+          </div>
+
+          <div class="info-grid">
+            <article class="info-card">
+              <h4>Alerta principal</h4>
+              <p>{{ detalle.alertaPrincipal }}</p>
+            </article>
+
+            <article class="info-card">
+              <h4>Recomendacion</h4>
+              <p>{{ detalle.recomendacionPrincipal }}</p>
+            </article>
+          </div>
+
+          <article class="info-card">
+            <div class="section-head compact-head">
+              <div>
+                <span class="eyebrow">Variables</span>
+                <h3>Factores considerados</h3>
+              </div>
+            </div>
+            <div class="factor-list">
+              @for (factor of detalle.factores; track factor) {
+              <span class="factor-pill">{{ factor }}</span>
+              }
+            </div>
+          </article>
+
+          <article class="trace-card">
+            <div class="trace-row">
+              <span>Modelo</span>
+              <strong>{{ detalle.modeloVersion || 'Sin version registrada' }}</strong>
+            </div>
+            <div class="trace-row">
+              <span>Fecha de prediccion</span>
+              <strong>{{ detalle.fechaPrediccion || 'Sin fecha registrada' }}</strong>
+            </div>
+            <div class="trace-row">
+              <span>Contexto</span>
+              <strong>{{ detalle.nivel }} · {{ detalle.grado }} · Seccion {{ detalle.seccion }}</strong>
+            </div>
+          </article>
+        </section>
+      </div>
+      }
+    </div>
   </section>
 </app-shell>

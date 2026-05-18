@@ -4,51 +4,41 @@
       <div class="card-head">
         <div class="card-head-inline">
           <div class="panel-head">
-            <span class="eyebrow">Analitica predictiva</span>
-            <h2>Predicciones de riesgo estudiantil</h2>
-            <p>Revisa el riesgo global y por curso segun tus secciones a cargo y el periodo elegido.</p>
+            <span class="eyebrow">Seguimiento estudiantil</span>
+            <h2>Seguimiento de riesgo</h2>
           </div>
 
           <div class="filters-corner">
-            <label>
-              Mi periodo
+            <label class="corner-filter">
+              <span>Periodo</span>
               <select [value]="periodoEvaluacionSeleccionadoId() ?? ''"
                 (change)="onPeriodoEvaluacionChange($any($event.target).value)">
                 @for (periodo of periodosEvaluacionDisponibles(); track periodo.id) {
-                <option [value]="periodo.id">{{ periodo.nombre }} · {{ periodo.anioAcademico }}</option>
+                <option [value]="periodo.id">{{ periodo.nombre }} Â· {{ periodo.anioAcademico }}</option>
                 }
               </select>
             </label>
 
-            <label>
-              Mis secciones a cargo
+            <label class="corner-filter">
+              <span>Mis secciones</span>
               <select [value]="seccionSeleccionadaId() ?? ''" (change)="onSeccionChange($any($event.target).value)">
                 @for (seccion of secciones(); track seccion.id) {
-                <option [value]="seccion.id">{{ etiquetaSeccion(seccion) }} · {{ seccion.nivelNombre }}</option>
+                <option [value]="seccion.id">{{ etiquetaSeccion(seccion) }}</option>
                 }
               </select>
             </label>
-
-            <label class="search-field">
-              Buscar alumno
-              <input type="text" placeholder="Nombre, codigo o curso" [value]="busqueda()"
-                (input)="onBusqueda($any($event.target).value)" />
-            </label>
-          </div>
-        </div>
-      </div>
-
-      <div class="toolbar">
-        <div class="toolbar-top">
-          <div class="view-switch">
-            <button type="button" class="view-pill" [class.active]="vistaActiva() === 'global'"
-              (click)="cambiarVista('global')">
-              Riesgo global
-            </button>
-            <button type="button" class="view-pill" [class.active]="vistaActiva() === 'curso'"
-              (click)="cambiarVista('curso')">
-              Riesgo por curso
-            </button>
+            <div class="toolbar-top">
+              <div class="view-switch">
+                <button type="button" class="view-pill" [class.active]="vistaActiva() === 'global'"
+                  (click)="cambiarVista('global')">
+                  Riesgo global
+                </button>
+                <button type="button" class="view-pill" [class.active]="vistaActiva() === 'curso'"
+                  (click)="cambiarVista('curso')">
+                  Riesgo por curso
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -64,213 +54,189 @@
         <p>{{ error() }}</p>
       </div>
       } @else {
-      <div class="metrics-grid">
-        <article class="metric-card metric-card--score">
-          <div class="metric-head">
-            <span class="metric-icon"><i class="fa-solid fa-wave-square"></i></span>
-            <span class="metric-label">Promedio</span>
-          </div>
-          <strong class="metric-value">{{ formatearNumero(resumen().promedio) }}</strong>
-          <p>Indice general del grupo.</p>
-        </article>
-
-        <article class="metric-card">
-          <div class="metric-head">
-            <span class="metric-icon"><i class="fa-solid fa-table-list"></i></span>
-            <span class="metric-label">Registros</span>
-          </div>
-          <strong class="metric-value">{{ resumen().total }}</strong>
-          <p>Predicciones visibles.</p>
-        </article>
-
-        <article class="metric-card metric-card--high">
-          <div class="metric-head">
-            <span class="metric-icon"><i class="fa-solid fa-triangle-exclamation"></i></span>
-            <span class="metric-label">Riesgo alto</span>
-          </div>
-          <strong class="metric-value tone-high">{{ resumen().alto }}</strong>
-          <p>Atencion inmediata.</p>
-        </article>
-
-        <article class="metric-card metric-card--medium">
-          <div class="metric-head">
-            <span class="metric-icon"><i class="fa-solid fa-chart-column"></i></span>
-            <span class="metric-label">Riesgo medio</span>
-          </div>
-          <strong class="metric-value tone-medium">{{ resumen().medio }}</strong>
-          <p>Monitoreo cercano.</p>
-        </article>
-      </div>
-
-      <div class="insights-grid">
-        <article class="mini-card">
-          <div class="mini-card-head">
-            <h3>Distribucion de riesgo</h3>
-            <span>{{ resumen().total }} registros</span>
-          </div>
-
-          <div class="stack-bars">
-            @for (item of distribucion(); track item.label) {
-            <div class="stack-item">
-              <div class="stack-row">
-                <span>{{ item.label }}</span>
-                <strong>{{ item.percent }}%</strong>
+      <div class="content-grid">
+        <div class="content-main">
+          <div class="metrics-grid">
+            @for (metrica of metricasDashboard(); track metrica.label) {
+            <article class="metric-card" [class.metric-card--high]="metrica.tone === 'high'"
+              [class.metric-card--medium]="metrica.tone === 'medium'">
+              <div class="metric-head">
+                <span class="metric-icon"><i [class]="metrica.icon"></i></span>
+                <span class="metric-label">{{ metrica.label }}</span>
               </div>
-              <div class="stack-track">
-                <div class="stack-fill" [class.high]="item.tone === 'high'" [class.medium]="item.tone === 'medium'"
-                  [class.low]="item.tone === 'low'" [style.width.%]="item.percent"></div>
-              </div>
-            </div>
+              <strong class="metric-value" [class.tone-high]="metrica.tone === 'high'"
+                [class.tone-medium]="metrica.tone === 'medium'">
+                {{ metrica.value }}
+              </strong>
+              <p>{{ metrica.detail }}</p>
+            </article>
             }
           </div>
-        </article>
 
-        <article class="mini-card">
-          <div class="mini-card-head">
-            <h3>Indicadores clave</h3>
-            <span>Lectura rapida</span>
-          </div>
-
-          <div class="signal-list">
-            @for (item of indicadores(); track item.label) {
-            <div class="signal-item" [class.high]="item.tone === 'high'" [class.medium]="item.tone === 'medium'"
-              [class.low]="item.tone === 'low'">
-              <span>{{ item.label }}</span>
-              <strong>{{ item.value }}</strong>
+          <article class="list-card list-card--fill">
+            <div class="section-header">
+              <div>
+                <span class="section-kicker">Listado principal</span>
+                <h3>{{ vistaActiva() === 'global' ? 'Seguimiento global por alumno' : 'Seguimiento focalizado por curso'
+                  }}</h3>
+              </div>
+              <div class="table-actions">
+                <span class="result-chip">{{ prediccionesFiltradas().length }} resultados</span>
+                @if (vistaActiva() === 'curso') {
+                <label class="course-filter-inline">
+                  <span>Curso</span>
+                  <select [value]="cursoSeleccionadoId() ?? ''" (change)="onCursoChange($any($event.target).value)">
+                    <option value="">Todos</option>
+                    @for (curso of cursosDisponibles(); track curso.id) {
+                    <option [value]="curso.id">{{ curso.nombre }}</option>
+                    }
+                  </select>
+                </label>
+                }
+              </div>
             </div>
-            }
-          </div>
-        </article>
-      </div>
 
-      <div class="workspace-grid">
-        <article class="list-card">
-          <div class="section-header">
-            <div>
-              <span class="section-kicker">Listado principal</span>
-              <h3>{{ vistaActiva() === 'global' ? 'Riesgo global por alumno' : 'Riesgo focalizado por curso' }}</h3>
+            @if (!prediccionesFiltradas().length) {
+            <div class="state-card empty-state">
+              <span class="state-title">Sin resultados</span>
+              <p>No hay predicciones para los filtros elegidos.</p>
             </div>
-            <span class="result-chip">{{ prediccionesFiltradas().length }} resultados</span>
-          </div>
-
-          @if (!prediccionesFiltradas().length) {
-          <div class="state-card empty-state">
-            <span class="state-title">Sin resultados</span>
-            <p>No hay predicciones para los filtros elegidos.</p>
-          </div>
-          } @else {
-          <div class="prediction-list">
-            @for (item of prediccionesFiltradas(); track item.id) {
-            <button type="button" class="prediction-row" [class.active]="prediccionSeleccionada().id === item.id"
-              (click)="seleccionarPrediccion(item.id)">
-              <div class="prediction-main">
-                <div class="student-block">
-                  <strong>{{ item.alumnoNombreCompleto }}</strong>
-                  <span>{{ item.codigoAlumno }} · {{ item.grado }} {{ item.seccion }}</span>
-                </div>
-
-                <div class="row-meta">
-                  @if (item.curso) {
-                  <span class="course-chip">{{ item.curso }}</span>
+            } @else {
+            <div class="table-scroll prediction-table-scroll">
+              <table class="prediction-table">
+                <thead>
+                  <tr>
+                    <th>Alumno</th>
+                    @if (vistaActiva() === 'curso') {
+                    <th>Curso</th>
+                    }
+                    <th>Riesgo</th>
+                    <th>Riesgo de fracaso</th>
+                    <th>Alerta</th>
+                    <th>Ficha</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (item of prediccionesFiltradas(); track item.id) {
+                  <tr>
+                    <td>
+                      <strong>{{ item.alumnoNombreCompleto }}</strong>
+                    </td>
+                    @if (vistaActiva() === 'curso') {
+                    <td>{{ item.curso || 'Sin curso' }}</td>
+                    }
+                    <td>
+                      <span class="risk-badge" [class.high]="tonoNivel(item.nivelRiesgoNormalizado) === 'high'"
+                        [class.medium]="tonoNivel(item.nivelRiesgoNormalizado) === 'medium'"
+                        [class.low]="tonoNivel(item.nivelRiesgoNormalizado) === 'low'">
+                        {{ item.nivelRiesgoNormalizado }}
+                      </span>
+                    </td>
+                    <td>
+                      <span class="score-ring score-ring--table"
+                        [class.high]="tonoNivel(item.nivelRiesgoNormalizado) === 'high'"
+                        [class.medium]="tonoNivel(item.nivelRiesgoNormalizado) === 'medium'"
+                        [class.low]="tonoNivel(item.nivelRiesgoNormalizado) === 'low'">
+                        {{ item.puntaje | number:'1.0-0' }}%
+                      </span>
+                    </td>
+                    <td>
+                      <div class="alert-copy">{{ item.alertaPrincipal }}</div>
+                    </td>
+                    <td>
+                      <button type="button" class="table-link-button" (click)="verFichaAlumno(item.alumnoId)">
+                        <i class="fa-solid fa-eye"></i>
+                        Ver ficha
+                      </button>
+                    </td>
+                  </tr>
                   }
+                </tbody>
+              </table>
+            </div>
+            }
+          </article>
+        </div>
+
+        <div class="content-side">
+          <article class="mini-card mini-card--donut">
+            <div class="mini-card-head">
+              <h3>{{ tituloDistribucion() }}</h3>
+            </div>
+
+            <div class="donut-layout">
+              <div class="donut-card">
+                <div class="risk-donut" [style.background]="donutDistribucion()">
+                  <div class="risk-donut-core">
+                    <strong>{{ resumen().total }}</strong>
+                    <span>{{ vistaActiva() === 'global' ? 'alumnos' : 'casos' }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="donut-legend">
+                @for (item of distribucion(); track item.label) {
+                <div class="legend-row">
+                  <div class="legend-copy">
+                    <span class="legend-dot" [class.high]="item.tone === 'high'"
+                      [class.medium]="item.tone === 'medium'" [class.low]="item.tone === 'low'"></span>
+                    <span>{{ item.label }}</span>
+                  </div>
+                  <strong>{{ item.percent }}%</strong>
+                </div>
+                }
+              </div>
+            </div>
+          </article>
+
+          <article class="mini-card mini-card--signals">
+            @if (vistaActiva() === 'global') {
+            <div class="mini-card-head">
+              <h3>Detalle del riesgo global</h3>
+              <span>{{ periodoEvaluacionSeleccionado()?.nombre || 'Periodo actual' }}</span>
+            </div>
+
+            <div class="attendance-panel">
+
+              <div class="attendance-notes">
+                @for (item of detalleRiesgoGlobal(); track item.label) {
+                <div class="attendance-note-row">
+                  <span>{{ item.label }}</span>
+                  <strong>{{ item.value }}</strong>
+                </div>
+                }
+              </div>
+            </div>
+            } @else {
+            <div class="mini-card-head">
+              <h3>Prioridad de intervencion</h3>
+              <span>Casos para revisar primero</span>
+            </div>
+
+            <div class="priority-list">
+              @for (item of prioridadesIntervencion(); track item.id) {
+              <div class="priority-item">
+                <div class="priority-main">
+                  <div class="priority-copy">
+                    <strong>{{ item.alumnoNombreCompleto }}</strong>
+                    <span>{{ item.curso || 'Sin curso' }}</span>
+                  </div>
                   <span class="risk-badge" [class.high]="tonoNivel(item.nivelRiesgoNormalizado) === 'high'"
                     [class.medium]="tonoNivel(item.nivelRiesgoNormalizado) === 'medium'"
                     [class.low]="tonoNivel(item.nivelRiesgoNormalizado) === 'low'">
                     {{ item.nivelRiesgoNormalizado }}
                   </span>
                 </div>
-              </div>
-
-              <div class="prediction-score">
-                <div class="score-ring" [class.high]="tonoNivel(item.nivelRiesgoNormalizado) === 'high'"
-                  [class.medium]="tonoNivel(item.nivelRiesgoNormalizado) === 'medium'"
-                  [class.low]="tonoNivel(item.nivelRiesgoNormalizado) === 'low'">
-                  {{ item.puntaje | number:'1.0-0' }}
+                <div class="priority-meta">
+                  <span class="priority-score">{{ item.puntaje | number:'1.0-0' }}% de riesgo</span>
+                  <p>{{ item.alertaPrincipal }}</p>
                 </div>
-                <p>{{ item.alertaPrincipal }}</p>
               </div>
-            </button>
-            }
-          </div>
-          }
-        </article>
-
-        <aside class="detail-card">
-          <div class="section-header">
-            <div>
-              <span class="section-kicker">Detalle del caso</span>
-              <h3>{{ prediccionSeleccionada().alumnoNombreCompleto || 'Sin seleccion' }}</h3>
-            </div>
-            @if (prediccionSeleccionada()) {
-            <span class="result-chip">{{ prediccionSeleccionada().codigoAlumno }}</span>
-            }
-          </div>
-
-          @if (prediccionSeleccionada(); as detalle) {
-          <div class="detail-hero">
-            <div class="detail-score">
-              <span>Puntaje de riesgo</span>
-              <strong>{{ detalle.puntaje | number:'1.0-1' }}</strong>
-            </div>
-            <div class="detail-tags">
-              <span class="risk-badge" [class.high]="tonoNivel(detalle.nivelRiesgoNormalizado) === 'high'"
-                [class.medium]="tonoNivel(detalle.nivelRiesgoNormalizado) === 'medium'"
-                [class.low]="tonoNivel(detalle.nivelRiesgoNormalizado) === 'low'">
-                {{ detalle.nivelRiesgoNormalizado }}
-              </span>
-              <span class="soft-chip">{{ detalle.nombrePeriodoEvaluacion }}</span>
-              @if (detalle.curso) {
-              <span class="soft-chip">{{ detalle.curso }}</span>
               }
             </div>
-          </div>
-
-          <div class="detail-grid">
-            <article class="info-card">
-              <h4>Alerta principal</h4>
-              <p>{{ detalle.alertaPrincipal }}</p>
-            </article>
-
-            <article class="info-card">
-              <h4>Recomendacion</h4>
-              <p>{{ detalle.recomendacionPrincipal }}</p>
-            </article>
-          </div>
-
-          <article class="factors-card">
-            <div class="mini-card-head">
-              <h4>Variables consideradas</h4>
-              <span>{{ detalle.tendencia }}</span>
-            </div>
-
-            <div class="factor-list">
-              @for (factor of detalle.factores; track factor) {
-              <span class="factor-pill">{{ factor }}</span>
-              }
-            </div>
+            }
           </article>
-
-          <article class="trace-card">
-            <div class="trace-row">
-              <span>Modelo</span>
-              <strong>{{ detalle.modeloVersion || 'Sin version registrada' }}</strong>
-            </div>
-            <div class="trace-row">
-              <span>Fecha de prediccion</span>
-              <strong>{{ detalle.fechaPrediccion || 'Sin fecha registrada' }}</strong>
-            </div>
-            <div class="trace-row">
-              <span>Contexto academico</span>
-              <strong>{{ detalle.nivel }} · {{ detalle.grado }} {{ detalle.seccion }}</strong>
-            </div>
-          </article>
-          } @else {
-          <div class="state-card empty-state">
-            <span class="state-title">Sin detalle</span>
-            <p>Selecciona un registro para ver sus factores y recomendaciones.</p>
-          </div>
-          }
-        </aside>
+        </div>
       </div>
       }
     </div>

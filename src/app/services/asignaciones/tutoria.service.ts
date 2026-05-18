@@ -34,6 +34,9 @@ export interface AlumnoTutoriaResumen {
   alumnoId: number;
   codigoAlumno: string;
   alumnoNombreCompleto: string;
+  clasesProgramadas: number;
+  clasesAsistidas: number;
+  porcentajeAsistencia: number | null;
   promedioGeneral: number | null;
   cursos: CursoAlumnoTutoriaResumen[];
 }

@@ -1,5 +1,6 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { Shell } from '../../layouts/shell/shell';
 import { PeriodoAcademico } from '../../models/periodo-academico';
@@ -31,6 +32,7 @@ interface PrediccionVista extends PrediccionRiesgo {
   alertaPrincipal: string;
   recomendacionPrincipal: string;
   tendencia: 'Critico' | 'Controlado';
+  factorDominante: 'asistencia' | 'rendimiento' | 'mixto' | 'controlado';
 }
 
 @Component({
@@ -40,6 +42,7 @@ interface PrediccionVista extends PrediccionRiesgo {
   styleUrl: './predicciones.scss'
 })
 export class Predicciones {
+  private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   private readonly periodoAcademicoService = inject(PeriodoAcademicoService);
   private readonly periodoEvaluacionService = inject(PeriodoEvaluacionService);
@@ -58,6 +61,7 @@ export class Predicciones {
   readonly secciones = signal<Seccion[]>([]);
   readonly periodoEvaluacionSeleccionadoId = signal<number | null>(null);
   readonly seccionSeleccionadaId = signal<number | null>(null);
+  readonly cursoSeleccionadoId = signal<number | null>(null);
   readonly busqueda = signal('');
   readonly prediccionSeleccionadaId = signal<number | null>(null);
 
@@ -97,10 +101,33 @@ export class Predicciones {
     this.vistaActiva() === 'global' ? this.prediccionesGlobales() : this.prediccionesCurso()
   );
 
+  readonly cursosDisponibles = computed(() => {
+    const cursos = new Map<number, string>();
+
+    for (const item of this.prediccionesCurso()) {
+      if (item.cursoId != null && item.curso) {
+        cursos.set(item.cursoId, item.curso);
+      }
+    }
+
+    return [...cursos.entries()]
+      .map(([id, nombre]) => ({ id, nombre }))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre));
+  });
+
   readonly prediccionesFiltradas = computed(() => {
     const query = this.busqueda().trim().toLowerCase();
+    const cursoSeleccionadoId = this.cursoSeleccionadoId();
 
     return this.datasetActivo().filter((item) => {
+      if (
+        this.vistaActiva() === 'curso' &&
+        cursoSeleccionadoId != null &&
+        item.cursoId !== cursoSeleccionadoId
+      ) {
+        return false;
+      }
+
       if (!query) {
         return true;
       }
@@ -173,6 +200,34 @@ export class Predicciones {
     ];
   });
 
+  readonly tituloDistribucion = computed(() =>
+    this.vistaActiva() === 'global'
+      ? 'Alumnos por nivel de riesgo'
+      : 'Casos por nivel de riesgo'
+  );
+
+  readonly subtituloDistribucion = computed(() =>
+    this.vistaActiva() === 'global'
+      ? `${this.resumen().total} alumnos evaluados`
+      : `${this.resumen().total} casos evaluados`
+  );
+
+  readonly donutDistribucion = computed(() => {
+    const distribucion = this.distribucion();
+    const alto = distribucion.find((item) => item.tone === 'high')?.percent ?? 0;
+    const medio = distribucion.find((item) => item.tone === 'medium')?.percent ?? 0;
+    const bajo = distribucion.find((item) => item.tone === 'low')?.percent ?? 0;
+
+    return `conic-gradient(
+      
+#ff0000 0% ${alto}%,
+      
+#ffda09 ${alto}% ${alto + medio}%,
+
+#5be00d ${alto + medio}% 100%
+    )`;
+  });
+
   readonly indicadores = computed(() => {
     const registros = this.prediccionesFiltradas();
     return [
@@ -194,12 +249,219 @@ export class Predicciones {
     ];
   });
 
+  readonly prioridadesIntervencion = computed(() => {
+    const prioridadNivel = { ALTO: 0, MEDIO: 1, BAJO: 2 } satisfies Record<NivelRiesgo, number>;
+
+    return [...this.prediccionesFiltradas()]
+      .sort((a, b) => {
+        const nivel = prioridadNivel[a.nivelRiesgoNormalizado] - prioridadNivel[b.nivelRiesgoNormalizado];
+        if (nivel !== 0) {
+          return nivel;
+        }
+
+        return b.puntaje - a.puntaje;
+      })
+      .slice(0, 5);
+  });
+
+  readonly asistenciaSeccion = computed(() => {
+    const registros = this.prediccionesGlobales();
+    const acumulado = registros.reduce(
+      (acc, item) => {
+        const variables = this.parsearVariables(item.variablesEntrada);
+        const asistidas = this.obtenerNumero(variables['clases_asistidas']) ?? 0;
+        const programadas = this.obtenerNumero(variables['clases_programadas']) ?? 0;
+        const porcentaje = this.obtenerNumero(variables['porcentaje_asistencia']);
+
+        acc.asistidas += asistidas;
+        acc.programadas += programadas;
+
+        if (porcentaje != null) {
+          acc.porcentajes.push(porcentaje);
+        }
+
+        return acc;
+      },
+      { asistidas: 0, programadas: 0, porcentajes: [] as number[] }
+    );
+
+    const porcentajePromedio = acumulado.porcentajes.length
+      ? this.promedio(acumulado.porcentajes)
+      : acumulado.programadas
+        ? (acumulado.asistidas / acumulado.programadas) * 100
+        : 0;
+
+    const faltas = Math.max(acumulado.programadas - acumulado.asistidas, 0);
+    const mayor = acumulado.porcentajes.length ? Math.max(...acumulado.porcentajes) : porcentajePromedio;
+    const menor = acumulado.porcentajes.length ? Math.min(...acumulado.porcentajes) : porcentajePromedio;
+    const meta = 90;
+
+    return {
+      porcentaje: porcentajePromedio,
+      asistidas: acumulado.asistidas,
+      programadas: acumulado.programadas,
+      faltas,
+      meta,
+      diferenciaMeta: porcentajePromedio - meta,
+      mayor,
+      menor,
+      tono:
+        porcentajePromedio >= 90 ? 'low' : porcentajePromedio >= 75 ? 'medium' : 'high'
+    } as const;
+  });
+
+  readonly detalleRiesgoGlobal = computed(() => {
+    const resumen = this.resumen();
+    const asistencia = this.asistenciaSeccion();
+    const prioritarios = resumen.alto + resumen.medio;
+
+    return [
+      {
+        label: 'Riesgo promedio de fracaso',
+        value: `${this.formatearNumero(resumen.promedio)}%`
+      },
+      {
+        label: 'Asistencia promedio',
+        value: `${this.formatearNumero(asistencia.porcentaje)}%`
+      },
+      {
+        label: 'Meta de asistencia del periodo',
+        value: `${this.formatearNumero(asistencia.meta)}%`
+      },
+      {
+        label: 'Casos prioritarios',
+        value: `${prioritarios}`
+      },
+      {
+        label: 'Riesgo alto',
+        value: `${resumen.alto}`
+      },
+      {
+        label: 'Inasistencias',
+        value: `${asistencia.faltas}`
+      },
+      {
+        label: 'Clases programadas',
+        value: `${asistencia.programadas}`
+      }
+    ] as const;
+  });
+
+  readonly cursoSeleccionadoNombre = computed(() => {
+    if (this.vistaActiva() !== 'curso') {
+      return null;
+    }
+
+    const cursoId = this.cursoSeleccionadoId();
+    if (cursoId == null) {
+      return 'Todos los cursos';
+    }
+
+    return this.cursosDisponibles().find((curso) => curso.id === cursoId)?.nombre ?? 'Curso';
+  });
+
+  readonly metricasDashboard = computed(() => {
+    const resumen = this.resumen();
+    const prioritarios = resumen.alto + resumen.medio;
+
+    if (this.vistaActiva() === 'global') {
+      return [
+        {
+          label: 'Alumnos evaluados',
+          value: `${resumen.total}`,
+          detail: 'Casos visibles en esta seccion.',
+          icon: 'fa-solid fa-users',
+          tone: 'neutral'
+        },
+        {
+          label: 'Casos prioritarios',
+          value: `${prioritarios}`,
+          detail: 'Alumnos con riesgo medio o alto de fracaso.',
+          icon: 'fa-solid fa-bullseye',
+          tone: 'medium'
+        },
+        {
+          label: 'Riesgo promedio',
+          value: `${this.formatearNumero(resumen.promedio)}%`,
+          detail: 'Probabilidad promedio de fracaso en la seccion.',
+          icon: 'fa-solid fa-chart-line',
+          tone: 'neutral'
+        },
+        {
+          label: 'Riesgo alto',
+          value: `${resumen.alto}`,
+          detail: 'Alumnos con atencion inmediata.',
+          icon: 'fa-solid fa-triangle-exclamation',
+          tone: 'high'
+        }
+      ] as const;
+    }
+
+    return [
+      {
+        label: 'Curso seleccionado',
+        value: this.cursoSeleccionadoNombre() ?? 'Curso',
+        detail: 'Filtro activo del analisis por curso.',
+        icon: 'fa-solid fa-book-open',
+        tone: 'neutral'
+      },
+      {
+        label: 'Alumnos evaluados',
+        value: `${resumen.total}`,
+        detail: 'Casos visibles para este curso.',
+        icon: 'fa-solid fa-users-viewfinder',
+        tone: 'neutral'
+      },
+      {
+        label: 'Riesgo promedio',
+        value: `${this.formatearNumero(resumen.promedio)}%`,
+        detail: 'Probabilidad promedio de fracaso en este curso.',
+        icon: 'fa-solid fa-chart-column',
+        tone: 'medium'
+      },
+      {
+        label: 'Riesgo alto',
+        value: `${resumen.alto}`,
+        detail: 'Casos altos en el curso seleccionado.',
+        icon: 'fa-solid fa-triangle-exclamation',
+        tone: 'high'
+      }
+    ] as const;
+  });
+
+  readonly riesgoGeneral = computed(() => {
+    const promedio = this.resumen().promedio;
+
+    if (promedio >= 70) {
+      return {
+        nivel: 'Alto',
+        detalle: 'La seccion requiere seguimiento prioritario.',
+        tone: 'high' as const
+      };
+    }
+
+    if (promedio >= 40) {
+      return {
+        nivel: 'Medio',
+        detalle: 'La seccion necesita monitoreo cercano.',
+        tone: 'medium' as const
+      };
+    }
+
+    return {
+      nivel: 'Bajo',
+      detalle: 'La seccion mantiene un riesgo controlado.',
+      tone: 'low' as const
+    };
+  });
+
   cambiarVista(vista: VistaPrediccion): void {
     if (this.vistaActiva() === vista) {
       return;
     }
 
     this.vistaActiva.set(vista);
+    this.ajustarCursoSeleccionado();
     this.asegurarSeleccion();
   }
 
@@ -210,8 +472,14 @@ export class Predicciones {
 
   onSeccionChange(value: string): void {
     this.seccionSeleccionadaId.set(Number(value));
+    this.cursoSeleccionadoId.set(null);
     this.ajustarPeriodoSegunSeccion();
     this.cargarVista();
+  }
+
+  onCursoChange(value: string): void {
+    this.cursoSeleccionadoId.set(value ? Number(value) : null);
+    this.asegurarSeleccion();
   }
 
   onBusqueda(value: string): void {
@@ -221,6 +489,16 @@ export class Predicciones {
 
   seleccionarPrediccion(id: number): void {
     this.prediccionSeleccionadaId.set(id);
+  }
+
+  verFichaAlumno(alumnoId: number): void {
+    void this.router.navigate(['/alumno', alumnoId], {
+      queryParams: {
+        periodoEvaluacionId: this.periodoEvaluacionSeleccionadoId(),
+        seccionId: this.seccionSeleccionadaId(),
+        vista: this.vistaActiva()
+      }
+    });
   }
 
   private cargarFiltros(): void {
@@ -321,6 +599,7 @@ export class Predicciones {
         this.prediccionesCurso.set(
           cursos.map((item) => this.mapearPrediccion(item, alertas, recomendaciones))
         );
+        this.ajustarCursoSeleccionado();
         this.cargandoVista.set(false);
         this.asegurarSeleccion();
       },
@@ -342,6 +621,20 @@ export class Predicciones {
     }
   }
 
+  private ajustarCursoSeleccionado(): void {
+    if (this.vistaActiva() !== 'curso') {
+      this.cursoSeleccionadoId.set(null);
+      return;
+    }
+
+    const cursoActual = this.cursoSeleccionadoId();
+    const existe = this.cursosDisponibles().some((curso) => curso.id === cursoActual);
+
+    if (!existe) {
+      this.cursoSeleccionadoId.set(null);
+    }
+  }
+
   private mapearPrediccion(
     item: PrediccionRiesgo,
     alertas: AlertaSeguimiento[],
@@ -350,19 +643,17 @@ export class Predicciones {
     const nivel = this.normalizarNivel(item.nivelRiesgo);
     const alerta = this.buscarAlerta(item, alertas);
     const recomendacion = this.buscarRecomendacion(item, recomendaciones);
+    const variables = this.parsearVariables(item.variablesEntrada);
 
     return {
       ...item,
       nivelRiesgoNormalizado: nivel,
       puntaje: Number(item.puntajeRiesgo ?? 0),
       factores: this.extraerFactores(item.variablesEntrada),
+      factorDominante: this.detectarFactorDominante(nivel, variables),
       alertaPrincipal:
         alerta?.mensaje ??
-        (nivel === 'ALTO'
-          ? 'Riesgo alto detectado por el modelo.'
-          : nivel === 'MEDIO'
-            ? 'Riesgo medio con necesidad de seguimiento.'
-            : 'Sin alerta critica para este registro.'),
+        this.construirJustificacionRiesgo(nivel, variables),
       recomendacionPrincipal:
         recomendacion?.descripcion ??
         (item.cursoId != null
@@ -422,6 +713,93 @@ export class Predicciones {
         .filter(Boolean)
         .slice(0, 6);
     }
+  }
+
+  private construirJustificacionRiesgo(
+    nivel: NivelRiesgo,
+    variables: Record<string, unknown>
+  ): string {
+    const asistencia = this.obtenerNumero(variables['porcentaje_asistencia']);
+    const promedio = this.obtenerNumero(variables['promedio_general']);
+    const notaMinima = this.obtenerNumero(variables['nota_minima']);
+    const cursosDesaprobados = this.obtenerNumero(variables['cantidad_cursos_desaprobados']);
+
+    if (asistencia != null && asistencia < 60) {
+      return nivel === 'ALTO'
+        ? `Alto riesgo de fracaso por asistencia critica (${this.formatearNumero(asistencia)}%).`
+        : `Seguimiento por asistencia baja (${this.formatearNumero(asistencia)}%).`;
+    }
+
+    if (
+      promedio != null &&
+      (promedio <= 10.5 || notaMinima != null && notaMinima <= 10.5 || (cursosDesaprobados ?? 0) > 0)
+    ) {
+      const detallePromedio = promedio != null ? `promedio ${this.formatearNumero(promedio)}` : 'rendimiento bajo';
+      return nivel === 'ALTO'
+        ? `Alto riesgo de fracaso por rendimiento: ${detallePromedio}.`
+        : `Seguimiento por rendimiento academico: ${detallePromedio}.`;
+    }
+
+    if (asistencia != null && asistencia < 80 && promedio != null && promedio < 14) {
+      return `Riesgo ${nivel.toLowerCase()} de fracaso por combinacion de asistencia (${this.formatearNumero(asistencia)}%) y rendimiento (${this.formatearNumero(promedio)}).`;
+    }
+
+    if (nivel === 'ALTO') {
+      return 'Alto riesgo de fracaso detectado por el modelo con prioridad de seguimiento.';
+    }
+
+    if (nivel === 'MEDIO') {
+      return 'Riesgo medio de fracaso con necesidad de seguimiento cercano.';
+    }
+
+    return 'Riesgo bajo de fracaso con indicadores actualmente controlados.';
+  }
+
+  private detectarFactorDominante(
+    nivel: NivelRiesgo,
+    variables: Record<string, unknown>
+  ): 'asistencia' | 'rendimiento' | 'mixto' | 'controlado' {
+    const asistencia = this.obtenerNumero(variables['porcentaje_asistencia']);
+    const promedio = this.obtenerNumero(variables['promedio_general']);
+    const notaMinima = this.obtenerNumero(variables['nota_minima']);
+    const cursosDesaprobados = this.obtenerNumero(variables['cantidad_cursos_desaprobados']);
+
+    const asistenciaCritica = asistencia != null && asistencia < 60;
+    const rendimientoBajo =
+      promedio != null &&
+      (promedio <= 10.5 || notaMinima != null && notaMinima <= 10.5 || (cursosDesaprobados ?? 0) > 0);
+    const combinado = asistencia != null && asistencia < 80 && promedio != null && promedio < 14;
+
+    if (asistenciaCritica && (rendimientoBajo || combinado)) {
+      return 'mixto';
+    }
+
+    if (asistenciaCritica) {
+      return 'asistencia';
+    }
+
+    if (rendimientoBajo || combinado) {
+      return 'rendimiento';
+    }
+
+    return nivel === 'BAJO' ? 'controlado' : 'mixto';
+  }
+
+  private parsearVariables(raw: string | null): Record<string, unknown> {
+    if (!raw) {
+      return {};
+    }
+
+    try {
+      return JSON.parse(raw) as Record<string, unknown>;
+    } catch {
+      return {};
+    }
+  }
+
+  private obtenerNumero(value: unknown): number | null {
+    const numero = Number(value);
+    return Number.isFinite(numero) ? numero : null;
   }
 
   private humanizarKey(value: string): string {

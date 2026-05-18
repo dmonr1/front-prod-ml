@@ -56,6 +56,10 @@ export class PrediccionService {
     });
   }
 
+  listarPorAlumno(alumnoId: number): Observable<PrediccionRiesgo[]> {
+    return this.http.get<PrediccionRiesgo[]>(`${this.api}/alumno/${alumnoId}`);
+  }
+
   obtenerResumen(periodoEvaluacionId: number, seccionId: number): Observable<ResumenPrediccion> {
     return this.http.get<ResumenPrediccion>(`${this.api}/resumen`, {
       params: { periodoEvaluacionId, seccionId }

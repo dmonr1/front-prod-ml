@@ -129,7 +129,11 @@ export class Sidebar {
       return ['configuracion-academica'];
     }
 
-    if (ruta.startsWith('/mis-asignaciones/tutorias') || ruta.startsWith('/seccion-tutorada')) {
+    if (
+      ruta.startsWith('/mis-asignaciones/tutorias') ||
+      ruta.startsWith('/seccion-tutorada') ||
+      ruta.startsWith('/alumno')
+    ) {
       return ['seguimiento'];
     }
 

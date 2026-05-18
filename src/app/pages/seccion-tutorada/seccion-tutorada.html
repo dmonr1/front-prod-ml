@@ -123,6 +123,7 @@
                 <tr>
                   <th>Alumno</th>
                   <th>Codigo</th>
+                  <th>Asistencia</th>
                   @for (curso of resumenAcademico()!.cursos; track curso.asignacionId) {
                     <th [title]="curso.docenteNombreCompleto">{{ curso.curso }}</th>
                   }
@@ -134,11 +135,26 @@
                   <tr>
                     <td>{{ fila.alumnoNombreCompleto }}</td>
                     <td>{{ fila.codigoAlumno }}</td>
+                    <td>
+                      <div class="attendance-pill">
+                        <strong>{{ obtenerAsistenciaTexto(fila.clasesAsistidas, fila.clasesProgramadas) }}</strong>
+                        <small>{{ obtenerAsistenciaPorcentaje(fila.porcentajeAsistencia) }}</small>
+                      </div>
+                    </td>
                     @for (curso of fila.cursos; track curso.asignacionId) {
                       <td>
                         <div class="grade-pill" [class.empty]="curso.promedio === null">
                           <strong>{{ formatearPromedio(curso.promedio) }}</strong>
-                          <small>{{ formatearNotas(curso.notas) }}</small>
+                          <div class="notes-grid" [class.empty]="!curso.notas.length">
+                            @for (nota of obtenerNotasEtiquetadas(curso.notas); track nota.etiqueta + nota.valor + $index) {
+                              <div class="note-chip">
+                                <span>{{ nota.etiqueta }}</span>
+                                <strong>{{ nota.valor }}</strong>
+                              </div>
+                            } @empty {
+                              <small>Sin notas</small>
+                            }
+                          </div>
                         </div>
                       </td>
                     }
@@ -148,7 +164,7 @@
                   </tr>
                 } @empty {
                   <tr>
-                    <td [attr.colspan]="(resumenAcademico()?.cursos?.length || 0) + 3">
+                    <td [attr.colspan]="(resumenAcademico()?.cursos?.length || 0) + 4">
                       <div class="table-state">
                         <span class="table-state-icon"><i class="fa-solid fa-users"></i></span>
                         <span>No hay alumnos matriculados en esta seccion.</span>
