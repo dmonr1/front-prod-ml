@@ -1,6 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Shell } from '../../layouts/shell/shell';
+import { CustomAlertComponent } from '../../components/custom-alert/custom-alert';
 import { AsignacionDocente } from '../../models/asignacion';
 import { Tutoria } from '../../models/tutoria';
 import { AuthService } from '../../services/auth/auth.service';
@@ -11,7 +12,7 @@ import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-mis-asignaciones',
-  imports: [Shell, RouterLink],
+  imports: [Shell, RouterLink, CustomAlertComponent],
   templateUrl: './mis-asignaciones.html',
   styleUrl: './mis-asignaciones.scss'
 })
@@ -24,18 +25,31 @@ export class MisAsignaciones implements OnInit {
   readonly usuario = computed(() => this.authService.obtenerUsuario());
   readonly cargando = signal(true);
   readonly error = signal('');
+  readonly mostrarError = signal(true);
   readonly currentYear = new Date().getFullYear();
   readonly periodoAcademicoId = signal<number | null>(null);
   readonly asignaciones = signal<AsignacionDocente[]>([]);
   readonly seccionesTutoradas = signal<Tutoria[]>([]);
+  readonly mostrarSkeleton = computed(() => this.cargando() || !!this.error());
 
   ngOnInit(): void {
     this.resolverPeriodoYCargarAsignaciones();
   }
 
+  reintentarCarga(): void {
+    this.mostrarError.set(false);
+    this.error.set('');
+    this.resolverPeriodoYCargarAsignaciones();
+  }
+
+  cerrarError(): void {
+    this.mostrarError.set(false);
+  }
+
   private resolverPeriodoYCargarAsignaciones(): void {
     this.cargando.set(true);
     this.error.set('');
+    this.mostrarError.set(false);
 
     this.periodoAcademicoService.listar().subscribe({
       next: (periodos) => {
@@ -45,8 +59,9 @@ export class MisAsignaciones implements OnInit {
           null;
 
         if (!periodoActual) {
-          this.cargando.set(false);
+          this.cargando.set(true);
           this.error.set('No existe un periodo academico configurado para cargar asignaciones.');
+          this.mostrarError.set(true);
           return;
         }
 
@@ -54,10 +69,11 @@ export class MisAsignaciones implements OnInit {
         this.cargarAsignaciones();
       },
       error: (error) => {
-        this.cargando.set(false);
+        this.cargando.set(true);
         this.error.set(
           error?.error?.mensaje ?? 'No se pudo resolver el periodo academico actual.'
         );
+        this.mostrarError.set(true);
       }
     });
   }
@@ -67,19 +83,22 @@ export class MisAsignaciones implements OnInit {
     const periodoAcademicoId = this.periodoAcademicoId();
 
     if (!docenteId) {
-      this.cargando.set(false);
+      this.cargando.set(true);
       this.error.set('Tu usuario no tiene un docente vinculado. Revisa la configuracion del backend.');
+      this.mostrarError.set(true);
       return;
     }
 
     if (!periodoAcademicoId) {
-      this.cargando.set(false);
+      this.cargando.set(true);
       this.error.set('No se pudo identificar el periodo academico actual.');
+      this.mostrarError.set(true);
       return;
     }
 
     this.cargando.set(true);
     this.error.set('');
+    this.mostrarError.set(false);
 
     forkJoin({
       asignaciones: this.asignacionService.listarAsignaciones(docenteId, periodoAcademicoId),
@@ -96,7 +115,8 @@ export class MisAsignaciones implements OnInit {
         this.error.set(
           error?.error?.mensaje ?? 'No se pudieron cargar las asignaciones del docente.'
         );
-        this.cargando.set(false);
+        this.cargando.set(true);
+        this.mostrarError.set(true);
       }
     });
   }

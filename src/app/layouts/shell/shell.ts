@@ -56,7 +56,8 @@ export class Shell {
         label: 'Gestion academica',
         icon: 'fa-solid fa-graduation-cap',
         children: [
-          { label: 'Mis asignaciones', path: '/mis-asignaciones', icon: 'fa-solid fa-chalkboard-user' }
+          { label: 'Mis asignaciones', path: '/mis-asignaciones', icon: 'fa-solid fa-chalkboard-user' },
+          { label: 'Asistencias', path: '/asistencias', icon: 'fa-solid fa-user-check' }
         ]
       });
     }
@@ -78,19 +79,20 @@ export class Shell {
             path: '/alumno',
             icon: 'fa-solid fa-address-card',
             activePaths: ['/alumno']
+          },
+          {
+            label: 'Seguimiento de riesgo',
+            path: '/predicciones',
+            icon: 'fa-solid fa-wave-square'
+          },
+          {
+            label: 'Hallazgos y recomendaciones',
+            path: '/hallazgos',
+            icon: 'fa-solid fa-lightbulb'
           }
         ]
       });
     }
-
-    items.push({
-      id: 'analitica',
-      label: 'Seguimiento',
-      icon: 'fa-solid fa-chart-line',
-      children: [
-        { label: 'Seguimiento de riesgo', path: '/predicciones', icon: 'fa-solid fa-wave-square' }
-      ]
-    });
 
     return items;
   }

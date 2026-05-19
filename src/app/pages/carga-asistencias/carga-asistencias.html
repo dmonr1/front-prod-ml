@@ -5,36 +5,99 @@
       [autoCloseMs]="alertState().autoCloseMs" (confirm)="cerrarAlerta()" (cancel)="cerrarAlerta()"
       (dismiss)="cerrarAlerta()" />
 
+    @if (error() && mostrarErrorCarga()) {
+    <app-custom-alert [open]="true" type="error" title="No se pudo cargar la información"
+      [message]="error() || 'Ocurrió un problema inesperado'" confirmText="Reintentar" cancelText="Cerrar"
+      (confirm)="reintentarCargaError()" (cancel)="cerrarErrorCarga()" (dismiss)="cerrarErrorCarga()">
+    </app-custom-alert>
+    }
+
     <div class="attendance-toolbar card">
-      <div class="attendance-toolbar-inline">
-        <a class="back-link-button" [routerLink]="['/mis-asignaciones']">
-          <i class="fa-solid fa-arrow-left"></i>
-          <span>Volver</span>
-        </a>
-        <span class="eyebrow">Registro de asistencia</span>
-        <h2>{{ asignacion()?.curso || 'Curso asignado' }}</h2>
-        <p>{{ asignacion()?.grado || 'Grado' }}</p>
-        <p>Seccion {{ asignacion()?.seccion || '-' }}</p>
-        <p>{{ resumenAsistencia().registradas }} de {{ resumenAsistencia().total }} alumnos con asistencia</p>
-      </div>
-      <div class="panel-head panel-head-row">
+      <div class="attendance-toolbar-top">
+        <div class="attendance-heading">
+          <span class="eyebrow">Registro de asistencia</span>
+          <h2>{{ esVistaSeccionTutorada() ? 'Asistencias' : asignacion()?.curso || 'Curso asignado' }}</h2>
+        </div>
         <span class="summary-pill">Promedio {{ resumenAsistencia().promedio }}%</span>
+      </div>
+
+      <div class="attendance-toolbar-bottom">
+        <div class="attendance-inline-meta">
+          <span>{{ asignacion()?.grado || tutoriaActiva()?.grado || 'Grado' }}</span>
+          <span>Seccion {{ asignacion()?.seccion || tutoriaActiva()?.seccion || '-' }}</span>
+          <span>{{ resumenAsistencia().registradas }} de {{ resumenAsistencia().total }} alumnos con asistencia</span>
+        </div>
+
+        <div class="attendance-inline-controls">
+          @if (esVistaSeccionTutorada() && tutoriasDisponibles().length > 1) {
+          <label class="tutoria-switcher inline-field">
+            <span>Seccion</span>
+            <select [value]="tutoriaActivaId() ?? ''" (change)="onTutoriaChange($any($event.target).value)">
+              @for (tutoria of tutoriasDisponibles(); track tutoria.id) {
+              <option [value]="tutoria.id">{{ tutoria.grado }} · Seccion {{ tutoria.seccion }}</option>
+              }
+            </select>
+          </label>
+          }
+
+          <label class="common-config-field inline-field">
+            <span>Clases programadas</span>
+            <input class="attendance-input common-input" type="text" inputmode="numeric" autocomplete="off"
+              [value]="clasesProgramadasGeneral()" [disabled]="!puedeRegistrarAsistencia()"
+              (input)="onClasesProgramadasInput($event)" (blur)="onClasesProgramadasBlur()"
+              (wheel)="bloquearCambioNumero($event)" (keydown.arrowUp)="bloquearCambioNumero($event)"
+              (keydown.arrowDown)="bloquearCambioNumero($event)" />
+          </label>
+        </div>
       </div>
     </div>
 
-    @if (cargando()) {
-    <section class="state-card card">
-      <strong>Cargando modulo de asistencia...</strong>
-      <p>Estamos preparando periodos y alumnos disponibles.</p>
-    </section>
-    } @else if (error()) {
-    <section class="state-card card state-error">
-      <strong>Revisa el flujo</strong>
-      <p>{{ error() }}</p>
+    @if (mostrarSkeleton()) {
+    <section class="attendance-skeleton-wrapper">
+      <section class="panel-card attendance-card">
+        <div class="panel-head panel-head-row attendance-card-head">
+          <div class="period-switcher">
+            <span class="skeleton skeleton-nav"></span>
+
+            <div class="calendar-current">
+              <span class="skeleton skeleton-period-title"></span>
+              <span class="skeleton skeleton-period-date"></span>
+            </div>
+
+            <span class="skeleton skeleton-nav"></span>
+          </div>
+        </div>
+
+        <div class="table-scroll attendance-table">
+          <table class="app-table">
+            <thead>
+              <tr>
+                <th><span class="skeleton skeleton-th"></span></th>
+                <th><span class="skeleton skeleton-th"></span></th>
+                <th><span class="skeleton skeleton-th"></span></th>
+              </tr>
+            </thead>
+
+            <tbody>
+              @for (row of [1,2,3,4,5,6,7,8,9]; track row) {
+              <tr>
+                <td><span class="skeleton skeleton-name"></span></td>
+                <td><span class="skeleton skeleton-input"></span></td>
+                <td><span class="skeleton skeleton-percent"></span></td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="form-actions footer-actions">
+          <span class="skeleton skeleton-footer-text"></span>
+        </div>
+      </section>
     </section>
     }
 
-    @if (!cargando() && asignacion()) {
+    @if (!mostrarSkeleton() && (asignacion() || tutoriaActiva())) {
     <section class="panel-card attendance-card">
       <div class="panel-head panel-head-row attendance-card-head">
         @if (periodosEvaluacionPeriodo().length) {
@@ -60,25 +123,8 @@
           </button>
         </div>
         }
-
-        <label class="common-config-field">
-          <span>Clases programadas</span>
-          <input class="attendance-input common-input" type="text" inputmode="numeric" autocomplete="off"
-            [value]="clasesProgramadasGeneral()"
-            (input)="onClasesProgramadasInput($event)"
-            (blur)="onClasesProgramadasBlur()"
-            (wheel)="bloquearCambioNumero($event)"
-            (keydown.arrowUp)="bloquearCambioNumero($event)"
-            (keydown.arrowDown)="bloquearCambioNumero($event)" />
-        </label>
       </div>
 
-      @if (!periodosEvaluacionPeriodo().length) {
-      <div class="table-state">
-        <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-        <span>No hay periodos registrados para esta asignacion.</span>
-      </div>
-      } @else {
       <div class="table-scroll attendance-table">
         <table class="app-table">
           <thead>
@@ -94,11 +140,9 @@
               <td>{{ fila.matricula.alumnoNombreCompleto }}</td>
               <td>
                 <input class="attendance-input" type="text" inputmode="numeric" autocomplete="off"
-                  [value]="fila.clasesAsistidas"
-                  (input)="onAsistenciaInput(fila.matricula.id, $event)"
-                  (blur)="onAsistenciaBlur(fila.matricula.id)"
-                  (wheel)="bloquearCambioNumero($event)"
-                  (keydown.arrowUp)="bloquearCambioNumero($event)"
+                  [value]="fila.clasesAsistidas" [disabled]="!puedeRegistrarAsistencia()"
+                  (input)="onAsistenciaInput(fila.matricula.id, $event)" (blur)="onAsistenciaBlur(fila.matricula.id)"
+                  (wheel)="bloquearCambioNumero($event)" (keydown.arrowUp)="bloquearCambioNumero($event)"
                   (keydown.arrowDown)="bloquearCambioNumero($event)" />
               </td>
               <td>
@@ -108,23 +152,28 @@
               </td>
             </tr>
             } @empty {
-            <tr>
+
+            @if (!periodosEvaluacionPeriodo().length) {
+            <tr class="message-row">
               <td colspan="3">
-                <div class="table-state">
-                  <span class="table-state-icon"><i class="fa-solid fa-users"></i></span>
-                  <span>No hay alumnos matriculados en esta seccion.</span>
+                <div class="table-message neutral">
+                  <i class="fa-regular fa-folder-open"></i>
+                  <span>No hay periodos registrados para esta seccion.</span>
                 </div>
               </td>
             </tr>
+            }
             }
           </tbody>
         </table>
       </div>
 
       <div class="form-actions footer-actions">
-        <span class="autosave-hint">Los cambios se guardan automaticamente.</span>
+        <span class="autosave-hint">
+          {{ puedeRegistrarAsistencia() ? 'Los cambios se guardan automaticamente.' : 'La seccion puede consultarse,
+          pero el registro se habilitara cuando tenga una asignacion docente asociada.' }}
+        </span>
       </div>
-      }
     </section>
     }
   </section>

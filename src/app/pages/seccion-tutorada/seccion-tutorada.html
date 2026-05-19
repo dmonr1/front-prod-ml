@@ -11,172 +11,208 @@
         <p>{{ tutoriasDisponibles().length }} secciones activas</p>
       </div>
 
-      <div class="grades-toolbar-inline">
-        <div class="section-meta">
-          <strong>{{ tutoria()?.grado || 'Seccion asignada' }}</strong>
-          <span>Seccion {{ tutoria()?.seccion || '-' }}</span>
-        </div>
-        <div class="section-meta">
-          <strong>{{ resumenVista().alumnos }}</strong>
-          <span>alumnos</span>
-        </div>
-        <div class="section-meta">
-          <strong>{{ resumenVista().cursos }}</strong>
-          <span>cursos</span>
-        </div>
-      </div>
-
-      <div class="panel-head panel-head-row">
+      <div class="grades-toolbar-actions">
         <span class="summary-pill">
           Promedio {{ resumenVista().promedioSeccion === null ? '--' : resumenVista().promedioSeccion }}
         </span>
       </div>
     </div>
 
-    @if (!cargando() && tutoriasDisponibles().length > 1) {
+    @if (!mostrarSkeleton() && tutoriasDisponibles().length > 1) {
+    <section class="tutorias-selector card">
+      <div class="tutorias-surface">
+        <div class="tutorias-grid">
+          @for (item of tutoriasDisponibles(); track item.id) {
+          <button type="button" class="flow-card tutoria-card-option" [class.active]="tutoriaIdActiva() === item.id"
+            (click)="seleccionarTutoria(item)">
+            <div class="flow-card-top">
+              <span class="flow-title">Seccion {{ item.seccion }}</span>
+              <span class="status-badge active">{{ item.nivel }}</span>
+            </div>
+
+            <strong>{{ item.grado }} - Seccion {{ item.seccion }}</strong>
+            <small>{{ item.periodoAcademico }} - {{ item.docenteNombreCompleto }}</small>
+
+            <div class="flow-card-footer">
+              <span><i class="fa-solid fa-users"></i> Seguimiento tutorial</span>
+              <span class="flow-select-label">
+                {{ tutoriaIdActiva() === item.id ? 'Activa' : 'Ver seccion' }}
+              </span>
+            </div>
+          </button>
+          }
+        </div>
+      </div>
+    </section>
+    }
+
+    @if (mostrarSkeleton()) {
+    <section class="skeleton-wrapper">
       <section class="tutorias-selector card">
         <div class="tutorias-surface">
           <div class="tutorias-grid">
-          @for (item of tutoriasDisponibles(); track item.id) {
-            <button type="button" class="flow-card tutoria-card-option"
-              [class.active]="tutoriaIdActiva() === item.id" (click)="seleccionarTutoria(item)">
+            @for (item of [1,2,3]; track item) {
+            <div class="flow-card skeleton-card">
               <div class="flow-card-top">
-                <span class="flow-title">Seccion {{ item.seccion }}</span>
-                <span class="status-badge active">{{ item.nivel }}</span>
+                <span class="skeleton skeleton-sm"></span>
+                <span class="skeleton skeleton-badge"></span>
               </div>
 
-              <strong>{{ item.grado }} - Seccion {{ item.seccion }}</strong>
-              <small>{{ item.periodoAcademico }} - {{ item.docenteNombreCompleto }}</small>
+              <span class="skeleton skeleton-title"></span>
+              <span class="skeleton skeleton-text"></span>
 
               <div class="flow-card-footer">
-                <span><i class="fa-solid fa-users"></i> Seguimiento tutorial</span>
-                <span class="flow-select-label">
-                  {{ tutoriaIdActiva() === item.id ? 'Activa' : 'Ver seccion' }}
-                </span>
+                <span class="skeleton skeleton-text short"></span>
+                <span class="skeleton skeleton-sm"></span>
               </div>
-            </button>
-          }
+            </div>
+            }
           </div>
         </div>
       </section>
-    }
 
-    @if (cargando()) {
-      <section class="state-card card">
-        <strong>Cargando seccion tutorada...</strong>
-        <p>Estamos preparando alumnos, cursos y notas del periodo seleccionado.</p>
-      </section>
-    } @else if (error()) {
-      <section class="state-card card state-error">
-        <strong>Revisa el flujo</strong>
-        <p>{{ error() }}</p>
-      </section>
-    }
-
-    @if (!cargando() && tutoria()) {
       <section class="panel-card notes-card">
         <div class="panel-head panel-head-row notes-card-head">
-          @if (periodosEvaluacionTutoria().length) {
-            <div class="period-switcher">
-              <button
-                class="calendar-nav"
-                type="button"
-                [disabled]="indicePeriodoEvaluacionSeleccionado() <= 0"
-                (click)="irPeriodoEvaluacionAnterior()">
-                <i class="fa-solid fa-chevron-left"></i>
-              </button>
-
-              <div class="calendar-current">
-                <strong>{{ periodoEvaluacionSeleccionado()?.nombre || 'Sin periodo' }}</strong>
-                <small>
-                  {{ periodoEvaluacionSeleccionado()?.fechaInicio || '--' }}
-                  -
-                  {{ periodoEvaluacionSeleccionado()?.fechaFin || '--' }}
-                </small>
-              </div>
-
-              <button
-                class="calendar-nav"
-                type="button"
-                [disabled]="indicePeriodoEvaluacionSeleccionado() < 0 || indicePeriodoEvaluacionSeleccionado() >= periodosEvaluacionTutoria().length - 1"
-                (click)="irPeriodoEvaluacionSiguiente()">
-                <i class="fa-solid fa-chevron-right"></i>
-              </button>
+          <div class="period-switcher">
+            <span class="skeleton skeleton-nav"></span>
+            <div class="calendar-current">
+              <span class="skeleton skeleton-period-title"></span>
+              <span class="skeleton skeleton-period-date"></span>
             </div>
-          }
+            <span class="skeleton skeleton-nav"></span>
+          </div>
         </div>
 
-        @if (!periodosEvaluacionTutoria().length) {
-          <div class="table-state">
-            <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-            <span>No hay periodos de evaluacion registrados para esta seccion tutorada.</span>
-          </div>
-        } @else if (!resumenAcademico()?.cursos?.length) {
-          <div class="table-state">
-            <span class="table-state-icon"><i class="fa-solid fa-book-open"></i></span>
-            <span>No hay cursos asignados a esta seccion en el periodo academico actual.</span>
-          </div>
-        } @else {
-          <div class="table-scroll grades-table">
-            <table class="app-table">
-              <thead>
-                <tr>
-                  <th>Alumno</th>
-                  <th>Codigo</th>
-                  <th>Asistencia</th>
-                  @for (curso of resumenAcademico()!.cursos; track curso.asignacionId) {
-                    <th [title]="curso.docenteNombreCompleto">{{ curso.curso }}</th>
-                  }
-                  <th>Promedio</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (fila of resumenAcademico()!.alumnos; track fila.matriculaId) {
-                  <tr>
-                    <td>{{ fila.alumnoNombreCompleto }}</td>
-                    <td>{{ fila.codigoAlumno }}</td>
-                    <td>
-                      <div class="attendance-pill">
-                        <strong>{{ obtenerAsistenciaTexto(fila.clasesAsistidas, fila.clasesProgramadas) }}</strong>
-                        <small>{{ obtenerAsistenciaPorcentaje(fila.porcentajeAsistencia) }}</small>
-                      </div>
-                    </td>
-                    @for (curso of fila.cursos; track curso.asignacionId) {
-                      <td>
-                        <div class="grade-pill" [class.empty]="curso.promedio === null">
-                          <strong>{{ formatearPromedio(curso.promedio) }}</strong>
-                          <div class="notes-grid" [class.empty]="!curso.notas.length">
-                            @for (nota of obtenerNotasEtiquetadas(curso.notas); track nota.etiqueta + nota.valor + $index) {
-                              <div class="note-chip">
-                                <span>{{ nota.etiqueta }}</span>
-                                <strong>{{ nota.valor }}</strong>
-                              </div>
-                            } @empty {
-                              <small>Sin notas</small>
-                            }
-                          </div>
-                        </div>
-                      </td>
-                    }
-                    <td>
-                      <span class="summary-pill table-pill">{{ formatearPromedio(fila.promedioGeneral) }}</span>
-                    </td>
-                  </tr>
-                } @empty {
-                  <tr>
-                    <td [attr.colspan]="(resumenAcademico()?.cursos?.length || 0) + 4">
-                      <div class="table-state">
-                        <span class="table-state-icon"><i class="fa-solid fa-users"></i></span>
-                        <span>No hay alumnos matriculados en esta seccion.</span>
-                      </div>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        }
+        <div class="table-scroll grades-table">
+          <table class="app-table">
+            <thead>
+              <tr>
+                <th><span class="skeleton skeleton-th"></span></th>
+                <th><span class="skeleton skeleton-th"></span></th>
+                <th><span class="skeleton skeleton-th"></span></th>
+                <th><span class="skeleton skeleton-th"></span></th>
+                <th><span class="skeleton skeleton-th"></span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of [1,2,3,4,5,6]; track row) {
+              <tr>
+                <td><span class="skeleton skeleton-name"></span></td>
+                <td><span class="skeleton skeleton-pill"></span></td>
+                <td><span class="skeleton skeleton-grade"></span></td>
+                <td><span class="skeleton skeleton-grade"></span></td>
+                <td><span class="skeleton skeleton-pill"></span></td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       </section>
+    </section>
+    @if (error() && mostrarError()){
+    <app-custom-alert [open]="true" type="error" title="No se pudo cargar la información"
+      [message]="error() || 'Ocurrió un problema inesperado'" confirmText="Reintentar" cancelText="Cerrar"
+      (confirm)="reintentarCarga()" (cancel)="cerrarError()" (dismiss)="cerrarError()">
+    </app-custom-alert>
+    }
+    }
+
+    @if (!mostrarSkeleton() && tutoria()) {
+    <section class="panel-card notes-card">
+      <div class="panel-head panel-head-row notes-card-head">
+        @if (periodosEvaluacionTutoria().length) {
+        <div class="period-switcher">
+          <button class="calendar-nav" type="button" [disabled]="indicePeriodoEvaluacionSeleccionado() <= 0"
+            (click)="irPeriodoEvaluacionAnterior()">
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
+
+          <div class="calendar-current">
+            <strong>{{ periodoEvaluacionSeleccionado()?.nombre || 'Sin periodo' }}</strong>
+            <small>
+              {{ periodoEvaluacionSeleccionado()?.fechaInicio || '--' }}
+              -
+              {{ periodoEvaluacionSeleccionado()?.fechaFin || '--' }}
+            </small>
+          </div>
+
+          <button class="calendar-nav" type="button"
+            [disabled]="indicePeriodoEvaluacionSeleccionado() < 0 || indicePeriodoEvaluacionSeleccionado() >= periodosEvaluacionTutoria().length - 1"
+            (click)="irPeriodoEvaluacionSiguiente()">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+        }
+      </div>
+
+      @if (!periodosEvaluacionTutoria().length) {
+      <div class="table-state">
+        <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
+        <span>No hay periodos de evaluacion registrados para esta seccion tutorada.</span>
+      </div>
+      } @else if (!resumenAcademico()?.cursos?.length) {
+      <div class="table-state">
+        <span class="table-state-icon"><i class="fa-solid fa-book-open"></i></span>
+        <span>No hay cursos asignados a esta seccion en el periodo academico actual.</span>
+      </div>
+      } @else {
+      <div class="table-scroll grades-table">
+        <table class="app-table">
+          <thead>
+            <tr>
+              <th>Alumno</th>
+              <th>Asistencia</th>
+              @for (curso of resumenAcademico()!.cursos; track curso.asignacionId) {
+              <th [title]="curso.docenteNombreCompleto">{{ curso.curso }}</th>
+              }
+              <th>Promedio</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (fila of resumenAcademico()!.alumnos; track fila.matriculaId) {
+            <tr>
+              <td>{{ fila.alumnoNombreCompleto }}</td>
+              <td>
+                <div class="attendance-pill">
+                  <strong>{{ obtenerAsistenciaTexto(fila.clasesAsistidas, fila.clasesProgramadas) }}</strong>
+                  <small>{{ obtenerAsistenciaPorcentaje(fila.porcentajeAsistencia) }}</small>
+                </div>
+              </td>
+              @for (curso of fila.cursos; track curso.asignacionId) {
+              <td>
+                <div class="grade-pill" [class.empty]="curso.promedio === null">
+                  <div class="notes-grid" [class.empty]="!curso.notas.length">
+                    @for (nota of obtenerNotasEtiquetadas(curso); track nota.etiqueta + nota.valor + $index) {
+                    <div class="note-line">
+                      <span>{{ nota.etiqueta }}:</span>
+                      <strong>{{ nota.valor }}</strong>
+                    </div>
+                    } @empty {
+                    <small>Sin notas</small>
+                    }
+                  </div>
+                </div>
+              </td>
+              }
+              <td>
+                <span class="summary-pill table-pill">{{ formatearPromedio(fila.promedioGeneral) }}</span>
+              </td>
+            </tr>
+            } @empty {
+            <tr>
+              <td [attr.colspan]="(resumenAcademico()?.cursos?.length || 0) + 4">
+                <div class="table-state">
+                  <span class="table-state-icon"><i class="fa-solid fa-users"></i></span>
+                  <span>No hay alumnos matriculados en esta seccion.</span>
+                </div>
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      }
+    </section>
     }
   </section>
 </app-shell>

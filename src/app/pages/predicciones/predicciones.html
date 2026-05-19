@@ -43,22 +43,104 @@
         </div>
       </div>
 
-      @if (cargandoFiltros() || cargandoVista()) {
-      <div class="state-card loading-state">
-        <span class="state-title">Cargando panel predictivo...</span>
-        <p>Estamos preparando resumen, alertas y detalle por alumno.</p>
-      </div>
-      } @else if (error()) {
-      <div class="state-card error-state">
-        <span class="state-title">No se pudo cargar la vista</span>
-        <p>{{ error() }}</p>
-      </div>
+      @if (cargandoFiltros() || cargandoVista() || error()) {
+        <div class="content-grid skeleton-dashboard">
+          <div class="content-main">
+            <div class="metrics-grid">
+              @for (item of [0, 1, 2, 3]; track item) {
+              <article class="metric-card skeleton-card">
+                <span class="skeleton-line short-c1"></span>
+                <span class="skeleton-line medium"></span>
+                <span class="skeleton-line long"></span>
+              </article>
+              }
+            </div>
+  
+            <article class="list-card list-card--fill skeleton-card">
+              <div class="section-header">
+                <div>
+                  <span class="section-kicker">Listado principal</span>
+                  <span class="skeleton-line skeleton-line--title"></span>
+                </div>
+                <div class="table-actions">
+                  <span class="skeleton-line skeleton-chip"></span>
+                  @if (vistaActiva() === 'curso') {
+                  <span class="skeleton-line skeleton-chip skeleton-chip--wide"></span>
+                  }
+                </div>
+              </div>
+
+              <div class="table-scroll prediction-table-scroll">
+                <table class="prediction-table prediction-table--skeleton">
+                  <thead>
+                    <tr>
+                      <th style="width: 250px;">Alumno</th>
+                      @if (vistaActiva() === 'curso') {
+                      <th>Curso</th>
+                      }
+                      <th>Riesgo</th>
+                      <th>Riesgo de fracaso</th>
+                      <th style="width: 300px;">Alerta</th>
+                      <th>Ficha</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of [0, 1, 2, 3, 4, 5, 6, 7]; track row) {
+                    <tr>
+                      <td><span class="skeleton-line skeleton-cell skeleton-cell--name"></span></td>
+                      @if (vistaActiva() === 'curso') {
+                      <td><span class="skeleton-line skeleton-cell"></span></td>
+                      }
+                      <td><span class="skeleton-line skeleton-cell skeleton-cell--badge"></span></td>
+                      <td>
+                        <span class="score-ring score-ring--table score-ring--skeleton"></span>
+                      </td>
+                      <td><span class="skeleton-line skeleton-cell skeleton-cell--alert"></span></td>
+                      <td><span class="skeleton-line skeleton-cell skeleton-cell--button"></span></td>
+                    </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </article>
+          </div>
+  
+          <div class="content-side">
+            <article class="mini-card skeleton-card">
+              <span class="skeleton-line don"></span>
+              <div class="ske-don">
+                <div class="skeleton-donut"></div>
+                <div class="ske-don-1">
+                  <span class="skeleton-line short"></span>
+                  <span class="skeleton-line short"></span>
+                  <span class="skeleton-line short"></span>
+                </div>
+  
+              </div>
+  
+  
+            </article>
+  
+            <article class="mini-card mini-card--signals skeleton-card">
+              <div class="ske-full-head">
+                <span class="skeleton-line short-tit"></span>
+                <span class="skeleton-line short"></span>
+              </div>
+      
+              <div class="skeleton-table">
+                @for (row of [0, 1, 2, 3, 4, 5, 6, 7]; track row) {
+                <span class="skeleton-line-full"></span>
+                }
+              </div>
+            </article>
+          </div>
+        </div>
       } @else {
       <div class="content-grid">
         <div class="content-main">
           <div class="metrics-grid">
-            @for (metrica of metricasDashboard(); track metrica.label) {
-            <article class="metric-card" [class.metric-card--high]="metrica.tone === 'high'"
+            @for (metrica of metricasDashboard(); track metrica.label + '-' + animationToken()) {
+            <article class="metric-card anim-enter" [class.metric-card--high]="metrica.tone === 'high'"
               [class.metric-card--medium]="metrica.tone === 'medium'">
               <div class="metric-head">
                 <span class="metric-icon"><i [class]="metrica.icon"></i></span>
@@ -159,7 +241,7 @@
         </div>
 
         <div class="content-side">
-          <article class="mini-card mini-card--donut">
+          <article class="mini-card mini-card--donut anim-enter" [attr.data-anim]="animationToken()">
             <div class="mini-card-head">
               <h3>{{ tituloDistribucion() }}</h3>
             </div>
@@ -178,8 +260,8 @@
                 @for (item of distribucion(); track item.label) {
                 <div class="legend-row">
                   <div class="legend-copy">
-                    <span class="legend-dot" [class.high]="item.tone === 'high'"
-                      [class.medium]="item.tone === 'medium'" [class.low]="item.tone === 'low'"></span>
+                    <span class="legend-dot" [class.high]="item.tone === 'high'" [class.medium]="item.tone === 'medium'"
+                      [class.low]="item.tone === 'low'"></span>
                     <span>{{ item.label }}</span>
                   </div>
                   <strong>{{ item.percent }}%</strong>
@@ -189,7 +271,7 @@
             </div>
           </article>
 
-          <article class="mini-card mini-card--signals">
+          <article class="mini-card mini-card--signals anim-enter" [attr.data-anim]="animationToken()">
             @if (vistaActiva() === 'global') {
             <div class="mini-card-head">
               <h3>Detalle del riesgo global</h3>
@@ -240,5 +322,16 @@
       </div>
       }
     </div>
+
+    <app-custom-alert
+      [open]="alertaConexionAbierta()"
+      type="error"
+      title="No se puede conectar con el servidor"
+      [message]="error() || 'Intenta nuevamente en unos segundos.'"
+      confirmText="Volver a intentar"
+      cancelText="Cerrar"
+      (confirm)="reintentarCarga()"
+      (cancel)="cerrarAlertaError()"
+      (dismiss)="cerrarAlertaError()" />
   </section>
 </app-shell>

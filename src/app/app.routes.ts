@@ -118,6 +118,11 @@ export const routes: Routes = [
       import('./pages/carga-asistencias/carga-asistencias').then((m) => m.CargaAsistencias)
   },
   {
+    path: 'asistencias',
+    loadComponent: () =>
+      import('./pages/carga-asistencias/carga-asistencias').then((m) => m.CargaAsistencias)
+  },
+  {
     path: 'mis-asignaciones/tutorias/:tutoriaId',
     loadComponent: () =>
       import('./pages/seccion-tutorada/seccion-tutorada').then((m) => m.SeccionTutorada)
@@ -144,8 +149,13 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/predicciones/predicciones').then((m) => m.Predicciones)
   },
   {
+    path: 'hallazgos',
+    loadComponent: () => import('./pages/hallazgos-recomendaciones/hallazgos-recomendaciones').then((m) => m.HallazgosRecomendaciones)
+  },
+  {
     path: 'reportes',
-    loadComponent: () => import('./pages/reportes/reportes').then((m) => m.Reportes)
+    redirectTo: 'hallazgos',
+    pathMatch: 'full'
   },
   { path: '', pathMatch: 'full', redirectTo: 'login' },
   { path: '**', redirectTo: 'login' }

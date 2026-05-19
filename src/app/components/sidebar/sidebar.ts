@@ -132,17 +132,15 @@ export class Sidebar {
     if (
       ruta.startsWith('/mis-asignaciones/tutorias') ||
       ruta.startsWith('/seccion-tutorada') ||
-      ruta.startsWith('/alumno')
+      ruta.startsWith('/alumno') ||
+      ruta.startsWith('/predicciones') ||
+      ruta.startsWith('/hallazgos')
     ) {
       return ['seguimiento'];
     }
 
-    if (ruta.startsWith('/mis-asignaciones')) {
+    if (ruta.startsWith('/mis-asignaciones') || ruta.startsWith('/asistencias')) {
       return ['academico'];
-    }
-
-    if (ruta.startsWith('/predicciones') || ruta.startsWith('/reportes')) {
-      return ['analitica'];
     }
 
     return [];

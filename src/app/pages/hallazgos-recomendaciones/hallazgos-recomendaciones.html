@@ -1,0 +1,315 @@
+<app-shell>
+  <section class="reports-shell">
+    @if (error() && mostrarError()) {
+    <app-custom-alert [open]="true" type="error" title="No se pudo cargar la información"
+      [message]="error() || 'Ocurrió un problema inesperado'" confirmText="Reintentar" cancelText="Cerrar"
+      (confirm)="reintentarCarga()" (cancel)="cerrarError()" (dismiss)="cerrarError()">
+    </app-custom-alert>
+    }
+
+    <div class="reports-card">
+      <div class="card-head">
+        <div class="panel-head">
+          <span class="eyebrow">Data mining aplicado</span>
+          <h2>Hallazgos y recomendaciones</h2>
+          <p>Resumen analítico de patrones detectados y acciones sugeridas para la sección.</p>
+        </div>
+
+        <div class="filters-corner">
+          <label class="corner-filter">
+            <span>Periodo</span>
+            <select [value]="periodoEvaluacionSeleccionadoId() ?? ''"
+              (change)="onPeriodoChange($any($event.target).value)">
+              @for (periodo of periodosDisponibles(); track periodo.id) {
+              <option [value]="periodo.id">{{ periodo.nombre }} · {{ periodo.anioAcademico }}</option>
+              }
+            </select>
+          </label>
+
+          <label class="corner-filter">
+            <span>Sección</span>
+            <select [value]="seccionSeleccionadaId() ?? ''" (change)="onSeccionChange($any($event.target).value)">
+              @for (seccion of secciones(); track seccion.id) {
+              <option [value]="seccion.id">{{ etiquetaSeccion(seccion) }}</option>
+              }
+            </select>
+          </label>
+        </div>
+      </div>
+
+      @if (mostrarSkeleton()) {
+      <div class="dashboard-layout">
+        <section class="left-zone">
+          <div class="metrics-grid">
+            @for (item of [0, 1, 2, 3]; track item) {
+            <article class="metric-card-mini skeleton-card">
+              <div class="metric-top">
+                <span class="skeleton-line short"></span>
+                <span class="skeleton-icon"></span>
+              </div>
+              <span class="skeleton-line medium-1"></span>
+              <span class="skeleton-line long-2"></span>
+            </article>
+            }
+          </div>
+
+          <div class="bottom-grid">
+            @for (block of [0, 1]; track block) {
+            <article class="list-card skeleton-card">
+              <div class="section-header skeleton-header">
+                <div class="skeleton-stack">
+                  <span class="skeleton-line short"></span>
+                  <span class="skeleton-line long"></span>
+                </div>
+                <span class="skeleton-chip"></span>
+              </div>
+              <div class="skeleton-stack item-list">
+                @for (row of [0, 1, 2]; track row) {
+                <div class="modern-item skeleton-item-card">
+                  <div class="item-content">
+                    <div class="item-top">
+                      <div class="item-title-wrap">
+                        <span class="skeleton-icon large"></span>
+                        <div class="skeleton-stack">
+                          <span class="skeleton-line short"></span>
+                          <span class="skeleton-line medium"></span>
+                        </div>
+                      </div>
+                      <span class="skeleton-badge"></span>
+                    </div>
+                    <span class="skeleton-line long"></span>
+                    <span class="skeleton-line long"></span>
+                    <div class="item-footer">
+                      <span class="skeleton-chip"></span>
+                      <span class="skeleton-chip wide"></span>
+                    </div>
+                  </div>
+                </div>
+                }
+              </div>
+            </article>
+            }
+          </div>
+        </section>
+
+        <aside class="right-zone">
+          <article class="list-card skeleton-card full-height">
+            <div class="section-header skeleton-header">
+              <div class="skeleton-stack">
+                <span class="skeleton-line short"></span>
+                <span class="skeleton-line long"></span>
+              </div>
+              <span class="skeleton-chip"></span>
+            </div>
+            <div class="skeleton-stack item-list tracking-list">
+              @for (row of [0, 1, 2, 3]; track row) {
+              <div class="modern-item skeleton-item-card">
+                <div class="item-content">
+                  <div class="item-top">
+                    <div class="item-title-wrap">
+                      <span class="skeleton-icon large"></span>
+                      <div class="skeleton-stack">
+                        <span class="skeleton-line short"></span>
+                        <span class="skeleton-line medium"></span>
+                      </div>
+                    </div>
+                    <span class="skeleton-badge"></span>
+                  </div>
+                  <span class="skeleton-line long"></span>
+                  <span class="skeleton-line long"></span>
+                  <div class="recommendation-meta">
+                    <span class="skeleton-chip"></span>
+                    <span class="skeleton-chip wide"></span>
+                  </div>
+                </div>
+              </div>
+              }
+            </div>
+          </article>
+        </aside>
+      </div>
+      } @else {
+      <div class="dashboard-layout">
+        <section class="left-zone">
+          <div class="metrics-grid">
+            @for (metrica of metricas(); track metrica.label) {
+            <article class="metric-card">
+              <div class="metric-top">
+                <span class="metric-label">{{ metrica.label }}</span>
+                <span class="metric-icon">
+                  <i [class]="metrica.icon"></i>
+                </span>
+              </div>
+              <strong class="metric-value">{{ metrica.value }}</strong>
+              <p>{{ metrica.detail }}</p>
+            </article>
+            }
+          </div>
+
+          <div class="bottom-grid">
+            <article class="list-card">
+              <div class="section-header">
+                <div>
+                  <span class="section-kicker">Hallazgos detectados</span>
+                  <h3>Patrones y señales de la sección</h3>
+                </div>
+                <span class="result-chip">{{ hallazgos().length }} hallazgos</span>
+              </div>
+
+              @if (!hallazgos().length) {
+              <div class="state-card empty-state">
+                <span class="state-title">Sin hallazgos generados</span>
+                <p>Aún no hay patrones registrados para la sección y periodo seleccionados.</p>
+              </div>
+              } @else {
+              <div class="item-list">
+                @for (hallazgo of hallazgos(); track hallazgo.id) {
+                <article class="modern-item">
+                  <div class="item-content">
+                    <div class="item-top">
+                      <div class="item-title-wrap">
+                        <span class="item-icon">
+                          <i [class]="obtenerIconoHallazgo(hallazgo.codigo)"></i>
+                        </span>
+                        <div>
+                          <span class="insight-type">{{ hallazgo.tipo }}</span>
+                          <strong>{{ hallazgo.titulo }}</strong>
+                        </div>
+                      </div>
+
+                      <span class="risk-badge" [class.high]="hallazgo.nivelRelevancia === 'ALTO'"
+                        [class.medium]="hallazgo.nivelRelevancia === 'MEDIO'"
+                        [class.low]="hallazgo.nivelRelevancia === 'BAJO'">
+                        {{ hallazgo.nivelRelevancia }}
+                      </span>
+                    </div>
+
+                    <p>{{ hallazgo.descripcion }}</p>
+
+                    <div class="item-footer">
+                      @if (hallazgo.curso) {
+                      <span class="mini-chip">{{ hallazgo.curso }}</span>
+                      }
+
+                      @for (detalle of formatearResultado(hallazgo.resultado); track detalle) {
+                      <span class="detail-pill">{{ detalle }}</span>
+                      }
+                    </div>
+                  </div>
+                </article>
+                }
+              </div>
+              }
+            </article>
+
+            <article class="list-card">
+              <div class="section-header">
+                <div>
+                  <span class="section-kicker">Apoyo analítico</span>
+                  <h3>Sugerencias derivadas</h3>
+                  <p class="section-note">
+                    Acciones complementarias construidas desde los patrones detectados.
+                  </p>
+                </div>
+                <span class="result-chip">{{ recomendacionesDerivadas().length }} derivadas</span>
+              </div>
+
+              @if (!recomendacionesDerivadas().length) {
+              <div class="state-card empty-state">
+                <span class="state-title">Sin sugerencias derivadas</span>
+                <p>No hay suficientes hallazgos para proponer acciones complementarias.</p>
+              </div>
+              } @else {
+              <div class="item-list">
+                @for (recomendacion of recomendacionesDerivadas(); track recomendacion.id) {
+                <article class="modern-item recommendation">
+                  <div class="item-content">
+                    <div class="item-top">
+                      <div class="item-title-wrap">
+                        <span class="item-icon recommendation-icon">
+                          <i class="fa-solid fa-magnifying-glass-chart"></i>
+                        </span>
+                        <div>
+                          <span class="insight-type">{{ recomendacion.fuente || 'DATA_MINING' }}</span>
+                          <strong>{{ recomendacion.titulo }}</strong>
+                        </div>
+                      </div>
+
+                      @if (recomendacion.curso) {
+                      <span class="mini-chip">{{ recomendacion.curso }}</span>
+                      }
+                    </div>
+
+                    <p>{{ recomendacion.descripcion }}</p>
+
+                    <div class="recommendation-meta">
+                      <span>{{ recomendacion.alumnoNombreCompleto }}</span>
+                      <span>{{ recomendacion.codigoAlumno }}</span>
+                    </div>
+                  </div>
+                </article>
+                }
+              </div>
+              }
+            </article>
+          </div>
+        </section>
+
+        <aside class="right-zone">
+          <article class="list-card tracking-card full-height">
+            <div class="section-header">
+              <div>
+                <span class="section-kicker">Seguimiento recomendado</span>
+                <h3>Recomendaciones registradas</h3>
+              </div>
+              <span class="result-chip">{{ recomendaciones().length }} registradas</span>
+            </div>
+
+            @if (!recomendaciones().length) {
+            <div class="state-card empty-state">
+              <span class="state-title">Sin recomendaciones registradas</span>
+              <p>No llegaron recomendaciones persistidas para los filtros actuales.</p>
+            </div>
+            } @else {
+            <div class="item-list tracking-list">
+              @for (recomendacion of recomendacionesPriorizadas(); track recomendacion.id) {
+              <article class="modern-item recommendation">
+                <div class="item-content">
+                  <div class="item-top">
+                    <div class="item-title-wrap">
+                      <span class="item-icon recommendation-icon registered-icon">
+                        <i class="fa-solid fa-clipboard-list"></i>
+                      </span>
+                      <div>
+                        <span class="insight-type">{{ recomendacion.fuente || 'SEGUIMIENTO' }}</span>
+                        <strong>{{ recomendacion.titulo }}</strong>
+                      </div>
+                    </div>
+
+                    <span class="priority-pill" [class.high]="obtenerEtiquetaPrioridad(recomendacion) === 'Prioritaria'"
+                      [class.medium]="obtenerEtiquetaPrioridad(recomendacion) === 'Seguimiento'">
+                      {{ obtenerEtiquetaPrioridad(recomendacion) }}
+                    </span>
+                  </div>
+
+                  <p>{{ recomendacion.descripcion }}</p>
+
+                  <div class="recommendation-meta">
+                    @if (recomendacion.curso) {
+                    <span>{{ recomendacion.curso }}</span>
+                    }
+                    <span>{{ recomendacion.alumnoNombreCompleto }}</span>
+                    <span>{{ recomendacion.codigoAlumno }}</span>
+                  </div>
+                </div>
+              </article>
+              }
+            </div>
+            }
+          </article>
+        </aside>
+      </div>
+      }
+    </div>
+  </section>
+</app-shell>

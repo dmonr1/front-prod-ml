@@ -7,14 +7,16 @@ import { Shell } from '../../layouts/shell/shell';
 import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
 import { PeriodoEvaluacionService } from '../../services/academico/periodo-evaluacion.service';
 import { AuthService } from '../../services/auth/auth.service';
+import { CustomAlertComponent } from '../../components/custom-alert/custom-alert';
 import {
+  CursoAlumnoTutoriaResumen,
   TutoriaResumenAcademico,
   TutoriaService
 } from '../../services/asignaciones/tutoria.service';
 
 @Component({
   selector: 'app-seccion-tutorada',
-  imports: [Shell, RouterLink],
+  imports: [Shell, RouterLink, CustomAlertComponent],
   templateUrl: './seccion-tutorada.html',
   styleUrl: './seccion-tutorada.scss'
 })
@@ -35,6 +37,26 @@ export class SeccionTutorada implements OnInit {
   readonly periodosEvaluacion = signal<PeriodoEvaluacion[]>([]);
   readonly periodoEvaluacionSeleccionadoId = signal<number | null>(null);
   readonly resumenAcademico = signal<TutoriaResumenAcademico | null>(null);
+
+  readonly mostrarError = signal(true);
+  readonly mostrarSkeleton = computed(() => this.cargando() || !!this.error());
+
+  reintentarCarga(): void {
+    this.mostrarError.set(false);
+    this.error.set(null);
+  
+    const periodoId = this.periodoEvaluacionSeleccionadoId();
+  
+    if (periodoId) {
+      this.seleccionarPeriodoEvaluacion(periodoId);
+    } else {
+      this.cargarVista();
+    }
+  }
+  
+  cerrarError(): void {
+    this.mostrarError.set(false);
+  }
 
   readonly periodosEvaluacionTutoria = computed(() =>
     this.periodosEvaluacion()
@@ -87,13 +109,15 @@ export class SeccionTutorada implements OnInit {
     const docenteId = this.authService.obtenerUsuario()?.docenteId;
 
     if (!docenteId) {
-      this.cargando.set(false);
+      this.cargando.set(true);
       this.error.set('Tu usuario no tiene un docente vinculado.');
+      this.mostrarError.set(true);
       return;
     }
 
-    this.cargando.set(true);
     this.error.set(null);
+    this.mostrarError.set(false);
+    this.cargando.set(true);
 
     this.periodoAcademicoService.listar().subscribe({
       next: (periodos) => {
@@ -103,8 +127,9 @@ export class SeccionTutorada implements OnInit {
           null;
 
         if (!periodoActual) {
-          this.cargando.set(false);
+          this.cargando.set(true);
           this.error.set('No existe un periodo academico configurado para cargar la seccion tutorada.');
+          this.mostrarError.set(true);
           return;
         }
 
@@ -120,8 +145,9 @@ export class SeccionTutorada implements OnInit {
               null;
 
             if (!tutoria) {
-              this.cargando.set(false);
+              this.cargando.set(true);
               this.error.set('No tienes una seccion tutorada activa en el periodo actual.');
+              this.mostrarError.set(true);
               return;
             }
 
@@ -134,14 +160,24 @@ export class SeccionTutorada implements OnInit {
             this.cargarPrimerPeriodoDisponible();
           },
           error: (error) => {
-            this.cargando.set(false);
-            this.error.set(error?.error?.mensaje ?? 'No se pudo cargar la informacion inicial de la tutoria.');
+            this.error.set(
+              error?.error?.mensaje ??
+              'No se pudo cargar el resumen academico de la seccion tutorada.'
+            );
+
+            this.resumenAcademico.set(null);
+
+            this.mostrarError.set(true);
+
+            this.cargando.set(true);
           }
         });
       },
       error: (error) => {
-        this.cargando.set(false);
+        this.cargando.set(true);
         this.error.set(error?.error?.mensaje ?? 'No se pudo resolver el periodo academico actual.');
+        this.resumenAcademico.set(null);
+        this.mostrarError.set(true);
       }
     });
   }
@@ -167,7 +203,8 @@ export class SeccionTutorada implements OnInit {
           error?.error?.mensaje ?? 'No se pudo cargar el resumen academico de la seccion tutorada.'
         );
         this.resumenAcademico.set(null);
-        this.cargando.set(false);
+        this.mostrarError.set(true);
+        this.cargando.set(true);
       }
     });
   }
@@ -207,9 +244,16 @@ export class SeccionTutorada implements OnInit {
     return promedio === null ? 'Sin notas' : promedio.toFixed(2);
   }
 
-  obtenerNotasEtiquetadas(notas: number[]): Array<{ etiqueta: string; valor: string }> {
-    return notas.map((nota, indice) => ({
-      etiqueta: `ED${indice + 1}`,
+  obtenerNotasEtiquetadas(curso: CursoAlumnoTutoriaResumen): Array<{ etiqueta: string; valor: string }> {
+    if (curso.detalleNotas?.length) {
+      return curso.detalleNotas.map((nota) => ({
+        etiqueta: nota.etiqueta,
+        valor: nota.nota.toFixed(0)
+      }));
+    }
+
+    return curso.notas.map((nota, indice) => ({
+      etiqueta: `EV${indice + 1}`,
       valor: nota.toFixed(0)
     }));
   }

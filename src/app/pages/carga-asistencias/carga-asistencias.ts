@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
 import { CustomAlertComponent, CustomAlertType } from '../../components/custom-alert/custom-alert';
 import { Shell } from '../../layouts/shell/shell';
 import { AsignacionDocente } from '../../models/asignacion';
@@ -13,9 +13,11 @@ import { PeriodoEvaluacion } from '../../models/periodo-evaluacion';
 import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
 import { AuthService } from '../../services/auth/auth.service';
 import { AsignacionAcademicaService } from '../../services/asignaciones/asignacion-academica.service';
+import { TutoriaService } from '../../services/asignaciones/tutoria.service';
 import { PeriodoEvaluacionService } from '../../services/academico/periodo-evaluacion.service';
 import { MatriculaService } from '../../services/academico/matricula.service';
 import { AsistenciaPeriodoEvaluacionService } from '../../services/evaluacion/asistencia-periodo-evaluacion.service';
+import { Tutoria } from '../../models/tutoria';
 
 interface AsistenciaFila {
   matricula: Matricula;
@@ -35,7 +37,7 @@ interface AlertState {
 
 @Component({
   selector: 'app-carga-asistencias',
-  imports: [Shell, RouterLink, CustomAlertComponent],
+  imports: [Shell, CustomAlertComponent],
   templateUrl: './carga-asistencias.html',
   styleUrl: './carga-asistencias.scss'
 })
@@ -43,15 +45,18 @@ export class CargaAsistencias implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
   private readonly asignacionService = inject(AsignacionAcademicaService);
+  private readonly tutoriaService = inject(TutoriaService);
   private readonly periodoAcademicoService = inject(PeriodoAcademicoService);
   private readonly periodoEvaluacionService = inject(PeriodoEvaluacionService);
   private readonly matriculaService = inject(MatriculaService);
   private readonly asistenciaService = inject(AsistenciaPeriodoEvaluacionService);
+  private readonly asignacionIdParam = this.route.snapshot.paramMap.get('asignacionId');
 
-  readonly asignacionId = Number(this.route.snapshot.paramMap.get('asignacionId'));
+  readonly asignacionId = this.asignacionIdParam === null ? null : Number(this.asignacionIdParam);
   readonly currentYear = new Date().getFullYear();
   readonly cargando = signal(true);
   readonly error = signal<string | null>(null);
+  readonly mostrarErrorCarga = signal(true);
   readonly alertState = signal<AlertState>({
     open: false,
     type: 'info',
@@ -63,18 +68,26 @@ export class CargaAsistencias implements OnInit {
   });
 
   readonly asignacion = signal<AsignacionDocente | null>(null);
+  readonly tutoriasDisponibles = signal<Tutoria[]>([]);
+  readonly tutoriaActivaId = signal<number | null>(null);
+  readonly asignacionesDocente = signal<AsignacionDocente[]>([]);
   readonly periodosEvaluacion = signal<PeriodoEvaluacion[]>([]);
   readonly periodoEvaluacionSeleccionadoId = signal<number | null>(null);
   readonly matriculas = signal<Matricula[]>([]);
   readonly filasAsistencia = signal<AsistenciaFila[]>([]);
   readonly asistenciasGuardadas = signal<Record<number, AsistenciaPeriodoEvaluacion>>({});
   readonly clasesProgramadasGeneral = signal('');
+  readonly filasPlaceholder = Array.from({ length: 5 }, (_, index) => index);
+  
 
   private readonly autoSaveTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private readonly autoSaveInFlight = new Map<string, string>();
   private readonly autoSavePending = new Map<string, number>();
   private globalProgramadasTimer: ReturnType<typeof setTimeout> | null = null;
 
+  
+
+  
   readonly periodosEvaluacionPeriodo = computed(() =>
     this.periodosEvaluacion()
       .filter((periodoEvaluacion) => periodoEvaluacion.periodoAcademicoId === this.asignacion()?.periodoAcademicoId)
@@ -122,21 +135,50 @@ export class CargaAsistencias implements OnInit {
     };
   });
 
+  readonly esVistaSeccionTutorada = computed(
+    () => this.asignacionId === null || Number.isNaN(this.asignacionId)
+  );
+  readonly tutoriaActiva = computed(
+    () => this.tutoriasDisponibles().find((item) => item.id === this.tutoriaActivaId()) ?? null
+  );
+  readonly puedeRegistrarAsistencia = computed(() => !!this.asignacion());
+  readonly mostrarSkeleton = computed(() => this.cargando() || !!this.error());
+
+
   ngOnInit(): void {
     this.cargarBase();
+  }
+
+  reintentarCargaError(): void {
+    this.mostrarErrorCarga.set(false);
+    this.error.set(null);
+
+    const periodoId = this.periodoEvaluacionSeleccionadoId();
+    if (periodoId && (this.asignacion() || this.tutoriaActiva())) {
+      this.seleccionarPeriodoEvaluacion(periodoId);
+      return;
+    }
+
+    this.cargarBase();
+  }
+
+  cerrarErrorCarga(): void {
+    this.mostrarErrorCarga.set(false);
   }
 
   cargarBase(): void {
     const docenteId = this.authService.obtenerUsuario()?.docenteId;
 
     if (!docenteId) {
-      this.cargando.set(false);
+      this.cargando.set(true);
       this.error.set('Tu usuario no tiene un docente vinculado.');
+      this.mostrarErrorCarga.set(true);
       return;
     }
 
     this.cargando.set(true);
     this.error.set(null);
+    this.mostrarErrorCarga.set(false);
 
     this.periodoAcademicoService.listar().subscribe({
       next: (periodos) => {
@@ -146,8 +188,42 @@ export class CargaAsistencias implements OnInit {
           null;
 
         if (!periodoActual) {
-          this.cargando.set(false);
+          this.cargando.set(true);
           this.error.set('No se encontro un periodo academico para cargar la asignacion.');
+          this.mostrarErrorCarga.set(true);
+          return;
+        }
+
+        if (this.esVistaSeccionTutorada()) {
+          forkJoin({
+            asignaciones: this.asignacionService.listarAsignaciones(docenteId, periodoActual.id),
+            tutorias: this.tutoriaService.listarPorDocente(docenteId, periodoActual.id),
+            periodosEvaluacion: this.periodoEvaluacionService.listar()
+          }).subscribe({
+            next: ({ asignaciones, tutorias, periodosEvaluacion }) => {
+              this.asignacionesDocente.set(asignaciones);
+              this.periodosEvaluacion.set(periodosEvaluacion);
+              this.tutoriasDisponibles.set(
+                tutorias.filter((item) => (item.estado ?? 'ACTIVO') === 'ACTIVO')
+              );
+              this.cargando.set(false);
+
+              const primeraTutoria = this.tutoriasDisponibles()[0] ?? null;
+              if (!primeraTutoria) {
+                this.cargando.set(true);
+                this.error.set('No tienes una seccion tutorada activa para registrar asistencias.');
+                this.mostrarErrorCarga.set(true);
+                return;
+              }
+
+              this.seleccionarTutoria(primeraTutoria.id);
+            },
+            error: (error) => {
+              this.cargando.set(true);
+              this.error.set(error?.error?.mensaje ?? 'No se pudo cargar la informacion inicial.');
+              this.mostrarErrorCarga.set(true);
+            }
+          });
           return;
         }
 
@@ -156,13 +232,18 @@ export class CargaAsistencias implements OnInit {
           periodosEvaluacion: this.periodoEvaluacionService.listar()
         }).subscribe({
           next: ({ asignaciones, periodosEvaluacion }) => {
-            const asignacion = asignaciones.find((item) => item.id === this.asignacionId) ?? null;
+            const asignacion =
+              this.asignacionId === null
+                ? null
+                : asignaciones.find((item) => item.id === this.asignacionId) ?? null;
             this.asignacion.set(asignacion);
             this.periodosEvaluacion.set(periodosEvaluacion);
             this.cargando.set(false);
 
             if (!asignacion) {
+              this.cargando.set(true);
               this.error.set('No se encontro la asignacion seleccionada para tu usuario.');
+              this.mostrarErrorCarga.set(true);
               return;
             }
 
@@ -175,23 +256,29 @@ export class CargaAsistencias implements OnInit {
             }
           },
           error: (error) => {
-            this.cargando.set(false);
+            this.cargando.set(true);
             this.error.set(error?.error?.mensaje ?? 'No se pudo cargar la informacion inicial.');
+            this.mostrarErrorCarga.set(true);
           }
         });
       },
       error: (error) => {
-        this.cargando.set(false);
+        this.cargando.set(true);
         this.error.set(
           error?.error?.mensaje ?? 'No se pudo resolver el periodo academico actual.'
         );
+        this.mostrarErrorCarga.set(true);
       }
     });
   }
 
   seleccionarPeriodoEvaluacion(periodoEvaluacionId: number): void {
     const asignacion = this.asignacion();
-    if (!asignacion) {
+    const tutoria = this.tutoriaActiva();
+    const periodoAcademicoId = asignacion?.periodoAcademicoId ?? tutoria?.periodoAcademicoId ?? null;
+    const seccionId = asignacion?.seccionId ?? tutoria?.seccionId ?? null;
+
+    if (!periodoAcademicoId || !seccionId) {
       return;
     }
 
@@ -200,20 +287,22 @@ export class CargaAsistencias implements OnInit {
     this.filasAsistencia.set([]);
     this.clasesProgramadasGeneral.set('');
     this.error.set(null);
+    this.mostrarErrorCarga.set(false);
+    this.cargando.set(true);
 
     forkJoin({
-      configuracion: this.asistenciaService.obtenerConfiguracion(
-        asignacion.id,
-        periodoEvaluacionId
-      ),
+      configuracion: asignacion
+        ? this.asistenciaService.obtenerConfiguracion(asignacion.id, periodoEvaluacionId)
+        : of(null),
       asistencias: this.asistenciaService.listar(
-        asignacion.seccionId,
-        asignacion.periodoAcademicoId,
+        seccionId,
+        periodoAcademicoId,
         periodoEvaluacionId
       ),
-      matriculas: this.matriculaService.listar(asignacion.periodoAcademicoId, asignacion.seccionId)
+      matriculas: this.matriculaService.listar(periodoAcademicoId, seccionId)
     }).subscribe({
       next: ({ configuracion, asistencias, matriculas }) => {
+        this.error.set(null);
         this.matriculas.set(matriculas);
         const mapa: Record<number, AsistenciaPeriodoEvaluacion> = {};
         asistencias.forEach((asistencia) => {
@@ -226,11 +315,14 @@ export class CargaAsistencias implements OnInit {
             : ''
         );
         this.prepararFilasAsistencia(matriculas, mapa);
+        this.cargando.set(false);
       },
       error: (error) => {
         this.error.set(
           error?.error?.mensaje ?? 'No se pudo cargar la informacion del periodo de evaluacion.'
         );
+        this.mostrarErrorCarga.set(true);
+        this.cargando.set(true);
       }
     });
   }
@@ -253,6 +345,38 @@ export class CargaAsistencias implements OnInit {
     }
 
     this.seleccionarPeriodoEvaluacion(periodos[indice + 1].id);
+  }
+
+  seleccionarTutoria(tutoriaId: number): void {
+    const tutoria = this.tutoriasDisponibles().find((item) => item.id === tutoriaId) ?? null;
+    if (!tutoria) {
+      return;
+    }
+
+    const asignacionAncla =
+      this.asignacionesDocente().find((item) => item.seccionId === tutoria.seccionId) ?? null;
+
+    this.tutoriaActivaId.set(tutoriaId);
+    this.asignacion.set(asignacionAncla);
+    this.error.set(null);
+
+    const periodoAcademicoId = asignacionAncla?.periodoAcademicoId ?? tutoria.periodoAcademicoId;
+    const primerPeriodoEvaluacion = this.periodosEvaluacion()
+      .filter((item) => item.periodoAcademicoId === periodoAcademicoId)
+      .sort((a, b) => a.numero - b.numero)[0];
+
+    if (primerPeriodoEvaluacion) {
+      this.seleccionarPeriodoEvaluacion(primerPeriodoEvaluacion.id);
+    }
+  }
+
+  onTutoriaChange(valor: string): void {
+    const tutoriaId = Number(valor);
+    if (Number.isNaN(tutoriaId)) {
+      return;
+    }
+
+    this.seleccionarTutoria(tutoriaId);
   }
 
   onClasesProgramadasInput(event: Event): void {

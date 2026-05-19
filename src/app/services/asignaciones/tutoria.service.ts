@@ -27,6 +27,10 @@ export interface CursoAlumnoTutoriaResumen {
   evaluacionesRegistradas: number;
   promedio: number | null;
   notas: number[];
+  detalleNotas?: Array<{
+    etiqueta: string;
+    nota: number;
+  }>;
 }
 
 export interface AlumnoTutoriaResumen {

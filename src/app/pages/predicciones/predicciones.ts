@@ -2,6 +2,7 @@ import { DecimalPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
+import { CustomAlertComponent } from '../../components/custom-alert/custom-alert';
 import { Shell } from '../../layouts/shell/shell';
 import { PeriodoAcademico } from '../../models/periodo-academico';
 import { PeriodoEvaluacion } from '../../models/periodo-evaluacion';
@@ -37,7 +38,7 @@ interface PrediccionVista extends PrediccionRiesgo {
 
 @Component({
   selector: 'app-predicciones',
-  imports: [Shell, DecimalPipe],
+  imports: [Shell, DecimalPipe, CustomAlertComponent],
   templateUrl: './predicciones.html',
   styleUrl: './predicciones.scss'
 })
@@ -56,6 +57,7 @@ export class Predicciones {
   readonly cargandoFiltros = signal(true);
   readonly cargandoVista = signal(false);
   readonly error = signal<string | null>(null);
+  readonly alertaConexionAbierta = signal(false);
 
   readonly periodosEvaluacion = signal<PeriodoEvaluacion[]>([]);
   readonly secciones = signal<Seccion[]>([]);
@@ -64,6 +66,7 @@ export class Predicciones {
   readonly cursoSeleccionadoId = signal<number | null>(null);
   readonly busqueda = signal('');
   readonly prediccionSeleccionadaId = signal<number | null>(null);
+  readonly animationToken = signal(0);
 
   readonly resumenApi = signal<ResumenPrediccion | null>(null);
   readonly prediccionesGlobales = signal<PrediccionVista[]>([]);
@@ -156,7 +159,7 @@ export class Predicciones {
     const resumen = this.resumenApi();
     const registros = this.prediccionesFiltradas();
 
-    if (!resumen) {
+    if (!resumen || this.vistaActiva() === 'curso') {
       return {
         total: registros.length,
         alto: registros.filter((item) => item.nivelRiesgoNormalizado === 'ALTO').length,
@@ -354,7 +357,7 @@ export class Predicciones {
 
     const cursoId = this.cursoSeleccionadoId();
     if (cursoId == null) {
-      return 'Todos los cursos';
+      return 'Todos';
     }
 
     return this.cursosDisponibles().find((curso) => curso.id === cursoId)?.nombre ?? 'Curso';
@@ -463,6 +466,7 @@ export class Predicciones {
     this.vistaActiva.set(vista);
     this.ajustarCursoSeleccionado();
     this.asegurarSeleccion();
+    this.animarPanel();
   }
 
   onPeriodoEvaluacionChange(value: string): void {
@@ -480,11 +484,28 @@ export class Predicciones {
   onCursoChange(value: string): void {
     this.cursoSeleccionadoId.set(value ? Number(value) : null);
     this.asegurarSeleccion();
+    this.animarPanel();
   }
 
   onBusqueda(value: string): void {
     this.busqueda.set(value);
     this.asegurarSeleccion();
+  }
+
+  reintentarCarga(): void {
+    this.alertaConexionAbierta.set(false);
+    this.error.set(null);
+
+    if (this.periodosEvaluacion().length && this.secciones().length) {
+      this.cargarVista();
+      return;
+    }
+
+    this.cargarFiltros();
+  }
+
+  cerrarAlertaError(): void {
+    this.alertaConexionAbierta.set(false);
   }
 
   seleccionarPrediccion(id: number): void {
@@ -504,6 +525,7 @@ export class Predicciones {
   private cargarFiltros(): void {
     this.cargandoFiltros.set(true);
     this.error.set(null);
+    this.alertaConexionAbierta.set(false);
 
     forkJoin({
       periodosEvaluacion: this.periodoEvaluacionService.listar(),
@@ -569,6 +591,7 @@ export class Predicciones {
       error: () => {
         this.cargandoFiltros.set(false);
         this.error.set('No se pudieron cargar los filtros de prediccion.');
+        this.alertaConexionAbierta.set(true);
       }
     });
   }
@@ -581,8 +604,9 @@ export class Predicciones {
       return;
     }
 
-    this.cargandoVista.set(true);
-    this.error.set(null);
+      this.cargandoVista.set(true);
+      this.error.set(null);
+      this.alertaConexionAbierta.set(false);
 
     forkJoin({
       resumen: this.prediccionService.obtenerResumen(periodoEvaluacionId, seccionId),
@@ -602,10 +626,12 @@ export class Predicciones {
         this.ajustarCursoSeleccionado();
         this.cargandoVista.set(false);
         this.asegurarSeleccion();
+        this.animarPanel();
       },
       error: (error) => {
         this.cargandoVista.set(false);
         this.error.set(error?.error?.mensaje ?? 'No se pudieron cargar las predicciones.');
+        this.alertaConexionAbierta.set(true);
       }
     });
   }
@@ -633,6 +659,10 @@ export class Predicciones {
     if (!existe) {
       this.cursoSeleccionadoId.set(null);
     }
+  }
+
+  private animarPanel(): void {
+    this.animationToken.update((value) => value + 1);
   }
 
   private mapearPrediccion(
