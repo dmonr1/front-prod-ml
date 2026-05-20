@@ -443,6 +443,33 @@ export class CargaAsistencias implements OnInit {
     this.guardarAsistenciaAutomatica(matriculaId, true);
   }
 
+  moverFocoEnGrilla(event: KeyboardEvent, filaIndex: number): void {
+    const tecla = event.key;
+    if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(tecla)) {
+      return;
+    }
+
+    const inputs = Array.from(
+      document.querySelectorAll<HTMLInputElement>('.attendance-grid-input')
+    );
+    if (!inputs.length) {
+      return;
+    }
+
+    const siguienteIndex =
+      tecla === 'ArrowUp' || tecla === 'ArrowLeft' ? filaIndex - 1 : filaIndex + 1;
+
+    if (siguienteIndex < 0 || siguienteIndex >= inputs.length) {
+      event.preventDefault();
+      return;
+    }
+
+    event.preventDefault();
+    const siguiente = inputs[siguienteIndex];
+    siguiente?.focus();
+    siguiente?.select();
+  }
+
   bloquearCambioNumero(event: Event): void {
     event.preventDefault();
   }

@@ -1,15 +1,8 @@
 <app-shell>
   <section class="section-students-page">
-    <app-custom-alert
-      [open]="alertState().open"
-      [type]="alertState().type"
-      [title]="alertState().title"
-      [message]="alertState().message"
-      [confirmText]="alertState().confirmText"
-      [cancelText]="alertState().cancelText"
-      [autoCloseMs]="alertState().autoCloseMs"
-      (confirm)="cerrarAlerta()"
-      (cancel)="cerrarAlerta()"
+    <app-custom-alert [open]="alertState().open" [type]="alertState().type" [title]="alertState().title"
+      [message]="alertState().message" [confirmText]="alertState().confirmText" [cancelText]="alertState().cancelText"
+      [autoCloseMs]="alertState().autoCloseMs" (confirm)="cerrarAlerta()" (cancel)="cerrarAlerta()"
       (dismiss)="cerrarAlerta()" />
 
     <div class="page-card page-slide-in">
@@ -20,25 +13,25 @@
               <i class="fa-solid fa-arrow-left"></i>
               Volver a grados y secciones
             </a>
-            <h2>{{ grado()?.nombre }} - Seccion {{ seccion()?.nombre }}</h2>
-            
+            <h2 style="  margin-top: 15px;">{{ grado()?.nombre }} - Seccion {{ seccion()?.nombre }}</h2>
+
           </div>
 
           <div class="head-context">
             <div class="context-chip">
-              <span>Periodo</span>
+              <span>Periodo: </span>
               <strong>{{ periodo()?.anio || 'Sin ano' }}</strong>
             </div>
             <div class="context-chip">
-              <span>Grado</span>
+              <span>Grado: </span>
               <strong>{{ grado()?.nombre || 'Sin grado' }}</strong>
             </div>
             <div class="context-chip">
-              <span>Seccion</span>
+              <span>Sección: </span>
               <strong>{{ seccion()?.nombre || 'Sin seccion' }}</strong>
             </div>
             <div class="context-chip">
-              <span>Matriculados</span>
+              <span>Matriculados: </span>
               <strong>{{ matriculasSeccion().length }}</strong>
             </div>
           </div>
@@ -46,228 +39,186 @@
       </div>
 
       @if (errorBase()) {
-        <div class="table-state error">
-          <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
-          <span>{{ errorBase() }}</span>
-        </div>
+      <div class="table-state error">
+        <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
+        <span>{{ errorBase() }}</span>
+      </div>
       } @else {
-        <div class="detail-grid">
-          <article class="table-panel">
-            <div class="panel-head section-head">
-              <div class="section-head-main">
-                <h3>Alumnos inscritos</h3>
-                <span class="records-chip">{{ matriculasSeccion().length }} alumnos</span>
-              </div>
+      <div class="detail-grid">
+        <article class="table-panel">
+          <div class="panel-head section-head">
+            <div class="section-head-main">
+              <h3>Alumnos inscritos</h3>
+              <span class="records-chip">{{ matriculasSeccion().length }} alumnos</span>
             </div>
+          </div>
 
-            <div class="table-panel-body">
-              @if (cargandoMatriculas()) {
-                <div class="table-scroll">
-                  <table class="app-table">
-                    <thead>
-                      <tr>
-                        <th>Alumno</th>
-                        <th>Codigo</th>
-                        <th>Fecha de ingreso</th>
-                        <th>Estado</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (row of [0, 1, 2, 3, 4]; track row) {
-                        <tr>
-                          <td><span class="skeleton-line long"></span></td>
-                          <td><span class="skeleton-line short"></span></td>
-                          <td><span class="skeleton-line short"></span></td>
-                          <td><span class="skeleton-line short"></span></td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
-                </div>
-              } @else if (errorMatriculas()) {
-                <div class="table-state error">
-                  <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
-                  <span>{{ errorMatriculas() }}</span>
-                </div>
-              } @else {
-                <div class="table-scroll">
-                  <table class="app-table">
-                    <thead>
-                      <tr>
-                        <th>Alumno</th>
-                        <th>Codigo</th>
-                        <th>Fecha de ingreso</th>
-                        <th>Estado</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @if (!matriculasSeccion().length) {
-                        <tr>
-                          <td class="empty-row" colspan="4">No hay alumnos registrados en esta seccion para el periodo seleccionado.</td>
-                        </tr>
-                      } @else {
-                        @for (matricula of matriculasSeccion(); track matricula.id) {
-                          <tr>
-                            <td>{{ matricula.alumnoNombreCompleto }}</td>
-                            <td>{{ matricula.codigoAlumno }}</td>
-                            <td>{{ matricula.fechaMatricula }}</td>
-                            <td><span class="status-badge active">ACTIVO</span></td>
-                          </tr>
-                        }
-                      }
-                    </tbody>
-                  </table>
-                </div>
-              }
+          <div class="table-panel-body">
+            @if (cargandoMatriculas()) {
+            <div class="table-scroll">
+              <table class="app-table">
+                <thead>
+                  <tr>
+                    <th>Alumno</th>
+                    <th>Codigo</th>
+                    <th>Fecha de ingreso</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of [0, 1, 2, 3, 4]; track row) {
+                  <tr>
+                    <td><span class="skeleton-line long"></span></td>
+                    <td><span class="skeleton-line short"></span></td>
+                    <td><span class="skeleton-line short"></span></td>
+                    <td><span class="skeleton-line short"></span></td>
+                  </tr>
+                  }
+                </tbody>
+              </table>
             </div>
-          </article>
-
-          <article class="actions-panel">
-            @if (!esPeriodoEditable()) {
-              <div class="readonly-note">
-                <span class="table-state-icon"><i class="fa-solid fa-lock"></i></span>
-                <div>
-                  <strong>Periodo historico</strong>
-                  <p>Los periodos anteriores solo quedan disponibles para consulta.</p>
-                </div>
-              </div>
+            } @else if (errorMatriculas()) {
+            <div class="table-state error">
+              <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
+              <span>{{ errorMatriculas() }}</span>
+            </div>
             } @else {
-              <div class="panel-stack">
-                <section class="form-panel form-panel--primary">
-                  <div class="panel-head">
-                    <h3>Registrar alumno nuevo</h3>
-                  </div>
-
-                  <form class="master-form">
-                    <div class="form-two-columns">
-                      <label>
-                        Nombres
-                        <input
-                          type="text"
-                          [ngModel]="formAlumno().nombres"
-                          (ngModelChange)="actualizarCampoAlumno('nombres', $event)"
-                          name="nombres"
-                          placeholder="Nombres del alumno" />
-                      </label>
-
-                      <label>
-                        Apellidos
-                        <input
-                          type="text"
-                          [ngModel]="formAlumno().apellidos"
-                          (ngModelChange)="actualizarCampoAlumno('apellidos', $event)"
-                          name="apellidos"
-                          placeholder="Apellidos del alumno" />
-                      </label>
-                    </div>
-
-                    <label>
-                      DNI
-                      <input
-                        type="text"
-                        [ngModel]="formAlumno().dni"
-                        (ngModelChange)="actualizarCampoAlumno('dni', $event)"
-                        name="dni"
-                        placeholder="Opcional" />
-                    </label>
-
-                    <div class="form-two-columns">
-                      <label>
-                        Fecha de nacimiento
-                        <input
-                          type="date"
-                          [ngModel]="formAlumno().fechaNacimiento"
-                          (ngModelChange)="actualizarCampoAlumno('fechaNacimiento', $event)"
-                          name="fechaNacimiento" />
-                      </label>
-
-                      <label>
-                        Sexo
-                        <select
-                          [ngModel]="formAlumno().sexo"
-                          (ngModelChange)="actualizarCampoAlumno('sexo', $event)"
-                          name="sexo">
-                          <option [ngValue]="null">Seleccionar</option>
-                          <option value="MASCULINO">Masculino</option>
-                          <option value="FEMENINO">Femenino</option>
-                        </select>
-                      </label>
-                    </div>
-
-                    <label>
-                      Direccion
-                      <input
-                        type="text"
-                        [ngModel]="formAlumno().direccion"
-                        (ngModelChange)="actualizarCampoAlumno('direccion', $event)"
-                        name="direccion"
-                        placeholder="Direccion del alumno" />
-                    </label>
-
-                    <div class="form-two-columns">
-                      <label>
-                        Nombre del apoderado
-                        <input
-                          type="text"
-                          [ngModel]="formAlumno().nombreApoderado"
-                          (ngModelChange)="actualizarCampoAlumno('nombreApoderado', $event)"
-                          name="nombreApoderado"
-                          placeholder="Apoderado o tutor" />
-                      </label>
-
-                      <label>
-                        Telefono del apoderado
-                        <input
-                          type="text"
-                          [ngModel]="formAlumno().telefonoApoderado"
-                          (ngModelChange)="actualizarCampoAlumno('telefonoApoderado', $event)"
-                          name="telefonoApoderado"
-                          placeholder="Telefono de contacto" />
-                      </label>
-                    </div>
-
-                    <div class="form-actions">
-                      <button
-                        class="action-button primary"
-                        type="button"
-                        [disabled]="guardandoAlumno()"
-                        (click)="guardarAlumnoNuevo()">
-                        {{ guardandoAlumno() ? 'Guardando...' : 'Guardar alumno' }}
-                      </button>
-                      <button class="action-button secondary" type="button" (click)="limpiarFormularioAlumno()">
-                        Limpiar
-                      </button>
-                    </div>
-                  </form>
-                </section>
-
-                <section class="quick-panel quick-panel--secondary">
-                  <div class="panel-head">
-                    <span class="panel-kicker">Accion opcional</span>
-                    <h3>Cargar alumnos del periodo anterior</h3>
-                    <p>
-                      @if (periodoAnterior()) {
-                        Usa esta opcion solo si quieres traer alumnos de {{ periodoAnterior()!.nombre }} a esta seccion.
-                      } @else {
-                        No existe un periodo anterior disponible para esta seccion.
-                      }
-                    </p>
-                  </div>
-
-                  <div class="quick-actions">
-                    <button
-                      class="action-button tertiary full-button"
-                      type="button"
-                      [disabled]="!periodoAnterior() || cargandoPeriodoAnterior()"
-                      (click)="cargarAlumnosPeriodoAnterior()">
-                      {{ cargandoPeriodoAnterior() ? 'Cargando...' : 'Cargar alumnos del periodo anterior' }}
-                    </button>
-                  </div>
-                </section>
-              </div>
+            <div class="table-scroll">
+              <table class="app-table">
+                <thead>
+                  <tr>
+                    <th>Alumno</th>
+                    <th>Codigo</th>
+                    <th>Fecha de ingreso</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @if (!matriculasSeccion().length) {
+                  <tr>
+                    <td class="empty-row" colspan="4">No hay alumnos registrados en esta seccion para el periodo
+                      seleccionado.</td>
+                  </tr>
+                  } @else {
+                  @for (matricula of matriculasSeccion(); track matricula.id) {
+                  <tr>
+                    <td>{{ matricula.alumnoNombreCompleto }}</td>
+                    <td>{{ matricula.codigoAlumno }}</td>
+                    <td>{{ matricula.fechaMatricula }}</td>
+                    <td><span class="status-badge active">ACTIVO</span></td>
+                  </tr>
+                  }
+                  }
+                </tbody>
+              </table>
+            </div>
             }
-          </article>
-        </div>
+          </div>
+        </article>
+
+        <article class="actions-panel">
+          @if (!esPeriodoEditable()) {
+          <div class="readonly-note">
+            <span class="table-state-icon"><i class="fa-solid fa-lock"></i></span>
+            <div>
+              <strong>Periodo historico</strong>
+              <p>Los periodos anteriores solo quedan disponibles para consulta.</p>
+            </div>
+          </div>
+          } @else {
+          <div class="panel-stack">
+            <section class="form-panel form-panel--primary">
+              <div class="panel-head">
+                <h3 style="margin-bottom: 20px;">Registrar alumno nuevo</h3>
+              </div>
+
+              <div class="quick-actions">
+                <button class="action-button tertiary full-button" type="button"
+                  [disabled]="!periodoAnterior() || cargandoPeriodoAnterior()" (click)="cargarAlumnosPeriodoAnterior()">
+                  {{ cargandoPeriodoAnterior() ? 'Cargando...' : 'Cargar alumnos del periodo anterior' }}
+                </button>
+              </div>
+
+              <form class="master-form">
+                <div class="form-two-columns">
+                  <label>
+                    Nombres
+                    <input type="text" [ngModel]="formAlumno().nombres"
+                      (ngModelChange)="actualizarCampoAlumno('nombres', $event)" name="nombres"
+                      placeholder="Nombres del alumno" />
+                  </label>
+
+                  <label>
+                    Apellidos
+                    <input type="text" [ngModel]="formAlumno().apellidos"
+                      (ngModelChange)="actualizarCampoAlumno('apellidos', $event)" name="apellidos"
+                      placeholder="Apellidos del alumno" />
+                  </label>
+                </div>
+
+                <label>
+                  DNI
+                  <input type="text" [ngModel]="formAlumno().dni" (ngModelChange)="actualizarCampoAlumno('dni', $event)"
+                    name="dni" placeholder="Opcional" />
+                </label>
+
+                <div class="form-two-columns">
+                  <label>
+                    Fecha de nacimiento
+                    <input type="date" [ngModel]="formAlumno().fechaNacimiento"
+                      (ngModelChange)="actualizarCampoAlumno('fechaNacimiento', $event)" name="fechaNacimiento" />
+                  </label>
+
+                  <label>
+                    Sexo
+                    <select [ngModel]="formAlumno().sexo" (ngModelChange)="actualizarCampoAlumno('sexo', $event)"
+                      name="sexo">
+                      <option [ngValue]="null">Seleccionar</option>
+                      <option value="MASCULINO">Masculino</option>
+                      <option value="FEMENINO">Femenino</option>
+                    </select>
+                  </label>
+                </div>
+
+                <label>
+                  Direccion
+                  <input type="text" [ngModel]="formAlumno().direccion"
+                    (ngModelChange)="actualizarCampoAlumno('direccion', $event)" name="direccion"
+                    placeholder="Direccion del alumno" />
+                </label>
+
+                <div class="form-two-columns">
+                  <label>
+                    Nombre del apoderado
+                    <input type="text" [ngModel]="formAlumno().nombreApoderado"
+                      (ngModelChange)="actualizarCampoAlumno('nombreApoderado', $event)" name="nombreApoderado"
+                      placeholder="Apoderado o tutor" />
+                  </label>
+
+                  <label>
+                    Telefono del apoderado
+                    <input type="text" [ngModel]="formAlumno().telefonoApoderado"
+                      (ngModelChange)="actualizarCampoAlumno('telefonoApoderado', $event)" name="telefonoApoderado"
+                      placeholder="Telefono de contacto" />
+                  </label>
+                </div>
+
+                <div class="form-actions">
+                  <button class="action-button primary" type="button" [disabled]="guardandoAlumno()"
+                    (click)="guardarAlumnoNuevo()">
+                    {{ guardandoAlumno() ? 'Guardando...' : 'Guardar alumno' }}
+                  </button>
+                  <button class="action-button secondary" type="button" (click)="limpiarFormularioAlumno()">
+                    Limpiar
+                  </button>
+                </div>
+              </form>
+            </section>
+
+          </div>
+          }
+        </article>
+      </div>
       }
     </div>
   </section>

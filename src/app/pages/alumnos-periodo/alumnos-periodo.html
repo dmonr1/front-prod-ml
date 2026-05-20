@@ -104,10 +104,10 @@
         <div class="section-head">
           <div class="panel-head">
             <h3>Secciones</h3>
-            <p>{{ gradoSeleccionado()!.nombre }}</p>
+            <p style="font-weight: 700; ">{{ gradoSeleccionado()!.nombre }}</p>
           </div>
 
-          @if (esPeriodoEditable()) {
+          @if (esPeriodoEditable() && esAdmin()) {
           <div class="head-actions">
             <button class="action-button tertiary" type="button" (click)="toggleMostrarSeccionesDeshabilitadas()">
               <i class="fa-solid fa-eye"></i>
@@ -149,7 +149,7 @@
         <div class="cards-surface state-surface">
           <div class="table-state">
             <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-            <span>Este grado todavia no tiene secciones registradas en este periodo.</span>
+            <span>Este grado todavía no tiene secciones registradas en este periodo.</span>
           </div>
         </div>
         } @else {

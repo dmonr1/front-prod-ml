@@ -1,0 +1,106 @@
+:host {
+  display: block;
+}
+
+.initial-password-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(9, 19, 34, 0.52);
+  backdrop-filter: blur(8px);
+}
+
+.initial-password-card {
+  width: min(100%, 460px);
+  display: grid;
+  gap: 16px;
+  padding: 28px;
+  border: 1px solid rgba(17, 32, 51, 0.08);
+  border-radius: 26px;
+  background: #ffffff;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.16);
+}
+
+.initial-password-kicker {
+  color: #1d5fc4;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.initial-password-card h2 {
+  margin: 0;
+  color: #112033;
+  font-size: 26px;
+  line-height: 1.2;
+}
+
+.initial-password-card p {
+  margin: 0;
+  color: #5d6f86;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.initial-password-form {
+  display: grid;
+  gap: 14px;
+}
+
+.initial-password-form label {
+  display: grid;
+  gap: 8px;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.initial-password-form input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #d6e1ef;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #112033;
+  font: inherit;
+  outline: none;
+}
+
+.initial-password-form input:focus {
+  border-color: #2f6edb;
+  box-shadow: 0 0 0 4px rgba(47, 110, 219, 0.12);
+}
+
+.initial-password-error {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #fff2f2;
+  color: #a33131;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.initial-password-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 11px 16px;
+  border: 1px solid #2159b6;
+  border-radius: 16px;
+  background: #2159b6;
+  color: #ffffff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.initial-password-button:disabled {
+  opacity: 0.72;
+  cursor: wait;
+}

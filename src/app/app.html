@@ -1,1 +1,46 @@
 <router-outlet />
+
+@if (mostrarCambioPassword()) {
+  <div class="initial-password-overlay">
+    <div class="initial-password-card">
+      <span class="initial-password-kicker">Primer ingreso</span>
+      <h2>Cambia tu contraseña temporal</h2>
+      
+      <form class="initial-password-form">
+        <label>
+          Nueva contraseña
+          <input
+            type="password"
+            [ngModel]="nuevaPassword()"
+            (ngModelChange)="nuevaPassword.set($event); errorPassword.set('')"
+            name="nuevaPasswordInicial"
+            autocomplete="new-password"
+            placeholder="Minimo 8 caracteres" />
+        </label>
+
+        <label>
+          Confirmar contraseña
+          <input
+            type="password"
+            [ngModel]="confirmarPassword()"
+            (ngModelChange)="confirmarPassword.set($event); errorPassword.set('')"
+            name="confirmarPasswordInicial"
+            autocomplete="new-password"
+            placeholder="Repite la nueva contraseña" />
+        </label>
+
+        @if (errorPassword()) {
+          <p class="initial-password-error">{{ errorPassword() }}</p>
+        }
+
+        <button
+          class="initial-password-button"
+          type="button"
+          [disabled]="guardandoPassword()"
+          (click)="cambiarPasswordInicial()">
+          {{ guardandoPassword() ? 'Guardando...' : 'Actualizar contraseña' }}
+        </button>
+      </form>
+    </div>
+  </div>
+}

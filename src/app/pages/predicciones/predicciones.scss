@@ -160,7 +160,7 @@ select:focus {
 .state-card {
   border-radius: 22px;
   background: #ffffff;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  box-shadow:  9px 9px 20px 4px var(--tw-shadow-color, rgb(0 0 0 / 7%)), 0 4px 6px -4px var(--tw-shadow-color, rgb(0 0 0 / 10%));
 }
 
 .metric-card {

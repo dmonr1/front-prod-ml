@@ -48,6 +48,15 @@ export class Shell {
           { label: 'Asignaciones docentes', path: '/asignaciones-docente', icon: 'fa-solid fa-chalkboard-user' }
         ]
       });
+
+      items.push({
+        id: 'seguridad',
+        label: 'Seguridad',
+        icon: 'fa-solid fa-shield-halved',
+        children: [
+          { label: 'Usuarios y roles', path: '/usuario', icon: 'fa-solid fa-users-gear' }
+        ]
+      });
     }
 
     if (esDocente || esAdmin) {

@@ -163,9 +163,7 @@
   color: #112033;
   text-align: left;
   cursor: pointer;
-  box-shadow:
-    0 1px 2px rgba(15, 23, 42, 0.04),
-    0 10px 24px rgba(15, 23, 42, 0.06);
+  box-shadow: 9px 9px 20px 4px var(--tw-shadow-color, rgb(0 0 0 / 7%)), 0 4px 6px -4px var(--tw-shadow-color, rgb(0 0 0 / 10%));
   transition:
     transform 160ms ease,
     box-shadow 160ms ease;
@@ -262,7 +260,14 @@
   cursor: default;
 }
 
+.status-badge.active-1 {
+  background: #c27aff;
+  color: #ffffff;
+  border: none;
+}
+
 @media (max-width: 860px) {
+
   .card-head-inline,
   .section-head {
     flex-direction: column;

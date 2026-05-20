@@ -1,31 +1,189 @@
 <app-shell>
+  <section class="users-page">
+    <app-custom-alert
+      [open]="alertState().open"
+      [type]="alertState().type"
+      [title]="alertState().title"
+      [message]="alertState().message"
+      [confirmText]="alertState().confirmText"
+      [cancelText]="alertState().cancelText"
+      [autoCloseMs]="alertState().autoCloseMs"
+      (confirm)="cerrarAlerta()"
+      (cancel)="cerrarAlerta()"
+      (dismiss)="cerrarAlerta()" />
 
-  <section class="user-profile-layout">
-    <article class="card user-profile-card">
-      <div class="user-avatar">AD</div>
-      <h2>Administrador del colegio</h2>
-      <p>admin@colegio.edu.pe</p>
-      <span class="user-role">Administrador</span>
-    </article>
-
-    <article class="chart-card user-settings-card">
-      <div class="card-title"><h2>Datos de cuenta</h2></div>
-      <div class="settings-list">
-        <div><span>Nombre</span><strong>Administrador del colegio</strong></div>
-        <div><span>Rol</span><strong>Administrador institucional</strong></div>
-        <div><span>Institución</span><strong>Colegio San Martín</strong></div>
-        <div><span>Año escolar</span><strong>2024</strong></div>
+    <div class="page-card">
+      <div class="card-head">
+        <div class="panel-head">
+          <span class="panel-kicker">Accesos institucionales</span>
+          <h2>Usuarios y roles</h2>
+          <p>Revisa todos los accesos del sistema y administra roles, estado y datos de cuenta.</p>
+        </div>
       </div>
-    </article>
 
-    <article class="chart-card user-settings-card">
-      <div class="card-title"><h2>Preferencias</h2></div>
-      <div class="settings-list">
-        <div><span>Notificaciones</span><strong>Alertas críticas y reportes</strong></div>
-        <div><span>Vista inicial</span><strong>Panel administrativo</strong></div>
-        <div><span>Idioma</span><strong>Español</strong></div>
-        <div><span>Seguridad</span><strong>Verificación por correo activa</strong></div>
+      <section class="table-panel">
+        <div class="panel-head section-head">
+          <div>
+            <h3>Usuarios registrados</h3>
+            <p>Solo un administrador puede modificar cuentas, inactivar usuarios y añadir roles.</p>
+          </div>
+          <span class="records-chip">{{ usuarios().length }} registros</span>
+        </div>
+
+        @if (mostrarSkeleton()) {
+          <div class="table-scroll">
+            <table class="app-table">
+              <thead>
+                <tr>
+                  <th>Usuario</th>
+                  <th>Correo</th>
+                  <th>Roles</th>
+                  <th>Docente vinculado</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of skeletonRows; track row) {
+                  <tr>
+                    <td><span class="skeleton-line medium"></span></td>
+                    <td><span class="skeleton-line long"></span></td>
+                    <td><span class="skeleton-line medium"></span></td>
+                    <td><span class="skeleton-line medium"></span></td>
+                    <td><span class="skeleton-line short"></span></td>
+                    <td><span class="skeleton-line short"></span></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else if (!usuarios().length) {
+          <div class="table-state">
+            <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
+            <span>No hay usuarios registrados.</span>
+            <small>Primero crea docentes y accesos para empezar a poblar la base de cuentas.</small>
+          </div>
+        } @else {
+          <div class="table-scroll">
+            <table class="app-table">
+              <thead>
+                <tr>
+                  <th>Usuario</th>
+                  <th>Correo</th>
+                  <th>Roles</th>
+                  <th>Docente vinculado</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (usuario of usuarios(); track usuario.id) {
+                  <tr>
+                    <td>
+                      <div class="identity-cell">
+                        <strong>{{ usuario.username }}</strong>
+                        @if (usuario.debeCambiarPassword) {
+                          <small>Cambio inicial pendiente</small>
+                        }
+                      </div>
+                    </td>
+                    <td>{{ usuario.correo }}</td>
+                    <td>
+                      <div class="role-pill-group">
+                        @for (rol of usuario.roles; track rol) {
+                          <span class="role-pill">{{ rol }}</span>
+                        }
+                      </div>
+                    </td>
+                    <td>{{ usuario.docenteNombreCompleto || 'Sin vincular' }}</td>
+                    <td>
+                      <span
+                        class="status-badge"
+                        [class.active]="(usuario.estado || 'ACTIVO') === 'ACTIVO'"
+                        [class.inactive]="(usuario.estado || 'ACTIVO') === 'INACTIVO'">
+                        {{ usuario.estado || 'ACTIVO' }}
+                      </span>
+                    </td>
+                    <td>
+                      <div class="row-actions">
+                        <button class="action-button tertiary compact" type="button" [disabled]="!esAdmin()" (click)="abrirDrawer(usuario)">
+                          Editar
+                        </button>
+                        <button class="action-button secondary compact" type="button" [disabled]="!esAdmin()" (click)="cambiarEstado(usuario)">
+                          {{ (usuario.estado || 'ACTIVO') === 'ACTIVO' ? 'Inactivar' : 'Activar' }}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+    </div>
+
+    @if (mostrarDrawer()) {
+      <div class="drawer-overlay" [class.is-closing]="cerrandoDrawer()" (click)="cerrarDrawer()">
+        <aside class="drawer-panel" [class.is-closing]="cerrandoDrawer()" (click)="$event.stopPropagation()">
+          <div class="drawer-head">
+            <div class="panel-head">
+              <span class="panel-kicker">Cuenta</span>
+              <h3>Editar usuario</h3>
+              <p>Ajusta el usuario, correo y roles disponibles para esta cuenta.</p>
+            </div>
+
+            <button class="drawer-close" type="button" (click)="cerrarDrawer()">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <div class="drawer-body">
+            <form class="drawer-form">
+              <label>
+                Username
+                <input
+                  type="text"
+                  [ngModel]="editUsername()"
+                  (ngModelChange)="editUsername.set($event)"
+                  name="editUsername" />
+              </label>
+
+              <label>
+                Correo
+                <input
+                  type="email"
+                  [ngModel]="editCorreo()"
+                  (ngModelChange)="editCorreo.set($event)"
+                  name="editCorreo" />
+              </label>
+
+              <div class="roles-block">
+                <span class="roles-label">Roles</span>
+                <div class="role-option-list">
+                  @for (rol of rolesDisponibles; track rol) {
+                    <label class="role-option">
+                      <input
+                        type="checkbox"
+                        [checked]="editRoles().includes(rol)"
+                        (change)="alternarRol(rol)" />
+                      <span>{{ rol }}</span>
+                    </label>
+                  }
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <div class="drawer-footer">
+            <div class="form-actions">
+              <button class="action-button primary" type="button" [disabled]="guardando() || !esAdmin()" (click)="guardarCambios()">
+                {{ guardando() ? 'Guardando...' : 'Guardar cambios' }}
+              </button>
+            </div>
+          </div>
+        </aside>
       </div>
-    </article>
+    }
   </section>
 </app-shell>

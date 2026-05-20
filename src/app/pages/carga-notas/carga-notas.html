@@ -11,13 +11,25 @@
           <i class="fa-solid fa-arrow-left"></i>
           <span>Volver</span>
         </a>
+      </div>
+    
+      <div class="tit">
         <span class="eyebrow">Registro de notas</span>
         <h2>{{ asignacion()?.curso || 'Curso asignado' }}</h2>
-        <p>{{ asignacion()?.grado || 'Grado' }}</p>
-        <p>Seccion {{ asignacion()?.seccion || '-' }}</p>
-        <p>{{ resumenNotas().registradas }} de {{ resumenNotas().total }} notas ingresadas</p>
+
+        <div class="subtitle-meta">
+          <p>{{ asignacion()?.grado || 'Grado' }} -</p>
+          <p>Seccion {{ asignacion()?.seccion || '-' }} -</p>
+          <p>{{ resumenNotas().registradas }} de {{ resumenNotas().notasEsperadas }} notas ingresadas</p>
+        </div>
       </div>
+
       <div class="panel-head panel-head-row">
+        <button class="action-button tertiary notes-config-trigger" type="button"
+        (click)="alternarPanelConfiguracion()">
+        <i class="fa-solid fa-sliders"></i>
+        <span>Ajustar evaluaciones</span>
+      </button>
         <span class="summary-pill">Promedio {{ resumenNotas().promedio }}</span>
       </div>
     </div>
@@ -71,7 +83,6 @@
       </div>
       } @else {
 
-
       <div class="table-scroll grades-table">
         <table class="app-table">
           <thead>
@@ -110,25 +121,147 @@
         </table>
       </div>
 
-      @if (leyendaEvaluaciones().length) {
-      <div class="notes-legend">
-        <span class="notes-legend-label">Leyenda:</span>
-        <div class="notes-legend-list">
-          @for (item of leyendaEvaluaciones(); track item.abreviatura) {
-          <span class="notes-legend-item">
-            <strong>{{ item.abreviatura }}</strong>
-            <small>{{ item.nombre }}</small>
-          </span>
-          }
+      <div class="notes-legend-row">
+        @if (leyendaEvaluaciones().length) {
+        <div class="notes-legend">
+          <span class="notes-legend-label">Leyenda:</span>
+          <div class="notes-legend-list">
+            @for (item of leyendaEvaluaciones(); track item.abreviatura) {
+            <span class="notes-legend-item">
+              <strong>{{ item.abreviatura }}</strong>
+              <small>{{ item.nombre }}</small>
+            </span>
+            }
+          </div>
         </div>
+        }
+
+  
       </div>
-      }
 
       <div class="form-actions footer-actions">
         <span class="autosave-hint">Los cambios se guardan automaticamente.</span>
       </div>
       }
     </section>
+    }
+
+    @if (mostrarConfiguracionEvaluaciones()) {
+    <div class="notes-config-modal-backdrop" (click)="alternarPanelConfiguracion()">
+      <section class="notes-config-modal" (click)="$event.stopPropagation()">
+        <div class="notes-config-panel-head">
+          <div class="panel-head">
+            <span class="panel-kicker">Configuracion de evaluaciones</span>
+            <h3>Evaluaciones configuradas para {{ asignacion()?.curso || 'el curso' }}</h3>
+          </div>
+
+          <div class="notes-config-panel-actions">
+            <button class="icon-action-button" type="button" (click)="alternarPanelConfiguracion()">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="notes-config-layout">
+          <aside class="notes-config-overview">
+            <span class="notes-config-overview-title">Resumen actual</span>
+            <div class="notes-config-overview-list">
+              @for (item of resumenConfiguracionEvaluaciones(); track item.tipoEvaluacionId) {
+              <div class="notes-config-overview-row">
+                <span>{{ nombreTipoEvaluacionVisible(item.nombre) }}</span>
+                <strong>{{ item.cantidad }}</strong>
+              </div>
+              } @empty {
+              <div class="notes-config-overview-row is-empty">
+                <span>Sin tipos activos</span>
+                <strong>--</strong>
+              </div>
+              }
+            </div>
+
+            @if (hayNotasRegistradas()) {
+            <div class="notes-config-warning">
+              <i class="fa-solid fa-circle-info"></i>
+              <span>Ya existen notas registradas en este periodo. Si reduces tipos o cantidades, la grilla se
+                resincronizara.</span>
+            </div>
+            }
+          </aside>
+
+          <section class="notes-config-editor">
+            @if (cargandoConfiguracion()) {
+            <div class="notes-config-list">
+              @for (row of [0,1,2,3,4,5]; track row) {
+              <article class="config-row skeleton-card">
+                <span class="skeleton-line long"></span>
+                <span class="skeleton-line short"></span>
+              </article>
+              }
+            </div>
+            } @else if (errorConfiguracion()) {
+            <div class="table-state">
+              <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
+              <span>{{ errorConfiguracion() }}</span>
+            </div>
+            } @else {
+            <div class="notes-config-list">
+              <span class="notes-config-list-title">Configuracion por tipo de evaluacion</span>
+              <div class="notes-config-table-wrap">
+                <table class="notes-config-table">
+                  <thead>
+                    <tr>
+                      <th>Tipo</th>
+                      <th>Cantidad</th>
+                      <th>Accion</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (configuracion of configuracionesEditables(); track configuracion.tipoEvaluacionId) {
+                    <tr [class.is-disabled]="configuracion.cantidadActual === 0">
+                      <td>
+                        <div class="config-row-copy">
+                          <strong>{{ nombreTipoEvaluacionVisible(configuracion.nombreTipoEvaluacion) }}</strong>
+                          <small>{{ configuracion.descripcionTipoEvaluacion || 'Sin descripcion adicional.' }}</small>
+                        </div>
+                      </td>
+                      <td>
+                        <label class="config-count-field">
+                          <input type="number" min="0" [ngModel]="configuracion.cantidadActual"
+                            (ngModelChange)="actualizarCantidadConfiguracion(configuracion.tipoEvaluacionId, $event)"
+                            [name]="'config-evaluacion-' + configuracion.tipoEvaluacionId" />
+                        </label>
+                      </td>
+                      <td>
+                        <button class="icon-action-button" type="button"
+                          [class.is-remove]="configuracion.cantidadActual > 0"
+                          [class.is-restore]="configuracion.cantidadActual === 0"
+                          (click)="alternarTipoConfiguracion(configuracion)">
+                          <i class="fa-solid" [class.fa-trash]="configuracion.cantidadActual > 0"
+                            [class.fa-rotate-left]="configuracion.cantidadActual === 0"></i>
+                        </button>
+                      </td>
+                    </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            }
+          </section>
+        </div>
+
+        <div class="notes-config-modal-footer">
+          <button class="action-button tertiary" type="button" (click)="restaurarConfiguracionBase()"
+            [disabled]="guardandoConfiguracion() || cargandoConfiguracion()">
+            Restaurar base
+          </button>
+          <button class="action-button primary" type="button" (click)="guardarConfiguracionEvaluaciones()"
+            [disabled]="guardandoConfiguracion() || cargandoConfiguracion()">
+            {{ guardandoConfiguracion() ? 'Guardando...' : 'Aplicar cambios' }}
+          </button>
+        </div>
+      </section>
+    </div>
     }
   </section>
 </app-shell>

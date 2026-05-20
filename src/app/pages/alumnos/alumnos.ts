@@ -17,7 +17,7 @@ import {
   PeriodoAcademicoPayload,
   PeriodoAcademicoService
 } from '../../services/academico/periodo-academico.service';
-import { TipoEvaluacionService } from '../../services/evaluacion/tipo-evaluacion.service';
+import { TipoEvaluacionPayload, TipoEvaluacionService } from '../../services/evaluacion/tipo-evaluacion.service';
 
 type TipoPeriodoEvaluacion = 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL';
 
@@ -38,6 +38,7 @@ interface ConfiguracionEvaluacionDefaultBorrador extends ConfiguracionEvaluacion
   nombreTipoEvaluacion: string;
   descripcionTipoEvaluacion: string | null;
   orden: number;
+  seleccionado: boolean;
 }
 
 interface AlertState {
@@ -51,6 +52,11 @@ interface AlertState {
 }
 
 type PasoRegistroPeriodo = 1 | 2 | 3 | 4;
+
+interface NuevoTipoEvaluacionForm {
+  nombre: string;
+  descripcion: string;
+}
 
 @Component({
   selector: 'app-alumnos',
@@ -101,6 +107,12 @@ export class Alumnos {
   readonly tipoPeriodoEvaluacion = signal<TipoPeriodoEvaluacion>('BIMESTRAL');
   readonly periodosEvaluacionBorrador = signal<PeriodoEvaluacionBorrador[]>([]);
   readonly configuracionesEvaluacionBorrador = signal<ConfiguracionEvaluacionDefaultBorrador[]>([]);
+  readonly mostrandoNuevoTipoEvaluacion = signal(false);
+  readonly guardandoNuevoTipoEvaluacion = signal(false);
+  readonly nuevoTipoEvaluacionForm = signal<NuevoTipoEvaluacionForm>({
+    nombre: '',
+    descripcion: ''
+  });
   readonly cursosSeleccionadosIds = signal<number[]>([]);
   readonly filtroCursos = signal('');
   readonly formPeriodo = signal<PeriodoAcademicoPayload>({
@@ -257,7 +269,8 @@ export class Alumnos {
             descripcionTipoEvaluacion: tipoEvaluacion.descripcion,
             orden: tipoEvaluacion.orden,
             cantidadEvaluaciones: configuracionesMap.get(tipoEvaluacion.id)?.cantidadEvaluaciones ?? 0,
-            calcularEnPromedio: true
+            calcularEnPromedio: true,
+            seleccionado: (configuracionesMap.get(tipoEvaluacion.id)?.cantidadEvaluaciones ?? 0) > 0
           }))
         );
 
@@ -330,7 +343,7 @@ export class Alumnos {
 
   actualizarConfiguracionEvaluacionBorrador(
     tipoEvaluacionId: number,
-    cambios: Partial<Pick<ConfiguracionEvaluacionDefaultBorrador, 'cantidadEvaluaciones'>>
+    cambios: Partial<Pick<ConfiguracionEvaluacionDefaultBorrador, 'cantidadEvaluaciones' | 'seleccionado'>>
   ): void {
     this.configuracionesEvaluacionBorrador.update((actual) =>
       actual.map((configuracion) =>
@@ -339,6 +352,119 @@ export class Alumnos {
           : configuracion
       )
     );
+  }
+
+  configuracionesEvaluacionSeleccionadas(): ConfiguracionEvaluacionDefaultBorrador[] {
+    return this.configuracionesEvaluacionBorrador()
+      .filter((configuracion) => configuracion.seleccionado)
+      .sort((a, b) => a.orden - b.orden || a.nombreTipoEvaluacion.localeCompare(b.nombreTipoEvaluacion));
+  }
+
+  configuracionesEvaluacionDisponibles(): ConfiguracionEvaluacionDefaultBorrador[] {
+    return this.configuracionesEvaluacionBorrador()
+      .filter((configuracion) => !configuracion.seleccionado)
+      .sort((a, b) => a.orden - b.orden || a.nombreTipoEvaluacion.localeCompare(b.nombreTipoEvaluacion));
+  }
+
+  agregarTipoEvaluacionBorrador(tipoEvaluacionId: number): void {
+    const actual = this.configuracionesEvaluacionBorrador().find(
+      (configuracion) => configuracion.tipoEvaluacionId === tipoEvaluacionId
+    );
+
+    this.actualizarConfiguracionEvaluacionBorrador(tipoEvaluacionId, {
+      seleccionado: true,
+      cantidadEvaluaciones: actual?.cantidadEvaluaciones && actual.cantidadEvaluaciones > 0 ? actual.cantidadEvaluaciones : 1
+    });
+  }
+
+  quitarTipoEvaluacionBorrador(tipoEvaluacionId: number): void {
+    this.actualizarConfiguracionEvaluacionBorrador(tipoEvaluacionId, {
+      seleccionado: false,
+      cantidadEvaluaciones: 0
+    });
+  }
+
+  nombreTipoEvaluacionVisible(nombre: string): string {
+    return nombre
+      .toLowerCase()
+      .split('_')
+      .filter(Boolean)
+      .map((fragmento) => fragmento.charAt(0).toUpperCase() + fragmento.slice(1))
+      .join(' ');
+  }
+
+  abrirNuevoTipoEvaluacion(): void {
+    this.nuevoTipoEvaluacionForm.set({
+      nombre: '',
+      descripcion: ''
+    });
+    this.mostrandoNuevoTipoEvaluacion.set(true);
+  }
+
+  cancelarNuevoTipoEvaluacion(): void {
+    this.mostrandoNuevoTipoEvaluacion.set(false);
+    this.guardandoNuevoTipoEvaluacion.set(false);
+  }
+
+  actualizarNuevoTipoEvaluacion<K extends keyof NuevoTipoEvaluacionForm>(
+    campo: K,
+    valor: NuevoTipoEvaluacionForm[K]
+  ): void {
+    this.nuevoTipoEvaluacionForm.update((actual) => ({
+      ...actual,
+      [campo]: valor
+    }));
+  }
+
+  guardarNuevoTipoEvaluacion(): void {
+    const form = this.nuevoTipoEvaluacionForm();
+    const nombre = form.nombre.trim();
+
+    if (!nombre) {
+      this.mostrarAlerta(
+        'warning',
+        'Falta el nombre',
+        'Ingresa el nombre del nuevo tipo de evaluacion.',
+        {
+          confirmText: null,
+          autoCloseMs: 3000
+        }
+      );
+      return;
+    }
+
+    const payload: TipoEvaluacionPayload = {
+      nombre,
+      descripcion: form.descripcion.trim() || null,
+      orden: (this.tiposEvaluacion().at(-1)?.orden ?? 0) + 1
+    };
+
+    this.guardandoNuevoTipoEvaluacion.set(true);
+
+    this.tipoEvaluacionService.crear(payload).subscribe({
+      next: (tipoCreado) => {
+        const tiposOrdenados = [...this.tiposEvaluacion(), tipoCreado]
+          .filter((tipoEvaluacion) => tipoEvaluacion.estado !== 'INACTIVO')
+          .sort((a, b) => a.orden - b.orden || a.nombre.localeCompare(b.nombre));
+
+        this.tiposEvaluacion.set(tiposOrdenados);
+        this.regenerarConfiguracionesEvaluacionBorrador();
+        this.mostrandoNuevoTipoEvaluacion.set(false);
+        this.guardandoNuevoTipoEvaluacion.set(false);
+
+        setTimeout(() => {
+          this.agregarTipoEvaluacionBorrador(tipoCreado.id);
+        });
+      },
+      error: (error) => {
+        this.guardandoNuevoTipoEvaluacion.set(false);
+        this.mostrarAlerta(
+          'error',
+          'No se pudo crear',
+          error?.error?.mensaje ?? 'No se pudo registrar el nuevo tipo de evaluacion.'
+        );
+      }
+    });
   }
 
   actualizarFiltroCursos(valor: string): void {
@@ -479,7 +605,8 @@ export class Alumnos {
         descripcionTipoEvaluacion: tipoEvaluacion.descripcion,
         orden: tipoEvaluacion.orden,
         cantidadEvaluaciones: actuales.get(tipoEvaluacion.id)?.cantidadEvaluaciones ?? 0,
-        calcularEnPromedio: actuales.get(tipoEvaluacion.id)?.calcularEnPromedio ?? true
+        calcularEnPromedio: actuales.get(tipoEvaluacion.id)?.calcularEnPromedio ?? true,
+        seleccionado: actuales.get(tipoEvaluacion.id)?.seleccionado ?? false
       }))
     );
   }
@@ -602,7 +729,8 @@ export class Alumnos {
 
     const periodosEvaluacion = this.periodosEvaluacionBorrador();
     const tieneFechasIncompletas = periodosEvaluacion.some((periodo) => !periodo.fechaInicio || !periodo.fechaFin);
-        const configuracionesEvaluacion = this.configuracionesEvaluacionBorrador()
+    const configuracionesEvaluacion = this.configuracionesEvaluacionBorrador()
+      .filter((configuracion) => configuracion.seleccionado)
       .map((configuracion) => ({
         tipoEvaluacionId: configuracion.tipoEvaluacionId,
         cantidadEvaluaciones: Number(configuracion.cantidadEvaluaciones),

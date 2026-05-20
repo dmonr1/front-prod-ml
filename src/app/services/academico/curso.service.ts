@@ -4,6 +4,12 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environments';
 import { Curso } from '../../models/curso';
 
+export interface CursoPayload {
+  nombre: string;
+  descripcion: string | null;
+  nivelId: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class CursoService {
   private readonly http = inject(HttpClient);
@@ -11,5 +17,9 @@ export class CursoService {
 
   listar(): Observable<Curso[]> {
     return this.http.get<Curso[]>(this.api);
+  }
+
+  crear(payload: CursoPayload): Observable<Curso> {
+    return this.http.post<Curso>(this.api, payload);
   }
 }

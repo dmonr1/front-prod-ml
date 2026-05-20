@@ -8,6 +8,7 @@ import { Matricula } from '../../models/matricula';
 import { PeriodoAcademico } from '../../models/periodo-academico';
 import { Seccion } from '../../models/seccion';
 import { GradoService } from '../../services/academico/grado.service';
+import { AuthService } from '../../services/auth/auth.service';
 import { MatriculaService } from '../../services/academico/matricula.service';
 import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
 import { SeccionService } from '../../services/academico/seccion.service';
@@ -29,8 +30,10 @@ interface AlertState {
   styleUrl: './alumnos-periodo.scss'
 })
 export class AlumnosPeriodo {
+  private readonly seccionesInactivasStorageKey = 'gestion-estudiantil-mostrar-secciones-inactivas';
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly authService = inject(AuthService);
   private readonly periodoAcademicoService = inject(PeriodoAcademicoService);
   private readonly gradoService = inject(GradoService);
   private readonly seccionService = inject(SeccionService);
@@ -46,7 +49,9 @@ export class AlumnosPeriodo {
   readonly matriculas = signal<Matricula[]>([]);
   readonly nivelSeleccionadoId = signal(1);
   readonly gradoSeleccionadoId = signal<number | null>(null);
-  readonly mostrarSeccionesDeshabilitadas = signal(false);
+  readonly mostrarSeccionesDeshabilitadas = signal(
+    localStorage.getItem(this.seccionesInactivasStorageKey) === 'true'
+  );
   readonly modalSeccionAbierto = signal(false);
   readonly guardandoSeccion = signal(false);
   readonly actualizandoEstadoSeccionId = signal<number | null>(null);
@@ -78,6 +83,8 @@ export class AlumnosPeriodo {
     const periodo = this.periodo();
     return periodo ? periodo.anio === this.currentYear : false;
   });
+
+  readonly esAdmin = computed(() => this.authService.obtenerUsuario()?.roles?.includes('ADMIN') ?? false);
 
   readonly gradosFiltrados = computed(() =>
     this.grados()
@@ -146,6 +153,7 @@ export class AlumnosPeriodo {
       next: (response) => {
         this.grados.set(response);
         this.cargandoGrados.set(false);
+        this.seleccionarPrimerGradoDisponible();
       },
       error: () => {
         this.errorGrados.set('No se pudieron cargar los grados.');
@@ -190,6 +198,7 @@ export class AlumnosPeriodo {
     this.nivelSeleccionadoId.set(nivelId);
     this.gradoSeleccionadoId.set(null);
     this.mostrarSeccionesDeshabilitadas.set(false);
+    this.seleccionarPrimerGradoDisponible();
   }
 
   seleccionarGrado(gradoId: number): void {
@@ -197,8 +206,11 @@ export class AlumnosPeriodo {
   }
 
   toggleMostrarSeccionesDeshabilitadas(): void {
-    this.mostrarSeccionesDeshabilitadas.update((valor) => !valor);
-    
+    this.mostrarSeccionesDeshabilitadas.update((valor) => {
+      const siguiente = !valor;
+      localStorage.setItem(this.seccionesInactivasStorageKey, String(siguiente));
+      return siguiente;
+    });
   }
 
   abrirSeccion(seccionId: number): void {
@@ -206,6 +218,16 @@ export class AlumnosPeriodo {
   }
 
   abrirModalSeccion(): void {
+    if (!this.esAdmin()) {
+      this.mostrarAlerta(
+        'warning',
+        'Sin permisos',
+        'Solo un administrador puede registrar secciones en este modulo.',
+        { confirmText: null, autoCloseMs: 3000 }
+      );
+      return;
+    }
+
     this.modalSeccionAbierto.set(true);
   }
 
@@ -216,7 +238,7 @@ export class AlumnosPeriodo {
   guardarSeccion(): void {
     const gradoId = this.gradoSeleccionadoId();
     const nombre = this.formSeccionNombre().trim();
-    const capacidad = this.formSeccionCapacidad().trim();
+    const capacidadTexto = String(this.formSeccionCapacidad() ?? '').trim();
 
     if (!gradoId) {
       this.mostrarAlerta(
@@ -245,7 +267,7 @@ export class AlumnosPeriodo {
         gradoId,
         periodoAcademicoId: this.periodoId,
         nombre,
-        capacidad: capacidad ? Number(capacidad) : null
+        capacidad: capacidadTexto ? Number(capacidadTexto) : null
       })
       .subscribe({
         next: (seccion) => {
@@ -266,7 +288,9 @@ export class AlumnosPeriodo {
           this.mostrarAlerta(
             'error',
             'No se pudo registrar',
-            error?.error?.mensaje ?? 'No se pudo registrar la seccion.'
+            error?.status === 403
+              ? 'Tu usuario no tiene permisos para registrar secciones.'
+              : error?.error?.mensaje ?? 'No se pudo registrar la seccion.'
           );
         }
       });
@@ -318,7 +342,9 @@ export class AlumnosPeriodo {
           this.mostrarAlerta(
             'error',
             'No se pudieron cargar',
-            error?.error?.mensaje ?? 'No se pudieron cargar las secciones del periodo anterior.'
+            error?.status === 403
+              ? 'Tu usuario no tiene permisos para copiar secciones desde el periodo anterior.'
+              : error?.error?.mensaje ?? 'No se pudieron cargar las secciones del periodo anterior.'
           );
         }
       });
@@ -388,7 +414,9 @@ export class AlumnosPeriodo {
         this.mostrarAlerta(
           'error',
           activa ? 'No se pudo habilitar' : 'No se pudo deshabilitar',
-          error?.error?.mensaje ??
+          error?.status === 403
+            ? 'Tu usuario no tiene permisos para cambiar el estado de la seccion.'
+            : error?.error?.mensaje ??
           (activa ? 'No se pudo habilitar la seccion.' : 'No se pudo deshabilitar la seccion.')
         );
       }
@@ -440,5 +468,13 @@ export class AlumnosPeriodo {
 
   totalMatriculadosSeccion(seccionId: number): number {
     return this.matriculas().filter((matricula) => matricula.seccionId === seccionId).length;
+  }
+
+  private seleccionarPrimerGradoDisponible(): void {
+    const primerGrado = this.grados()
+      .filter((grado) => grado.nivelId === this.nivelSeleccionadoId())
+      .sort((a, b) => a.orden - b.orden)[0];
+
+    this.gradoSeleccionadoId.set(primerGrado?.id ?? null);
   }
 }

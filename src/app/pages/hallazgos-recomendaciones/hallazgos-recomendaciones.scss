@@ -117,7 +117,7 @@
 .list-card,
 .state-card {
   background: #ffffff;
-  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
+  box-shadow: 9px 9px 20px 4px var(--tw-shadow-color, rgb(0 0 0 / 7%)), 0 4px 6px -4px var(--tw-shadow-color, rgb(0 0 0 / 10%));
 }
 
 .metric-card {
@@ -137,7 +137,7 @@
   border-radius: 20px;
   background: #ffffff;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
+  box-shadow: 9px 9px 20px 4px var(--tw-shadow-color, rgb(0 0 0 / 7%)), 0 4px 6px -4px var(--tw-shadow-color, rgb(0 0 0 / 10%));
 
 }
 
@@ -253,12 +253,13 @@
 }
 
 .item-list {
-  display: grid;
+  display: flex;
   gap: 12px;
   min-height: 0;
   max-height: 100%;
   overflow-y: auto;
-  padding: 10px 10px 20px 20px;
+  padding: 10px 20px 20px 20px;
+  flex-direction: column;
 }
 
 .modern-item {

@@ -135,13 +135,14 @@
             </tr>
           </thead>
           <tbody>
-            @for (fila of filasAsistencia(); track fila.matricula.id) {
+            @for (fila of filasAsistencia(); track fila.matricula.id; let filaIndex = $index) {
             <tr>
               <td>{{ fila.matricula.alumnoNombreCompleto }}</td>
               <td>
-                <input class="attendance-input" type="text" inputmode="numeric" autocomplete="off"
+                <input class="attendance-input attendance-grid-input" type="text" inputmode="numeric" autocomplete="off"
                   [value]="fila.clasesAsistidas" [disabled]="!puedeRegistrarAsistencia()"
                   (input)="onAsistenciaInput(fila.matricula.id, $event)" (blur)="onAsistenciaBlur(fila.matricula.id)"
+                  (keydown)="moverFocoEnGrilla($event, filaIndex)"
                   (wheel)="bloquearCambioNumero($event)" (keydown.arrowUp)="bloquearCambioNumero($event)"
                   (keydown.arrowDown)="bloquearCambioNumero($event)" />
               </td>

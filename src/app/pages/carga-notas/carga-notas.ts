@@ -1,9 +1,14 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { CustomAlertComponent, CustomAlertType } from '../../components/custom-alert/custom-alert';
 import { Shell } from '../../layouts/shell/shell';
 import { AsignacionDocente } from '../../models/asignacion';
+import {
+  ConfiguracionEvaluacionCursoDetalle,
+  ConfiguracionEvaluacionCursoItem
+} from '../../models/configuracion-evaluacion-curso';
 import { PeriodoEvaluacion } from '../../models/periodo-evaluacion';
 import { DetalleNotaEvaluacion, Evaluacion } from '../../models/evaluacion';
 import { Matricula } from '../../models/matricula';
@@ -12,6 +17,7 @@ import { AuthService } from '../../services/auth/auth.service';
 import { AsignacionAcademicaService } from '../../services/asignaciones/asignacion-academica.service';
 import { PeriodoEvaluacionService } from '../../services/academico/periodo-evaluacion.service';
 import { MatriculaService } from '../../services/academico/matricula.service';
+import { ConfiguracionEvaluacionCursoService } from '../../services/evaluacion/configuracion-evaluacion-curso.service';
 import { EvaluacionService } from '../../services/evaluacion/evaluacion.service';
 
 interface NotaFila {
@@ -29,9 +35,13 @@ interface AlertState {
   autoCloseMs: number | null;
 }
 
+interface ConfiguracionEvaluacionEditable extends ConfiguracionEvaluacionCursoItem {
+  cantidadActual: number;
+}
+
 @Component({
   selector: 'app-carga-notas',
-  imports: [Shell, RouterLink, CustomAlertComponent],
+  imports: [Shell, RouterLink, FormsModule, CustomAlertComponent],
   templateUrl: './carga-notas.html',
   styleUrl: './carga-notas.scss'
 })
@@ -43,6 +53,7 @@ export class CargaNotas implements OnInit {
   private readonly periodoEvaluacionService = inject(PeriodoEvaluacionService);
   private readonly matriculaService = inject(MatriculaService);
   private readonly evaluacionService = inject(EvaluacionService);
+  private readonly configuracionCursoService = inject(ConfiguracionEvaluacionCursoService);
 
   readonly asignacionId = Number(this.route.snapshot.paramMap.get('asignacionId'));
   readonly currentYear = new Date().getFullYear();
@@ -66,6 +77,12 @@ export class CargaNotas implements OnInit {
   readonly matriculas = signal<Matricula[]>([]);
   readonly filasNotas = signal<NotaFila[]>([]);
   readonly notasPorEvaluacion = signal<Record<number, DetalleNotaEvaluacion[]>>({});
+  readonly mostrarConfiguracionEvaluaciones = signal(false);
+  readonly cargandoConfiguracion = signal(false);
+  readonly guardandoConfiguracion = signal(false);
+  readonly errorConfiguracion = signal<string | null>(null);
+  readonly detalleConfiguracion = signal<ConfiguracionEvaluacionCursoDetalle | null>(null);
+  readonly configuracionesEditables = signal<ConfiguracionEvaluacionEditable[]>([]);
   private readonly autoSaveTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private readonly autoSaveInFlight = new Map<string, string>();
   private readonly autoSavePending = new Map<string, { matriculaId: number; evaluacionId: number; valor: string }>();
@@ -97,11 +114,20 @@ export class CargaNotas implements OnInit {
     const promedio = notas.length
       ? Math.round((notas.reduce((acc, nota) => acc + nota, 0) / notas.length) * 100) / 100
       : 0;
+    const totalAlumnos = this.filasNotas().length;
+    const totalEvaluaciones = this.evaluaciones().length;
+    const notasEsperadas = totalAlumnos * totalEvaluaciones;
+    const alumnosCompletos = this.filasNotas().filter((fila) =>
+      this.evaluaciones().every((evaluacion) => (fila.notas[evaluacion.id] ?? '').trim() !== '')
+    ).length;
 
     return {
-      total: this.filasNotas().length,
+      totalAlumnos,
+      totalEvaluaciones,
+      notasEsperadas,
       registradas: notas.length,
-      promedio
+      promedio,
+      alumnosCompletos
     };
   });
 
@@ -122,9 +148,36 @@ export class CargaNotas implements OnInit {
     }));
   });
 
+  readonly resumenConfiguracionEvaluaciones = computed(() =>
+    this.configuracionesEditables()
+      .filter((configuracion) => configuracion.cantidadActual > 0)
+      .map((configuracion) => ({
+        tipoEvaluacionId: configuracion.tipoEvaluacionId,
+        abreviatura: this.abreviarTipoEvaluacion(configuracion.nombreTipoEvaluacion),
+        nombre: configuracion.nombreTipoEvaluacion,
+        cantidad: configuracion.cantidadActual
+      }))
+  );
+
+  readonly hayNotasRegistradas = computed(() =>
+    Object.values(this.notasPorEvaluacion()).some((detalles) => detalles.length > 0)
+  );
+
   abreviaturaEvaluacion(evaluacion: Evaluacion): string {
     const base = this.abreviarTipoEvaluacion(evaluacion.tipoEvaluacion);
     return `${base}${evaluacion.numeroEvaluacion}`;
+  }
+
+  nombreTipoEvaluacionVisible(nombre: string | null): string {
+    const valor = (nombre ?? '').trim();
+    if (!valor) {
+      return 'Evaluacion';
+    }
+
+    return valor
+      .replace(/_/g, ' ')
+      .toLowerCase()
+      .replace(/\b\w/g, (letra) => letra.toUpperCase());
   }
 
   private abreviarTipoEvaluacion(tipo: string | null): string {
@@ -204,6 +257,8 @@ export class CargaNotas implements OnInit {
             if (primerPeriodoEvaluacion) {
               this.seleccionarPeriodoEvaluacion(primerPeriodoEvaluacion.id);
             }
+
+            this.cargarConfiguracionEvaluaciones();
           },
           error: (error) => {
             this.cargando.set(false);
@@ -265,6 +320,92 @@ export class CargaNotas implements OnInit {
       },
       error: (error) => {
         this.error.set(error?.error?.mensaje ?? 'No se pudo cargar la informacion del periodo de evaluacion.');
+      }
+    });
+  }
+
+  alternarPanelConfiguracion(): void {
+    const siguiente = !this.mostrarConfiguracionEvaluaciones();
+    this.mostrarConfiguracionEvaluaciones.set(siguiente);
+
+    if (siguiente && !this.detalleConfiguracion() && !this.cargandoConfiguracion()) {
+      this.cargarConfiguracionEvaluaciones();
+    }
+  }
+
+  actualizarCantidadConfiguracion(tipoEvaluacionId: number, valor: string | number): void {
+    const cantidad = Math.max(0, Number(valor || 0));
+    this.configuracionesEditables.update((actual) =>
+      actual.map((configuracion) =>
+        configuracion.tipoEvaluacionId === tipoEvaluacionId
+          ? { ...configuracion, cantidadActual: cantidad }
+          : configuracion
+      )
+    );
+  }
+
+  alternarTipoConfiguracion(configuracion: ConfiguracionEvaluacionEditable): void {
+    if (configuracion.cantidadActual > 0) {
+      this.actualizarCantidadConfiguracion(configuracion.tipoEvaluacionId, 0);
+      return;
+    }
+
+    const restaurada = configuracion.cantidadBasePeriodo > 0 ? configuracion.cantidadBasePeriodo : 1;
+    this.actualizarCantidadConfiguracion(configuracion.tipoEvaluacionId, restaurada);
+  }
+
+  restaurarConfiguracionBase(): void {
+    this.configuracionesEditables.update((actual) =>
+      actual.map((configuracion) => ({
+        ...configuracion,
+        cantidadActual: configuracion.cantidadBasePeriodo
+      }))
+    );
+  }
+
+  guardarConfiguracionEvaluaciones(): void {
+    const asignacion = this.asignacion();
+    const periodoEvaluacionId = this.periodoEvaluacionSeleccionadoId();
+
+    if (!asignacion) {
+      return;
+    }
+
+    this.guardandoConfiguracion.set(true);
+    this.errorConfiguracion.set(null);
+
+    this.configuracionCursoService.guardar({
+      periodoAcademicoId: asignacion.periodoAcademicoId,
+      cursoId: asignacion.cursoId,
+      configuraciones: this.configuracionesEditables().map((configuracion) => ({
+        tipoEvaluacionId: configuracion.tipoEvaluacionId,
+        cantidadEvaluaciones: configuracion.cantidadActual,
+        calcularEnPromedio: true
+      }))
+    }).subscribe({
+      next: (detalle) => {
+        this.guardandoConfiguracion.set(false);
+        this.detalleConfiguracion.set(detalle);
+        this.configuracionesEditables.set(this.construirConfiguracionesEditables(detalle));
+        this.mostrarAlerta(
+          'success',
+          'Evaluaciones actualizadas',
+          'La grilla de evaluaciones se resincronizo para esta asignacion.',
+          { confirmText: null, autoCloseMs: 2800 }
+        );
+
+        if (periodoEvaluacionId) {
+          this.seleccionarPeriodoEvaluacion(periodoEvaluacionId);
+        }
+      },
+      error: (error) => {
+        this.guardandoConfiguracion.set(false);
+        this.errorConfiguracion.set(error?.error?.mensaje ?? 'No se pudo actualizar la configuracion.');
+        this.mostrarAlerta(
+          'error',
+          'No se pudo guardar',
+          error?.error?.mensaje ?? 'No se pudo actualizar la configuracion de evaluaciones.'
+        );
       }
     });
   }
@@ -449,6 +590,46 @@ export class CargaNotas implements OnInit {
         };
       })
     );
+  }
+
+  private cargarConfiguracionEvaluaciones(): void {
+    const asignacion = this.asignacion();
+    if (!asignacion) {
+      return;
+    }
+
+    this.cargandoConfiguracion.set(true);
+    this.errorConfiguracion.set(null);
+
+    this.configuracionCursoService
+      .obtenerDetalle(asignacion.periodoAcademicoId, asignacion.cursoId)
+      .subscribe({
+        next: (detalle) => {
+          this.detalleConfiguracion.set(detalle);
+          this.configuracionesEditables.set(this.construirConfiguracionesEditables(detalle));
+          this.cargandoConfiguracion.set(false);
+        },
+        error: (error) => {
+          this.detalleConfiguracion.set(null);
+          this.configuracionesEditables.set([]);
+          this.cargandoConfiguracion.set(false);
+          this.errorConfiguracion.set(
+            error?.error?.mensaje ?? 'No se pudo cargar la configuracion de evaluaciones.'
+          );
+        }
+      });
+  }
+
+  private construirConfiguracionesEditables(
+    detalle: ConfiguracionEvaluacionCursoDetalle
+  ): ConfiguracionEvaluacionEditable[] {
+    return detalle.configuraciones
+      .map((configuracion) => ({
+        ...configuracion,
+        cantidadActual: configuracion.cantidadEvaluaciones,
+        calcularEnPromedio: true
+      }))
+      .sort((a, b) => a.nombreTipoEvaluacion.localeCompare(b.nombreTipoEvaluacion));
   }
 
   private programarGuardadoAutomatico(matriculaId: number, evaluacionId: number): void {

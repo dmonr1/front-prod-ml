@@ -15,7 +15,7 @@
 
 .grades-toolbar,
 .state-card{
-  padding: 0px 22px 15px;
+  padding: 0px 22px;
 }
 
 .panel-card {
@@ -27,14 +27,38 @@
 .toolbar-actions,
 .form-actions {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 14px;
 }
 
+.grades-toolbar {
+  position: relative;
+  min-height: 96px;
+}
+
 .grades-toolbar h2,
 .panel-head h3 {
-  margin: 8px 0 6px;
+  margin: 0 ;
+}
+
+.tit{
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  width: max-content;
+  max-width: calc(100% - 280px);
+  text-align: center;
+}
+
+.subtitle-meta{
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+  align-items: center;
 }
 
 .grades-toolbar p,
@@ -147,6 +171,296 @@
 .notes-card {
   min-height: 0;
   grid-template-rows: auto minmax(0, 1fr) auto auto;
+}
+
+.notes-config-shell {
+  display: grid;
+  gap: 14px;
+}
+
+.notes-legend-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.notes-config-trigger {
+  flex-shrink: 0;
+}
+
+.notes-config-summary {
+  display: grid;
+  gap: 6px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e6edf7;
+}
+
+.notes-config-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.notes-config-copy strong,
+.notes-config-panel-head h3 {
+  color: #112033;
+  font-size: 15px;
+}
+
+.notes-config-copy small,
+.notes-config-panel-head p,
+.config-row-copy small {
+  color: #5f6f8e;
+  line-height: 1.5;
+}
+
+.notes-config-overview {
+  display: grid;
+  gap: 10px;
+}
+
+.notes-config-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 280px) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.notes-config-editor {
+  min-width: 0;
+}
+
+.notes-config-overview-title,
+.notes-config-list-title {
+  color: #5f6f8e;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.notes-config-overview-list {
+  display: grid;
+  gap: 8px;
+}
+
+.notes-config-overview-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+  font-size: 14px;
+  border-bottom: 1px solid #eef3f9;
+  color: #17325c;
+}
+
+.notes-config-overview-row strong {
+  color: #112033;
+  font-size: 13px;
+}
+
+.notes-config-overview-row.is-empty span,
+.notes-config-overview-row.is-empty strong {
+  color: #7e8da8;
+}
+
+.notes-config-panel {
+  display: grid;
+  gap: 16px;
+  animation: panelEnter 220ms ease;
+}
+
+.notes-config-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.notes-config-panel-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.notes-config-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  background: rgba(15, 23, 42, 0.38);
+}
+
+.notes-config-modal {
+  width: min(920px, 100%);
+  max-height: min(88vh, 860px);
+  overflow: auto;
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+  border: 1px solid #dfe7f3;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 22px 48px rgba(15, 23, 42, 0.12);
+}
+
+.notes-config-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.notes-config-warning {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  color: #8a5a12;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.notes-config-list {
+  display: grid;
+  gap: 12px;
+}
+
+.notes-config-table-wrap {
+  border: 1px solid #e4ebf5;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.notes-config-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.notes-config-table th,
+.notes-config-table td {
+  padding: 12px 14px;
+  vertical-align: middle;
+  border-bottom: 1px solid #edf2f8;
+}
+
+.notes-config-table thead th {
+  background: #f8fbff;
+  color: #5f6f8e;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.notes-config-table tbody tr.is-disabled {
+  opacity: 0.68;
+}
+
+.notes-config-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.notes-config-table td:nth-child(2),
+.notes-config-table td:nth-child(3) {
+  width: 110px;
+}
+
+.notes-config-table td:nth-child(3) {
+  text-align: center;
+}
+
+.config-row-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.config-row-copy strong {
+  color: #112033;
+  font-size: 14px;
+}
+
+.config-row-copy small {
+  color: #6c7d98;
+  font-size: 12px;
+}
+
+.config-row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.config-count-field {
+  display: inline-flex;
+  align-items: center;
+}
+
+.config-count-field input {
+  width: 70px;
+  min-height: 34px;
+  padding: 6px 8px;
+  border: 1px solid #d4e4fb;
+  border-radius: 12px;
+  background: #fff;
+  text-align: center;
+}
+
+.action-button,
+.icon-action-button {
+  border: none;
+  cursor: pointer;
+  transition: transform 180ms ease, background 180ms ease, color 180ms ease;
+}
+
+.action-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.action-button.primary {
+  background: #1d5fc4;
+  color: #fff;
+}
+
+.action-button.tertiary {
+  background: #eef5ff;
+  color: #1d5fc4;
+}
+
+.action-button:hover,
+.icon-action-button:hover {
+  transform: translateY(-1px);
+}
+
+.icon-action-button {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: #eef5ff;
+  color: #1d5fc4;
+}
+
+.icon-action-button.is-remove {
+  background: #fff1f2;
+  color: #d34766;
+}
+
+.icon-action-button.is-restore {
+  background: #edf9f0;
+  color: #2e9e58;
 }
 
 .notes-card-head {
@@ -338,6 +652,10 @@
     flex-direction: column;
   }
 
+  .grades-toolbar {
+    min-height: auto;
+  }
+
   .form-two-columns {
     grid-template-columns: 1fr;
   }
@@ -360,5 +678,61 @@
   .grades-toolbar-inline h2,
   .grades-toolbar-inline p {
     white-space: normal;
+  }
+
+  .tit {
+    position: static;
+    left: auto;
+    transform: none;
+    width: 100%;
+    max-width: none;
+  }
+
+  .notes-config-summary,
+  .notes-config-panel-head {
+    flex-direction: column;
+  }
+
+  .notes-legend-row,
+  .notes-config-modal-footer {
+    flex-direction: column;
+  }
+
+  .notes-config-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .notes-config-panel-actions,
+  .config-row-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .notes-config-table-wrap {
+    overflow-x: auto;
+  }
+
+  .notes-config-table thead th {
+    white-space: nowrap;
+  }
+
+  .notes-config-table td:nth-child(2),
+  .notes-config-table td:nth-child(3) {
+    width: auto;
+  }
+
+  .notes-config-modal-backdrop {
+    padding: 16px;
+  }
+}
+
+@keyframes panelEnter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

@@ -4,6 +4,12 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environments';
 import { TipoEvaluacion } from '../../models/tipo-evaluacion';
 
+export interface TipoEvaluacionPayload {
+  nombre: string;
+  descripcion: string | null;
+  orden: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class TipoEvaluacionService {
   private readonly http = inject(HttpClient);
@@ -11,5 +17,9 @@ export class TipoEvaluacionService {
 
   listar(): Observable<TipoEvaluacion[]> {
     return this.http.get<TipoEvaluacion[]>(this.api);
+  }
+
+  crear(payload: TipoEvaluacionPayload): Observable<TipoEvaluacion> {
+    return this.http.post<TipoEvaluacion>(this.api, payload);
   }
 }

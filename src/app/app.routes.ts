@@ -64,10 +64,8 @@ export const routes: Routes = [
   },
   {
     path: 'estructura-academica',
-    loadComponent: () =>
-      import('./pages/estructura-academica/estructura-academica').then(
-        (m) => m.EstructuraAcademica
-      )
+    redirectTo: 'configuracion-academica',
+    pathMatch: 'full'
   },
   {
     path: 'cursos',

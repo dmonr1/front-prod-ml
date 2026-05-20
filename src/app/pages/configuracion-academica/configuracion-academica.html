@@ -9,8 +9,8 @@
     </div>
 
     <div class="setup-grid">
-    @for (modulo of modulos; track modulo.key) {
-      <article class="setup-card" [class.prioridad]="modulo.status === 'prioridad'">
+    @for (modulo of modulos; track modulo.key; let i = $index) {
+      <article class="setup-card" [class.prioridad]="modulo.status === 'prioridad'" [class.active-card]="i === 0">
         <div class="setup-card-head">
           <span class="setup-icon"><i [class]="modulo.icon"></i></span>
           <span

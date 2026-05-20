@@ -10,6 +10,7 @@ export interface UsuarioSesion {
   correo: string;
   roles: string[];
   esTutor: boolean;
+  debeCambiarPassword: boolean;
   permisos: string[];
 }
 

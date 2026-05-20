@@ -61,7 +61,7 @@
           <div class="periods-surface state-surface">
             <div class="table-state">
               <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-              <span>Todavia no hay periodos academicos registrados.</span>
+              <span>Todavía no hay periodos académicos registrados.</span>
             </div>
           </div>
         } @else {
@@ -178,8 +178,8 @@
               @if (pasoModalPeriodo() === 1) {
                 <section class="step-panel">
                   <div class="draft-head">
-                    <strong>Datos del periodo academico</strong>
-                    <span>Define el anio, fechas base y esquema de evaluacion</span>
+                    <strong>Datos del periodo académico</strong>
+                    <span>Define el año, fechas base y esquema de evaluación</span>
                   </div>
 
                   <section class="modal-form-main">
@@ -195,7 +195,7 @@
                       </label>
 
                       <label>
-                        Ano
+                        Año
                         <input
                           type="number"
                           [ngModel]="formPeriodo().anio"
@@ -222,7 +222,7 @@
                     </div>
 
                     <label>
-                      Esquema de evaluacion
+                      Esquema de evaluación
                       <select
                         [ngModel]="tipoPeriodoEvaluacion()"
                         (ngModelChange)="cambiarTipoPeriodoEvaluacion($event)"
@@ -278,7 +278,7 @@
                 <section class="evaluation-template step-panel">
                   <div class="draft-head">
                     <strong>Plantilla anual de evaluaciones</strong>
-                    <span>Se repetira por defecto en todos los periodos y cursos</span>
+                    <span>Selecciona solo los tipos que usaras y luego define su cantidad base.</span>
                   </div>
 
                   @if (cargandoTiposEvaluacion()) {
@@ -297,25 +297,91 @@
                       <span>No hay tipos de evaluacion disponibles para configurar.</span>
                     </div>
                   } @else {
-                    <div class="evaluation-template-list">
-                      @for (configuracion of configuracionesEvaluacionBorrador(); track configuracion.tipoEvaluacionId) {
-                        <article class="evaluation-template-row">
-                          <div class="template-type">
-                            <strong>{{ configuracion.nombreTipoEvaluacion }}</strong>
-                            <small>{{ configuracion.descripcionTipoEvaluacion || 'Sin descripcion adicional.' }}</small>
+                    <div class="evaluation-template-builder">
+                      <div class="evaluation-type-picker">
+                        <div class="picker-head">
+                          <strong>Tipos disponibles</strong>
+                          <div class="picker-head-actions">
+                            <span>{{ configuracionesEvaluacionSeleccionadas().length }} seleccionados</span>
+                            <button class="action-button tertiary" type="button" (click)="abrirNuevoTipoEvaluacion()">
+                              <i class="fa-solid fa-plus"></i>
+                              Nuevo tipo
+                            </button>
                           </div>
+                        </div>
 
-                          <label class="template-quantity-field">
-                            <span>Cantidad</span>
-                            <input
-                              type="number"
-                              min="0"
-                              [ngModel]="configuracion.cantidadEvaluaciones"
-                              (ngModelChange)="actualizarConfiguracionEvaluacionBorrador(configuracion.tipoEvaluacionId, { cantidadEvaluaciones: +$event || 0 })"
-                              [name]="'cantidad-' + configuracion.tipoEvaluacionId" />
-                          </label>
-                        </article>
-                      }
+                        <div class="picker-chip-list">
+                          @for (configuracion of configuracionesEvaluacionDisponibles(); track configuracion.tipoEvaluacionId) {
+                            <button
+                              class="picker-chip"
+                              type="button"
+                              (click)="agregarTipoEvaluacionBorrador(configuracion.tipoEvaluacionId)">
+                              <span>{{ nombreTipoEvaluacionVisible(configuracion.nombreTipoEvaluacion) }}</span>
+                              <i class="fa-solid fa-plus"></i>
+                            </button>
+                          }
+
+                          @if (!configuracionesEvaluacionDisponibles().length) {
+                            <span class="picker-empty">Ya agregaste todos los tipos disponibles.</span>
+                          }
+                        </div>
+
+                      </div>
+
+                      <div class="evaluation-template-table-wrap">
+                        <div class="picker-head">
+                          <strong>Configuración anual</strong>
+                          <span>Solo se guardaran los tipos seleccionados</span>
+                        </div>
+
+                        @if (!configuracionesEvaluacionSeleccionadas().length) {
+                          <div class="table-state compact-state">
+                            <span class="table-state-icon"><i class="fa-solid fa-list-check"></i></span>
+                            <span>Agrega al menos un tipo de evaluacion para definir la plantilla anual.</span>
+                          </div>
+                        } @else {
+                          <div class="evaluation-template-table-scroll">
+                            <table class="evaluation-template-table">
+                              <thead>
+                                <tr>
+                                  <th>Tipo</th>
+                                  <th>Cantidad</th>
+                                  <th>Accion</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                @for (configuracion of configuracionesEvaluacionSeleccionadas(); track configuracion.tipoEvaluacionId) {
+                                  <tr>
+                                    <td>
+                                      <div class="template-type">
+                                        <strong>{{ nombreTipoEvaluacionVisible(configuracion.nombreTipoEvaluacion) }}</strong>
+                                        <small>{{ configuracion.descripcionTipoEvaluacion || 'Sin descripcion adicional.' }}</small>
+                                      </div>
+                                    </td>
+                                    <td>
+                                      <input
+                                        class="template-quantity-input"
+                                        type="number"
+                                        min="1"
+                                        [ngModel]="configuracion.cantidadEvaluaciones"
+                                        (ngModelChange)="actualizarConfiguracionEvaluacionBorrador(configuracion.tipoEvaluacionId, { cantidadEvaluaciones: +$event || 1 })"
+                                        [name]="'cantidad-' + configuracion.tipoEvaluacionId" />
+                                    </td>
+                                    <td>
+                                      <button
+                                        class="table-inline-action"
+                                        type="button"
+                                        (click)="quitarTipoEvaluacionBorrador(configuracion.tipoEvaluacionId)">
+                                        Quitar
+                                      </button>
+                                    </td>
+                                  </tr>
+                                }
+                              </tbody>
+                            </table>
+                          </div>
+                        }
+                      </div>
                     </div>
                   }
                 </section>
@@ -422,7 +488,49 @@
                   </button>
                 </div>
               }
-          </form>
+            </form>
+
+            @if (mostrandoNuevoTipoEvaluacion()) {
+              <div class="new-type-overlay" (click)="cancelarNuevoTipoEvaluacion()">
+                <div class="new-type-popover" (click)="$event.stopPropagation()">
+                  <div class="new-type-popover-head">
+                    <strong>Nuevo tipo de evaluacion</strong>
+                    <button class="popover-close" type="button" (click)="cancelarNuevoTipoEvaluacion()">
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+                  </div>
+
+                  <label class="form-field">
+                    <span>Nombre</span>
+                    <input
+                      type="text"
+                      [ngModel]="nuevoTipoEvaluacionForm().nombre"
+                      (ngModelChange)="actualizarNuevoTipoEvaluacion('nombre', $event)"
+                      name="nuevo-tipo-nombre" />
+                  </label>
+
+                  <label class="form-field">
+                    <span>Descripcion</span>
+                    <input
+                      type="text"
+                      [ngModel]="nuevoTipoEvaluacionForm().descripcion"
+                      (ngModelChange)="actualizarNuevoTipoEvaluacion('descripcion', $event)"
+                      name="nuevo-tipo-descripcion" />
+                  </label>
+
+                  <small class="new-type-hint">El orden se asignara automaticamente al final de la lista.</small>
+
+                  <div class="new-type-actions">
+                    <button class="action-button ghost" type="button" (click)="cancelarNuevoTipoEvaluacion()">
+                      Cancelar
+                    </button>
+                    <button class="action-button primary" type="button" [disabled]="guardandoNuevoTipoEvaluacion()" (click)="guardarNuevoTipoEvaluacion()">
+                      {{ guardandoNuevoTipoEvaluacion() ? 'Guardando...' : 'Crear y usar' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
         </div>
       </div>
     }

@@ -1,26 +1,66 @@
 <app-shell>
+  <section class="courses-page">
+    <app-custom-alert
+      [open]="alertState().open"
+      [type]="alertState().type"
+      [title]="alertState().title"
+      [message]="alertState().message"
+      [confirmText]="alertState().confirmText"
+      [cancelText]="alertState().cancelText"
+      [autoCloseMs]="alertState().autoCloseMs"
+      (confirm)="cerrarAlerta()"
+      (cancel)="descartarAlerta()"
+      (dismiss)="descartarAlerta()" />
 
-  <section class="catalog-card">
-    <div class="catalog-head">
-      <div class="panel-head">
-        <span class="panel-kicker">Catalogo institucional</span>
-        <h2>Gestion de cursos</h2>
-        <p>Consulta los cursos registrados y agrega nuevos cursos desde el panel lateral.</p>
-      </div>
-    </div>
-
-    <div class="catalog-body">
-      <article class="table-panel">
-        <div class="panel-head section-head">
-          <div>
-            <h3>Cursos registrados</h3>
-            <p>Base para asignaciones y prediccion por curso.</p>
+    <div class="page-card page-slide-in">
+      <div class="card-head">
+        <div class="card-head-inline">
+          <div class="panel-head">
+            <span class="panel-kicker">Catalogo institucional</span>
+            <h2>Gestion de cursos</h2>
+            <p>Centraliza los cursos base del sistema antes de asignarlos a periodos, docentes y secciones.</p>
           </div>
-          <span class="records-chip">{{ cursos().length }} registros</span>
-        </div>
 
-        <ng-container>
-          @if (cargando()) {
+          <div class="head-actions">
+            <span class="records-chip">{{ cursos().length }} registrados</span>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="content-grid">
+        <section class="table-panel">
+          <div class="section-head">
+            <div class="panel-head">
+              <h3>Cursos registrados</h3>
+              <p>Filtra por nivel o busca por nombre para revisar el catalogo actual.</p>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <div class="level-tabs">
+              <button class="tab-button" type="button" [class.active]="nivelTab() === 0" (click)="seleccionarNivel(0)">
+                Todos
+              </button>
+              <button class="tab-button" type="button" [class.active]="nivelTab() === 1" (click)="seleccionarNivel(1)">
+                Primaria
+              </button>
+              <button class="tab-button" type="button" [class.active]="nivelTab() === 2" (click)="seleccionarNivel(2)">
+                Secundaria
+              </button>
+            </div>
+
+            <label class="search-field">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input
+                type="text"
+                [ngModel]="filtro()"
+                (ngModelChange)="actualizarFiltro($event)"
+                placeholder="Buscar curso o descripcion" />
+            </label>
+          </div>
+
+          @if (mostrarSkeleton()) {
             <div class="table-scroll">
               <table class="app-table">
                 <thead>
@@ -43,17 +83,11 @@
                 </tbody>
               </table>
             </div>
-          } @else if (error()) {
-            <div class="table-state error">
-              <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
-              <span>{{ error() }}</span>
-              <button class="action-button secondary" type="button" (click)="cargarCursos()">Reintentar</button>
-            </div>
-          } @else if (!cursos().length) {
+          } @else if (!cursosFiltrados().length) {
             <div class="table-state">
               <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-              <span>No hay cursos registrados todavia.</span>
-              <small>Cuando registres cursos en el sistema, apareceran aqui automaticamente.</small>
+              <span>No hay cursos para los filtros actuales.</span>
+              <small>Prueba otro nivel o limpia la busqueda para ver mas resultados.</small>
             </div>
           } @else {
             <div class="table-scroll">
@@ -67,11 +101,16 @@
                   </tr>
                 </thead>
                 <tbody>
-                  @for (curso of cursos(); track curso.id) {
+                  @for (curso of cursosFiltrados(); track curso.id) {
                     <tr>
-                      <td>{{ curso.nombre }}</td>
+                      <td>
+                        <div class="course-cell">
+                          <strong>{{ curso.nombre }}</strong>
+                          <small>ID {{ curso.id }}</small>
+                        </div>
+                      </td>
                       <td>{{ curso.nivelNombre }}</td>
-                      <td>{{ curso.descripcion || 'Sin descripcion' }}</td>
+                      <td>{{ curso.descripcion || 'Sin descripcion registrada' }}</td>
                       <td>
                         <span
                           class="status-badge"
@@ -86,41 +125,60 @@
               </table>
             </div>
           }
-        </ng-container>
-      </article>
+        </section>
 
-      <aside class="form-panel">
-        <div class="panel-head">
-          <span class="panel-kicker">Registro</span>
-          <h3>Registrar curso</h3>
-          <p>Agrega un nuevo curso al catalogo academico institucional.</p>
-        </div>
-
-        <form class="master-form">
-          <label>
-            Nivel
-            <select>
-              <option>Secundaria</option>
-              <option>Primaria</option>
-            </select>
-          </label>
-
-          <label>
-            Nombre del curso
-            <input type="text" placeholder="Ejemplo: Matematica" />
-          </label>
-
-          <label>
-            Descripcion
-            <input type="text" placeholder="Descripcion breve del curso" />
-          </label>
-
-          <div class="form-actions">
-            <button class="action-button primary" type="button">Guardar curso</button>
-            <button class="action-button secondary" type="button">Limpiar</button>
+        <aside class="form-panel">
+          <div class="panel-head">
+            <span class="panel-kicker">Registro</span>
+            <h3>Registrar curso</h3>
+            <p>Agrega un nuevo curso al catalogo academico institucional.</p>
           </div>
-        </form>
-      </aside>
+
+          <form class="master-form">
+            <label>
+              Nivel
+              <select [ngModel]="formNivelId()" (ngModelChange)="formNivelId.set(+$event)" name="nivelCurso">
+                <option [value]="1">Primaria</option>
+                <option [value]="2">Secundaria</option>
+              </select>
+            </label>
+
+            <label>
+              Nombre del curso
+              <input
+                type="text"
+                [ngModel]="formNombre()"
+                (ngModelChange)="formNombre.set($event)"
+                name="nombreCurso"
+                placeholder="Ejemplo: Matematica" />
+            </label>
+
+            <label>
+              Descripcion
+              <textarea
+                [ngModel]="formDescripcion()"
+                (ngModelChange)="formDescripcion.set($event)"
+                name="descripcionCurso"
+                rows="4"
+                placeholder="Descripcion breve del curso"></textarea>
+            </label>
+
+            @if (!esAdmin()) {
+              <div class="form-note">
+                <i class="fa-solid fa-lock"></i>
+                <span>Solo un administrador puede registrar cursos.</span>
+              </div>
+            }
+
+            <div class="form-actions">
+              <button class="action-button primary" type="button" [disabled]="guardando() || !esAdmin()" (click)="guardarCurso()">
+                {{ guardando() ? 'Guardando...' : 'Guardar curso' }}
+              </button>
+              <button class="action-button tertiary" type="button" (click)="limpiarFormulario()">Limpiar</button>
+            </div>
+          </form>
+        </aside>
+      </div>
     </div>
   </section>
 </app-shell>

@@ -38,7 +38,7 @@
 }
 
 .card-head {
-  padding-bottom: 16px;
+  padding-bottom: 10px;
   border-bottom: 1px solid #e8eef5;
 }
 
@@ -80,20 +80,19 @@
 
 .head-context {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: center;
   gap: 10px;
-  max-width: 520px;
+  align-items: center;
 }
 
 .context-chip {
-  display: grid;
+  display: flex;
   gap: 3px;
   min-width: 110px;
   padding: 10px 12px;
-  border: 1px solid #dce7f4;
   border-radius: 16px;
-  background: #f8fbff;
+  background: #ffffff;
+  align-items: center;
 }
 
 .context-chip span {
@@ -215,8 +214,13 @@
 .form-two-columns,
 .quick-actions {
   display: grid;
-  gap: 10px;
+  gap: 20px;
 }
+
+.quick-actions{
+  margin-bottom: 20px;
+
+} 
 
 .form-two-columns {
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -297,7 +301,6 @@ select:focus {
 
 .action-button:disabled {
   opacity: 0.72;
-  cursor: wait;
 }
 
 .action-button.primary {

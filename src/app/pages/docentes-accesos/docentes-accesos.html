@@ -1,15 +1,34 @@
 <app-shell>
   <section class="catalog-card">
+    <app-custom-alert
+      [open]="alertState().open"
+      [type]="alertState().type"
+      [title]="alertState().title"
+      [message]="alertState().message"
+      [confirmText]="alertState().confirmText"
+      [cancelText]="alertState().cancelText"
+      [autoCloseMs]="alertState().autoCloseMs"
+      (confirm)="cerrarAlerta()"
+      (cancel)="cerrarAlerta()"
+      (dismiss)="cerrarAlerta()" />
+
     <div class="catalog-head">
-      <div class="panel-head">
-        <span class="panel-kicker">Gestion institucional</span>
-        <h2>Docentes y accesos</h2>
-        <p>Administra el personal docente y prepara su vinculacion con usuarios y roles del sistema.</p>
+      <div class="section-head">
+        <div class="panel-head">
+          <span class="panel-kicker">Gestion institucional</span>
+          <h2>Docentes y accesos</h2>
+          <p>Administra el personal docente y prepara su vinculacion con usuarios y roles del sistema.</p>
+        </div>
+
+        <button class="action-button primary" type="button" [disabled]="!esAdmin()" (click)="abrirPanelRegistro()">
+          <i class="fa-solid fa-plus"></i>
+          <span>Nuevo docente</span>
+        </button>
       </div>
     </div>
 
-    <div class="catalog-body">
-      <article class="table-panel">
+    <div class="catalog-body table-only">
+      <article class="table-panel full-width">
         <div class="panel-head section-head">
           <div>
             <h3>Docentes registrados</h3>
@@ -19,7 +38,7 @@
         </div>
 
         <ng-container>
-          @if (cargando()) {
+          @if (mostrarSkeleton()) {
             <div class="table-scroll">
               <table class="app-table">
                 <thead>
@@ -44,17 +63,11 @@
                 </tbody>
               </table>
             </div>
-          } @else if (error()) {
-            <div class="table-state error">
-              <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
-              <span>{{ error() }}</span>
-              <button class="action-button secondary" type="button" (click)="cargarDocentes()">Reintentar</button>
-            </div>
           } @else if (!docentes().length) {
             <div class="table-state">
               <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
               <span>No hay docentes cargados todavia.</span>
-              <small>Registra docentes en la base o desde este modulo cuando terminemos el guardado real.</small>
+              <small>Registra el primer docente para que luego puedas asignarle cursos, secciones y acceso.</small>
             </div>
           } @else {
             <div class="table-scroll">
@@ -91,57 +104,117 @@
           }
         </ng-container>
       </article>
-
-      <aside class="form-panel">
-        <div class="panel-head">
-          <span class="panel-kicker">Registro</span>
-          <h3>Registrar docente</h3>
-          <p>Agrega un docente para luego asignarle cursos, secciones y acceso al sistema.</p>
-        </div>
-
-        <form class="master-form">
-          <div class="form-two-columns">
-            <label>
-              Nombres
-              <input type="text" placeholder="Ejemplo: Juan Carlos" />
-            </label>
-
-            <label>
-              Apellidos
-              <input type="text" placeholder="Ejemplo: Perez Lopez" />
-            </label>
-          </div>
-
-          <div class="form-two-columns">
-            <label>
-              DNI
-              <input type="text" placeholder="12345678" />
-            </label>
-
-            <label>
-              Telefono
-              <input type="text" placeholder="987654321" />
-            </label>
-          </div>
-
-          <label>
-            Especialidad
-            <input type="text" placeholder="Ejemplo: Matematica" />
-          </label>
-
-          <label>
-            Usuario vinculado
-            <select>
-              <option>Sin vincular por ahora</option>
-            </select>
-          </label>
-
-          <div class="form-actions">
-            <button class="action-button primary" type="button">Guardar docente</button>
-            <button class="action-button secondary" type="button">Limpiar</button>
-          </div>
-        </form>
-      </aside>
     </div>
+
+    @if (mostrarPanelRegistro()) {
+      <div class="drawer-overlay" [class.is-closing]="cerrandoPanelRegistro()" (click)="cerrarPanelRegistro()">
+        <aside class="drawer-panel" [class.is-closing]="cerrandoPanelRegistro()" (click)="$event.stopPropagation()">
+          <div class="drawer-head">
+            <div class="panel-head">
+              <span class="panel-kicker">Registro</span>
+              <h3>Registrar docente</h3>
+            </div>
+
+            <button class="drawer-close" type="button" (click)="cerrarPanelRegistro()">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <div class="drawer-body">
+            <form class="master-form drawer-form">
+              <div class="form-two-columns">
+                <label>
+                  Nombres
+                  <input
+                    type="text"
+                    placeholder="Ejemplo: Juan Carlos"
+                    [ngModel]="form().nombres"
+                    (ngModelChange)="actualizarCampo('nombres', $event)"
+                    name="docenteNombres" />
+                </label>
+
+                <label>
+                  Apellidos
+                  <input
+                    type="text"
+                    placeholder="Ejemplo: Perez Lopez"
+                    [ngModel]="form().apellidos"
+                    (ngModelChange)="actualizarCampo('apellidos', $event)"
+                    name="docenteApellidos" />
+                </label>
+              </div>
+
+              <div class="form-two-columns">
+                <label>
+                  DNI
+                  <input
+                    type="text"
+                    placeholder="12345678"
+                    maxlength="8"
+                    [ngModel]="form().dni"
+                    (ngModelChange)="actualizarCampo('dni', $event)"
+                    name="docenteDni" />
+                </label>
+
+                <label>
+                  Teléfono
+                  <input
+                    type="text"
+                    placeholder="987654321"
+                    [ngModel]="form().telefono"
+                    (ngModelChange)="actualizarCampo('telefono', $event)"
+                    name="docenteTelefono" />
+                </label>
+              </div>
+
+              <label>
+                Especialidad
+                <input
+                  type="text"
+                  placeholder="Ejemplo: Matematica"
+                  [ngModel]="form().especialidad"
+                  (ngModelChange)="actualizarCampo('especialidad', $event)"
+                  name="docenteEspecialidad" />
+              </label>
+
+              <label>
+                Correo institucional
+                <input
+                  type="email"
+                  placeholder="docente@colegio.edu.pe"
+                  [ngModel]="form().correo"
+                  (ngModelChange)="actualizarCampo('correo', $event)"
+                  name="docenteCorreo" />
+              </label>
+
+              <div class="form-note">
+                <i class="fa-solid fa-key"></i>
+                <span>El sistema generara automaticamente el usuario y usara el DNI como contraseña temporal.</span>
+              </div>
+
+              <div class="docente-preview">
+                <img src="assets/docente.png" alt="Ilustracion del registro docente" />
+              </div>
+
+              @if (!esAdmin()) {
+                <div class="form-note warning">
+                  <i class="fa-solid fa-lock"></i>
+                  <span>Solo un administrador puede registrar docentes con acceso.</span>
+                </div>
+              }
+            </form>
+          </div>
+
+          <div class="drawer-footer">
+            <div class="form-actions">
+              <button class="action-button primary" type="button" [disabled]="guardando() || !esAdmin()" (click)="guardarDocente()">
+                {{ guardando() ? 'Guardando...' : 'Guardar docente' }}
+              </button>
+              <button class="action-button secondary" type="button" (click)="limpiarFormulario()">Limpiar</button>
+            </div>
+          </div>
+        </aside>
+      </div>
+    }
   </section>
 </app-shell>

@@ -117,7 +117,6 @@ export class Sidebar {
       ruta.startsWith('/configuracion-academica') ||
       ruta.startsWith('/periodos-academicos') ||
       ruta.startsWith('/periodos-evaluacion') ||
-      ruta.startsWith('/estructura-academica') ||
       ruta.startsWith('/cursos') ||
       ruta.startsWith('/gestion-estudiantil') ||
       ruta.startsWith('/alumnos') ||
@@ -127,6 +126,10 @@ export class Sidebar {
       ruta.startsWith('/asignaciones-docente')
     ) {
       return ['configuracion-academica'];
+    }
+
+    if (ruta.startsWith('/usuario')) {
+      return ['seguridad'];
     }
 
     if (

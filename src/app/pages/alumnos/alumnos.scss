@@ -306,10 +306,10 @@
 
 .stepper-track {
   position: absolute;
-  top: 21px;
+  top: 26px;
   left: calc(12.5% + 15px);
   right: calc(12.5% + 15px);
-  height: 3px;
+  height: 5px;
   border-radius: 999px;
   background: #dbe6f4;
   overflow: hidden;
@@ -344,8 +344,8 @@
 .step-node-circle {
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: 45px;
+  height: 45px;
   border: 2px solid #dbe6f4;
   border-radius: 999px;
   background: #ffffff;
@@ -381,7 +381,11 @@
 }
 
 .step-panel {
-  min-height: 340px;
+  min-height: auto;
+  border: 1px solid #eff6ff;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
+  border-radius: 16px;
+  background: #f8fbff;
 }
 
 .modal-form-layout {
@@ -394,6 +398,7 @@
 .modal-form-main {
   display: grid;
   gap: 12px;
+  padding: 20px;
 }
 
 .form-two-columns {
@@ -411,7 +416,7 @@ label {
 input,
 select {
   width: 100%;
-  padding: 11px 13px;
+  padding: 8px 13px;
   border: 1px solid #d6e1ef;
   border-radius: 14px;
   background: #ffffff;
@@ -491,6 +496,210 @@ select {
   align-content: start;
 }
 
+.evaluation-template-builder {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.evaluation-type-picker,
+.evaluation-template-table-wrap {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #e8eef5;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.picker-head strong {
+  color: #112033;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.picker-head span {
+  color: #6b7a99;
+  font-size: 12px;
+}
+
+.picker-head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.new-type-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 14px;
+  border-radius: 24px;
+  background: rgba(15, 23, 42, 0.38);
+  backdrop-filter: blur(3px);
+  z-index: 9;
+}
+
+.new-type-popover {
+  display: grid;
+  gap: 12px;
+  width: min(100%, 420px);
+  padding: 16px;
+  border: 1px solid #dbe7f3;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.08);
+}
+
+.new-type-popover-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.new-type-popover-head strong {
+  color: #112033;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.popover-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e4e8ee;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #52657c;
+  cursor: pointer;
+}
+
+.new-type-hint {
+  color: #6b7a99;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.new-type-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.picker-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.picker-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #d9e5f2;
+  border-radius: 999px;
+  background: #f8fbff;
+  color: #26415f;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.picker-chip:hover {
+  background: #eef5ff;
+  border-color: #b8cbe3;
+  transform: translateY(-1px);
+}
+
+.picker-empty {
+  color: #6b7a99;
+  font-size: 12px;
+}
+
+.compact-state {
+  min-height: 132px;
+}
+
+.compact-state .table-state-icon {
+  width: 48px;
+  height: 48px;
+  font-size: 20px;
+}
+
+.evaluation-template-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.evaluation-template-table-scroll {
+  max-height: 230px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.evaluation-template-table th,
+.evaluation-template-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #edf2f7;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.evaluation-template-table th {
+  color: #52657c;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.evaluation-template-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.template-quantity-input {
+  width: 84px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.table-inline-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border: 1px solid #e4e8ee;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.table-inline-action:hover {
+  border-color: #d2dae4;
+  background: #f8fafc;
+}
+
 .courses-toolbar {
   display: flex;
   align-items: center;
@@ -511,7 +720,7 @@ select {
   gap: 10px;
   max-height: 330px;
   min-height: 220px;
-  padding-right: 6px;
+  padding: 6px;
   overflow-y: auto;
   align-content: start;
 }
@@ -701,6 +910,7 @@ select {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  padding: 20px 20px 0;
 }
 
 .draft-head span {
@@ -751,19 +961,20 @@ select {
   align-items: center;
   justify-content: center;
   min-width: 120px;
-  padding: 10px 16px;
+  padding: 8px 12px;
   border: 1px solid transparent;
   border-radius: 18px;
   background: #ffffff;
   font: inherit;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
+  gap: 10px;
+
 }
 
 .action-button:disabled {
   opacity: 0.72;
-  cursor: wait;
 }
 
 .action-button.primary {
@@ -798,6 +1009,7 @@ select {
 }
 
 .modal-card {
+  position: relative;
   display: grid;
   gap: 20px;
   width: min(1050px, 100%);
@@ -867,6 +1079,32 @@ select {
 
   .evaluation-template-list {
     grid-template-columns: 1fr;
+  }
+
+  .evaluation-template-builder {
+    grid-template-columns: 1fr;
+  }
+
+  .evaluation-template-table thead {
+    display: none;
+  }
+
+  .evaluation-template-table,
+  .evaluation-template-table tbody,
+  .evaluation-template-table tr,
+  .evaluation-template-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .evaluation-template-table tr {
+    padding: 12px 0;
+    border-bottom: 1px solid #edf2f7;
+  }
+
+  .evaluation-template-table td {
+    padding: 6px 0;
+    border-bottom: none;
   }
 
   .stepper-head {
