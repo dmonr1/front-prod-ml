@@ -128,10 +128,6 @@ export class Sidebar {
       return ['configuracion-academica'];
     }
 
-    if (ruta.startsWith('/usuario')) {
-      return ['seguridad'];
-    }
-
     if (
       ruta.startsWith('/mis-asignaciones/tutorias') ||
       ruta.startsWith('/seccion-tutorada') ||

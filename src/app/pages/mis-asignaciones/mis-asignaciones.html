@@ -1,142 +1,174 @@
 <app-shell>
   <section class="assignments-page">
     @if (error() && mostrarError()) {
-      <app-custom-alert [open]="true" type="error" title="No se pudo cargar la información"
-        [message]="error()" confirmText="Reintentar" cancelText="Cerrar"
-        (confirm)="reintentarCarga()" (cancel)="cerrarError()" (dismiss)="cerrarError()">
-      </app-custom-alert>
+    <app-custom-alert [open]="true" type="error" title="No se pudo cargar la información" [message]="error()"
+      confirmText="Reintentar" cancelText="Cerrar" (confirm)="reintentarCarga()" (cancel)="cerrarError()"
+      (dismiss)="cerrarError()">
+    </app-custom-alert>
     }
 
     <div class="page-card page-slide-in">
-      <div class="card-head">
-        <div class="card-head-inline">
-          <div class="panel-head">
-            <h2>Mis cursos asignados</h2>
-          </div>
-
-          <div class="head-actions">
-            <button class="action-button secondary" type="button" (click)="cargarAsignaciones()">
-              Actualizar
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <section class="cards-section">
+      <div class="sections-layout">
+        <section class="cards-section">
           <div class="section-head">
-          <div class="panel-head">
-            <h3>Cursos y secciones</h3>
-            <p>Haz clic en una tarjeta para continuar al detalle academico del curso.</p>
-          </div>
-        </div>
+            <div class="panel-head">
+              <h2>Mis cursos asignados</h2>
+              <p>Haz clic en una tarjeta para continuar al detalle academico del curso.</p>
+            </div>
 
-        @if (mostrarSkeleton()) {
-          <div class="cards-surface">
+            <div class="head-actions">
+              <button class="action-button secondary" type="button" (click)="cargarAsignaciones()">
+                Actualizar
+              </button>
+            </div>
+          </div>
+
+          @if (mostrarSkeleton()) {
+          <div class="cards-surface" (wheel)="desplazarHorizontal($event)">
             <div class="cards-grid">
               @for (row of [0, 1, 2, 3, 4, 5]; track row) {
-                <article class="flow-card skeleton-card">
-                  <span class="skeleton-line long"></span>
-                  <span class="skeleton-line mini"></span>
+              <article class="flow-card skeleton-card">
+                <div class="course-cover skeleton-cover">
+                  <span class="skeleton-badge"></span>
+                </div>
+
+                <div class="flow-card-body skeleton-body">
+                  <div class="flow-card-top">
+                    <span class="skeleton-line medium"></span>
+                    <span class="skeleton-icon"></span>
+                  </div>
+
+                  <div class="flow-meta-row">
+                    <span class="skeleton-line long"></span>
+                    <span class="skeleton-chip"></span>
+                  </div>
+                </div>
+
+                <div class="flow-card-footer skeleton-footer">
                   <span class="skeleton-line short"></span>
-                  <span class="skeleton-line mini"></span>
-                  <span class="skeleton-line long"></span>
-                  <span class="skeleton-line medium"></span>
-                </article>
+                  <span class="skeleton-button"></span>
+                </div>
+              </article>
               }
             </div>
           </div>
-        } @else if (!asignaciones().length) {
+          } @else if (!asignaciones().length) {
           <div class="cards-surface state-surface">
             <div class="table-state">
               <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
               <span>No tienes cursos o secciones asignadas para el periodo academico actual.</span>
             </div>
           </div>
-        } @else {
-          <div class="cards-surface">
+          } @else {
+          <div class="cards-surface" (wheel)="desplazarHorizontal($event)">
             <div class="cards-grid">
               @for (asignacion of asignaciones(); track asignacion.id) {
-                <article class="flow-card">
+              <article class="flow-card">
+                <div class="course-cover" [style.--course-cover]="estiloPortada(asignacion)"
+                  [class.has-image]="!!imagenPortada(asignacion)">
+                  @if (imagenPortada(asignacion)) {
+                  <img class="course-cover-image" [src]="imagenPortada(asignacion)!" alt="Portada del curso" />
+                  }
+                  <span class="course-cover-badge">{{ asignacion.nivel }}</span>
+                </div>
+
+                <div class="flow-card-body">
                   <div class="flow-card-top">
                     <span class="flow-title">{{ asignacion.curso }}</span>
-                    <span class="status-badge active-1">{{ asignacion.nivel }}</span>
+                    <span class="flow-title-icon">
+                      <i [class]="iconoPortada(asignacion)"></i>
+                    </span>
                   </div>
 
-                  <strong>{{ obtenerDescripcion(asignacion) }}</strong>
-                  <small>{{ asignacion.periodoAcademico }} - {{ asignacion.docenteNombreCompleto }}</small>
-
-                  <div class="flow-card-footer">
-                    <span><i class="fa-solid fa-users"></i> Seccion {{ asignacion.seccion }}</span>
-                    <div class="flow-card-actions">
-                      <a class="flow-link-button" [routerLink]="['/mis-asignaciones', asignacion.id, 'notas']">
-                        <i class="fa-solid fa-pen-to-square"></i>
-                        <span>Notas</span>
-                      </a>
-                    </div>
+                  <div class="flow-meta-row">
+                    <strong>{{ obtenerDescripcion(asignacion) }}</strong>
+                    <span class="flow-meta-chip">{{ obtenerAnioPeriodo(asignacion.periodoAcademico) }}</span>
                   </div>
-                </article>
+                </div>
+
+                <div class="flow-card-footer">
+                  <span><i class="fa-solid fa-users"></i> Seccion {{ asignacion.seccion }}</span>
+                  <div class="flow-card-actions">
+                    <a class="flow-link-button" [routerLink]="['/mis-asignaciones', asignacion.id, 'notas']">
+                      <i class="fa-solid fa-pen-to-square"></i>
+                      <span>Registrar Notas</span>
+                    </a>
+                  </div>
+                </div>
+              </article>
               }
             </div>
           </div>
-        }
-      </section>
+          }
+        </section>
 
-      <section class="cards-section">
-        <div class="section-head">
-          <div class="panel-head">
-            <h3>Secciones tutoradas</h3>
-            <p>Revisa las secciones donde tienes seguimiento tutorial durante este periodo.</p>
+        <section class="cards-section">
+          <div class="section-head">
+            <div class="panel-head">
+              <h2>Secciones tutoradas</h2>
+              <p>Revisa las secciones donde tienes seguimiento tutorial durante este periodo.</p>
+            </div>
           </div>
-        </div>
 
-        @if (mostrarSkeleton()) {
-          <div class="cards-surface">
+          @if (mostrarSkeleton()) {
+          <div class="cards-surface" (wheel)="desplazarHorizontal($event)">
             <div class="cards-grid">
               @for (row of [0, 1]; track row) {
-                <article class="flow-card skeleton-card">
+              <article class="flow-card tutoria-card skeleton-card tutor-skeleton-card">
+                <div class="flow-card-top">
+                  <span class="skeleton-line medium"></span>
+                  <span class="skeleton-badge"></span>
+                </div>
+
+                <div class="tutor-skeleton-copy">
                   <span class="skeleton-line long"></span>
-                  <span class="skeleton-line mini"></span>
+                  <span class="skeleton-line medium"></span>
+                </div>
+
+                <div class="flow-card-footer skeleton-footer">
                   <span class="skeleton-line short"></span>
-                  <span class="skeleton-line mini"></span>
-                </article>
+                  <span class="skeleton-button compact"></span>
+                </div>
+              </article>
               }
             </div>
           </div>
-        } @else if (!seccionesTutoradas().length) {
+          } @else if (!seccionesTutoradas().length) {
           <div class="cards-surface state-surface">
             <div class="table-state">
               <span class="table-state-icon"><i class="fa-solid fa-people-roof"></i></span>
               <span>No tienes secciones tutoradas en el periodo academico actual.</span>
             </div>
           </div>
-        } @else {
-          <div class="cards-surface">
+          } @else {
+          <div class="cards-surface" (wheel)="desplazarHorizontal($event)">
             <div class="cards-grid">
               @for (tutoria of seccionesTutoradas(); track tutoria.id) {
-                <article class="flow-card tutoria-card">
-                  <div class="flow-card-top">
-                    <span class="flow-title">Seccion {{ tutoria.seccion }}</span>
-                    <span class="status-badge active-1">{{ tutoria.nivel }}</span>
-                  </div>
+              <article class="flow-card tutoria-card">
+                <div class="flow-card-top">
+                  <span class="flow-title">Seccion {{ tutoria.seccion }}</span>
+                  <span class="status-badge active-1">{{ tutoria.nivel }}</span>
+                </div>
 
-                  <strong>{{ obtenerDescripcionTutoria(tutoria) }}</strong>
-                  <small>{{ tutoria.periodoAcademico }} - {{ tutoria.docenteNombreCompleto }}</small>
+                <strong>{{ obtenerDescripcionTutoria(tutoria) }}</strong>
+                <small>{{ tutoria.periodoAcademico }} - {{ tutoria.docenteNombreCompleto }}</small>
 
-                  <div class="flow-card-footer">
-                    <span><i class="fa-solid fa-users"></i> Seguimiento tutorial</span>
-                    <div class="flow-card-actions">
-                      <a class="flow-link-button" [routerLink]="['/mis-asignaciones/tutorias', tutoria.id]">
-                        <i class="fa-solid fa-arrow-right"></i>
-                        <span>Abrir</span>
-                      </a>
-                    </div>
+                <div class="flow-card-footer">
+                  <span><i class="fa-solid fa-users"></i> Seguimiento tutorial</span>
+                  <div class="flow-card-actions">
+                    <a class="flow-link-button" [routerLink]="['/mis-asignaciones/tutorias', tutoria.id]">
+                      <i class="fa-solid fa-arrow-right"></i>
+                      <span>Abrir</span>
+                    </a>
                   </div>
-                </article>
+                </div>
+              </article>
               }
             </div>
           </div>
-        }
-      </section>
+          }
+        </section>
+      </div>
     </div>
   </section>
 </app-shell>

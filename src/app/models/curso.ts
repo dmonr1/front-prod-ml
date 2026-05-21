@@ -4,5 +4,8 @@ export interface Curso {
   nivelNombre: string;
   nombre: string;
   descripcion: string | null;
+  portadaColor?: string | null;
+  portadaIcono?: string | null;
+  portadaImagen?: string | null;
   estado: string | null;
 }

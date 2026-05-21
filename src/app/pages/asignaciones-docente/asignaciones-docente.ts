@@ -220,6 +220,8 @@ export class AsignacionesTutorias {
               nivelNombre: cursoPeriodo.nivelNombre,
               nombre: cursoPeriodo.cursoNombre,
               descripcion: cursoPeriodo.cursoDescripcion,
+              portadaColor: null,
+              portadaIcono: null,
               estado: cursoPeriodo.estado
             }))
             .sort(

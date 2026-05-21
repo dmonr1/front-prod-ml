@@ -7,6 +7,9 @@ import { Curso } from '../../models/curso';
 export interface CursoPayload {
   nombre: string;
   descripcion: string | null;
+  portadaColor: string | null;
+  portadaIcono: string | null;
+  portadaImagen: string | null;
   nivelId: number;
 }
 
@@ -21,5 +24,11 @@ export class CursoService {
 
   crear(payload: CursoPayload): Observable<Curso> {
     return this.http.post<Curso>(this.api, payload);
+  }
+
+  actualizarEstado(cursoId: number, activo: boolean): Observable<Curso> {
+    return this.http.patch<Curso>(`${this.api}/${cursoId}/estado`, null, {
+      params: { activa: String(activo) }
+    });
   }
 }

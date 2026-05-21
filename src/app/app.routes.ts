@@ -140,7 +140,8 @@ export const routes: Routes = [
   },
   {
     path: 'usuario',
-    loadComponent: () => import('./pages/usuario/usuario').then((m) => m.Usuario)
+    redirectTo: 'docentes-accesos',
+    pathMatch: 'full'
   },
   {
     path: 'predicciones',

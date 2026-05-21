@@ -8,8 +8,8 @@
       [confirmText]="alertState().confirmText"
       [cancelText]="alertState().cancelText"
       [autoCloseMs]="alertState().autoCloseMs"
-      (confirm)="cerrarAlerta()"
-      (cancel)="cerrarAlerta()"
+      (confirm)="filaPendienteCambioEstado() ? confirmarInactivacionPendiente() : cerrarAlerta()"
+      (cancel)="filaPendienteCambioEstado() ? cancelarInactivacionPendiente() : cerrarAlerta()"
       (dismiss)="cerrarAlerta()" />
 
     <div class="catalog-head">
@@ -17,7 +17,7 @@
         <div class="panel-head">
           <span class="panel-kicker">Gestion institucional</span>
           <h2>Docentes y accesos</h2>
-          <p>Administra el personal docente y prepara su vinculacion con usuarios y roles del sistema.</p>
+          <p>Registra y administra el acceso al sistema del personal docente e interno.</p>
         </div>
 
         <button class="action-button primary" type="button" [disabled]="!esAdmin()" (click)="abrirPanelRegistro()">
@@ -31,10 +31,14 @@
       <article class="table-panel full-width">
         <div class="panel-head section-head">
           <div>
-            <h3>Docentes registrados</h3>
-            <p>Base para asignaciones, tutorias y acceso al sistema.</p>
+            <h3>Planilla docente y administrativa</h3>
           </div>
-          <span class="records-chip">{{ docentes().length }} registros</span>
+          <div class="head-metrics">
+            <span class="records-chip">{{ filas().length }} registros</span>
+            @if (totalCuentasAdministrativas()) {
+              <span class="records-chip accent">{{ totalCuentasAdministrativas() }} cuentas administrativas</span>
+            }
+          </div>
         </div>
 
         <ng-container>
@@ -47,7 +51,9 @@
                     <th>DNI</th>
                     <th>Especialidad</th>
                     <th>Usuario</th>
-                    <th>Estado</th>
+                    <th>Roles</th>
+                    <th>Acceso</th>
+                    <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -57,17 +63,19 @@
                       <td><span class="skeleton-line short"></span></td>
                       <td><span class="skeleton-line medium"></span></td>
                       <td><span class="skeleton-line short"></span></td>
+                      <td><span class="skeleton-line medium"></span></td>
+                      <td><span class="skeleton-line short"></span></td>
                       <td><span class="skeleton-line short"></span></td>
                     </tr>
                   }
                 </tbody>
               </table>
             </div>
-          } @else if (!docentes().length) {
+          } @else if (!filas().length) {
             <div class="table-state">
               <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-              <span>No hay docentes cargados todavia.</span>
-              <small>Registra el primer docente para que luego puedas asignarle cursos, secciones y acceso.</small>
+              <span>No hay cuentas registradas todavia.</span>
+              <small>Registra el primer docente o crea accesos administrativos para empezar a gestionar el sistema.</small>
             </div>
           } @else {
             <div class="table-scroll">
@@ -78,23 +86,62 @@
                     <th>DNI</th>
                     <th>Especialidad</th>
                     <th>Usuario</th>
-                    <th>Estado</th>
+                    <th>Roles</th>
+                    <th>Acceso</th>
+                    <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  @for (docente of docentes(); track docente.id) {
+                  @for (fila of filas(); track fila.key) {
                     <tr>
-                      <td>{{ docente.apellidos }}, {{ docente.nombres }}</td>
-                      <td>{{ docente.dni || 'Sin DNI' }}</td>
-                      <td>{{ docente.especialidad || 'Sin especialidad' }}</td>
-                      <td>{{ docente.username || 'Sin usuario' }}</td>
+                      <td>
+                        <div class="identity-cell">
+                          <strong>{{ nombreVisible(fila) }}</strong>
+                          @if (fila.roles.includes('ADMIN')) {
+                            <small>Cuenta administrativa</small>
+                          }
+                        </div>
+                      </td>
+                      <td>{{ fila.dni || 'Sin DNI' }}</td>
+                      <td>{{ fila.especialidad || (fila.esCuentaAdministrativa ? 'Cuenta administrativa' : 'Sin especialidad') }}</td>
+                      <td>
+                        <div class="identity-cell">
+                          <strong>{{ fila.username || 'Sin usuario' }}</strong>
+                          @if (fila.debeCambiarPassword) {
+                            <small>Cambio inicial pendiente</small>
+                          }
+                        </div>
+                      </td>
+                      <td>
+                        @if (fila.roles.length) {
+                          <div class="role-pill-group">
+                            @for (rol of fila.roles; track rol) {
+                              <span class="role-pill">{{ rol }}</span>
+                            }
+                          </div>
+                        } @else {
+                          <span class="muted-cell">Sin roles</span>
+                        }
+                      </td>
                       <td>
                         <span
                           class="status-badge"
-                          [class.active]="(docente.estado || 'ACTIVO') === 'ACTIVO'"
-                          [class.inactive]="(docente.estado || 'ACTIVO') === 'INACTIVO'">
-                          {{ docente.estado || 'ACTIVO' }}
+                          [class.active]="fila.accesoEstado === 'ACTIVO'"
+                          [class.inactive]="fila.accesoEstado !== 'ACTIVO'">
+                          {{ fila.accesoEstado }}
                         </span>
+                      </td>
+                      <td>
+                        <div class="row-actions">
+                          <button class="row-action row-action-edit" type="button" [disabled]="!esAdmin() || !fila.usuarioGestionId" (click)="abrirPanelAcceso(fila)">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                            <span>Editar Rol</span>
+                          </button>
+                          <button class="row-action row-action-state" type="button" [disabled]="!puedeCambiarEstadoAcceso(fila)" (click)="cambiarEstadoAcceso(fila)">
+                            <i class="fa-solid" [class.fa-ban]="fila.accesoEstado === 'ACTIVO'" [class.fa-user-check]="fila.accesoEstado !== 'ACTIVO'"></i>
+                            <span>{{ etiquetaAccionEstado(fila) }}</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   }
@@ -166,6 +213,7 @@
                     name="docenteTelefono" />
                 </label>
               </div>
+              
 
               <label>
                 Especialidad
@@ -211,6 +259,68 @@
                 {{ guardando() ? 'Guardando...' : 'Guardar docente' }}
               </button>
               <button class="action-button secondary" type="button" (click)="limpiarFormulario()">Limpiar</button>
+            </div>
+          </div>
+        </aside>
+      </div>
+    }
+
+    @if (mostrarModalAcceso()) {
+      <div class="mini-modal-overlay" [class.is-closing]="cerrandoModalAcceso()" (click)="cerrarPanelAcceso()">
+        <aside class="mini-modal-card" [class.is-closing]="cerrandoModalAcceso()" (click)="$event.stopPropagation()">
+          <div class="mini-modal-head">
+            <div class="panel-head">
+              <span class="panel-kicker">Acceso</span>
+              <h3>Editar acceso</h3>
+            </div>
+
+            <button class="drawer-close" type="button" (click)="cerrarPanelAcceso()">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <div class="mini-modal-body">
+            <form class="master-form compact-form">
+              <label>
+                Username
+                <input
+                  type="text"
+                  [ngModel]="editUsername()"
+                  (ngModelChange)="editUsername.set($event)"
+                  name="editUsername" />
+              </label>
+
+              <label>
+                Correo
+                <input
+                  type="email"
+                  [ngModel]="editCorreo()"
+                  (ngModelChange)="editCorreo.set($event)"
+                  name="editCorreo" />
+              </label>
+
+              <div class="admin-toggle">
+                <label class="admin-toggle-row" [class.is-selected]="editEsAdmin()">
+                  <input
+                    type="checkbox"
+                    [checked]="editEsAdmin()"
+                    (change)="editEsAdmin.set($any($event.target).checked)" />
+                  <span class="admin-toggle-indicator">
+                    @if (editEsAdmin()) {
+                      <i class="fa-solid fa-check"></i>
+                    }
+                  </span>
+                  <span class="admin-toggle-text">Conceder acceso como administrador</span>
+                </label>
+              </div>
+            </form>
+          </div>
+
+          <div class="mini-modal-footer">
+            <div class="form-actions">
+              <button class="action-button primary" type="button" [disabled]="guardando() || !esAdmin()" (click)="guardarAcceso()">
+                {{ guardando() ? 'Guardando...' : (editEsAdmin() ? 'Guardar cambios' : 'Actualizar acceso') }}
+              </button>
             </div>
           </div>
         </aside>

@@ -16,169 +16,331 @@
       <div class="card-head">
         <div class="card-head-inline">
           <div class="panel-head">
-            <span class="panel-kicker">Catalogo institucional</span>
-            <h2>Gestion de cursos</h2>
-            <p>Centraliza los cursos base del sistema antes de asignarlos a periodos, docentes y secciones.</p>
+            <h2>Catalogo de Cursos</h2>
+            <p>Administración de cursos base del sistema.</p>
           </div>
 
           <div class="head-actions">
-            <span class="records-chip">{{ cursos().length }} registrados</span>
+            <button class="action-button primary" type="button" [disabled]="!esAdmin()" (click)="abrirModalRegistro()">
+              <i class="fa-solid fa-plus"></i>
+              <span>Registrar nuevo curso</span>
+            </button>
           </div>
         </div>
       </div>
 
+      <section class="table-panel full-table">
+        <div class="level-slider">
+          <button class="level-arrow" type="button" [disabled]="!puedeRetrocederNivel()" (click)="avanzarNivel(-1)">
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
 
-      <div class="content-grid">
-        <section class="table-panel">
-          <div class="section-head">
+          <div class="level-slider-title">
+            <span class="slider-kicker">Nivel academico</span>
+            <h3>{{ nivelActualTitulo() }}</h3>
+          </div>
+
+          <button class="level-arrow" type="button" [disabled]="!puedeAvanzarNivel()" (click)="avanzarNivel(1)">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+
+        @if (mostrarSkeleton()) {
+          <div class="table-scroll" [class.slide-left]="animacionNivel() === 'left'" [class.slide-right]="animacionNivel() === 'right'">
+            <table class="app-table">
+              <thead>
+                <tr>
+                  <th>Curso</th>
+                  <th>Nivel</th>
+                  <th>Descripcion</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of skeletonRows; track row) {
+                  <tr>
+                    <td><span class="skeleton-line medium"></span></td>
+                    <td><span class="skeleton-line short"></span></td>
+                    <td><span class="skeleton-line long"></span></td>
+                    <td><span class="skeleton-line short"></span></td>
+                    <td><span class="skeleton-line medium"></span></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else if (!cursosFiltrados().length) {
+          <div class="table-state">
+            <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
+            <span>No hay cursos registrados para este nivel.</span>
+            <small>Cambia el nivel con las flechas o registra un nuevo curso.</small>
+          </div>
+        } @else {
+          <div class="table-scroll" [class.slide-left]="animacionNivel() === 'left'" [class.slide-right]="animacionNivel() === 'right'">
+            <table class="app-table">
+              <thead>
+                <tr>
+                  <th>Curso</th>
+                  <th>Nivel</th>
+                  <th>Descripcion</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (curso of cursosFiltrados(); track curso.id) {
+                  <tr>
+                    <td>
+                      <div class="course-cell">
+                        <strong>{{ curso.nombre }}</strong>
+                        <small>ID {{ curso.id }}</small>
+                      </div>
+                    </td>
+                    <td>{{ curso.nivelNombre }}</td>
+                    <td>{{ curso.descripcion || 'Sin descripcion registrada' }}</td>
+                    <td>
+                      <span
+                        class="status-badge"
+                        [class.active]="(curso.estado || 'ACTIVO') === 'ACTIVO'"
+                        [class.inactive]="(curso.estado || 'ACTIVO') === 'INACTIVO'">
+                        {{ curso.estado || 'ACTIVO' }}
+                      </span>
+                    </td>
+                    <td>
+                      <div class="row-actions">
+                        <button
+                          class="row-action"
+                          [class.state-active]="(curso.estado || 'ACTIVO') === 'ACTIVO'"
+                          [class.state-inactive]="(curso.estado || 'ACTIVO') === 'INACTIVO'"
+                          type="button"
+                          [disabled]="actualizandoEstadoCursoId() === curso.id || !esAdmin()"
+                          (click)="toggleEstadoCurso(curso)">
+                          <i [class]="(curso.estado || 'ACTIVO') === 'ACTIVO' ? 'fa-solid fa-ban' : 'fa-solid fa-rotate-left'"></i>
+                          <span>
+                            {{
+                              actualizandoEstadoCursoId() === curso.id
+                                ? 'Actualizando...'
+                                : ((curso.estado || 'ACTIVO') === 'ACTIVO' ? 'Deshabilitar' : 'Habilitar')
+                            }}
+                          </span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+
+    </div>
+
+    @if (mostrarModalRegistro()) {
+      <div class="mini-modal-overlay" [class.is-closing]="cerrandoModalRegistro()" (click)="cerrarModalRegistro()">
+        <aside class="mini-modal-card" [class.is-closing]="cerrandoModalRegistro()" (click)="$event.stopPropagation()">
+          <div class="mini-modal-head">
             <div class="panel-head">
-              <h3>Cursos registrados</h3>
-              <p>Filtra por nivel o busca por nombre para revisar el catalogo actual.</p>
+              <h3>Registrar curso</h3>
+              <p>Agrega un nuevo curso al catalogo academico institucional.</p>
             </div>
+
+            <button class="drawer-close" type="button" (click)="cerrarModalRegistro()">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
           </div>
 
-          <div class="toolbar">
-            <div class="level-tabs">
-              <button class="tab-button" type="button" [class.active]="nivelTab() === 0" (click)="seleccionarNivel(0)">
-                Todos
-              </button>
-              <button class="tab-button" type="button" [class.active]="nivelTab() === 1" (click)="seleccionarNivel(1)">
-                Primaria
-              </button>
-              <button class="tab-button" type="button" [class.active]="nivelTab() === 2" (click)="seleccionarNivel(2)">
-                Secundaria
-              </button>
-            </div>
+          <div class="mini-modal-body">
+            <div class="course-form-layout">
+              <form class="master-form compact-form">
+                <div class="course-form-top-row">
+                  <label>
+                    Nivel
+                    <select [ngModel]="formNivelId()" (ngModelChange)="formNivelId.set(+$event)" name="nivelCurso">
+                      <option [value]="1">Primaria</option>
+                      <option [value]="2">Secundaria</option>
+                    </select>
+                  </label>
 
-            <label class="search-field">
-              <i class="fa-solid fa-magnifying-glass"></i>
-              <input
-                type="text"
-                [ngModel]="filtro()"
-                (ngModelChange)="actualizarFiltro($event)"
-                placeholder="Buscar curso o descripcion" />
-            </label>
-          </div>
+                  <label>
+                    Nombre del curso
+                    <input
+                      type="text"
+                      [ngModel]="formNombre()"
+                      (ngModelChange)="formNombre.set($event)"
+                      name="nombreCurso"
+                      placeholder="Ejemplo: Matematica" />
+                  </label>
+                </div>
 
-          @if (mostrarSkeleton()) {
-            <div class="table-scroll">
-              <table class="app-table">
-                <thead>
-                  <tr>
-                    <th>Curso</th>
-                    <th>Nivel</th>
-                    <th>Descripcion</th>
-                    <th>Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (row of skeletonRows; track row) {
-                    <tr>
-                      <td><span class="skeleton-line medium"></span></td>
-                      <td><span class="skeleton-line short"></span></td>
-                      <td><span class="skeleton-line long"></span></td>
-                      <td><span class="skeleton-line short"></span></td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          } @else if (!cursosFiltrados().length) {
-            <div class="table-state">
-              <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-              <span>No hay cursos para los filtros actuales.</span>
-              <small>Prueba otro nivel o limpia la busqueda para ver mas resultados.</small>
-            </div>
-          } @else {
-            <div class="table-scroll">
-              <table class="app-table">
-                <thead>
-                  <tr>
-                    <th>Curso</th>
-                    <th>Nivel</th>
-                    <th>Descripcion</th>
-                    <th>Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (curso of cursosFiltrados(); track curso.id) {
-                    <tr>
-                      <td>
-                        <div class="course-cell">
-                          <strong>{{ curso.nombre }}</strong>
-                          <small>ID {{ curso.id }}</small>
-                        </div>
-                      </td>
-                      <td>{{ curso.nivelNombre }}</td>
-                      <td>{{ curso.descripcion || 'Sin descripcion registrada' }}</td>
-                      <td>
-                        <span
-                          class="status-badge"
-                          [class.active]="(curso.estado || 'ACTIVO') === 'ACTIVO'"
-                          [class.inactive]="(curso.estado || 'ACTIVO') === 'INACTIVO'">
-                          {{ curso.estado || 'ACTIVO' }}
-                        </span>
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          }
-        </section>
+                <div class="cover-config compact-cover-config">
+                  <span class="cover-config-label">Portada</span>
 
-        <aside class="form-panel">
-          <div class="panel-head">
-            <span class="panel-kicker">Registro</span>
-            <h3>Registrar curso</h3>
-            <p>Agrega un nuevo curso al catalogo academico institucional.</p>
-          </div>
+                  <div class="course-form-cover-row">
+                    <label class="color-picker-field portada-color-field">
+                      <span>Color</span>
+                      <input
+                        type="color"
+                        [ngModel]="formPortadaColor()"
+                        (ngModelChange)="formPortadaColor.set($event)"
+                        name="portadaColor" />
+                    </label>
 
-          <form class="master-form">
-            <label>
-              Nivel
-              <select [ngModel]="formNivelId()" (ngModelChange)="formNivelId.set(+$event)" name="nivelCurso">
-                <option [value]="1">Primaria</option>
-                <option [value]="2">Secundaria</option>
-              </select>
-            </label>
+                    <div class="cover-selectors">
+                      <div class="selector-field">
+                        <span class="selector-label">Icono</span>
+                        <button class="action-button tertiary icon-selector-button" type="button" (click)="abrirModalIconos()">
+                          <i [class]="formPortadaIcono()"></i>
+                          <span>{{ formPortadaIcono() ? 'Cambiar' : 'Seleccionar' }}</span>
+                        </button>
+                      </div>
 
-            <label>
-              Nombre del curso
-              <input
-                type="text"
-                [ngModel]="formNombre()"
-                (ngModelChange)="formNombre.set($event)"
-                name="nombreCurso"
-                placeholder="Ejemplo: Matematica" />
-            </label>
+                      <div class="selector-field">
+                        <span class="selector-label">Imagen de portada</span>
+                        <button class="action-button tertiary image-selector-button" type="button" (click)="abrirModalImagenes()">
+                          <i class="fa-regular fa-image"></i>
+                          <span>{{ formPortadaImagen() ? 'Cambiar' : 'Seleccionar' }}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-            <label>
-              Descripcion
-              <textarea
-                [ngModel]="formDescripcion()"
-                (ngModelChange)="formDescripcion.set($event)"
-                name="descripcionCurso"
-                rows="4"
-                placeholder="Descripcion breve del curso"></textarea>
-            </label>
+                <label>
+                  Descripción
+                  <textarea
+                    [ngModel]="formDescripcion()"
+                    (ngModelChange)="formDescripcion.set($event)"
+                    name="descripcionCurso"
+                    rows="4"
+                    placeholder="Descripcion breve del curso"></textarea>
+                </label>
 
-            @if (!esAdmin()) {
-              <div class="form-note">
-                <i class="fa-solid fa-lock"></i>
-                <span>Solo un administrador puede registrar cursos.</span>
+                @if (!esAdmin()) {
+                  <div class="form-note">
+                    <i class="fa-solid fa-lock"></i>
+                    <span>Solo un administrador puede registrar cursos.</span>
+                  </div>
+                }
+              </form>
+
+              <div class="cover-preview-panel">
+                <span class="cover-preview-label">Vista previa</span>
+
+                <article class="course-preview-card">
+                  <div
+                    class="course-preview-cover"
+                    [style.--cover-color]="formPortadaColor()"
+                    [class.has-image]="!!formPortadaImagen()">
+                    @if (formPortadaImagen()) {
+                      <img class="course-preview-image" [src]="formPortadaImagen()!" alt="Portada del curso" />
+                    }
+                    <span class="course-preview-badge">
+                      {{ formNivelId() === 1 ? 'Primaria' : 'Secundaria' }}
+                    </span>
+                  </div>
+
+                  <div class="course-preview-body">
+                    <div class="course-preview-title-row">
+                      <strong>{{ formNombre().trim() || 'Nombre del curso' }}</strong>
+                      <span class="course-preview-title-icon">
+                        <i [class]="formPortadaIcono()"></i>
+                      </span>
+                    </div>
+                    <small>{{ formDescripcion().trim() || 'Descripcion breve del curso' }}</small>
+                  </div>
+
+                  <div class="course-preview-footer">
+                    <span><i class="fa-solid fa-users"></i> Seccion A</span>
+                    <span class="course-preview-action">
+                      <i class="fa-solid fa-pen-to-square"></i>
+                      <span>Registrar Notas</span>
+                    </span>
+                  </div>
+                </article>
               </div>
-            }
+            </div>
+          </div>
 
+          <div class="mini-modal-footer">
             <div class="form-actions">
               <button class="action-button primary" type="button" [disabled]="guardando() || !esAdmin()" (click)="guardarCurso()">
                 {{ guardando() ? 'Guardando...' : 'Guardar curso' }}
               </button>
               <button class="action-button tertiary" type="button" (click)="limpiarFormulario()">Limpiar</button>
             </div>
-          </form>
+          </div>
         </aside>
       </div>
-    </div>
+    }
+
+    @if (mostrarModalIconos()) {
+      <div class="icon-modal-overlay" [class.is-closing]="cerrandoModalIconos()" (click)="cerrarModalIconos()">
+        <div class="icon-modal-card" [class.is-closing]="cerrandoModalIconos()" (click)="$event.stopPropagation()">
+          <div class="icon-modal-head">
+            <div class="panel-head">
+              <span class="panel-kicker">Portada</span>
+              <h3>Seleccionar icono</h3>
+              <p>Elige el icono que identificara visualmente al curso.</p>
+            </div>
+
+            <button class="drawer-close" type="button" (click)="cerrarModalIconos()">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <div class="icon-modal-body">
+            <div class="icon-grid">
+              @for (icono of iconosPortada; track icono.valor) {
+                <button
+                  class="icon-option"
+                  type="button"
+                  [class.active]="formPortadaIcono() === icono.valor"
+                  (click)="seleccionarIconoPortada(icono.valor)">
+                  <span class="icon-option-preview">
+                    <i [class]="icono.valor"></i>
+                  </span>
+                  <span>{{ icono.etiqueta }}</span>
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (mostrarModalImagenes()) {
+      <div class="icon-modal-overlay" [class.is-closing]="cerrandoModalImagenes()" (click)="cerrarModalImagenes()">
+        <div class="icon-modal-card image-modal-card" [class.is-closing]="cerrandoModalImagenes()" (click)="$event.stopPropagation()">
+          <div class="icon-modal-head">
+            <div class="panel-head">
+              <span class="panel-kicker">Portada</span>
+              <h3>Seleccionar imagen</h3>
+              <p>Elige una imagen por defecto para la portada del curso.</p>
+            </div>
+
+            <button class="drawer-close" type="button" (click)="cerrarModalImagenes()">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <div class="icon-modal-body">
+            <div class="image-grid">
+              @for (imagen of imagenesPortada; track imagen.ruta) {
+                <button
+                  class="image-option"
+                  type="button"
+                  [class.active]="formPortadaImagen() === imagen.ruta"
+                  (click)="seleccionarImagenPortada(imagen.ruta)">
+                  <img [src]="imagen.ruta" [alt]="imagen.etiqueta" />
+                  <span>{{ imagen.etiqueta }}</span>
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    }
   </section>
 </app-shell>
