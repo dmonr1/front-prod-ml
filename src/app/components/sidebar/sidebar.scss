@@ -7,9 +7,9 @@
   --sidebar-line: #e6ebf5;
   --sidebar-text: #48607e;
   --sidebar-text-strong: #142742;
-  --sidebar-soft: #eef4ff;
+  --sidebar-soft: #5867e9;
   --sidebar-soft-strong: #dce8ff;
-  --sidebar-accent: #4f7cff;
+  --sidebar-accent: #818dff;
   --sidebar-shadow: 8px 0 30px rgba(15, 23, 42, 0.08);
   --sidebar-hover-shadow: 0 10px 22px rgba(79, 124, 255, 0.12);
 
@@ -156,7 +156,7 @@
   width: 32px;
   height: 32px;
   border-radius: 11px;
-  color: #4673db;
+  color: #ffffff;
   background: var(--sidebar-soft);
   transition:
     background 0.18s ease,
@@ -176,6 +176,37 @@
   color: var(--sidebar-text-strong);
   background: var(--sidebar-soft-strong);
   box-shadow: var(--sidebar-hover-shadow);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+
+}
+
+.sidebar a.active::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -75%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+      120deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.3) 50%,
+      rgba(255, 255, 255, 0) 100%
+  );
+  transform: skewX(-25deg);
+  pointer-events: none;
+  animation: shimmer 2s infinite;
+  z-index: 1; 
+}
+
+@keyframes shimmer {
+  0% { left: -75%; }
+  100% { left: 125%; }
+}
+
+.sidebar a.active:hover {
+  transform: translateX(1px);
+  box-shadow: 0 10px 18px rgba(79, 124, 255, 0.22);
 }
 
 .sidebar a:hover .nav-icon,
@@ -236,7 +267,7 @@
   height: 26px;
   flex-basis: 26px;
   border-radius: 9px;
-  font-size: 0.75rem;
+  font-size: 11px;
 }
 
 .sidebar-footer {
@@ -311,18 +342,19 @@
   border: none;
   border-radius: 14px;
   color: #fff;
-  background: linear-gradient(135deg, #416ffd, #5b86ff);
+  /* Gradient basado en tu color principal #4a5be2 */
+  background: linear-gradient(135deg, #4a5be2, #6c7cff, #4a5be2);
+  background-size: 200% 200%;
   box-shadow: 0 14px 24px rgba(79, 124, 255, 0.22);
   cursor: pointer;
-  transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease,
-    opacity 0.18s ease;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease, background-position 0.5s ease;
 }
 
+/* Hover con efecto shimmer animado */
 .logout:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 16px 26px rgba(79, 124, 255, 0.26);
+  transform: translateY(-2px);
+  box-shadow: 0 18px 28px rgba(79, 124, 255, 0.3);
+  background-position: 100% 0;
 }
 
 .sidebar.collapsed .sidebar-head {

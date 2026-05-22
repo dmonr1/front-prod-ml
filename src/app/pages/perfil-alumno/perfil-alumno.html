@@ -1,144 +1,255 @@
 <app-shell>
   <section class="student-profile-page">
     <div class="profile-card">
-      <div class="profile-head">
+      <div class="profile-head profile-slide-in profile-slide-in-top">
         <a class="back-link-button" routerLink="/predicciones">
           <i class="fa-solid fa-arrow-left"></i>
           <span>Volver a seguimiento</span>
         </a>
-
-        <div class="profile-title">
-          <span class="eyebrow">Perfil del alumno</span>
-          <h2>{{ prediccionSeleccionada()?.alumnoNombreCompleto || 'Ficha del alumno' }}</h2>
-          <p>
-            @if (prediccionSeleccionada()) {
-              {{ prediccionSeleccionada()!.codigoAlumno }} · {{ prediccionSeleccionada()!.grado }} ·
-              Seccion {{ prediccionSeleccionada()!.seccion }}
-            } @else {
-              Selecciona un alumno desde Predicciones para revisar su ficha completa.
-            }
-          </p>
-        </div>
       </div>
 
       @if (cargando()) {
-      <section class="state-card">
+      <section class="state-card profile-slide-in profile-slide-in-bottom">
         <strong>Cargando ficha del alumno...</strong>
-        <p>Estamos reuniendo predicciones, alertas y recomendaciones.</p>
+        <p>Estamos reuniendo predicciones, alertas y recomendaciones del seguimiento.</p>
       </section>
       } @else if (error()) {
-      <section class="state-card state-error">
+      <section class="state-card state-error profile-slide-in profile-slide-in-bottom">
         <strong>Revisa el flujo</strong>
         <p>{{ error() }}</p>
       </section>
       } @else if (prediccionSeleccionada(); as detalle) {
-      <div class="summary-grid">
-        <article class="summary-tile">
-          <span>Predicciones</span>
-          <strong>{{ resumen().total }}</strong>
-        </article>
-        <article class="summary-tile">
-          <span>Riesgo alto</span>
-          <strong class="tone-high">{{ resumen().alto }}</strong>
-        </article>
-        <article class="summary-tile">
-          <span>Riesgo medio</span>
-          <strong class="tone-medium">{{ resumen().medio }}</strong>
-        </article>
-        <article class="summary-tile">
-          <span>Riesgo promedio</span>
-          <strong>{{ resumen().promedio | number:'1.0-1' }}%</strong>
-        </article>
-      </div>
+      <div class="profile-layout">
+        <aside class="student-column profile-slide-in profile-slide-in-top">
+          <article class="student-summary-card">
+            <div class="student-avatar">{{ avatarIniciales() || 'A' }}</div>
 
-      <div class="profile-grid">
-        <aside class="prediction-list-card">
-          <div class="section-head">
-            <span class="eyebrow">Casos detectados</span>
-            <h3>Predicciones del alumno</h3>
-          </div>
+            <div class="student-meta">
+              <h2>{{ detalle.alumnoNombreCompleto }}</h2>
+              <span>{{ detalle.codigoAlumno }}</span>
+              <span>{{ detalle.grado }} · Seccion {{ detalle.seccion }}</span>
+              <span>Periodo {{ detalle.anioAcademico || 'Actual' }}</span>
+            </div>
+          </article>
 
-          <div class="case-list">
-            @for (item of predicciones(); track item.id) {
-            <button type="button" class="case-row" [class.active]="seleccionadaId() === item.id"
-              (click)="seleccionarPrediccion(item.id)">
-              <div class="case-main">
-                <strong>{{ item.curso || 'Riesgo global' }}</strong>
-                <span>{{ item.nombrePeriodoEvaluacion }}</span>
-              </div>
-              <span class="risk-badge" [class.high]="item.nivelRiesgoNormalizado === 'ALTO'"
-                [class.medium]="item.nivelRiesgoNormalizado === 'MEDIO'"
-                [class.low]="item.nivelRiesgoNormalizado === 'BAJO'">
-                {{ item.nivelRiesgoNormalizado }}
-              </span>
-            </button>
-            }
-          </div>
+          <article class="cases-card">
+            <div class="section-head">
+              <span class="eyebrow">Resumen</span>
+              <h3>Casos detectados</h3>
+              <p>Selecciona el caso que quieres revisar con mas detalle.</p>
+            </div>
+
+            <div class="case-list">
+              @for (item of predicciones(); track item.id) {
+              <button type="button" class="case-row" [class.active]="seleccionadaId() === item.id"
+                (click)="seleccionarPrediccion(item.id)">
+                <div class="case-main">
+                  <strong>{{ item.curso || 'Riesgo global' }}</strong>
+                  <span>{{ item.nombrePeriodoEvaluacion }}</span>
+                </div>
+
+                <span class="risk-badge" [class.high]="item.nivelRiesgoNormalizado === 'ALTO'"
+                  [class.medium]="item.nivelRiesgoNormalizado === 'MEDIO'"
+                  [class.low]="item.nivelRiesgoNormalizado === 'BAJO'">
+                  {{ item.nivelRiesgoNormalizado }}
+                </span>
+              </button>
+              }
+            </div>
+          </article>
         </aside>
 
-        <section class="detail-panel">
-          <div class="detail-hero">
-            <div class="detail-score">
-              <span>Probabilidad de fracaso estimada</span>
-              <div class="score-ring" [class.high]="detalle.nivelRiesgoNormalizado === 'ALTO'"
-                [class.medium]="detalle.nivelRiesgoNormalizado === 'MEDIO'"
-                [class.low]="detalle.nivelRiesgoNormalizado === 'BAJO'">
-                {{ detalle.puntaje | number:'1.0-0' }}%
+        <section class="analytics-column">
+          <div class="summary-grid profile-slide-in profile-slide-in-top">
+            @for (item of metricasKpi(); track item.etiqueta) {
+            <article class="summary-tile" [class.tone-high]="item.tono === 'high'"
+              [class.tone-medium]="item.tono === 'medium'" [class.tone-low]="item.tono === 'low'">
+              <span>{{ item.etiqueta }}</span>
+              <strong>{{ item.valor }}</strong>
+              <small>{{ item.ayuda }}</small>
+            </article>
+            }
+          </div>
+
+          <div class="analysis-grid profile-slide-in profile-slide-in-middle">
+            <article class="analysis-card hero-analytics-card">
+              <div class="analysis-head">
+                <div class="head-card">
+                  <div>
+                    <span class="eyebrow">Prediccion de riesgo academico</span>
+                    <h3>{{ detalle.curso || 'Vista global del alumno' }}</h3>
+                  </div>
+
+                  <span class="risk-badge tit" [class.high]="detalle.nivelRiesgoNormalizado === 'ALTO'"
+                    [class.medium]="detalle.nivelRiesgoNormalizado === 'MEDIO'"
+                    [class.low]="detalle.nivelRiesgoNormalizado === 'BAJO'">
+                    {{ detalle.nivelRiesgoNormalizado }}
+                  </span>
+                </div>
+
+                <div class="detail-tags">
+
+                  @if (periodosDisponiblesPerfil().length) {
+                  <div class="period-chip-row">
+                    @for (periodo of periodosDisponiblesPerfil(); track periodo.id) {
+                    <button type="button" class="period-chip"
+                      [class.active]="detalle.periodoEvaluacionId === periodo.id"
+                      (click)="seleccionarPeriodoPerfil(periodo.id)">
+                      {{ periodo.nombre }}
+                    </button>
+                    }
+                  </div>
+                  }
+                </div>
               </div>
-            </div>
-            <div class="detail-tags">
-              <span class="risk-badge" [class.high]="detalle.nivelRiesgoNormalizado === 'ALTO'"
-                [class.medium]="detalle.nivelRiesgoNormalizado === 'MEDIO'"
-                [class.low]="detalle.nivelRiesgoNormalizado === 'BAJO'">
-                {{ detalle.nivelRiesgoNormalizado }}
-              </span>
-              <span class="soft-chip">{{ detalle.nombrePeriodoEvaluacion }}</span>
-              @if (detalle.curso) {
-              <span class="soft-chip">{{ detalle.curso }}</span>
+
+
+
+              <div class="risk-hero-grid">
+                <div class="risk-gauge-block">
+                  <div class="score-arc-shell">
+                    <svg class="score-arc" viewBox="0 0 220 130" aria-hidden="true">
+                      <path d="M 30 110 A 80 80 0 0 1 190 110" pathLength="100" class="score-arc-track"></path>
+                      <path d="M 30 110 A 80 80 0 0 1 190 110" pathLength="100" class="score-arc-fill"
+                        [class.high]="detalle.nivelRiesgoNormalizado === 'ALTO'"
+                        [class.medium]="detalle.nivelRiesgoNormalizado === 'MEDIO'"
+                        [class.low]="detalle.nivelRiesgoNormalizado === 'BAJO'"
+                        [attr.stroke-dasharray]="detalle.puntaje + ' 100'"></path>
+                    </svg>
+                    <div
+                      class="score-arc-copy"
+                      [class.high]="detalle.nivelRiesgoNormalizado === 'ALTO'"
+                      [class.medium]="detalle.nivelRiesgoNormalizado === 'MEDIO'"
+                      [class.low]="detalle.nivelRiesgoNormalizado === 'BAJO'"
+                    >
+                      <strong>{{ detalle.puntaje | number:'1.0-0' }}%</strong>
+                      <span>{{ detalle.nivelRiesgoNormalizado === 'ALTO' ? 'Riesgo alto' :
+                        detalle.nivelRiesgoNormalizado === 'MEDIO' ? 'Riesgo medio' : 'Riesgo bajo' }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="hero-copy">
+                <h4>Interpretacion del riesgo</h4>
+                <p>{{ detalle.alertaPrincipal }}</p>
+              </div>
+            </article>
+
+            <article class="analysis-card factors-card">
+              <div class="analysis-head">
+                <div>
+                  <span class="eyebrow">Factores que influyen</span>
+                  <h3>Lectura del caso actual</h3>
+                </div>
+              </div>
+
+              <div class="factor-bars">
+                @for (factor of factoresAnaliticos(); track factor.titulo) {
+                <div class="factor-row">
+                  <div class="factor-meta">
+                    <strong>{{ factor.titulo }}</strong>
+                    <span>{{ factor.subtitulo }}</span>
+                  </div>
+
+                  <div class="factor-bar-shell">
+                    <div class="factor-bar-fill" [class.high]="factor.tono === 'high'"
+                      [class.medium]="factor.tono === 'medium'" [class.low]="factor.tono === 'low'"
+                      [style.width.%]="factor.valor"></div>
+                  </div>
+
+                  <span class="factor-level" [class.high]="factor.tono === 'high'"
+                    [class.medium]="factor.tono === 'medium'" [class.low]="factor.tono === 'low'">
+                    {{ factor.etiqueta }}
+                  </span>
+                </div>
+                }
+              </div>
+            </article>
+
+            <article class="analysis-card evolution-card">
+              <div class="analysis-head">
+                <div>
+                  <span class="eyebrow">Evolucion del riesgo</span>
+                  <h3>Por periodos de evaluacion</h3>
+                </div>
+              </div>
+
+              @if (svgEvolucion().points.length > 1) {
+              <div class="evolution-chart">
+                <div class="chart-body">
+                  <div class="chart-y-axis" aria-hidden="true">
+                    <span>100%</span>
+                    <span>75%</span>
+                    <span>50%</span>
+                    <span>25%</span>
+                    <span>0%</span>
+                  </div>
+
+                  <div class="chart-plot">
+                    <svg viewBox="0 0 360 220" preserveAspectRatio="none" aria-hidden="true">
+                      <line x1="24" y1="24" x2="336" y2="24" class="grid-line"></line>
+                      <line x1="24" y1="72" x2="336" y2="72" class="grid-line"></line>
+                      <line x1="24" y1="120" x2="336" y2="120" class="grid-line"></line>
+                      <line x1="24" y1="168" x2="336" y2="168" class="grid-line"></line>
+                      <line x1="24" y1="196" x2="336" y2="196" class="grid-axis"></line>
+                      <line x1="24" y1="24" x2="24" y2="196" class="grid-axis"></line>
+                      <path [attr.d]="svgEvolucion().path" class="chart-line"></path>
+                      @for (point of svgEvolucion().points; track point.etiqueta + point.valor) {
+                      <text
+                        [attr.x]="point.x"
+                        [attr.y]="point.y - 14"
+                        text-anchor="middle"
+                        class="chart-point-value"
+                      >
+                        {{ point.valor | number:'1.0-0' }}%
+                      </text>
+                      <circle [attr.cx]="point.x" [attr.cy]="point.y" r="6" class="chart-point"></circle>
+                      }
+                    </svg>
+
+                    <div class="chart-labels">
+                      @for (point of svgEvolucion().points; track point.etiqueta + point.valor) {
+                      <span>{{ obtenerInicialPeriodo(point.etiqueta) }}</span>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
+              } @else {
+              <div class="mini-state">
+                <i class="fa-solid fa-chart-line"></i>
+                <span>Aun no hay suficientes periodos para mostrar una evolucion de riesgo.</span>
+              </div>
               }
-            </div>
-          </div>
-
-          <div class="info-grid">
-            <article class="info-card">
-              <h4>Alerta principal</h4>
-              <p>{{ detalle.alertaPrincipal }}</p>
-            </article>
-
-            <article class="info-card">
-              <h4>Recomendacion</h4>
-              <p>{{ detalle.recomendacionPrincipal }}</p>
             </article>
           </div>
 
-          <article class="info-card">
-            <div class="section-head compact-head">
+          <section class="recommendations-panel profile-slide-in profile-slide-in-bottom">
+            <div class="analysis-head">
               <div>
-                <span class="eyebrow">Variables</span>
-                <h3>Factores considerados</h3>
+                <span class="eyebrow">Recomendaciones personalizadas</span>
+                <h3>Acciones sugeridas para el alumno</h3>
               </div>
             </div>
-            <div class="factor-list">
-              @for (factor of detalle.factores; track factor) {
-              <span class="factor-pill">{{ factor }}</span>
+
+            <div class="recommendations-grid">
+              @for (recomendacion of recomendacionesPersonalizadas(); track recomendacion.titulo) {
+              <article class="recommendation-card" [class.high]="recomendacion.tono === 'high'"
+                [class.medium]="recomendacion.tono === 'medium'" [class.low]="recomendacion.tono === 'low'">
+                <div class="recommendation-icon">
+                  <i [class]="recomendacion.icono"></i>
+                </div>
+
+                <div class="recommendation-copy">
+                  <h4>{{ recomendacion.titulo }}</h4>
+                  <p>{{ recomendacion.descripcion }}</p>
+                  <a class="inline-link" href="javascript:void(0)">{{ recomendacion.accion }}</a>
+                </div>
+              </article>
               }
             </div>
-          </article>
-
-          <article class="trace-card">
-            <div class="trace-row">
-              <span>Modelo</span>
-              <strong>{{ detalle.modeloVersion || 'Sin version registrada' }}</strong>
-            </div>
-            <div class="trace-row">
-              <span>Fecha de prediccion</span>
-              <strong>{{ detalle.fechaPrediccion || 'Sin fecha registrada' }}</strong>
-            </div>
-            <div class="trace-row">
-              <span>Contexto</span>
-              <strong>{{ detalle.nivel }} · {{ detalle.grado }} · Seccion {{ detalle.seccion }}</strong>
-            </div>
-          </article>
+          </section>
         </section>
       </div>
       }

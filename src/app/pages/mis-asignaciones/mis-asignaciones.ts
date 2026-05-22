@@ -4,10 +4,13 @@ import { Shell } from '../../layouts/shell/shell';
 import { CustomAlertComponent } from '../../components/custom-alert/custom-alert';
 import { AsignacionDocente } from '../../models/asignacion';
 import { Curso } from '../../models/curso';
+import { Seccion } from '../../models/seccion';
 import { Tutoria } from '../../models/tutoria';
 import { AuthService } from '../../services/auth/auth.service';
 import { CursoService } from '../../services/academico/curso.service';
 import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
+import { MatriculaService } from '../../services/academico/matricula.service';
+import { SeccionService } from '../../services/academico/seccion.service';
 import { AsignacionAcademicaService } from '../../services/asignaciones/asignacion-academica.service';
 import { TutoriaService } from '../../services/asignaciones/tutoria.service';
 import { forkJoin } from 'rxjs';
@@ -23,6 +26,8 @@ export class MisAsignaciones implements OnInit {
   private readonly asignacionService = inject(AsignacionAcademicaService);
   private readonly cursoService = inject(CursoService);
   private readonly periodoAcademicoService = inject(PeriodoAcademicoService);
+  private readonly matriculaService = inject(MatriculaService);
+  private readonly seccionService = inject(SeccionService);
   private readonly tutoriaService = inject(TutoriaService);
 
   readonly usuario = computed(() => this.authService.obtenerUsuario());
@@ -33,8 +38,11 @@ export class MisAsignaciones implements OnInit {
   readonly periodoAcademicoId = signal<number | null>(null);
   readonly asignaciones = signal<AsignacionDocente[]>([]);
   readonly cursosCatalogo = signal<Curso[]>([]);
+  readonly secciones = signal<Seccion[]>([]);
+  readonly matriculasPorSeccion = signal<Record<number, number>>({});
   readonly seccionesTutoradas = signal<Tutoria[]>([]);
   readonly mostrarSkeleton = computed(() => this.cargando() || !!this.error());
+  readonly periodoAcademicoAnio = computed(() => this.asignaciones()[0]?.anioAcademico ?? this.seccionesTutoradas()[0]?.anioAcademico ?? null);
 
   ngOnInit(): void {
     this.resolverPeriodoYCargarAsignaciones();
@@ -107,15 +115,17 @@ export class MisAsignaciones implements OnInit {
     forkJoin({
       asignaciones: this.asignacionService.listarAsignaciones(docenteId, periodoAcademicoId),
       tutorias: this.tutoriaService.listarPorDocente(docenteId, periodoAcademicoId),
-      cursos: this.cursoService.listar()
+      cursos: this.cursoService.listar(),
+      secciones: this.seccionService.listar(periodoAcademicoId)
     }).subscribe({
-      next: ({ asignaciones, tutorias, cursos }) => {
+      next: ({ asignaciones, tutorias, cursos, secciones }) => {
         this.asignaciones.set(asignaciones);
         this.cursosCatalogo.set(cursos);
+        this.secciones.set(secciones);
         this.seccionesTutoradas.set(
           tutorias.filter((tutoria) => (tutoria.estado ?? 'ACTIVO') === 'ACTIVO')
         );
-        this.cargando.set(false);
+        this.cargarMatriculasPorSeccion(periodoAcademicoId);
       },
       error: (error) => {
         this.error.set(
@@ -140,6 +150,17 @@ export class MisAsignaciones implements OnInit {
     return `${tutoria.grado} - Seccion ${tutoria.seccion}`;
   }
 
+  obtenerResumenAlumnosTutoria(tutoria: Tutoria): string {
+    const matriculados = this.matriculasPorSeccion()[tutoria.seccionId] ?? 0;
+    const capacidad = this.secciones().find((seccion) => seccion.id === tutoria.seccionId)?.capacidad ?? null;
+
+    if (capacidad && capacidad > 0) {
+      return `${matriculados}/${capacidad} alumnos`;
+    }
+
+    return `${matriculados} alumnos`;
+  }
+
   obtenerCursoCatalogo(cursoId: number): Curso | null {
     return this.cursosCatalogo().find((curso) => curso.id === cursoId) ?? null;
   }
@@ -156,20 +177,32 @@ export class MisAsignaciones implements OnInit {
     return this.obtenerCursoCatalogo(asignacion.cursoId)?.portadaIcono ?? 'fa-solid fa-book-open';
   }
 
-  desplazarHorizontal(event: WheelEvent): void {
-    const contenedor = event.currentTarget as HTMLElement | null;
-    if (!contenedor) {
+  private cargarMatriculasPorSeccion(periodoAcademicoId: number): void {
+    const seccionesTutoradas = this.seccionesTutoradas();
+
+    if (!seccionesTutoradas.length) {
+      this.matriculasPorSeccion.set({});
+      this.cargando.set(false);
       return;
     }
 
-    if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) {
-      return;
-    }
+    const solicitudes = seccionesTutoradas.map((tutoria) =>
+      this.matriculaService.listar(periodoAcademicoId, tutoria.seccionId)
+    );
 
-    event.preventDefault();
-    contenedor.scrollBy({
-      left: event.deltaY,
-      behavior: 'smooth'
+    forkJoin(solicitudes).subscribe({
+      next: (resultados) => {
+        const resumen: Record<number, number> = {};
+        seccionesTutoradas.forEach((tutoria, index) => {
+          resumen[tutoria.seccionId] = resultados[index]?.length ?? 0;
+        });
+        this.matriculasPorSeccion.set(resumen);
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.matriculasPorSeccion.set({});
+        this.cargando.set(false);
+      }
     });
   }
 }

@@ -19,7 +19,7 @@
 }
 
 .panel-card {
-  padding: 20px 30px;
+  padding: 10px 30px;
 }
 
 .grades-toolbar,
@@ -98,11 +98,19 @@
   gap: 6px;
   padding: 8px 10px;
   border-radius: 12px;
-  background: #eef5ff;
-  color: #1d5fc4;
+  border: 2px solid #4e5de2;
+  background: #ffffff;
+  color: #4e5de2;
   font-size: 12px;
   font-weight: 700;
   text-decoration: none;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease, transform 160ms ease, opacity 160ms ease;
+}
+
+.back-link-button:not(:disabled):hover {
+
+  background: #f7fbff;
+  transform: scale(0.92);
 }
 
 .state-card {
@@ -117,7 +125,7 @@
 
 .panel-card {
   display: grid;
-  gap: 18px;
+  gap: 5px;
   border-radius: 18px;
   background: #fff;
 }
@@ -148,9 +156,9 @@
 .module-form select,
 .app-table input {
   width: 100%;
-  border: 1px solid var(--line);
+  border: 1px solid #4e5de2;
   border-radius: 12px;
-  background: #fbfdff;
+  background: #ffffff;
   color: var(--text);
   outline: none;
 }
@@ -414,33 +422,33 @@
 .icon-action-button {
   border: none;
   cursor: pointer;
-  transition: transform 180ms ease, background 180ms ease, color 180ms ease;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease, transform 160ms ease, opacity 160ms ease;
 }
 
 .action-button {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 40px;
-  padding: 0 14px;
+  padding: 8px 14px;
   border-radius: 12px;
-  font-size: 12px;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 650;
 }
 
 .action-button.primary {
-  background: #1d5fc4;
+  background: #4e5de2;
   color: #fff;
 }
 
 .action-button.tertiary {
-  background: #eef5ff;
-  color: #1d5fc4;
+  border: 2px solid #4e5de2;
+  background: #ffffff;
+  color: #4e5de2;
 }
 
 .action-button:hover,
 .icon-action-button:hover {
-  transform: translateY(-1px);
+  transform: scale(0.97);
 }
 
 .icon-action-button {
@@ -478,13 +486,21 @@
 .calendar-nav {
   display: inline-grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
-  border: 1px solid #d4e4fb;
-  border-radius: 12px;
-  background: #eef5ff;
+  width: 40px;
+  height: 40px;
+  border: 2px solid #4473be;
+  border-radius: 50%;
+  background: #ffffff;
   color: #1d5fc4;
   cursor: pointer;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease, transform 160ms ease, opacity 160ms ease;
+}
+
+.calendar-nav:not(:disabled):hover {
+  color: #2159b6;
+  border-color: #2159b6;
+  background: #f7fbff;
+  transform: scale(0.92);
 }
 
 .calendar-nav:disabled {
@@ -527,11 +543,10 @@
   min-height: 34px;
   padding: 7px 12px;
   border-radius: 999px;
-  border: 1px solid #d4e4fb;
-  background: #eef5ff;
-  color: #1d5fc4;
-  font-size: 0.78rem;
-  font-weight: 800;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 550;
+  background: #4e5de2;
 }
 
 .grade-input {
@@ -575,6 +590,7 @@
 .notes-legend {
   display: grid;
   gap: 10px;
+  margin-top: 10px;
 }
 
 .notes-legend-label {
@@ -598,18 +614,18 @@
   padding: 8px 10px;
   border: 1px solid #d8e5f7;
   border-radius: 12px;
-  background: #f7fbff;
+  background: #d0d3f5;
   color: #112033;
 }
 
 .notes-legend-item strong {
-  color: #1d5fc4;
+  color: #4a5be2;
   font-size: 12px;
   font-weight: 800;
 }
 
 .notes-legend-item small {
-  color: #5f6f8e;
+  color: #4a5be2;
   font-size: 12px;
 }
 

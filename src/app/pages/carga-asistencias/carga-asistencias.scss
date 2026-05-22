@@ -5,17 +5,32 @@
 
 .attendance-page {
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  align-content: start;
   min-height: 100%;
   background: #ffffff;
   padding: 25px;
   border-radius: 28px;
+  gap: 12px;
   box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
+}
+
+.attendance-slide-in {
+  opacity: 0;
+  animation: attendance-component-in 320ms cubic-bezier(.22, .7, .2, 1) forwards;
+}
+
+.attendance-slide-in-top {
+  animation-delay: 40ms;
+}
+
+.attendance-slide-in-bottom {
+  animation-delay: 110ms;
 }
 
 .attendance-toolbar,
 .state-card {
-  padding: 0 22px 15px;
+  padding: 10px 22px 15px;
 }
 
 .panel-card {
@@ -37,7 +52,7 @@
   margin: 8px 0 6px;
 }
 
-.attendance-toolbar{
+.attendance-toolbar {
   flex-direction: column;
 }
 
@@ -59,11 +74,15 @@
   width: 100%;
 }
 
+.attendance-toolbar-bottom {
+  justify-content: flex-start;
+}
+
 .attendance-heading {
   display: grid;
   gap: 6px;
   min-width: 0;
-  
+
 }
 
 .attendance-heading h2 {
@@ -86,6 +105,190 @@
   justify-content: flex-end;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.attendance-summary-stack {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.tutoria-dropdown {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-picker-label {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.section-picker {
+  gap: 8px;
+  cursor: pointer;
+}
+
+.section-picker strong {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.tutoria-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  z-index: 12;
+  display: grid;
+  gap: 12px;
+  min-width: 290px;
+  padding: 14px;
+  border-radius: 20px;
+  background: #f1faff;
+  box-shadow: 9px 9px 20px 4px var(--tw-shadow-color, rgba(0, 0, 0, 0.07)), 0 4px 6px -4px var(--tw-shadow-color, rgba(0, 0, 0, 0.1));
+}
+
+.tutoria-option-card {
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  border: none;
+  border-radius: 16px;
+  background: #ffffff;
+  color: #112033;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 9px 9px 20px 4px rgb(0 0 0 / 5%), 0 4px 6px -4px rgb(0 0 0 / 8%);
+  transition:
+    transform 140ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.tutoria-option-card:hover {
+  transform: translateY(-1px);
+  background: #fbfdff;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
+}
+
+.tutoria-option-card.active {
+  background: #ffffff;
+  border: 1px solid #26afff;
+  box-shadow:
+    0 0 0 2px rgba(91, 149, 255, 0.18),
+    0 14px 28px rgba(15, 23, 42, 0.08);
+}
+
+.tutoria-option-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tutoria-option-title {
+  color: #0f766e;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tutoria-option-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #c27aff;
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.tutoria-option-strong {
+  color: #112033;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tutoria-option-card small {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.tutoria-option-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 0px;
+  padding-top: 5px;
+  border-top: 1px solid #e8eef5;
+  color: #6b7a99;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.tutoria-option-footer span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tutoria-option-link {
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: #e8f4ff;
+  color: #000000;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.attendance-step-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.attendance-step-banner {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 12px;
+  padding: 12px 14px;
+  box-shadow: 3px 4px 13px #d8e5f7d4;
+  border-radius: 16px;
+  background: #f7fbff;
+}
+
+.attendance-step-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: #e7f0ff;
+  color: #076aff;
+  font-size: 15px;
+}
+
+.attendance-step-copy strong {
+  color: #112033;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.attendance-step-copy small {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .tutoria-switcher {
@@ -134,7 +337,7 @@
   display: grid;
   gap: 18px;
   border-radius: 18px;
-  background: #fff;
+  background: #f1faff8c;
 }
 
 .eyebrow {
@@ -169,46 +372,59 @@
 }
 
 .period-switcher {
-  display: inline-flex;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 48px;
   align-items: center;
-  gap: 10px;
-  justify-content: space-between;
+  gap: 12px;
   width: 100%;
 }
 
-.calendar-nav {
+.period-arrow {
   display: inline-grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
-  border: 1px solid #d4e4fb;
-  border-radius: 12px;
-  background: #eef5ff;
-  color: #1d5fc4;
+  width: 40px;
+  height: 40px;
+  border: 2px solid #4473be;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #3c5370;
   cursor: pointer;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease,
+    opacity 160ms ease;
 }
 
-.calendar-nav:disabled {
+.period-arrow:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
 
-.calendar-current {
+.period-arrow:not(:disabled):hover {
+  color: #2159b6;
+  border-color: #2159b6;
+  background: #f7fbff;
+  transform: scale(0.92);
+}
+
+.period-slider-title {
   display: grid;
-  gap: 2px;
-  min-width: 210px;
-  padding: 10px 14px;
-  border-radius: 16px;
+  justify-items: center;
+  gap: 4px;
   text-align: center;
 }
 
-.calendar-current strong {
+.period-slider-title h3 {
+  margin: 0;
   color: #112033;
-  font-size: 22px;
-  font-weight: 800;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
 }
 
-.calendar-current small {
+.period-slider-title small {
   color: #6b7a99;
   font-size: 12px;
 }
@@ -220,11 +436,21 @@
   min-height: 34px;
   padding: 7px 12px;
   border-radius: 999px;
-  border: 1px solid #d4e4fb;
-  background: #eef5ff;
-  color: #1d5fc4;
-  font-size: 0.78rem;
-  font-weight: 800;
+  border: 1px solid #6d77e5;
+  background: #ffffff;
+  color: #6d77e5;
+  font-size: 13px;
+  font-weight: 550;
+}
+
+.summary-pill.prom{
+ background: #6d77e5;
+ color: #ffffff;
+}
+
+.section-pill {
+  background: #ffffff;
+  color: #3c5370;
 }
 
 .attendance-table {
@@ -232,6 +458,21 @@
   height: 100%;
   overflow-y: auto;
   overflow-x: auto;
+}
+
+.ske {
+  min-height: 0;
+  height: 100%;
+  overflow-y: hidden;
+  overflow-x: auto;
+} 
+
+.attendance-table.slide-left {
+  animation: attendance-slide-left 320ms cubic-bezier(.22, .7, .2, 1);
+}
+
+.attendance-table.slide-right {
+  animation: attendance-slide-right 320ms cubic-bezier(.22, .7, .2, 1);
 }
 
 .app-table {
@@ -257,7 +498,6 @@
 
 .app-table th:first-child,
 .app-table td:first-child {
-  text-align: left;
   width: 220px;
   min-width: 220px;
   max-width: 220px;
@@ -272,15 +512,15 @@
 }
 
 .attendance-input {
-  width: 100%;
   min-height: 36px;
   padding: 6px 8px;
-  border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fbfdff;
-  color: var(--text);
+  border: 1px solid #6d77e5;
+  background: #ffffff;
+  color: #6d77e5;
   outline: none;
   text-align: center;
+  font-weight: 700;
 }
 
 .attendance-input:focus {
@@ -342,6 +582,7 @@
 
 .footer-actions {
   justify-content: flex-end;
+  margin-top: 10px;
 }
 
 .autosave-hint {
@@ -368,6 +609,7 @@
 }
 
 @media (max-width: 960px) {
+
   .attendance-toolbar,
   .panel-head-row,
   .toolbar-actions,
@@ -377,12 +619,13 @@
 
   .period-switcher {
     width: 100%;
-    justify-content: space-between;
+    grid-template-columns: 40px minmax(0, 1fr) 40px;
   }
 
-  .calendar-current {
-    min-width: 0;
-    flex: 1;
+  .period-arrow {
+    width: 40px;
+    height: 40px;
+    border-radius: 14px;
   }
 
   .attendance-toolbar-top,
@@ -396,6 +639,58 @@
     justify-content: flex-start;
     width: 100%;
   }
+
+  .attendance-summary-stack {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .tutoria-dropdown-menu {
+    left: 0;
+    right: auto;
+    min-width: min(280px, 100%);
+  }
+
+  .attendance-step-banner {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+@keyframes attendance-slide-left {
+  from {
+    opacity: .72;
+    transform: translateX(-42px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes attendance-slide-right {
+  from {
+    opacity: .72;
+    transform: translateX(42px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes attendance-component-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 
@@ -407,12 +702,10 @@
 .skeleton {
   display: block;
   border-radius: 999px;
-  background: linear-gradient(
-    90deg,
-    #eaf1fb 25%,
-    #f6faff 37%,
-    #eaf1fb 63%
-  );
+  background: linear-gradient(90deg,
+      #eaf1fb 25%,
+      #f6faff 37%,
+      #eaf1fb 63%);
   background-size: 400% 100%;
   animation: skeleton-loading 1.3s ease infinite;
 }

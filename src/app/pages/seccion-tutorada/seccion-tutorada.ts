@@ -16,6 +16,7 @@ import {
 
 @Component({
   selector: 'app-seccion-tutorada',
+  standalone: true,
   imports: [Shell, RouterLink, CustomAlertComponent],
   templateUrl: './seccion-tutorada.html',
   styleUrl: './seccion-tutorada.scss'
@@ -30,6 +31,8 @@ export class SeccionTutorada implements OnInit {
   readonly tutoriaIdRuta = Number(this.route.snapshot.paramMap.get('tutoriaId'));
   readonly currentYear = new Date().getFullYear();
   readonly cargando = signal(true);
+  readonly cargandoTabla = signal(false);
+  readonly mantenerSkeletonPorError = signal(false);
   readonly error = signal<string | null>(null);
   readonly tutoria = signal<Tutoria | null>(null);
   readonly tutoriasDisponibles = signal<Tutoria[]>([]);
@@ -39,11 +42,12 @@ export class SeccionTutorada implements OnInit {
   readonly resumenAcademico = signal<TutoriaResumenAcademico | null>(null);
 
   readonly mostrarError = signal(true);
-  readonly mostrarSkeleton = computed(() => this.cargando() || !!this.error());
+  readonly mostrarSkeleton = computed(() => this.cargando() || this.mantenerSkeletonPorError());
 
   reintentarCarga(): void {
     this.mostrarError.set(false);
     this.error.set(null);
+    this.mantenerSkeletonPorError.set(false);
   
     const periodoId = this.periodoEvaluacionSeleccionadoId();
   
@@ -109,7 +113,8 @@ export class SeccionTutorada implements OnInit {
     const docenteId = this.authService.obtenerUsuario()?.docenteId;
 
     if (!docenteId) {
-      this.cargando.set(true);
+      this.cargando.set(false);
+      this.mantenerSkeletonPorError.set(true);
       this.error.set('Tu usuario no tiene un docente vinculado.');
       this.mostrarError.set(true);
       return;
@@ -118,6 +123,7 @@ export class SeccionTutorada implements OnInit {
     this.error.set(null);
     this.mostrarError.set(false);
     this.cargando.set(true);
+    this.mantenerSkeletonPorError.set(false);
 
     this.periodoAcademicoService.listar().subscribe({
       next: (periodos) => {
@@ -127,7 +133,8 @@ export class SeccionTutorada implements OnInit {
           null;
 
         if (!periodoActual) {
-          this.cargando.set(true);
+          this.cargando.set(false);
+          this.mantenerSkeletonPorError.set(true);
           this.error.set('No existe un periodo academico configurado para cargar la seccion tutorada.');
           this.mostrarError.set(true);
           return;
@@ -155,9 +162,8 @@ export class SeccionTutorada implements OnInit {
             this.tutoria.set(tutoria);
             this.tutoriaIdActiva.set(tutoria.id);
             this.periodosEvaluacion.set(periodosEvaluacion);
-            this.cargando.set(false);
-
-            this.cargarPrimerPeriodoDisponible();
+            this.mantenerSkeletonPorError.set(false);
+            this.cargarPrimerPeriodoDisponible(true);
           },
           error: (error) => {
             this.error.set(
@@ -168,21 +174,23 @@ export class SeccionTutorada implements OnInit {
             this.resumenAcademico.set(null);
 
             this.mostrarError.set(true);
-
-            this.cargando.set(true);
+            this.cargando.set(false);
+            this.cargandoTabla.set(false);
+            this.mantenerSkeletonPorError.set(true);
           }
         });
       },
       error: (error) => {
-        this.cargando.set(true);
+        this.cargando.set(false);
         this.error.set(error?.error?.mensaje ?? 'No se pudo resolver el periodo academico actual.');
         this.resumenAcademico.set(null);
         this.mostrarError.set(true);
+        this.mantenerSkeletonPorError.set(true);
       }
     });
   }
 
-  seleccionarPeriodoEvaluacion(periodoEvaluacionId: number): void {
+  seleccionarPeriodoEvaluacion(periodoEvaluacionId: number, cargaCompleta = false): void {
     const tutoriaId = this.tutoriaIdActiva();
     if (!tutoriaId) {
       this.error.set('No se pudo identificar la tutoria activa.');
@@ -191,20 +199,24 @@ export class SeccionTutorada implements OnInit {
 
     this.periodoEvaluacionSeleccionadoId.set(periodoEvaluacionId);
     this.error.set(null);
-    this.cargando.set(true);
+    this.cargando.set(cargaCompleta);
+    this.cargandoTabla.set(!cargaCompleta);
 
     this.tutoriaService.obtenerResumenAcademico(tutoriaId, periodoEvaluacionId).subscribe({
       next: (resumen) => {
         this.resumenAcademico.set(resumen);
         this.cargando.set(false);
+        this.cargandoTabla.set(false);
+        this.mantenerSkeletonPorError.set(false);
       },
       error: (error) => {
         this.error.set(
           error?.error?.mensaje ?? 'No se pudo cargar el resumen academico de la seccion tutorada.'
         );
-        this.resumenAcademico.set(null);
         this.mostrarError.set(true);
-        this.cargando.set(true);
+        this.cargando.set(false);
+        this.cargandoTabla.set(false);
+        this.mantenerSkeletonPorError.set(cargaCompleta);
       }
     });
   }
@@ -216,7 +228,6 @@ export class SeccionTutorada implements OnInit {
 
     this.tutoria.set(tutoria);
     this.tutoriaIdActiva.set(tutoria.id);
-    this.resumenAcademico.set(null);
     this.cargarPrimerPeriodoDisponible();
   }
 
@@ -270,13 +281,16 @@ export class SeccionTutorada implements OnInit {
     return porcentaje === null ? '--' : `${porcentaje.toFixed(0)}%`;
   }
 
-  private cargarPrimerPeriodoDisponible(): void {
+  private cargarPrimerPeriodoDisponible(cargaCompleta = false): void {
     const primerPeriodo = this.periodosEvaluacionTutoria()[0] ?? null;
     if (primerPeriodo) {
-      this.seleccionarPeriodoEvaluacion(primerPeriodo.id);
+      this.seleccionarPeriodoEvaluacion(primerPeriodo.id, cargaCompleta);
     } else {
       this.periodoEvaluacionSeleccionadoId.set(null);
       this.resumenAcademico.set(null);
+      this.cargando.set(false);
+      this.cargandoTabla.set(false);
+      this.mantenerSkeletonPorError.set(false);
     }
   }
 }

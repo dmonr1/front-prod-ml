@@ -1,6 +1,6 @@
 <app-shell>
-  <section class="grades-page">
-    <div class="grades-toolbar card">
+  <section class="grades-page" [class.skeleton-mode]="mostrarSkeleton()">
+    <div class="grades-toolbar card grades-slide-in grades-slide-in-top">
       <a class="back-link-button" [routerLink]="['/mis-asignaciones']">
         <i class="fa-solid fa-arrow-left"></i>
         <span>Volver</span>
@@ -13,18 +13,22 @@
 
       <div class="grades-toolbar-actions">
         <span class="summary-pill">
-          Promedio {{ resumenVista().promedioSeccion === null ? '--' : resumenVista().promedioSeccion }}
+          Promedio General de la sección: &nbsp; {{ resumenVista().promedioSeccion === null ? '--' : resumenVista().promedioSeccion }}
         </span>
       </div>
     </div>
 
     @if (!mostrarSkeleton() && tutoriasDisponibles().length > 1) {
-    <section class="tutorias-selector card">
+    <section class="tutorias-selector card grades-slide-in grades-slide-in-middle">
       <div class="tutorias-surface">
         <div class="tutorias-grid">
           @for (item of tutoriasDisponibles(); track item.id) {
-          <button type="button" class="flow-card tutoria-card-option" [class.active]="tutoriaIdActiva() === item.id"
-            (click)="seleccionarTutoria(item)">
+          <button
+            type="button"
+            class="flow-card tutoria-card-option"
+            [class.active]="tutoriaIdActiva() === item.id"
+            (click)="seleccionarTutoria(item)"
+          >
             <div class="flow-card-top">
               <span class="flow-title">Seccion {{ item.seccion }}</span>
               <span class="status-badge active">{{ item.nivel }}</span>
@@ -48,7 +52,7 @@
 
     @if (mostrarSkeleton()) {
     <section class="skeleton-wrapper">
-      <section class="tutorias-selector card">
+      <section class="tutorias-selector card skeleton-tutorias grades-slide-in grades-slide-in-middle">
         <div class="tutorias-surface">
           <div class="tutorias-grid">
             @for (item of [1,2,3]; track item) {
@@ -71,7 +75,7 @@
         </div>
       </section>
 
-      <section class="panel-card notes-card">
+      <section class="panel-card notes-card skeleton-panel grades-slide-in grades-slide-in-bottom">
         <div class="panel-head panel-head-row notes-card-head">
           <div class="period-switcher">
             <span class="skeleton skeleton-nav"></span>
@@ -109,21 +113,34 @@
         </div>
       </section>
     </section>
-    @if (error() && mostrarError()){
-    <app-custom-alert [open]="true" type="error" title="No se pudo cargar la información"
-      [message]="error() || 'Ocurrió un problema inesperado'" confirmText="Reintentar" cancelText="Cerrar"
-      (confirm)="reintentarCarga()" (cancel)="cerrarError()" (dismiss)="cerrarError()">
-    </app-custom-alert>
     }
+
+    @if (error() && mostrarError()) {
+    <app-custom-alert
+      [open]="true"
+      type="error"
+      title="No se pudo cargar la información"
+      [message]="error() || 'Ocurrió un problema inesperado'"
+      confirmText="Reintentar"
+      cancelText="Cerrar"
+      (confirm)="reintentarCarga()"
+      (cancel)="cerrarError()"
+      (dismiss)="cerrarError()"
+    >
+    </app-custom-alert>
     }
 
     @if (!mostrarSkeleton() && tutoria()) {
-    <section class="panel-card notes-card">
+    <section class="panel-card notes-card grades-slide-in grades-slide-in-bottom">
       <div class="panel-head panel-head-row notes-card-head">
         @if (periodosEvaluacionTutoria().length) {
         <div class="period-switcher">
-          <button class="calendar-nav" type="button" [disabled]="indicePeriodoEvaluacionSeleccionado() <= 0"
-            (click)="irPeriodoEvaluacionAnterior()">
+          <button
+            class="calendar-nav"
+            type="button"
+            [disabled]="indicePeriodoEvaluacionSeleccionado() <= 0"
+            (click)="irPeriodoEvaluacionAnterior()"
+          >
             <i class="fa-solid fa-chevron-left"></i>
           </button>
 
@@ -136,9 +153,12 @@
             </small>
           </div>
 
-          <button class="calendar-nav" type="button"
+          <button
+            class="calendar-nav"
+            type="button"
             [disabled]="indicePeriodoEvaluacionSeleccionado() < 0 || indicePeriodoEvaluacionSeleccionado() >= periodosEvaluacionTutoria().length - 1"
-            (click)="irPeriodoEvaluacionSiguiente()">
+            (click)="irPeriodoEvaluacionSiguiente()"
+          >
             <i class="fa-solid fa-chevron-right"></i>
           </button>
         </div>
@@ -149,6 +169,11 @@
       <div class="table-state">
         <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
         <span>No hay periodos de evaluacion registrados para esta seccion tutorada.</span>
+      </div>
+      } @else if (cargandoTabla()) {
+      <div class="table-state table-state-loading">
+        <span class="table-state-icon"><i class="fa-solid fa-rotate"></i></span>
+        <span>Actualizando el consolidado de la seccion seleccionada...</span>
       </div>
       } @else if (!resumenAcademico()?.cursos?.length) {
       <div class="table-state">

@@ -1,59 +1,122 @@
 <app-shell>
   <section class="attendance-page">
-    <app-custom-alert [open]="alertState().open" [type]="alertState().type" [title]="alertState().title"
-      [message]="alertState().message" [confirmText]="alertState().confirmText" [cancelText]="alertState().cancelText"
-      [autoCloseMs]="alertState().autoCloseMs" (confirm)="cerrarAlerta()" (cancel)="cerrarAlerta()"
+    <app-custom-alert
+      [open]="alertState().open"
+      [type]="alertState().type"
+      [title]="alertState().title"
+      [message]="alertState().message"
+      [confirmText]="alertState().confirmText"
+      [cancelText]="alertState().cancelText"
+      [autoCloseMs]="alertState().autoCloseMs"
+      (confirm)="cerrarAlerta()"
+      (cancel)="cerrarAlerta()"
       (dismiss)="cerrarAlerta()" />
 
     @if (error() && mostrarErrorCarga()) {
-    <app-custom-alert [open]="true" type="error" title="No se pudo cargar la información"
-      [message]="error() || 'Ocurrió un problema inesperado'" confirmText="Reintentar" cancelText="Cerrar"
-      (confirm)="reintentarCargaError()" (cancel)="cerrarErrorCarga()" (dismiss)="cerrarErrorCarga()">
-    </app-custom-alert>
+    <app-custom-alert
+      [open]="true"
+      type="error"
+      title="No se pudo cargar la información"
+      [message]="error() || 'Ocurrio un problema inesperado'"
+      confirmText="Reintentar"
+      cancelText="Cerrar"
+      (confirm)="reintentarCargaError()"
+      (cancel)="cerrarErrorCarga()"
+      (dismiss)="cerrarErrorCarga()" />
     }
 
-    <div class="attendance-toolbar card">
+    <div class="attendance-toolbar card attendance-slide-in attendance-slide-in-top">
       <div class="attendance-toolbar-top">
         <div class="attendance-heading">
           <span class="eyebrow">Registro de asistencia</span>
           <h2>{{ esVistaSeccionTutorada() ? 'Asistencias' : asignacion()?.curso || 'Curso asignado' }}</h2>
+          <div class="attendance-inline-meta">
+            <span>{{ asignacion()?.grado || tutoriaActiva()?.grado || 'Grado' }}</span>
+            <span>{{ resumenAsistencia().registradas }} de {{ resumenAsistencia().total }} alumnos con asistencia</span>
+          </div>
         </div>
-        <span class="summary-pill">Promedio {{ resumenAsistencia().promedio }}%</span>
+
+        <div class="attendance-summary-stack">
+          @if (esVistaSeccionTutorada() && tutoriasDisponibles().length > 1) {
+          <div class="tutoria-dropdown">
+            <span class="section-picker-label">
+              {{ tutoriasDisponibles().length > 1 ? 'Cambiar de seccion:' : 'Elegir seccion:' }}
+            </span>
+            <button class="summary-pill section-picker" type="button" (click)="toggleSelectorTutoria()">
+              <i class="fa-solid fa-layer-group"></i>
+              <strong>Seccion {{ asignacion()?.seccion || tutoriaActiva()?.seccion || '-' }}</strong>
+              <i class="fa-solid fa-chevron-down"></i>
+            </button>
+
+            @if (mostrarSelectorTutoria()) {
+            <div class="tutoria-dropdown-menu">
+              @for (tutoria of tutoriasDisponibles(); track tutoria.id) {
+                <button
+                  class="tutoria-option-card"
+                  type="button"
+                  [class.active]="tutoria.id === tutoriaActivaId()"
+                  (click)="seleccionarTutoria(tutoria.id)">
+                  <div class="tutoria-option-head">
+                    <span class="tutoria-option-title">Seccion {{ tutoria.seccion }}</span>
+                    <span class="tutoria-option-badge">{{ tutoria.nivel }}</span>
+                  </div>
+                  <strong class="tutoria-option-strong">{{ tutoria.grado }} - Seccion {{ tutoria.seccion }}</strong>
+                  <small>{{ tutoria.periodoAcademico }} - {{ tutoria.docenteNombreCompleto }}</small>
+
+                  <div class="tutoria-option-footer">
+                    <span><i class="fa-solid fa-users"></i> Cambiar asistencia</span>
+                    <span class="tutoria-option-link">
+                      <i class="fa-solid fa-arrow-right"></i>
+                      <span>Abrir</span>
+                    </span>
+                  </div>
+                </button>
+              }
+            </div>
+            }
+          </div>
+          } @else {
+          <span class="summary-pill section-pill">Seccion {{ asignacion()?.seccion || tutoriaActiva()?.seccion || '-' }}</span>
+          }
+
+          <span class="summary-pill prom">Promedio de asistencia: {{ resumenAsistencia().promedio }}%</span>
+        </div>
       </div>
 
       <div class="attendance-toolbar-bottom">
-        <div class="attendance-inline-meta">
-          <span>{{ asignacion()?.grado || tutoriaActiva()?.grado || 'Grado' }}</span>
-          <span>Seccion {{ asignacion()?.seccion || tutoriaActiva()?.seccion || '-' }}</span>
-          <span>{{ resumenAsistencia().registradas }} de {{ resumenAsistencia().total }} alumnos con asistencia</span>
+        <div class="attendance-step-banner">
+          <span class="attendance-step-icon">
+            <i class="fa-solid fa-calendar-check"></i>
+          </span>
+          <div class="attendance-step-copy">
+            <strong>Clases programadas generdadas automaticamente según la fecha de inicio y fin del periodo.</strong>
+            <small>Si hubo feriados, suspensión de clases u otro motivo institucional, puedes ajustar manualmente ese valor.</small>
+          </div>
         </div>
 
         <div class="attendance-inline-controls">
-          @if (esVistaSeccionTutorada() && tutoriasDisponibles().length > 1) {
-          <label class="tutoria-switcher inline-field">
-            <span>Seccion</span>
-            <select [value]="tutoriaActivaId() ?? ''" (change)="onTutoriaChange($any($event.target).value)">
-              @for (tutoria of tutoriasDisponibles(); track tutoria.id) {
-              <option [value]="tutoria.id">{{ tutoria.grado }} · Seccion {{ tutoria.seccion }}</option>
-              }
-            </select>
-          </label>
-          }
-
           <label class="common-config-field inline-field">
             <span>Clases programadas</span>
-            <input class="attendance-input common-input" type="text" inputmode="numeric" autocomplete="off"
-              [value]="clasesProgramadasGeneral()" [disabled]="!puedeRegistrarAsistencia()"
-              (input)="onClasesProgramadasInput($event)" (blur)="onClasesProgramadasBlur()"
-              (wheel)="bloquearCambioNumero($event)" (keydown.arrowUp)="bloquearCambioNumero($event)"
+            <input
+              class="attendance-input common-input"
+              type="text"
+              inputmode="numeric"
+              autocomplete="off"
+              [value]="clasesProgramadasGeneral()"
+              [disabled]="!puedeRegistrarAsistencia()"
+              (input)="onClasesProgramadasInput($event)"
+              (blur)="onClasesProgramadasBlur()"
+              (wheel)="bloquearCambioNumero($event)"
+              (keydown.arrowUp)="bloquearCambioNumero($event)"
               (keydown.arrowDown)="bloquearCambioNumero($event)" />
           </label>
         </div>
       </div>
+
     </div>
 
     @if (mostrarSkeleton()) {
-    <section class="attendance-skeleton-wrapper">
+    <section class="attendance-skeleton-wrapper attendance-slide-in attendance-slide-in-bottom">
       <section class="panel-card attendance-card">
         <div class="panel-head panel-head-row attendance-card-head">
           <div class="period-switcher">
@@ -68,7 +131,7 @@
           </div>
         </div>
 
-        <div class="table-scroll attendance-table">
+        <div class="table-scroll attendance-table ske">
           <table class="app-table">
             <thead>
               <tr>
@@ -79,7 +142,7 @@
             </thead>
 
             <tbody>
-              @for (row of [1,2,3,4,5,6,7,8,9]; track row) {
+              @for (row of [1,2,3,4,5,6,7,8,9,10,11,12,13]; track row) {
               <tr>
                 <td><span class="skeleton skeleton-name"></span></td>
                 <td><span class="skeleton skeleton-input"></span></td>
@@ -98,17 +161,21 @@
     }
 
     @if (!mostrarSkeleton() && (asignacion() || tutoriaActiva())) {
-    <section class="panel-card attendance-card">
+    <section class="panel-card attendance-card attendance-slide-in attendance-slide-in-bottom">
       <div class="panel-head panel-head-row attendance-card-head">
         @if (periodosEvaluacionPeriodo().length) {
         <div class="period-switcher">
-          <button class="calendar-nav" type="button" [disabled]="indicePeriodoEvaluacionSeleccionado() <= 0"
+          <button
+            class="period-arrow"
+            type="button"
+            [disabled]="indicePeriodoEvaluacionSeleccionado() <= 0"
             (click)="irPeriodoEvaluacionAnterior()">
             <i class="fa-solid fa-chevron-left"></i>
           </button>
 
-          <div class="calendar-current">
-            <strong>{{ periodoEvaluacionSeleccionado()?.nombre || 'Sin periodo' }}</strong>
+          <div class="period-slider-title">
+            <span class="slider-kicker">Periodo de evaluacion</span>
+            <h3>{{ periodoEvaluacionSeleccionado()?.nombre || 'Sin periodo' }}</h3>
             <small>
               {{ periodoEvaluacionSeleccionado()?.fechaInicio || '--' }}
               -
@@ -116,7 +183,9 @@
             </small>
           </div>
 
-          <button class="calendar-nav" type="button"
+          <button
+            class="period-arrow"
+            type="button"
             [disabled]="indicePeriodoEvaluacionSeleccionado() < 0 || indicePeriodoEvaluacionSeleccionado() >= periodosEvaluacionPeriodo().length - 1"
             (click)="irPeriodoEvaluacionSiguiente()">
             <i class="fa-solid fa-chevron-right"></i>
@@ -125,7 +194,10 @@
         }
       </div>
 
-      <div class="table-scroll attendance-table">
+      <div
+        class="table-scroll attendance-table"
+        [class.slide-left]="animacionPeriodo() === 'left'"
+        [class.slide-right]="animacionPeriodo() === 'right'">
         <table class="app-table">
           <thead>
             <tr>
@@ -139,11 +211,18 @@
             <tr>
               <td>{{ fila.matricula.alumnoNombreCompleto }}</td>
               <td>
-                <input class="attendance-input attendance-grid-input" type="text" inputmode="numeric" autocomplete="off"
-                  [value]="fila.clasesAsistidas" [disabled]="!puedeRegistrarAsistencia()"
-                  (input)="onAsistenciaInput(fila.matricula.id, $event)" (blur)="onAsistenciaBlur(fila.matricula.id)"
+                <input
+                  class="attendance-input attendance-grid-input"
+                  type="text"
+                  inputmode="numeric"
+                  autocomplete="off"
+                  [value]="fila.clasesAsistidas"
+                  [disabled]="!puedeRegistrarAsistencia()"
+                  (input)="onAsistenciaInput(fila.matricula.id, $event)"
+                  (blur)="onAsistenciaBlur(fila.matricula.id)"
                   (keydown)="moverFocoEnGrilla($event, filaIndex)"
-                  (wheel)="bloquearCambioNumero($event)" (keydown.arrowUp)="bloquearCambioNumero($event)"
+                  (wheel)="bloquearCambioNumero($event)"
+                  (keydown.arrowUp)="bloquearCambioNumero($event)"
                   (keydown.arrowDown)="bloquearCambioNumero($event)" />
               </td>
               <td>
@@ -153,7 +232,6 @@
               </td>
             </tr>
             } @empty {
-
             @if (!periodosEvaluacionPeriodo().length) {
             <tr class="message-row">
               <td colspan="3">
@@ -171,8 +249,7 @@
 
       <div class="form-actions footer-actions">
         <span class="autosave-hint">
-          {{ puedeRegistrarAsistencia() ? 'Los cambios se guardan automaticamente.' : 'La seccion puede consultarse,
-          pero el registro se habilitara cuando tenga una asignacion docente asociada.' }}
+          {{ puedeRegistrarAsistencia() ? 'Los cambios se guardan automaticamente.' : 'La seccion puede consultarse, pero el registro se habilitara cuando tenga una asignacion docente asociada.' }}
         </span>
       </div>
     </section>

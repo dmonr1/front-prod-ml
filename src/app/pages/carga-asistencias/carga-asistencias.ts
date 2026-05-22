@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { CustomAlertComponent, CustomAlertType } from '../../components/custom-alert/custom-alert';
@@ -25,6 +25,13 @@ interface AsistenciaFila {
   porcentajeAsistencia: number | null;
 }
 
+interface PeriodoAsistenciaCache {
+  matriculas: Matricula[];
+  filasAsistencia: AsistenciaFila[];
+  asistenciasGuardadas: Record<number, AsistenciaPeriodoEvaluacion>;
+  clasesProgramadasGeneral: string;
+}
+
 interface AlertState {
   open: boolean;
   type: CustomAlertType;
@@ -42,6 +49,7 @@ interface AlertState {
   styleUrl: './carga-asistencias.scss'
 })
 export class CargaAsistencias implements OnInit {
+  private readonly elementRef = inject(ElementRef<HTMLElement>);
   private readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
   private readonly asignacionService = inject(AsignacionAcademicaService);
@@ -51,8 +59,11 @@ export class CargaAsistencias implements OnInit {
   private readonly matriculaService = inject(MatriculaService);
   private readonly asistenciaService = inject(AsistenciaPeriodoEvaluacionService);
   private readonly asignacionIdParam = this.route.snapshot.paramMap.get('asignacionId');
+  private readonly tutoriaIdQueryParam = this.route.snapshot.queryParamMap.get('tutoriaId');
 
   readonly asignacionId = this.asignacionIdParam === null ? null : Number(this.asignacionIdParam);
+  readonly tutoriaIdPreferida =
+    this.tutoriaIdQueryParam === null ? null : Number(this.tutoriaIdQueryParam);
   readonly currentYear = new Date().getFullYear();
   readonly cargando = signal(true);
   readonly error = signal<string | null>(null);
@@ -73,6 +84,8 @@ export class CargaAsistencias implements OnInit {
   readonly asignacionesDocente = signal<AsignacionDocente[]>([]);
   readonly periodosEvaluacion = signal<PeriodoEvaluacion[]>([]);
   readonly periodoEvaluacionSeleccionadoId = signal<number | null>(null);
+  readonly animacionPeriodo = signal<'left' | 'right' | null>(null);
+  readonly mostrarSelectorTutoria = signal(false);
   readonly matriculas = signal<Matricula[]>([]);
   readonly filasAsistencia = signal<AsistenciaFila[]>([]);
   readonly asistenciasGuardadas = signal<Record<number, AsistenciaPeriodoEvaluacion>>({});
@@ -83,6 +96,8 @@ export class CargaAsistencias implements OnInit {
   private readonly autoSaveTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private readonly autoSaveInFlight = new Map<string, string>();
   private readonly autoSavePending = new Map<string, number>();
+  private readonly cachePeriodos = new Map<string, PeriodoAsistenciaCache>();
+  private readonly cachePrecargando = new Set<string>();
   private globalProgramadasTimer: ReturnType<typeof setTimeout> | null = null;
 
   
@@ -208,7 +223,10 @@ export class CargaAsistencias implements OnInit {
               );
               this.cargando.set(false);
 
-              const primeraTutoria = this.tutoriasDisponibles()[0] ?? null;
+              const primeraTutoria =
+                this.tutoriasDisponibles().find((item) => item.id === this.tutoriaIdPreferida) ??
+                this.tutoriasDisponibles()[0] ??
+                null;
               if (!primeraTutoria) {
                 this.cargando.set(true);
                 this.error.set('No tienes una seccion tutorada activa para registrar asistencias.');
@@ -272,7 +290,10 @@ export class CargaAsistencias implements OnInit {
     });
   }
 
-  seleccionarPeriodoEvaluacion(periodoEvaluacionId: number): void {
+  seleccionarPeriodoEvaluacion(
+    periodoEvaluacionId: number,
+    direccion: 'left' | 'right' | null = null
+  ): void {
     const asignacion = this.asignacion();
     const tutoria = this.tutoriaActiva();
     const periodoAcademicoId = asignacion?.periodoAcademicoId ?? tutoria?.periodoAcademicoId ?? null;
@@ -282,12 +303,31 @@ export class CargaAsistencias implements OnInit {
       return;
     }
 
+    const cacheKey = this.construirClavePeriodoCache(
+      seccionId,
+      periodoAcademicoId,
+      periodoEvaluacionId
+    );
+
+    this.animacionPeriodo.set(direccion);
     this.periodoEvaluacionSeleccionadoId.set(periodoEvaluacionId);
+    this.error.set(null);
+    this.mostrarErrorCarga.set(false);
+
+    const cache = this.cachePeriodos.get(cacheKey);
+    if (cache) {
+      this.aplicarCachePeriodo(cache);
+      this.cargando.set(false);
+      if (direccion) {
+        setTimeout(() => this.animacionPeriodo.set(null), 320);
+      }
+      this.precargarPeriodosRelacionados(seccionId, periodoAcademicoId, asignacion?.id ?? null);
+      return;
+    }
+
     this.asistenciasGuardadas.set({});
     this.filasAsistencia.set([]);
     this.clasesProgramadasGeneral.set('');
-    this.error.set(null);
-    this.mostrarErrorCarga.set(false);
     this.cargando.set(true);
 
     forkJoin({
@@ -309,13 +349,22 @@ export class CargaAsistencias implements OnInit {
           mapa[asistencia.matriculaId] = asistencia;
         });
         this.asistenciasGuardadas.set(mapa);
-        this.clasesProgramadasGeneral.set(
+        const periodoSeleccionado =
+          this.periodosEvaluacion().find((item) => item.id === periodoEvaluacionId) ?? null;
+        const clasesProgramadasBase =
           configuracion?.clasesProgramadas !== null && configuracion?.clasesProgramadas !== undefined
             ? configuracion.clasesProgramadas.toString()
-            : ''
+            : this.calcularDiasProgramadosBase(periodoSeleccionado);
+        this.clasesProgramadasGeneral.set(
+          clasesProgramadasBase
         );
         this.prepararFilasAsistencia(matriculas, mapa);
+        this.guardarCachePeriodo(cacheKey);
         this.cargando.set(false);
+        if (direccion) {
+          setTimeout(() => this.animacionPeriodo.set(null), 320);
+        }
+        this.precargarPeriodosRelacionados(seccionId, periodoAcademicoId, asignacion?.id ?? null);
       },
       error: (error) => {
         this.error.set(
@@ -323,6 +372,7 @@ export class CargaAsistencias implements OnInit {
         );
         this.mostrarErrorCarga.set(true);
         this.cargando.set(true);
+        this.animacionPeriodo.set(null);
       }
     });
   }
@@ -334,7 +384,7 @@ export class CargaAsistencias implements OnInit {
       return;
     }
 
-    this.seleccionarPeriodoEvaluacion(periodos[indice - 1].id);
+    this.seleccionarPeriodoEvaluacion(periodos[indice - 1].id, 'left');
   }
 
   irPeriodoEvaluacionSiguiente(): void {
@@ -344,7 +394,7 @@ export class CargaAsistencias implements OnInit {
       return;
     }
 
-    this.seleccionarPeriodoEvaluacion(periodos[indice + 1].id);
+    this.seleccionarPeriodoEvaluacion(periodos[indice + 1].id, 'right');
   }
 
   seleccionarTutoria(tutoriaId: number): void {
@@ -357,6 +407,7 @@ export class CargaAsistencias implements OnInit {
       this.asignacionesDocente().find((item) => item.seccionId === tutoria.seccionId) ?? null;
 
     this.tutoriaActivaId.set(tutoriaId);
+    this.mostrarSelectorTutoria.set(false);
     this.asignacion.set(asignacionAncla);
     this.error.set(null);
 
@@ -377,6 +428,32 @@ export class CargaAsistencias implements OnInit {
     }
 
     this.seleccionarTutoria(tutoriaId);
+  }
+
+  toggleSelectorTutoria(): void {
+    if (!this.esVistaSeccionTutorada() || this.tutoriasDisponibles().length <= 1) {
+      return;
+    }
+
+    this.mostrarSelectorTutoria.update((valor) => !valor);
+  }
+
+  cerrarSelectorTutoria(): void {
+    this.mostrarSelectorTutoria.set(false);
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (!this.mostrarSelectorTutoria()) {
+      return;
+    }
+
+    const target = event.target as Node | null;
+    if (target && this.elementRef.nativeElement.contains(target)) {
+      return;
+    }
+
+    this.cerrarSelectorTutoria();
   }
 
   onClasesProgramadasInput(event: Event): void {
@@ -564,10 +641,11 @@ export class CargaAsistencias implements OnInit {
       }
     }
 
-    this.asistenciaService
+        this.asistenciaService
       .guardarConfiguracion(periodoEvaluacionId, asignacion.id, clasesProgramadas)
       .subscribe({
         next: () => {
+          this.guardarCacheActual();
           for (const fila of filasConAsistencia) {
             this.programarGuardadoAutomatico(fila.matricula.id);
           }
@@ -699,6 +777,7 @@ export class CargaAsistencias implements OnInit {
               : item
           )
         );
+        this.guardarCacheActual();
 
         const pendiente = this.autoSavePending.get(clave);
         if (pendiente) {
@@ -720,6 +799,98 @@ export class CargaAsistencias implements OnInit {
 
   private construirClaveAsistencia(matriculaId: number): string {
     return `${this.periodoEvaluacionSeleccionadoId() ?? 0}-${matriculaId}`;
+  }
+
+  private construirClavePeriodoCache(
+    seccionId: number,
+    periodoAcademicoId: number,
+    periodoEvaluacionId: number
+  ): string {
+    return `${seccionId}-${periodoAcademicoId}-${periodoEvaluacionId}`;
+  }
+
+  private aplicarCachePeriodo(cache: PeriodoAsistenciaCache): void {
+    this.matriculas.set(cache.matriculas.map((matricula) => ({ ...matricula })));
+    this.asistenciasGuardadas.set({ ...cache.asistenciasGuardadas });
+    this.filasAsistencia.set(cache.filasAsistencia.map((fila) => ({ ...fila, matricula: { ...fila.matricula } })));
+    this.clasesProgramadasGeneral.set(cache.clasesProgramadasGeneral);
+  }
+
+  private guardarCachePeriodo(cacheKey: string): void {
+    this.cachePeriodos.set(cacheKey, {
+      matriculas: this.matriculas().map((matricula) => ({ ...matricula })),
+      filasAsistencia: this.filasAsistencia().map((fila) => ({ ...fila, matricula: { ...fila.matricula } })),
+      asistenciasGuardadas: { ...this.asistenciasGuardadas() },
+      clasesProgramadasGeneral: this.clasesProgramadasGeneral()
+    });
+  }
+
+  private guardarCacheActual(): void {
+    const periodoEvaluacionId = this.periodoEvaluacionSeleccionadoId();
+    const asignacion = this.asignacion();
+    const tutoria = this.tutoriaActiva();
+    const periodoAcademicoId = asignacion?.periodoAcademicoId ?? tutoria?.periodoAcademicoId ?? null;
+    const seccionId = asignacion?.seccionId ?? tutoria?.seccionId ?? null;
+
+    if (!periodoEvaluacionId || !periodoAcademicoId || !seccionId) {
+      return;
+    }
+
+    const cacheKey = this.construirClavePeriodoCache(seccionId, periodoAcademicoId, periodoEvaluacionId);
+    this.guardarCachePeriodo(cacheKey);
+  }
+
+  private precargarPeriodosRelacionados(
+    seccionId: number,
+    periodoAcademicoId: number,
+    docenteCursoSeccionId: number | null
+  ): void {
+    for (const periodo of this.periodosEvaluacionPeriodo()) {
+      const cacheKey = this.construirClavePeriodoCache(seccionId, periodoAcademicoId, periodo.id);
+      if (this.cachePeriodos.has(cacheKey) || this.cachePrecargando.has(cacheKey)) {
+        continue;
+      }
+
+      this.cachePrecargando.add(cacheKey);
+
+      forkJoin({
+        configuracion: docenteCursoSeccionId
+          ? this.asistenciaService.obtenerConfiguracion(docenteCursoSeccionId, periodo.id)
+          : of(null),
+        asistencias: this.asistenciaService.listar(seccionId, periodoAcademicoId, periodo.id),
+        matriculas: this.matriculaService.listar(periodoAcademicoId, seccionId)
+      }).subscribe({
+        next: ({ configuracion, asistencias, matriculas }) => {
+          const mapa: Record<number, AsistenciaPeriodoEvaluacion> = {};
+          asistencias.forEach((asistencia) => {
+            mapa[asistencia.matriculaId] = asistencia;
+          });
+
+          const clasesProgramadasGeneral =
+            configuracion?.clasesProgramadas !== null && configuracion?.clasesProgramadas !== undefined
+              ? configuracion.clasesProgramadas.toString()
+              : this.calcularDiasProgramadosBase(periodo);
+
+          this.cachePeriodos.set(cacheKey, {
+            matriculas: matriculas.map((matricula) => ({ ...matricula })),
+            asistenciasGuardadas: { ...mapa },
+            clasesProgramadasGeneral,
+            filasAsistencia: matriculas.map((matricula) => {
+              const asistencia = mapa[matricula.id];
+              return {
+                matricula: { ...matricula },
+                clasesAsistidas: asistencia?.clasesAsistidas?.toString() ?? '',
+                porcentajeAsistencia: asistencia?.porcentajeAsistencia ?? null
+              };
+            })
+          });
+          this.cachePrecargando.delete(cacheKey);
+        },
+        error: () => {
+          this.cachePrecargando.delete(cacheKey);
+        }
+      });
+    }
   }
 
   private normalizarEntero(valor: string): string {
@@ -746,5 +917,42 @@ export class CargaAsistencias implements OnInit {
     }
 
     return Math.round((clasesAsistidas / clasesProgramadas) * 10000) / 100;
+  }
+
+  private calcularDiasProgramadosBase(periodo: PeriodoEvaluacion | null): string {
+    if (!periodo?.fechaInicio || !periodo?.fechaFin) {
+      return '';
+    }
+
+    const inicio = this.normalizarFechaLocal(periodo.fechaInicio);
+    const fin = this.normalizarFechaLocal(periodo.fechaFin);
+
+    if (!inicio || !fin || inicio > fin) {
+      return '';
+    }
+
+    let diasHabiles = 0;
+    const cursor = new Date(inicio);
+
+    while (cursor <= fin) {
+      const diaSemana = cursor.getDay();
+      if (diaSemana >= 1 && diaSemana <= 5) {
+        diasHabiles += 1;
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return diasHabiles > 0 ? String(diasHabiles) : '';
+  }
+
+  private normalizarFechaLocal(valor: string): Date | null {
+    const soloFecha = valor.split('T')[0];
+    const partes = soloFecha.split('-').map(Number);
+    if (partes.length !== 3 || partes.some((parte) => Number.isNaN(parte))) {
+      return null;
+    }
+
+    const [anio, mes, dia] = partes;
+    return new Date(anio, mes - 1, dia);
   }
 }
