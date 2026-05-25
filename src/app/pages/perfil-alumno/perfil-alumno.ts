@@ -3,12 +3,14 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { Shell } from '../../layouts/shell/shell';
+import { PeriodoEvaluacionService } from '../../services/academico/periodo-evaluacion.service';
 import {
   AlertaSeguimiento,
   AlertaSeguimientoService,
   RecomendacionSeguimiento
 } from '../../services/alerta/alerta-seguimiento.service';
 import { PrediccionRiesgo, PrediccionService } from '../../services/prediccion/prediccion.service';
+import { PeriodoEvaluacion } from '../../models/periodo-evaluacion';
 
 type NivelRiesgo = 'ALTO' | 'MEDIO' | 'BAJO';
 type TonoFactor = 'high' | 'medium' | 'low';
@@ -31,7 +33,7 @@ interface FactorAnalitico {
 
 interface PuntoEvolucion {
   etiqueta: string;
-  valor: number;
+  valor: number | null;
 }
 
 interface RecomendacionPersonalizada {
@@ -59,6 +61,7 @@ export class PerfilAlumno {
   private readonly route = inject(ActivatedRoute);
   private readonly prediccionService = inject(PrediccionService);
   private readonly alertaService = inject(AlertaSeguimientoService);
+  private readonly periodoEvaluacionService = inject(PeriodoEvaluacionService);
 
   readonly alumnoId = Number(this.route.snapshot.paramMap.get('alumnoId'));
   readonly periodoEvaluacionId = Number(this.route.snapshot.queryParamMap.get('periodoEvaluacionId'));
@@ -68,6 +71,7 @@ export class PerfilAlumno {
   readonly cargando = signal(true);
   readonly error = signal<string | null>(null);
   readonly predicciones = signal<PrediccionDetalleVista[]>([]);
+  readonly periodosEvaluacion = signal<PeriodoEvaluacion[]>([]);
   readonly recomendacionesCargadas = signal<RecomendacionSeguimiento[]>([]);
   readonly seleccionadaId = signal<number | null>(null);
 
@@ -99,13 +103,29 @@ export class PerfilAlumno {
   );
 
   readonly periodosDisponiblesPerfil = computed<PeriodoPerfilItem[]>(() => {
-    const mapa = new Map<number, PeriodoPerfilItem>();
+    const periodoAcademicoId =
+      this.prediccionSeleccionada()?.periodoAcademicoId ??
+      this.predicciones()[0]?.periodoAcademicoId ??
+      null;
 
+    const periodosBase = this.periodosEvaluacion()
+      .filter((periodo) => periodoAcademicoId == null || periodo.periodoAcademicoId === periodoAcademicoId)
+      .sort((a, b) => a.numero - b.numero)
+      .map((periodo) => ({
+        id: periodo.id,
+        nombre: periodo.nombre || `Periodo ${periodo.numero}`,
+        numero: periodo.numero
+      }));
+
+    if (periodosBase.length) {
+      return periodosBase;
+    }
+
+    const mapa = new Map<number, PeriodoPerfilItem>();
     for (const item of this.predicciones()) {
       if (!item.periodoEvaluacionId) {
         continue;
       }
-
       if (!mapa.has(item.periodoEvaluacionId)) {
         mapa.set(item.periodoEvaluacionId, {
           id: item.periodoEvaluacionId,
@@ -114,7 +134,6 @@ export class PerfilAlumno {
         });
       }
     }
-
     return [...mapa.values()].sort((a, b) => a.numero - b.numero);
   });
 
@@ -273,10 +292,16 @@ export class PerfilAlumno {
   });
 
   readonly evolucionRiesgo = computed<PuntoEvolucion[]>(() =>
-    this.prediccionesGlobales().map((item) => ({
-      etiqueta: item.nombrePeriodoEvaluacion || `P${item.numeroPeriodoEvaluacion ?? ''}`,
-      valor: Number(item.puntaje ?? 0)
-    }))
+    this.periodosDisponiblesPerfil().map((periodo) => {
+      const prediccion = this.prediccionesGlobales().find(
+        (item) => item.periodoEvaluacionId === periodo.id
+      );
+
+      return {
+        etiqueta: periodo.nombre,
+        valor: prediccion ? Number(prediccion.puntaje ?? 0) : null
+      };
+    })
   );
 
   readonly svgEvolucion = computed(() => {
@@ -287,18 +312,21 @@ export class PerfilAlumno {
 
     const width = 360;
     const height = 220;
-    const paddingX = 24;
+    const paddingX = 38;
     const paddingTop = 18;
     const paddingBottom = 24;
     const stepX = puntos.length > 1 ? (width - paddingX * 2) / (puntos.length - 1) : 0;
 
     const mapped = puntos.map((punto, index) => {
       const x = paddingX + stepX * index;
-      const y = paddingTop + ((100 - punto.valor) / 100) * (height - paddingTop - paddingBottom);
+      const y = punto.valor == null
+        ? null
+        : paddingTop + ((100 - punto.valor) / 100) * (height - paddingTop - paddingBottom);
       return { ...punto, x, y };
     });
 
     const path = mapped
+      .filter((point): point is { etiqueta: string; valor: number; x: number; y: number } => point.valor != null && point.y != null)
       .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`)
       .join(' ');
 
@@ -454,10 +482,11 @@ export class PerfilAlumno {
 
     forkJoin({
       predicciones: this.prediccionService.listarPorAlumno(this.alumnoId),
+      periodosEvaluacion: this.periodoEvaluacionService.listar(),
       alertas: alertas$,
       recomendaciones: recomendaciones$
     }).subscribe({
-      next: ({ predicciones, alertas, recomendaciones }) => {
+      next: ({ predicciones, periodosEvaluacion, alertas, recomendaciones }) => {
         const detalle = predicciones
           .map((item) => this.mapearPrediccion(item, alertas, recomendaciones))
           .sort((a, b) => {
@@ -473,6 +502,7 @@ export class PerfilAlumno {
           });
 
         this.predicciones.set(detalle);
+        this.periodosEvaluacion.set(periodosEvaluacion);
         this.recomendacionesCargadas.set(recomendaciones);
         const seleccionInicial =
           detalle.find((item) => {
@@ -568,6 +598,35 @@ export class PerfilAlumno {
     const promedio = this.obtenerNumero(variables['promedio_general']);
     const notaMinima = this.obtenerNumero(variables['nota_minima']);
     const cursosDesaprobados = this.obtenerNumero(variables['cantidad_cursos_desaprobados']);
+    const notasDesaprobadas = this.obtenerNumero(variables['cantidad_notas_desaprobadas_total'])
+      ?? this.obtenerNumero(variables['cantidad_notas_desaprobadas']);
+    const notasCriticas = this.obtenerNumero(variables['cantidad_notas_criticas_total'])
+      ?? this.obtenerNumero(variables['cantidad_notas_criticas']);
+    const peorNota = this.obtenerNumero(variables['peor_nota_periodo'])
+      ?? this.obtenerNumero(variables['nota_minima_curso'])
+      ?? notaMinima;
+    const notaExamen = this.obtenerNumero(variables['nota_examen_principal']);
+
+    const hayAsistenciaAlta = asistencia != null && asistencia >= 85;
+    const hayRendimientoFragil =
+      (promedio != null && promedio < 12.5) ||
+      (peorNota != null && peorNota <= 10.5) ||
+      (notaExamen != null && notaExamen <= 10.5) ||
+      (notasCriticas ?? 0) >= 1 ||
+      (notasDesaprobadas ?? 0) >= 2 ||
+      (cursosDesaprobados ?? 0) > 0;
+
+    if (hayAsistenciaAlta && hayRendimientoFragil) {
+      const piezas = [
+        promedio != null ? `promedio ${this.formatearNumero(promedio, 1)}` : null,
+        peorNota != null ? `nota minima ${this.formatearNumero(peorNota, 1)}` : null,
+        notaExamen != null ? `examen ${this.formatearNumero(notaExamen, 1)}` : null
+      ].filter(Boolean);
+
+      return nivel === 'ALTO'
+        ? `Asiste regularmente (${this.formatearNumero(asistencia, 0)}%), pero sus resultados academicos siguen siendo fragiles${piezas.length ? `: ${piezas.join(', ')}` : ''}. Esto sugiere dificultades para consolidar el aprendizaje y un riesgo alto de fracaso si no recibe refuerzo oportuno.`
+        : `Aunque mantiene buena asistencia (${this.formatearNumero(asistencia, 0)}%), sus resultados academicos aun son inestables${piezas.length ? `: ${piezas.join(', ')}` : ''}. Conviene reforzar el aprendizaje antes del siguiente corte.`;
+    }
 
     if (asistencia != null && asistencia < 60) {
       return nivel === 'ALTO'
@@ -577,12 +636,24 @@ export class PerfilAlumno {
 
     if (
       promedio != null &&
-      (promedio <= 10.5 || (notaMinima != null && notaMinima <= 10.5) || (cursosDesaprobados ?? 0) > 0)
+      (
+        promedio <= 10.5 ||
+        (notaMinima != null && notaMinima <= 10.5) ||
+        (peorNota != null && peorNota <= 10.5) ||
+        (notaExamen != null && notaExamen <= 10.5) ||
+        (cursosDesaprobados ?? 0) > 0
+      )
     ) {
-      const detallePromedio = promedio != null ? `promedio ${this.formatearNumero(promedio, 1)}` : 'rendimiento bajo';
+      const detallePromedio = [
+        promedio != null ? `promedio ${this.formatearNumero(promedio, 1)}` : null,
+        peorNota != null ? `nota minima ${this.formatearNumero(peorNota, 1)}` : null,
+        notaExamen != null ? `examen ${this.formatearNumero(notaExamen, 1)}` : null
+      ]
+        .filter(Boolean)
+        .join(', ');
       return nivel === 'ALTO'
-        ? `Alto riesgo de fracaso por rendimiento: ${detallePromedio}.`
-        : `Seguimiento por rendimiento academico: ${detallePromedio}.`;
+        ? `Alto riesgo de fracaso por rendimiento academico comprometido${detallePromedio ? `: ${detallePromedio}` : ''}.`
+        : `Seguimiento por rendimiento academico vulnerable${detallePromedio ? `: ${detallePromedio}` : ''}.`;
     }
 
     if (asistencia != null && asistencia < 80 && promedio != null && promedio < 14) {

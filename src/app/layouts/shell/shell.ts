@@ -75,12 +75,6 @@ export class Shell {
             activePaths: ['/mis-asignaciones/tutorias']
           },
           {
-            label: 'Perfil del alumno',
-            path: '/alumno',
-            icon: 'fa-solid fa-address-card',
-            activePaths: ['/alumno']
-          },
-          {
             label: 'Seguimiento de riesgo',
             path: '/predicciones',
             icon: 'fa-solid fa-wave-square'

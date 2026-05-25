@@ -12,9 +12,36 @@
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
   height: 100%;
   overflow-x: auto;
+  overflow-y: visible;
+}
+
+.predictions-slide-in {
+  opacity: 0;
+  transform: translateY(18px) scale(0.992);
+  animation: predictions-component-in 480ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: opacity, transform;
+}
+
+.predictions-slide-in-top {
+  animation-delay: 40ms;
+}
+
+.predictions-slide-in-middle {
+  animation-delay: 120ms;
+}
+
+.predictions-slide-in-bottom {
+  animation-delay: 190ms;
+}
+
+.predictions-slide-in-side {
+  animation-delay: 270ms;
 }
 
 .card-head {
+  position: relative;
+  z-index: 30;
+  overflow: visible;
   padding-bottom: 16px;
   border-bottom: 1px solid #e8eef5;
 }
@@ -24,6 +51,8 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 18px;
+  position: relative;
+  z-index: 31;
 }
 
 .panel-head {
@@ -52,6 +81,8 @@
   justify-content: flex-end;
   gap: 14px;
   flex-wrap: nowrap;
+  position: relative;
+  z-index: 12;
 }
 
 .corner-filter {
@@ -67,6 +98,162 @@
   width: 148px;
 }
 
+.tutoria-dropdown {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 18;
+}
+
+.filter-dropdown {
+  flex: 0 0 auto;
+}
+
+.section-picker-label {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.summary-pill.section-picker {
+  gap: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  color: #6d77e5;
+  font-size: 13px;
+  font-weight: 550;
+  background: #ffffff;
+  border: 1px solid #6d77e5;
+}
+
+.summary-pill.section-picker strong {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.tutoria-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  z-index: 40;
+  display: grid;
+  gap: 12px;
+  min-width: 290px;
+  padding: 14px;
+  border-radius: 20px;
+  background: #f1faff;
+  box-shadow: 9px 9px 20px 4px rgba(0, 0, 0, 0.07), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+}
+
+.period-dropdown-menu {
+  min-width: 320px;
+}
+
+.tutoria-option-card {
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  border: none;
+  border-radius: 16px;
+  background: #ffffff;
+  color: #112033;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 9px 9px 20px 4px rgb(0 0 0 / 5%), 0 4px 6px -4px rgb(0 0 0 / 8%);
+  transition:
+    transform 140ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.tutoria-option-card:hover {
+  transform: translateY(-1px);
+  background: #fbfdff;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
+}
+
+.tutoria-option-card.active {
+  background: #ffffff;
+  border: 1px solid #26afff;
+  box-shadow:
+    0 0 0 2px rgba(91, 149, 255, 0.18),
+    0 14px 28px rgba(15, 23, 42, 0.08);
+}
+
+.tutoria-option-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tutoria-option-title {
+  color: #0f766e;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tutoria-option-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #c27aff;
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.tutoria-option-strong {
+  color: #112033;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tutoria-option-card small {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.tutoria-option-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 0;
+  padding-top: 5px;
+  border-top: 1px solid #e8eef5;
+  color: #6b7a99;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.tutoria-option-footer span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tutoria-option-link {
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: #e8f4ff;
+  color: #000000;
+  font-size: 10px;
+  font-weight: 700;
+}
+
 .toolbar-top {
   display: flex;
   align-items: center;
@@ -74,15 +261,38 @@
 }
 
 .view-switch {
+  position: relative;
   display: inline-flex;
   width: fit-content;
   padding: 6px;
   border-radius: 999px;
   background: #edf4ff;
   gap: 8px;
+  isolation: isolate;
+}
+
+.view-switch-thumb {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  bottom: 6px;
+  width: calc(50% - 7px);
+  border-radius: 999px;
+  background: #6d77e5;
+  box-shadow: 0 10px 22px rgba(109, 119, 229, 0.22);
+  transition:
+    transform 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    background 180ms ease,
+    box-shadow 180ms ease;
+  z-index: 0;
+}
+
+.view-switch.is-curso .view-switch-thumb {
+  transform: translateX(calc(100% + 4px));
 }
 
 .view-pill {
+  position: relative;
   min-width: 138px;
   padding: 8px 16px;
   border: 0;
@@ -93,10 +303,11 @@
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
+  transition: color 180ms ease;
+  z-index: 1;
 }
 
 .view-pill.active {
-  background: #1f6fe5;
   color: #ffffff;
 }
 
@@ -168,10 +379,6 @@ select:focus {
   gap: 8px;
   min-height: 126px;
   padding: 14px 16px;
-}
-
-.anim-enter {
-  animation: fadeSlideIn .35s ease;
 }
 
 .metric-head {
@@ -436,7 +643,6 @@ select:focus {
   padding: 14px 16px;
   border-radius: 18px;
   background: #f8fbff;
-  animation: fadeSlideIn .35s ease;
 }
 
 .priority-main {
@@ -564,7 +770,7 @@ select:focus {
   padding: 6px 8px;
   border: 1px solid #d4e4fb;
   border-radius: 999px;
-  background: #3a80eb;
+  background: #6d77e5;
   color: #ffffff;
   font: inherit;
   font-size: 12px;
@@ -852,15 +1058,15 @@ select:focus {
   color: #7a2e2e;
 }
 
-@keyframes fadeSlideIn {
+@keyframes predictions-component-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(18px) scale(0.992);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -905,6 +1111,18 @@ select:focus {
     flex-wrap: wrap;
     justify-content: center;
 
+  }
+
+  .tutoria-dropdown {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .tutoria-dropdown-menu {
+    left: 0;
+    right: auto;
+    min-width: min(320px, 100%);
   }
 
   .metrics-grid {

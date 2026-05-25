@@ -6,6 +6,7 @@
 .student-profile-page {
   height: 100%;
   padding-bottom: 0;
+  overflow: auto;
 }
 
 .profile-card {
@@ -229,6 +230,8 @@
   gap: 8px;
   min-height: 126px;
   padding: 15px 18px;
+  text-align: center;
+  align-items: center;
 }
 
 .summary-tile span {
@@ -267,7 +270,7 @@
 
 .analysis-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr) minmax(0, 1.2fr);
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 1.15fr);
   gap: 16px;
   align-items: stretch;
   min-height: 340px;
@@ -312,6 +315,13 @@
   background: #eef4ff;
   color: #4f46e5;
   box-shadow: 0 8px 18px rgba(79, 70, 229, 0.08);
+}
+
+.period-chip.empty {
+  border-style: dashed;
+  color: #99a7bc;
+  background: #fbfcfe;
+  box-shadow: none;
 }
 
 .risk-hero-grid {
@@ -601,6 +611,12 @@
   fill: #7c3aed;
   stroke: #ffffff;
   stroke-width: 3;
+}
+
+.chart-point-empty {
+  fill: #d7dfec;
+  stroke: #ffffff;
+  stroke-width: 2;
 }
 
 .chart-point-value {

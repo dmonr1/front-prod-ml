@@ -1,6 +1,9 @@
 <app-shell>
   <section class="grades-page" [class.skeleton-mode]="mostrarSkeleton()">
-    <div class="grades-toolbar card grades-slide-in grades-slide-in-top">
+    <div
+      class="grades-toolbar card"
+      [class.grades-slide-in]="animacionEntradaActiva()"
+      [class.grades-slide-in-top]="animacionEntradaActiva()">
       <a class="back-link-button" [routerLink]="['/mis-asignaciones']">
         <i class="fa-solid fa-arrow-left"></i>
         <span>Volver</span>
@@ -12,47 +15,58 @@
       </div>
 
       <div class="grades-toolbar-actions">
-        <span class="summary-pill">
-          Promedio General de la sección: &nbsp; {{ resumenVista().promedioSeccion === null ? '--' : resumenVista().promedioSeccion }}
+        @if (!mostrarSkeleton() && tutoriasDisponibles().length > 1) {
+        <div class="tutoria-dropdown">
+          <span class="section-picker-label">Cambiar de seccion:</span>
+          <button class="summary-pill section-picker" type="button" (click)="toggleSelectorTutoria()">
+            <i class="fa-solid fa-layer-group"></i>
+            <strong>Sección {{ tutoria()?.seccion || '-' }}</strong>
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+
+          @if (mostrarSelectorTutoria()) {
+          <div class="tutoria-dropdown-menu">
+            @for (item of tutoriasDisponibles(); track item.id) {
+            <button
+              type="button"
+              class="tutoria-option-card"
+              [class.active]="tutoriaIdActiva() === item.id"
+              (click)="seleccionarTutoria(item)"
+            >
+              <div class="tutoria-option-head">
+                <span class="tutoria-option-title">Sección {{ item.seccion }}</span>
+                <span class="tutoria-option-badge">{{ item.nivel }}</span>
+              </div>
+
+              <strong class="tutoria-option-strong">{{ item.grado }} - Seccion {{ item.seccion }}</strong>
+              <small>{{ item.periodoAcademico }} - {{ item.docenteNombreCompleto }}</small>
+
+              <div class="tutoria-option-footer">
+                <span><i class="fa-solid fa-users"></i> Seguimiento tutorial</span>
+                <span class="tutoria-option-link">
+                  <i class="fa-solid fa-arrow-right"></i>
+                  <span>{{ tutoriaIdActiva() === item.id ? 'Activa' : 'Abrir' }}</span>
+                </span>
+              </div>
+            </button>
+            }
+          </div>
+          }
+        </div>
+        }
+
+        <span class="summary-pill prom">
+          Promedio General de la seccion: &nbsp; {{ resumenVista().promedioSeccion === null ? '--' : resumenVista().promedioSeccion }}
         </span>
       </div>
     </div>
 
-    @if (!mostrarSkeleton() && tutoriasDisponibles().length > 1) {
-    <section class="tutorias-selector card grades-slide-in grades-slide-in-middle">
-      <div class="tutorias-surface">
-        <div class="tutorias-grid">
-          @for (item of tutoriasDisponibles(); track item.id) {
-          <button
-            type="button"
-            class="flow-card tutoria-card-option"
-            [class.active]="tutoriaIdActiva() === item.id"
-            (click)="seleccionarTutoria(item)"
-          >
-            <div class="flow-card-top">
-              <span class="flow-title">Seccion {{ item.seccion }}</span>
-              <span class="status-badge active">{{ item.nivel }}</span>
-            </div>
-
-            <strong>{{ item.grado }} - Seccion {{ item.seccion }}</strong>
-            <small>{{ item.periodoAcademico }} - {{ item.docenteNombreCompleto }}</small>
-
-            <div class="flow-card-footer">
-              <span><i class="fa-solid fa-users"></i> Seguimiento tutorial</span>
-              <span class="flow-select-label">
-                {{ tutoriaIdActiva() === item.id ? 'Activa' : 'Ver seccion' }}
-              </span>
-            </div>
-          </button>
-          }
-        </div>
-      </div>
-    </section>
-    }
-
     @if (mostrarSkeleton()) {
     <section class="skeleton-wrapper">
-      <section class="tutorias-selector card skeleton-tutorias grades-slide-in grades-slide-in-middle">
+      <section
+        class="tutorias-selector card skeleton-tutorias"
+        [class.grades-slide-in]="animacionEntradaActiva()"
+        [class.grades-slide-in-middle]="animacionEntradaActiva()">
         <div class="tutorias-surface">
           <div class="tutorias-grid">
             @for (item of [1,2,3]; track item) {
@@ -75,7 +89,10 @@
         </div>
       </section>
 
-      <section class="panel-card notes-card skeleton-panel grades-slide-in grades-slide-in-bottom">
+      <section
+        class="panel-card notes-card skeleton-panel"
+        [class.grades-slide-in]="animacionEntradaActiva()"
+        [class.grades-slide-in-bottom]="animacionEntradaActiva()">
         <div class="panel-head panel-head-row notes-card-head">
           <div class="period-switcher">
             <span class="skeleton skeleton-nav"></span>
@@ -119,8 +136,8 @@
     <app-custom-alert
       [open]="true"
       type="error"
-      title="No se pudo cargar la información"
-      [message]="error() || 'Ocurrió un problema inesperado'"
+      title="No se pudo cargar la informacion"
+      [message]="error() || 'Ocurrio un problema inesperado'"
       confirmText="Reintentar"
       cancelText="Cerrar"
       (confirm)="reintentarCarga()"
@@ -131,7 +148,12 @@
     }
 
     @if (!mostrarSkeleton() && tutoria()) {
-    <section class="panel-card notes-card grades-slide-in grades-slide-in-bottom">
+    <section
+      class="panel-card notes-card"
+      [class.grades-slide-in]="animacionEntradaActiva()"
+      [class.grades-slide-in-bottom]="animacionEntradaActiva()"
+      [class.slide-left]="animacionCambio() === 'left'"
+      [class.slide-right]="animacionCambio() === 'right'">
       <div class="panel-head panel-head-row notes-card-head">
         @if (periodosEvaluacionTutoria().length) {
         <div class="period-switcher">
@@ -170,22 +192,25 @@
         <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
         <span>No hay periodos de evaluacion registrados para esta seccion tutorada.</span>
       </div>
-      } @else if (cargandoTabla()) {
-      <div class="table-state table-state-loading">
-        <span class="table-state-icon"><i class="fa-solid fa-rotate"></i></span>
-        <span>Actualizando el consolidado de la seccion seleccionada...</span>
-      </div>
-      } @else if (!resumenAcademico()?.cursos?.length) {
+      } @else if (!resumenAcademico()?.cursos?.length && !cargandoTabla()) {
       <div class="table-state">
         <span class="table-state-icon"><i class="fa-solid fa-book-open"></i></span>
         <span>No hay cursos asignados a esta seccion en el periodo academico actual.</span>
       </div>
       } @else {
+      <div class="grades-table-shell" [class.is-loading]="cargandoTabla()">
+        @if (cargandoTabla()) {
+        <div class="table-loading-overlay">
+          <span class="table-state-icon"><i class="fa-solid fa-rotate"></i></span>
+          <span>Actualizando el consolidado de la seccion seleccionada...</span>
+        </div>
+        }
       <div class="table-scroll grades-table">
         <table class="app-table">
           <thead>
             <tr>
               <th>Alumno</th>
+              <th>Accion</th>
               <th>Asistencia</th>
               @for (curso of resumenAcademico()!.cursos; track curso.asignacionId) {
               <th [title]="curso.docenteNombreCompleto">{{ curso.curso }}</th>
@@ -197,6 +222,12 @@
             @for (fila of resumenAcademico()!.alumnos; track fila.matriculaId) {
             <tr>
               <td>{{ fila.alumnoNombreCompleto }}</td>
+              <td>
+                <button type="button" class="table-link-button" (click)="verFichaAlumno(fila.alumnoId)">
+                  <i class="fa-solid fa-eye"></i>
+                  Ver ficha
+                </button>
+              </td>
               <td>
                 <div class="attendance-pill">
                   <strong>{{ obtenerAsistenciaTexto(fila.clasesAsistidas, fila.clasesProgramadas) }}</strong>
@@ -225,7 +256,7 @@
             </tr>
             } @empty {
             <tr>
-              <td [attr.colspan]="(resumenAcademico()?.cursos?.length || 0) + 4">
+              <td [attr.colspan]="(resumenAcademico()?.cursos?.length || 0) + 5">
                 <div class="table-state">
                   <span class="table-state-icon"><i class="fa-solid fa-users"></i></span>
                   <span>No hay alumnos matriculados en esta seccion.</span>
@@ -235,6 +266,7 @@
             }
           </tbody>
         </table>
+      </div>
       </div>
       }
     </section>

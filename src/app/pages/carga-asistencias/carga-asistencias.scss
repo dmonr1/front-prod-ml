@@ -54,6 +54,9 @@
 
 .attendance-toolbar {
   flex-direction: column;
+  position: relative;
+  z-index: 15;
+  overflow: visible;
 }
 
 .attendance-toolbar p,
@@ -120,6 +123,7 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  z-index: 18;
 }
 
 .section-picker-label {
@@ -143,7 +147,7 @@
   position: absolute;
   top: calc(100% + 10px);
   left: 0;
-  z-index: 12;
+  z-index: 40;
   display: grid;
   gap: 12px;
   min-width: 290px;

@@ -1,7 +1,7 @@
 <app-shell>
   <section class="predictions-shell">
     <div class="dashboard-card">
-      <div class="card-head">
+      <div class="card-head predictions-slide-in predictions-slide-in-top">
         <div class="card-head-inline">
           <div class="panel-head">
             <span class="eyebrow">Seguimiento estudiantil</span>
@@ -9,26 +9,80 @@
           </div>
 
           <div class="filters-corner">
-            <label class="corner-filter">
-              <span>Periodo</span>
-              <select [value]="periodoEvaluacionSeleccionadoId() ?? ''"
-                (change)="onPeriodoEvaluacionChange($any($event.target).value)">
-                @for (periodo of periodosEvaluacionDisponibles(); track periodo.id) {
-                <option [value]="periodo.id">{{ periodo.nombre }} Â· {{ periodo.anioAcademico }}</option>
-                }
-              </select>
-            </label>
+            <div class="tutoria-dropdown filter-dropdown">
+              <span class="section-picker-label">Periodo:</span>
+              <button class="summary-pill section-picker" type="button" (click)="toggleSelectorPeriodo()">
+                <i class="fa-solid fa-calendar-days"></i>
+                <strong>{{ periodoEvaluacionSeleccionado()?.nombre || 'Elegir periodo' }}</strong>
+                <i class="fa-solid fa-chevron-down"></i>
+              </button>
 
-            <label class="corner-filter">
-              <span>Mis secciones</span>
-              <select [value]="seccionSeleccionadaId() ?? ''" (change)="onSeccionChange($any($event.target).value)">
-                @for (seccion of secciones(); track seccion.id) {
-                <option [value]="seccion.id">{{ etiquetaSeccion(seccion) }}</option>
+              @if (mostrarSelectorPeriodo()) {
+              <div class="tutoria-dropdown-menu period-dropdown-menu">
+                @for (periodo of periodosEvaluacionDisponibles(); track periodo.id) {
+                <button
+                  type="button"
+                  class="tutoria-option-card"
+                  [class.active]="periodo.id === periodoEvaluacionSeleccionadoId()"
+                  (click)="onPeriodoEvaluacionChange('' + periodo.id)">
+                  <div class="tutoria-option-head">
+                    <span class="tutoria-option-title">{{ periodo.nombre }}</span>
+                    <span class="tutoria-option-badge">{{ periodo.anioAcademico }}</span>
+                  </div>
+                  <strong class="tutoria-option-strong">Periodo {{ periodo.numero }}</strong>
+                  <small>{{ periodo.fechaInicio }} - {{ periodo.fechaFin }}</small>
+
+                  <div class="tutoria-option-footer">
+                    <span><i class="fa-solid fa-calendar-check"></i> Cambio de periodo</span>
+                    <span class="tutoria-option-link">
+                      <i class="fa-solid fa-arrow-right"></i>
+                      <span>{{ periodo.id === periodoEvaluacionSeleccionadoId() ? 'Activo' : 'Abrir' }}</span>
+                    </span>
+                  </div>
+                </button>
                 }
-              </select>
-            </label>
+              </div>
+              }
+            </div>
+
+            <div class="tutoria-dropdown filter-dropdown">
+              <span class="section-picker-label">Mis secciones:</span>
+              <button class="summary-pill section-picker" type="button" (click)="toggleSelectorSeccion()">
+                <i class="fa-solid fa-layer-group"></i>
+                <strong>{{ etiquetaSeccion(seccionSeleccionada()) || 'Elegir seccion' }}</strong>
+                <i class="fa-solid fa-chevron-down"></i>
+              </button>
+
+              @if (mostrarSelectorSeccion()) {
+              <div class="tutoria-dropdown-menu">
+                @for (seccion of secciones(); track seccion.id) {
+                <button
+                  type="button"
+                  class="tutoria-option-card"
+                  [class.active]="seccion.id === seccionSeleccionadaId()"
+                  (click)="onSeccionChange('' + seccion.id)">
+                  <div class="tutoria-option-head">
+                    <span class="tutoria-option-title">{{ seccion.nombre }}</span>
+                    <span class="tutoria-option-badge">{{ seccion.nivelNombre || 'Nivel' }}</span>
+                  </div>
+                  <strong class="tutoria-option-strong">{{ etiquetaSeccion(seccion) }}</strong>
+                  <small>{{ seccion.nivelNombre || 'Nivel' }} - {{ seccion.gradoNombre || 'Grado' }}</small>
+
+                  <div class="tutoria-option-footer">
+                    <span><i class="fa-solid fa-users"></i> Seguimiento estudiantil</span>
+                    <span class="tutoria-option-link">
+                      <i class="fa-solid fa-arrow-right"></i>
+                      <span>{{ seccion.id === seccionSeleccionadaId() ? 'Activa' : 'Abrir' }}</span>
+                    </span>
+                  </div>
+                </button>
+                }
+              </div>
+              }
+            </div>
             <div class="toolbar-top">
-              <div class="view-switch">
+              <div class="view-switch" [class.is-curso]="vistaActiva() === 'curso'">
+                <span class="view-switch-thumb" aria-hidden="true"></span>
                 <button type="button" class="view-pill" [class.active]="vistaActiva() === 'global'"
                   (click)="cambiarVista('global')">
                   Riesgo global
@@ -46,7 +100,7 @@
       @if (cargandoFiltros() || cargandoVista() || error()) {
         <div class="content-grid skeleton-dashboard">
           <div class="content-main">
-            <div class="metrics-grid">
+            <div class="metrics-grid predictions-slide-in predictions-slide-in-middle">
               @for (item of [0, 1, 2, 3]; track item) {
               <article class="metric-card skeleton-card">
                 <span class="skeleton-line short-c1"></span>
@@ -56,7 +110,7 @@
               }
             </div>
   
-            <article class="list-card list-card--fill skeleton-card">
+            <article class="list-card list-card--fill skeleton-card predictions-slide-in predictions-slide-in-bottom">
               <div class="section-header">
                 <div>
                   <span class="section-kicker">Listado principal</span>
@@ -105,7 +159,7 @@
             </article>
           </div>
   
-          <div class="content-side">
+          <div class="content-side predictions-slide-in predictions-slide-in-side">
             <article class="mini-card skeleton-card">
               <span class="skeleton-line don"></span>
               <div class="ske-don">
@@ -138,9 +192,9 @@
       } @else {
       <div class="content-grid">
         <div class="content-main">
-          <div class="metrics-grid">
+          <div class="metrics-grid predictions-slide-in predictions-slide-in-middle">
             @for (metrica of metricasDashboard(); track metrica.label + '-' + animationToken()) {
-            <article class="metric-card anim-enter" [class.metric-card--high]="metrica.tone === 'high'"
+            <article class="metric-card" [class.metric-card--high]="metrica.tone === 'high'"
               [class.metric-card--medium]="metrica.tone === 'medium'">
               <div class="metric-head">
                 <span class="metric-icon"><i [class]="metrica.icon"></i></span>
@@ -155,7 +209,7 @@
             }
           </div>
 
-          <article class="list-card list-card--fill">
+          <article class="list-card list-card--fill predictions-slide-in predictions-slide-in-bottom">
             <div class="section-header">
               <div>
                 <span class="section-kicker">Listado principal</span>
@@ -240,8 +294,8 @@
           </article>
         </div>
 
-        <div class="content-side">
-          <article class="mini-card mini-card--donut anim-enter" [attr.data-anim]="animationToken()">
+        <div class="content-side predictions-slide-in predictions-slide-in-side">
+          <article class="mini-card mini-card--donut" [attr.data-anim]="animationToken()">
             <div class="mini-card-head">
               <h3>{{ tituloDistribucion() }}</h3>
             </div>
@@ -271,7 +325,7 @@
             </div>
           </article>
 
-          <article class="mini-card mini-card--signals anim-enter" [attr.data-anim]="animationToken()">
+          <article class="mini-card mini-card--signals" [attr.data-anim]="animationToken()">
             @if (vistaActiva() === 'global') {
             <div class="mini-card-head">
               <h3>Detalle del riesgo global</h3>
@@ -335,3 +389,4 @@
       (dismiss)="cerrarAlertaError()" />
   </section>
 </app-shell>
+

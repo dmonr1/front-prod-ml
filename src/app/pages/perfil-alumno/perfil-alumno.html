@@ -94,6 +94,7 @@
                     @for (periodo of periodosDisponiblesPerfil(); track periodo.id) {
                     <button type="button" class="period-chip"
                       [class.active]="detalle.periodoEvaluacionId === periodo.id"
+                      [class.empty]="!prediccionesGlobales().some(item => item.periodoEvaluacionId === periodo.id)"
                       (click)="seleccionarPeriodoPerfil(periodo.id)">
                       {{ periodo.nombre }}
                     </button>
@@ -196,6 +197,7 @@
                       <line x1="24" y1="24" x2="24" y2="196" class="grid-axis"></line>
                       <path [attr.d]="svgEvolucion().path" class="chart-line"></path>
                       @for (point of svgEvolucion().points; track point.etiqueta + point.valor) {
+                      @if (point.valor !== null && point.y !== null) {
                       <text
                         [attr.x]="point.x"
                         [attr.y]="point.y - 14"
@@ -205,6 +207,9 @@
                         {{ point.valor | number:'1.0-0' }}%
                       </text>
                       <circle [attr.cx]="point.x" [attr.cy]="point.y" r="6" class="chart-point"></circle>
+                      } @else {
+                      <circle [attr.cx]="point.x" cy="196" r="4.5" class="chart-point chart-point-empty"></circle>
+                      }
                       }
                     </svg>
 

@@ -1,12 +1,12 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, HostListener, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { CustomAlertComponent } from '../../components/custom-alert/custom-alert';
 import { Shell } from '../../layouts/shell/shell';
-import { PeriodoAcademico } from '../../models/periodo-academico';
 import { PeriodoEvaluacion } from '../../models/periodo-evaluacion';
 import { Seccion } from '../../models/seccion';
+import { Tutoria } from '../../models/tutoria';
 import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
 import { PeriodoEvaluacionService } from '../../services/academico/periodo-evaluacion.service';
 import { SeccionService } from '../../services/academico/seccion.service';
@@ -43,6 +43,7 @@ interface PrediccionVista extends PrediccionRiesgo {
   styleUrl: './predicciones.scss'
 })
 export class Predicciones {
+  private readonly elementRef = inject(ElementRef<HTMLElement>);
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   private readonly periodoAcademicoService = inject(PeriodoAcademicoService);
@@ -51,8 +52,6 @@ export class Predicciones {
   private readonly tutoriaService = inject(TutoriaService);
   private readonly prediccionService = inject(PrediccionService);
   private readonly alertaSeguimientoService = inject(AlertaSeguimientoService);
-  private readonly currentYear = new Date().getFullYear();
-
   readonly vistaActiva = signal<VistaPrediccion>('global');
   readonly cargandoFiltros = signal(true);
   readonly cargandoVista = signal(false);
@@ -61,12 +60,15 @@ export class Predicciones {
 
   readonly periodosEvaluacion = signal<PeriodoEvaluacion[]>([]);
   readonly secciones = signal<Seccion[]>([]);
+  readonly tutoriasFiltro = signal<Tutoria[]>([]);
   readonly periodoEvaluacionSeleccionadoId = signal<number | null>(null);
   readonly seccionSeleccionadaId = signal<number | null>(null);
   readonly cursoSeleccionadoId = signal<number | null>(null);
   readonly busqueda = signal('');
   readonly prediccionSeleccionadaId = signal<number | null>(null);
   readonly animationToken = signal(0);
+  readonly mostrarSelectorPeriodo = signal(false);
+  readonly mostrarSelectorSeccion = signal(false);
 
   readonly resumenApi = signal<ResumenPrediccion | null>(null);
   readonly prediccionesGlobales = signal<PrediccionVista[]>([]);
@@ -87,16 +89,24 @@ export class Predicciones {
     () => this.secciones().find((seccion) => seccion.id === this.seccionSeleccionadaId()) ?? null
   );
 
+  readonly tutoriaSeleccionada = computed(
+    () =>
+      this.tutoriasFiltro().find((tutoria) => tutoria.seccionId === this.seccionSeleccionadaId()) ??
+      null
+  );
+
   readonly periodosEvaluacionDisponibles = computed(() => {
+    const tutoria = this.tutoriaSeleccionada();
     const seccion = this.seccionSeleccionada();
     const periodos = this.periodosEvaluacion();
+    const periodoAcademicoId = tutoria?.periodoAcademicoId ?? seccion?.periodoAcademicoId;
 
-    if (!seccion?.periodoAcademicoId) {
+    if (!periodoAcademicoId) {
       return periodos;
     }
 
     return periodos
-      .filter((periodo) => periodo.periodoAcademicoId === seccion.periodoAcademicoId)
+      .filter((periodo) => periodo.periodoAcademicoId === periodoAcademicoId)
       .sort((a, b) => a.numero - b.numero);
   });
 
@@ -122,30 +132,36 @@ export class Predicciones {
     const query = this.busqueda().trim().toLowerCase();
     const cursoSeleccionadoId = this.cursoSeleccionadoId();
 
-    return this.datasetActivo().filter((item) => {
-      if (
-        this.vistaActiva() === 'curso' &&
-        cursoSeleccionadoId != null &&
-        item.cursoId !== cursoSeleccionadoId
-      ) {
-        return false;
-      }
+    return this.datasetActivo()
+      .filter((item) => {
+        if (
+          this.vistaActiva() === 'curso' &&
+          cursoSeleccionadoId != null &&
+          item.cursoId !== cursoSeleccionadoId
+        ) {
+          return false;
+        }
 
-      if (!query) {
-        return true;
-      }
+        if (!query) {
+          return true;
+        }
 
-      return [
-        item.alumnoNombreCompleto,
-        item.codigoAlumno,
-        item.curso ?? '',
-        item.grado ?? '',
-        item.seccion ?? ''
-      ]
-        .join(' ')
-        .toLowerCase()
-        .includes(query);
-    });
+        return [
+          item.alumnoNombreCompleto,
+          item.codigoAlumno,
+          item.curso ?? '',
+          item.grado ?? '',
+          item.seccion ?? ''
+        ]
+          .join(' ')
+          .toLowerCase()
+          .includes(query);
+      })
+      .sort((a, b) =>
+        this.obtenerClaveOrdenAlumno(a.alumnoNombreCompleto).localeCompare(
+          this.obtenerClaveOrdenAlumno(b.alumnoNombreCompleto)
+        )
+      );
   });
 
   readonly prediccionSeleccionada = computed(() => {
@@ -471,14 +487,49 @@ export class Predicciones {
 
   onPeriodoEvaluacionChange(value: string): void {
     this.periodoEvaluacionSeleccionadoId.set(Number(value));
+    this.mostrarSelectorPeriodo.set(false);
     this.cargarVista();
   }
 
   onSeccionChange(value: string): void {
     this.seccionSeleccionadaId.set(Number(value));
     this.cursoSeleccionadoId.set(null);
+    this.mostrarSelectorSeccion.set(false);
     this.ajustarPeriodoSegunSeccion();
     this.cargarVista();
+  }
+
+  toggleSelectorPeriodo(): void {
+    this.mostrarSelectorPeriodo.update((valor) => !valor);
+    if (this.mostrarSelectorPeriodo()) {
+      this.mostrarSelectorSeccion.set(false);
+    }
+  }
+
+  toggleSelectorSeccion(): void {
+    this.mostrarSelectorSeccion.update((valor) => !valor);
+    if (this.mostrarSelectorSeccion()) {
+      this.mostrarSelectorPeriodo.set(false);
+    }
+  }
+
+  cerrarSelectores(): void {
+    this.mostrarSelectorPeriodo.set(false);
+    this.mostrarSelectorSeccion.set(false);
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (!this.mostrarSelectorPeriodo() && !this.mostrarSelectorSeccion()) {
+      return;
+    }
+
+    const target = event.target as Node | null;
+    if (target && this.elementRef.nativeElement.contains(target)) {
+      return;
+    }
+
+    this.cerrarSelectores();
   }
 
   onCursoChange(value: string): void {
@@ -555,24 +606,29 @@ export class Predicciones {
         const docenteId = usuario?.docenteId;
 
         if (esTutor && docenteId) {
-          const periodoActual = this.obtenerPeriodoActual(periodosAcademicos);
+          const periodosAcademicosActivos = [...periodosAcademicos]
+            .filter((periodo) => periodo.estado !== 'INACTIVO')
+            .sort((a, b) => b.anio - a.anio);
 
-          if (!periodoActual) {
+          if (!periodosAcademicosActivos.length) {
             this.configurarFiltros(periodosActivos, seccionesActivas);
             return;
           }
 
-          this.tutoriaService.listarPorDocente(docenteId, periodoActual.id).subscribe({
-            next: (tutorias) => {
-              const seccionesTutoradasIds = new Set(
-                tutorias
-                  .filter((tutoria) => (tutoria.estado ?? 'ACTIVO') === 'ACTIVO')
-                  .map((tutoria) => tutoria.seccionId)
+          forkJoin(
+            periodosAcademicosActivos.map((periodo) =>
+              this.tutoriaService.listarPorDocente(docenteId, periodo.id)
+            )
+          ).subscribe({
+            next: (tutoriasPorPeriodo) => {
+              const tutoriasActivas = tutoriasPorPeriodo
+                .flat()
+                .filter((tutoria) => (tutoria.estado ?? 'ACTIVO') === 'ACTIVO');
+              const seccionesTutoradas = this.mapearSeccionesDesdeTutorias(
+                tutoriasActivas,
+                seccionesActivas
               );
-
-              const seccionesTutoradas = seccionesActivas.filter((seccion) =>
-                seccionesTutoradasIds.has(seccion.id)
-              );
+              this.tutoriasFiltro.set(tutoriasActivas);
 
               this.configurarFiltros(
                 periodosActivos,
@@ -580,12 +636,14 @@ export class Predicciones {
               );
             },
             error: () => {
+              this.tutoriasFiltro.set([]);
               this.configurarFiltros(periodosActivos, seccionesActivas);
             }
           });
           return;
         }
 
+        this.tutoriasFiltro.set([]);
         this.configurarFiltros(periodosActivos, seccionesActivas);
       },
       error: () => {
@@ -753,6 +811,35 @@ export class Predicciones {
     const promedio = this.obtenerNumero(variables['promedio_general']);
     const notaMinima = this.obtenerNumero(variables['nota_minima']);
     const cursosDesaprobados = this.obtenerNumero(variables['cantidad_cursos_desaprobados']);
+    const notasDesaprobadas = this.obtenerNumero(variables['cantidad_notas_desaprobadas_total'])
+      ?? this.obtenerNumero(variables['cantidad_notas_desaprobadas']);
+    const notasCriticas = this.obtenerNumero(variables['cantidad_notas_criticas_total'])
+      ?? this.obtenerNumero(variables['cantidad_notas_criticas']);
+    const peorNota = this.obtenerNumero(variables['peor_nota_periodo'])
+      ?? this.obtenerNumero(variables['nota_minima_curso'])
+      ?? notaMinima;
+    const notaExamen = this.obtenerNumero(variables['nota_examen_principal']);
+
+    const hayAsistenciaAlta = asistencia != null && asistencia >= 85;
+    const hayRendimientoFragil =
+      (promedio != null && promedio < 12.5) ||
+      (peorNota != null && peorNota <= 10.5) ||
+      (notaExamen != null && notaExamen <= 10.5) ||
+      (notasCriticas ?? 0) >= 1 ||
+      (notasDesaprobadas ?? 0) >= 2 ||
+      (cursosDesaprobados ?? 0) > 0;
+
+    if (hayAsistenciaAlta && hayRendimientoFragil) {
+      const piezas = [
+        promedio != null ? `promedio ${this.formatearNumero(promedio)}` : null,
+        peorNota != null ? `nota minima ${this.formatearNumero(peorNota)}` : null,
+        notaExamen != null ? `examen ${this.formatearNumero(notaExamen)}` : null
+      ].filter(Boolean);
+
+      return nivel === 'ALTO'
+        ? `Asiste regularmente (${this.formatearNumero(asistencia)}%), pero sus resultados siguen siendo fragiles${piezas.length ? `: ${piezas.join(', ')}` : ''}. Requiere refuerzo academico prioritario.`
+        : `Mantiene buena asistencia (${this.formatearNumero(asistencia)}%), pero aun presenta fragilidad academica${piezas.length ? `: ${piezas.join(', ')}` : ''}.`;
+    }
 
     if (asistencia != null && asistencia < 60) {
       return nivel === 'ALTO'
@@ -762,12 +849,24 @@ export class Predicciones {
 
     if (
       promedio != null &&
-      (promedio <= 10.5 || notaMinima != null && notaMinima <= 10.5 || (cursosDesaprobados ?? 0) > 0)
+      (
+        promedio <= 10.5 ||
+        notaMinima != null && notaMinima <= 10.5 ||
+        peorNota != null && peorNota <= 10.5 ||
+        notaExamen != null && notaExamen <= 10.5 ||
+        (cursosDesaprobados ?? 0) > 0
+      )
     ) {
-      const detallePromedio = promedio != null ? `promedio ${this.formatearNumero(promedio)}` : 'rendimiento bajo';
+      const detallePromedio = [
+        promedio != null ? `promedio ${this.formatearNumero(promedio)}` : null,
+        peorNota != null ? `nota minima ${this.formatearNumero(peorNota)}` : null,
+        notaExamen != null ? `examen ${this.formatearNumero(notaExamen)}` : null
+      ]
+        .filter(Boolean)
+        .join(', ');
       return nivel === 'ALTO'
-        ? `Alto riesgo de fracaso por rendimiento: ${detallePromedio}.`
-        : `Seguimiento por rendimiento academico: ${detallePromedio}.`;
+        ? `Alto riesgo de fracaso por rendimiento academico comprometido${detallePromedio ? `: ${detallePromedio}` : ''}.`
+        : `Seguimiento por rendimiento academico vulnerable${detallePromedio ? `: ${detallePromedio}` : ''}.`;
     }
 
     if (asistencia != null && asistencia < 80 && promedio != null && promedio < 14) {
@@ -793,15 +892,36 @@ export class Predicciones {
     const promedio = this.obtenerNumero(variables['promedio_general']);
     const notaMinima = this.obtenerNumero(variables['nota_minima']);
     const cursosDesaprobados = this.obtenerNumero(variables['cantidad_cursos_desaprobados']);
+    const notasDesaprobadas = this.obtenerNumero(variables['cantidad_notas_desaprobadas_total'])
+      ?? this.obtenerNumero(variables['cantidad_notas_desaprobadas']);
+    const notasCriticas = this.obtenerNumero(variables['cantidad_notas_criticas_total'])
+      ?? this.obtenerNumero(variables['cantidad_notas_criticas']);
+    const peorNota = this.obtenerNumero(variables['peor_nota_periodo'])
+      ?? this.obtenerNumero(variables['nota_minima_curso'])
+      ?? notaMinima;
+    const notaExamen = this.obtenerNumero(variables['nota_examen_principal']);
 
     const asistenciaCritica = asistencia != null && asistencia < 60;
     const rendimientoBajo =
       promedio != null &&
-      (promedio <= 10.5 || notaMinima != null && notaMinima <= 10.5 || (cursosDesaprobados ?? 0) > 0);
+      (
+        promedio <= 10.5 ||
+        notaMinima != null && notaMinima <= 10.5 ||
+        peorNota != null && peorNota <= 10.5 ||
+        notaExamen != null && notaExamen <= 10.5 ||
+        (cursosDesaprobados ?? 0) > 0 ||
+        (notasCriticas ?? 0) >= 1 ||
+        (notasDesaprobadas ?? 0) >= 2
+      );
     const combinado = asistencia != null && asistencia < 80 && promedio != null && promedio < 14;
+    const aprendeInsuficiente = asistencia != null && asistencia >= 85 && rendimientoBajo;
 
     if (asistenciaCritica && (rendimientoBajo || combinado)) {
       return 'mixto';
+    }
+
+    if (aprendeInsuficiente) {
+      return 'rendimiento';
     }
 
     if (asistenciaCritica) {
@@ -839,6 +959,22 @@ export class Predicciones {
       .replace(/\s+/g, ' ')
       .trim()
       .replace(/^./, (char) => char.toUpperCase());
+  }
+
+  private obtenerClaveOrdenAlumno(nombreCompleto: string | null | undefined): string {
+    const limpio = (nombreCompleto ?? '').trim().replace(/\s+/g, ' ');
+    if (!limpio) {
+      return '';
+    }
+
+    const partes = limpio.split(' ');
+    if (partes.length <= 2) {
+      return limpio.toLowerCase();
+    }
+
+    const nombres = partes.slice(0, -2).join(' ');
+    const apellidos = partes.slice(-2).join(' ');
+    return `${apellidos} ${nombres}`.trim().toLowerCase();
   }
 
   private promedio(values: number[]): number {
@@ -885,6 +1021,49 @@ export class Predicciones {
     }
   }
 
+  private mapearSeccionesDesdeTutorias(
+    tutorias: Tutoria[],
+    seccionesBase: Seccion[]
+  ): Seccion[] {
+    const basePorId = new Map(seccionesBase.map((seccion) => [seccion.id, seccion]));
+    const resultado = new Map<string, Seccion>();
+
+    for (const tutoria of tutorias) {
+      const base = basePorId.get(tutoria.seccionId);
+      const seccion: Seccion = base
+        ? {
+            ...base,
+            nombre: base.nombre || tutoria.seccion,
+            gradoNombre: tutoria.grado || base.gradoNombre,
+            nivelNombre: tutoria.nivel || base.nivelNombre,
+            periodoAcademicoId: tutoria.periodoAcademicoId ?? base.periodoAcademicoId,
+            periodoAcademicoNombre: tutoria.periodoAcademico || base.periodoAcademicoNombre,
+            anioAcademico: tutoria.anioAcademico ?? base.anioAcademico
+          }
+        : {
+            id: tutoria.seccionId,
+            nombre: tutoria.seccion,
+            capacidad: null,
+            estado: tutoria.estado ?? 'ACTIVO',
+            gradoId: null,
+            gradoNombre: tutoria.grado,
+            nivelId: null,
+            nivelNombre: tutoria.nivel,
+            periodoAcademicoId: tutoria.periodoAcademicoId,
+            periodoAcademicoNombre: tutoria.periodoAcademico,
+            anioAcademico: tutoria.anioAcademico
+          };
+
+      resultado.set(`${seccion.id}-${seccion.periodoAcademicoId ?? 0}`, seccion);
+    }
+
+    return [...resultado.values()].sort((a, b) =>
+      `${a.anioAcademico ?? 0}-${a.nivelNombre ?? ''}-${a.gradoNombre ?? ''}-${a.nombre}`.localeCompare(
+        `${b.anioAcademico ?? 0}-${b.nivelNombre ?? ''}-${b.gradoNombre ?? ''}-${b.nombre}`
+      )
+    );
+  }
+
   private ajustarPeriodoSegunSeccion(): void {
     const periodoActual = this.periodoEvaluacionSeleccionadoId();
     const disponibles = this.periodosEvaluacionDisponibles();
@@ -895,11 +1074,4 @@ export class Predicciones {
     }
   }
 
-  private obtenerPeriodoActual(periodos: PeriodoAcademico[]): PeriodoAcademico | null {
-    return (
-      periodos.find((periodo) => periodo.anio === this.currentYear) ??
-      [...periodos].sort((a, b) => b.anio - a.anio)[0] ??
-      null
-    );
-  }
 }

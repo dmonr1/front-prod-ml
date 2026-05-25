@@ -1,5 +1,5 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { Component, ElementRef, HostListener, OnInit, computed, inject, signal } from '@angular/core';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { PeriodoEvaluacion } from '../../models/periodo-evaluacion';
 import { Tutoria } from '../../models/tutoria';
@@ -22,7 +22,9 @@ import {
   styleUrl: './seccion-tutorada.scss'
 })
 export class SeccionTutorada implements OnInit {
+  private readonly elementRef = inject(ElementRef<HTMLElement>);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   private readonly periodoAcademicoService = inject(PeriodoAcademicoService);
   private readonly periodoEvaluacionService = inject(PeriodoEvaluacionService);
@@ -40,6 +42,10 @@ export class SeccionTutorada implements OnInit {
   readonly periodosEvaluacion = signal<PeriodoEvaluacion[]>([]);
   readonly periodoEvaluacionSeleccionadoId = signal<number | null>(null);
   readonly resumenAcademico = signal<TutoriaResumenAcademico | null>(null);
+  readonly mostrarSelectorTutoria = signal(false);
+  readonly animacionCambio = signal<'left' | 'right' | null>(null);
+  readonly animacionEntradaActiva = signal(true);
+  private direccionAnimacionPendiente: 'left' | 'right' | null = null;
 
   readonly mostrarError = signal(true);
   readonly mostrarSkeleton = computed(() => this.cargando() || this.mantenerSkeletonPorError());
@@ -107,6 +113,7 @@ export class SeccionTutorada implements OnInit {
 
   ngOnInit(): void {
     this.cargarVista();
+    setTimeout(() => this.animacionEntradaActiva.set(false), 700);
   }
 
   cargarVista(): void {
@@ -190,13 +197,18 @@ export class SeccionTutorada implements OnInit {
     });
   }
 
-  seleccionarPeriodoEvaluacion(periodoEvaluacionId: number, cargaCompleta = false): void {
+  seleccionarPeriodoEvaluacion(
+    periodoEvaluacionId: number,
+    cargaCompleta = false,
+    direccion: 'left' | 'right' | null = null
+  ): void {
     const tutoriaId = this.tutoriaIdActiva();
     if (!tutoriaId) {
       this.error.set('No se pudo identificar la tutoria activa.');
       return;
     }
 
+    this.direccionAnimacionPendiente = direccion;
     this.periodoEvaluacionSeleccionadoId.set(periodoEvaluacionId);
     this.error.set(null);
     this.cargando.set(cargaCompleta);
@@ -208,6 +220,11 @@ export class SeccionTutorada implements OnInit {
         this.cargando.set(false);
         this.cargandoTabla.set(false);
         this.mantenerSkeletonPorError.set(false);
+        if (this.direccionAnimacionPendiente) {
+          this.animacionCambio.set(this.direccionAnimacionPendiente);
+          setTimeout(() => this.animacionCambio.set(null), 320);
+        }
+        this.direccionAnimacionPendiente = null;
       },
       error: (error) => {
         this.error.set(
@@ -217,18 +234,48 @@ export class SeccionTutorada implements OnInit {
         this.cargando.set(false);
         this.cargandoTabla.set(false);
         this.mantenerSkeletonPorError.set(cargaCompleta);
+        this.direccionAnimacionPendiente = null;
+        this.animacionCambio.set(null);
       }
     });
   }
 
   seleccionarTutoria(tutoria: Tutoria): void {
     if (this.tutoriaIdActiva() === tutoria.id) {
+      this.mostrarSelectorTutoria.set(false);
       return;
     }
 
     this.tutoria.set(tutoria);
     this.tutoriaIdActiva.set(tutoria.id);
-    this.cargarPrimerPeriodoDisponible();
+    this.mostrarSelectorTutoria.set(false);
+    this.cargarPrimerPeriodoDisponible(false, 'right');
+  }
+
+  toggleSelectorTutoria(): void {
+    if (this.tutoriasDisponibles().length <= 1) {
+      return;
+    }
+
+    this.mostrarSelectorTutoria.update((valor) => !valor);
+  }
+
+  cerrarSelectorTutoria(): void {
+    this.mostrarSelectorTutoria.set(false);
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (!this.mostrarSelectorTutoria()) {
+      return;
+    }
+
+    const target = event.target as Node | null;
+    if (target && this.elementRef.nativeElement.contains(target)) {
+      return;
+    }
+
+    this.cerrarSelectorTutoria();
   }
 
   irPeriodoEvaluacionAnterior(): void {
@@ -238,7 +285,7 @@ export class SeccionTutorada implements OnInit {
       return;
     }
 
-    this.seleccionarPeriodoEvaluacion(periodos[indice - 1].id);
+    this.seleccionarPeriodoEvaluacion(periodos[indice - 1].id, false, 'left');
   }
 
   irPeriodoEvaluacionSiguiente(): void {
@@ -248,7 +295,7 @@ export class SeccionTutorada implements OnInit {
       return;
     }
 
-    this.seleccionarPeriodoEvaluacion(periodos[indice + 1].id);
+    this.seleccionarPeriodoEvaluacion(periodos[indice + 1].id, false, 'right');
   }
 
   formatearPromedio(promedio: number | null): string {
@@ -281,16 +328,30 @@ export class SeccionTutorada implements OnInit {
     return porcentaje === null ? '--' : `${porcentaje.toFixed(0)}%`;
   }
 
-  private cargarPrimerPeriodoDisponible(cargaCompleta = false): void {
+  verFichaAlumno(alumnoId: number): void {
+    void this.router.navigate(['/alumno', alumnoId], {
+      queryParams: {
+        periodoEvaluacionId: this.periodoEvaluacionSeleccionadoId(),
+        seccionId: this.tutoria()?.seccionId ?? null,
+        vista: 'global'
+      }
+    });
+  }
+
+  private cargarPrimerPeriodoDisponible(
+    cargaCompleta = false,
+    direccion: 'left' | 'right' | null = null
+  ): void {
     const primerPeriodo = this.periodosEvaluacionTutoria()[0] ?? null;
     if (primerPeriodo) {
-      this.seleccionarPeriodoEvaluacion(primerPeriodo.id, cargaCompleta);
+      this.seleccionarPeriodoEvaluacion(primerPeriodo.id, cargaCompleta, direccion);
     } else {
       this.periodoEvaluacionSeleccionadoId.set(null);
       this.resumenAcademico.set(null);
       this.cargando.set(false);
       this.cargandoTabla.set(false);
       this.mantenerSkeletonPorError.set(false);
+      this.animacionCambio.set(null);
     }
   }
 }
