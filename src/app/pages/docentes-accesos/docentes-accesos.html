@@ -1,5 +1,5 @@
 <app-shell>
-  <section class="catalog-card">
+  <section class="catalog-card docentes-page">
     <app-custom-alert
       [open]="alertState().open"
       [type]="alertState().type"
@@ -12,7 +12,7 @@
       (cancel)="filaPendienteCambioEstado() ? cancelarInactivacionPendiente() : cerrarAlerta()"
       (dismiss)="cerrarAlerta()" />
 
-    <div class="catalog-head">
+    <div class="catalog-head docentes-slide-in docentes-slide-in-top">
       <div class="section-head">
         <div class="panel-head">
           <span class="panel-kicker">Gestion institucional</span>
@@ -27,7 +27,7 @@
       </div>
     </div>
 
-    <div class="catalog-body table-only">
+    <div class="catalog-body table-only docentes-slide-in docentes-slide-in-bottom">
       <article class="table-panel full-width">
         <div class="panel-head section-head">
           <div>

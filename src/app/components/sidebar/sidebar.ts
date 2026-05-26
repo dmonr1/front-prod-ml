@@ -51,6 +51,10 @@ export class Sidebar {
       return;
     }
 
+    if (this.collapsed()) {
+      return;
+    }
+
     this.expandedSections.update((current) => {
       const next = current.includes(item.id)
         ? current.filter((id) => id !== item.id)
@@ -66,6 +70,19 @@ export class Sidebar {
     }
 
     return this.expandedSections().includes(item.id);
+  }
+
+  mantenerSeccionAbierta(event: MouseEvent, itemId: string): void {
+    event.stopPropagation();
+    this.expandedSections.update((current) => {
+      if (current.includes(itemId)) {
+        return current;
+      }
+
+      const next = [...current, itemId];
+      localStorage.setItem(this.storageKey, JSON.stringify(next));
+      return next;
+    });
   }
 
   isParentActive(item: SidebarItem): boolean {

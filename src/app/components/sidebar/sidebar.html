@@ -28,13 +28,14 @@
             <i class="fa-solid fa-chevron-down nav-chevron"></i>
           </button>
 
-          @if (!collapsed() && isExpanded(item)) {
+          @if (collapsed() || isExpanded(item)) {
             <div class="nav-children">
               @for (child of item.children; track child.path) {
                 <a
                   class="nav-child"
                   [routerLink]="child.path"
                   [class.active]="isChildActive(child)"
+                  (click)="mantenerSeccionAbierta($event, item.id)"
                 >
                   <span class="nav-icon child-icon"><i [class]="child.icon"></i></span>
                   <span class="nav-label">{{ child.label }}</span>

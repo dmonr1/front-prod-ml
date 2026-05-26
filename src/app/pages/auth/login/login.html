@@ -1,52 +1,168 @@
 <main class="login-page">
-  <section class="login-visual">
-    <app-brand-mark />
-    <p class="eyebrow">Plataforma academica inteligente</p>
-    <h1>Predice el riesgo estudiantil y actua a tiempo.</h1>
-    <p class="lead">
-      Unifica evaluaciones, asistencia y seguimiento tutorial en un solo espacio para el
-      colegio.
-    </p>
+  <section class="login-visual" #visualPanel>
+    <div class="login-copy">
+      <h1>Seguimiento de riesgo</h1>
+
+      <div class="dashboard-preview" data-preview-anim>
+        <div class="preview-toolbar">
+          <span class="preview-chip" data-preview-anim>{{ previewData().chips[0] }}</span>
+          <span class="preview-chip" data-preview-anim>{{ previewData().chips[1] }}</span>
+          <span class="preview-switch" [class.is-curso]="previewMode() === 'curso'" data-preview-anim>
+            <span class="preview-switch-thumb" aria-hidden="true"></span>
+            <span class="preview-switch-pill" [class.is-active]="previewMode() === 'global'">Riesgo global</span>
+            <span class="preview-switch-pill" [class.is-active]="previewMode() === 'curso'">Riesgo por curso</span>
+          </span>
+        </div>
+
+        <div class="preview-main">
+          <section class="preview-left-column">
+            <div class="preview-kpis">
+              @for (kpi of previewData().kpis; track kpi.label) {
+                <article class="preview-kpi" data-preview-anim>
+                  <small>{{ kpi.label }}</small>
+                  <strong>{{ kpi.value }}</strong>
+                </article>
+              }
+            </div>
+
+            <section class="preview-table-card" data-preview-anim>
+              <div class="preview-card-head">
+                <span>Listado principal</span>
+                <strong>{{ previewData().headerTitle }}</strong>
+              </div>
+
+              <div class="preview-table">
+                <div class="preview-row preview-row-head">
+                  <span>Alumno</span>
+                  <span>Riesgo</span>
+                  <span>Fracaso</span>
+                </div>
+                @for (row of previewData().rows; track row.name) {
+                  <div class="preview-row" data-preview-anim>
+                    <strong>{{ row.name }}</strong>
+                    <span class="risk-pill" [class.is-low]="row.tone === 'low'" [class.is-medium]="row.tone === 'medium'" [class.is-high]="row.tone === 'high'">
+                      {{ row.risk }}
+                    </span>
+                    <span class="risk-ring" [class.is-low]="row.tone === 'low'" [class.is-medium]="row.tone === 'medium'" [class.is-high]="row.tone === 'high'">
+                      {{ row.failure }}
+                    </span>
+                  </div>
+                }
+              </div>
+            </section>
+          </section>
+
+          <aside class="preview-right-column">
+            <section class="preview-chart-card" data-preview-anim>
+              <div class="preview-card-head">
+                <strong>{{ previewData().chart.title }}</strong>
+              </div>
+
+              <div class="preview-chart-layout">
+                <div class="preview-donut">
+                  <div class="preview-donut-ring"></div>
+                  <div class="preview-donut-core">
+                    <strong>{{ previewData().chart.total }}</strong>
+                    <span>ALUMNOS</span>
+                  </div>
+                </div>
+
+                <div class="preview-chart-legend">
+                  @for (item of previewData().chart.legend; track item.label) {
+                    <div class="preview-legend-row">
+                      <span class="preview-legend-dot" [class.is-high]="item.tone === 'high'" [class.is-medium]="item.tone === 'medium'" [class.is-low]="item.tone === 'low'"></span>
+                      <span>{{ item.label }}</span>
+                      <strong>{{ item.value }}</strong>
+                    </div>
+                  }
+                </div>
+              </div>
+            </section>
+
+            <aside class="preview-side-card" data-preview-anim>
+              <div class="preview-card-head">
+                <span>Detalle</span>
+                <strong>{{ previewData().sideTitle }}</strong>
+              </div>
+
+              <div class="preview-side-list">
+                @for (metric of previewData().sideMetrics; track metric.label) {
+                  <div data-preview-anim><span>{{ metric.label }}</span><strong>{{ metric.value }}</strong></div>
+                }
+              </div>
+            </aside>
+          </aside>
+        </div>
+      </div>
+    </div>
   </section>
 
-  <section class="auth-card">
-    <span class="eyebrow">Acceso al sistema</span>
-    <h2>Inicia sesion</h2>
+  <section class="auth-card-shell" #authCard>
+    <section class="auth-card">
+      <div class="auth-floating auth-floating--top" aria-hidden="true">
+        <svg viewBox="0 0 120 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="10" y="12" width="100" height="64" rx="18" fill="#FFFFFF"/>
+          <rect x="24" y="28" width="40" height="8" rx="4" fill="#DCE8FF"/>
+          <rect x="24" y="44" width="68" height="7" rx="3.5" fill="#EEF4FF"/>
+          <rect x="24" y="56" width="52" height="7" rx="3.5" fill="#EEF4FF"/>
+        </svg>
+      </div>
+      <div class="auth-floating auth-floating--middle" aria-hidden="true">
+        <svg viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="45" cy="45" r="30" fill="#F5F8FF" stroke="#DCE8FF" stroke-width="10"/>
+          <path d="M45 15 A30 30 0 1 1 22 63" stroke="#47CF14" stroke-width="10" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="auth-floating auth-floating--bottom" aria-hidden="true">
+        <svg viewBox="0 0 126 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="8" y="12" width="110" height="46" rx="23" fill="#FFFFFF" stroke="#DCE8FF"/>
+          <rect x="24" y="30" width="46" height="8" rx="4" fill="#DCE8FF"/>
+          <circle cx="92" cy="35" r="12" fill="#6D77E5"/>
+        </svg>
+      </div>
+      <h2>Inicia sesion</h2>
 
-    <form [formGroup]="form" (ngSubmit)="iniciarSesion()">
-      <label>
-        Usuario
-        <input
-          type="text"
-          formControlName="identificador"
-          placeholder="Ingresa tu usuario"
-          autocomplete="username"
-        />
-      </label>
-      @if (campoInvalido('identificador')) {
-        <small class="field-error">El usuario es obligatorio.</small>
-      }
+      <div class="auth-card-layout">
+        <form [formGroup]="form" (ngSubmit)="iniciarSesion()">
+          <label>
+            Usuario
+            <input
+              type="text"
+              formControlName="identificador"
+              placeholder="Ingresa tu usuario"
+              autocomplete="username"
+            />
+          </label>
+          @if (campoInvalido('identificador')) {
+            <small class="field-error">El usuario es obligatorio.</small>
+          }
 
-      <label>
-        Contrasena
-        <input
-          type="password"
-          formControlName="password"
-          placeholder="Ingresa tu contrasena"
-          autocomplete="current-password"
-        />
-      </label>
-      @if (campoInvalido('password')) {
-        <small class="field-error">La contrasena es obligatoria.</small>
-      }
+          <label>
+            Contrasena
+            <input
+              type="password"
+              formControlName="password"
+              placeholder="Ingresa tu contrasena"
+              autocomplete="current-password"
+            />
+          </label>
+          @if (campoInvalido('password')) {
+            <small class="field-error">La contrasena es obligatoria.</small>
+          }
 
-      @if (error()) {
-        <p class="request-error">{{ error() }}</p>
-      }
+          @if (error()) {
+            <p class="request-error">{{ error() }}</p>
+          }
 
-      <button class="primary-button full" type="submit" [disabled]="cargando()">
-        {{ cargando() ? 'Ingresando...' : 'Ingresar' }}
-      </button>
-    </form>
+          <button class="primary-button full" type="submit" [disabled]="cargando()">
+            {{ cargando() ? 'Ingresando...' : 'Ingresar' }}
+          </button>
+
+          <button class="secondary-link" type="button">
+            Cambiar contrasena
+          </button>
+        </form>
+      </div>
+    </section>
   </section>
 </main>

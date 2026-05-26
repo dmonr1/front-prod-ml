@@ -4,26 +4,27 @@
     [autoCloseMs]="alertState().autoCloseMs" (confirm)="confirmarCambioEstadoTutoria()"
     (cancel)="cancelarCambioEstadoTutoria()" (dismiss)="cerrarAlerta()" />
 
-  <section class="assignment-card">
-    <div class="card-head">
+  <section class="assignment-card assignment-page">
+    <div class="card-head assignment-slide-in assignment-slide-in-top">
       <div class="panel-head">
         <h2>Asignaciones academicas</h2>
       </div>
     </div>
 
-    <div class="tabs-row section-tabs">
-      <button class="tab-button" type="button" [class.active]="vistaActiva() === 'asignaciones'"
+    <div class="view-switch assignment-slide-in assignment-slide-in-middle" [class.is-tutorias]="vistaActiva() === 'tutorias'">
+      <span class="view-switch-thumb" aria-hidden="true"></span>
+      <button class="view-pill" type="button" [class.active]="vistaActiva() === 'asignaciones'"
         (click)="vistaActiva.set('asignaciones')">
         Asignaciones docentes
       </button>
-      <button class="tab-button" type="button" [class.active]="vistaActiva() === 'tutorias'"
+      <button class="view-pill" type="button" [class.active]="vistaActiva() === 'tutorias'"
         (click)="vistaActiva.set('tutorias')">
         Tutorias por seccion
       </button>
     </div>
 
     @if (vistaActiva() === 'asignaciones') {
-    <article class="assignment-panel">
+    <article class="assignment-panel assignment-slide-in assignment-slide-in-bottom">
       <div class="section-head">
         <div class="panel-head">
           <span class="panel-kicker">Asignaciones de docentes por curso</span>
@@ -32,7 +33,6 @@
 
         <div class="toolbar-inline">
           <span class="period-chip">{{ asignacionPeriodo()?.nombre || 'Sin periodo' }}</span>
-          <button class="action-button secondary" type="button" (click)="cargarAsignaciones()">Actualizar</button>
         </div>
       </div>
 
@@ -143,7 +143,7 @@
         </div>
 
         <div class="table-cont">
-          @if (cargandoAsignaciones()) {
+          @if (cargandoAsignaciones() || !!errorAsignaciones()) {
           <div class="table-scroll assignment-results-scroll">
             <table class="app-table">
               <thead>
@@ -167,11 +167,6 @@
                 }
               </tbody>
             </table>
-          </div>
-          } @else if (errorAsignaciones()) {
-          <div class="table-state error">
-            <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
-            <span>{{ errorAsignaciones() }}</span>
           </div>
           } @else if (!asignaciones().length) {
           <div class="table-state">
@@ -231,7 +226,7 @@
     }
 
     @if (vistaActiva() === 'tutorias') {
-    <article class="assignment-panel">
+    <article class="assignment-panel assignment-slide-in assignment-slide-in-bottom">
       <div class="section-head">
         <div class="panel-head">
           <span class="panel-kicker">Asignaciones de tutorias por sección</span>
@@ -240,7 +235,6 @@
 
         <div class="toolbar-inline">
           <span class="period-chip">{{ tutoriaPeriodo()?.nombre || 'Sin periodo' }}</span>
-          <button class="action-button secondary" type="button" (click)="cargarTutorias()">Actualizar</button>
         </div>
       </div>
 
@@ -302,7 +296,7 @@
         </div>
 
         <div class="table-cont">
-          @if (cargandoTutorias()) {
+          @if (cargandoTutorias() || !!errorTutorias()) {
           <div class="table-scroll">
             <table class="app-table">
               <thead>
@@ -326,11 +320,6 @@
                 }
               </tbody>
             </table>
-          </div>
-          } @else if (errorTutorias()) {
-          <div class="table-state error">
-            <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
-            <span>{{ errorTutorias() }}</span>
           </div>
           } @else if (!tutorias().length) {
           <div class="table-state">
@@ -405,7 +394,7 @@
           (input)="modalBusqueda.set($any($event.target).value)" />
       </div>
 
-      @if (cargandoDocentes()) {
+      @if (cargandoDocentes() || !!errorDocentes()) {
       <div class="table-scroll">
         <table class="app-table">
           <thead>
@@ -427,12 +416,6 @@
             }
           </tbody>
         </table>
-      </div>
-      } @else if (errorDocentes()) {
-      <div class="table-state error">
-        <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
-        <span>{{ errorDocentes() }}</span>
-        <button class="action-button secondary" type="button" (click)="cargarDocentes()">Reintentar</button>
       </div>
       } @else if (!docentesModalFiltrados().length) {
       <div class="table-state">
@@ -493,7 +476,7 @@
           (input)="cursoModalBusqueda.set($any($event.target).value)" />
       </div>
 
-      @if (cargandoCursos()) {
+      @if (cargandoCursos() || !!errorCursos()) {
       <div class="table-scroll">
         <table class="app-table">
           <thead>
@@ -515,12 +498,6 @@
             }
           </tbody>
         </table>
-      </div>
-      } @else if (errorCursos()) {
-      <div class="table-state error">
-        <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
-        <span>{{ errorCursos() }}</span>
-        <button class="action-button secondary" type="button" (click)="cargarCursos()">Reintentar</button>
       </div>
       } @else if (!cursosModalFiltrados().length) {
       <div class="table-state">
@@ -576,10 +553,11 @@
         </button>
       </div>
 
-      <div class="tabs-row">
-        <button class="tab-button" type="button" [class.active]="seccionNivelActivo() === 'PRIMARIA'"
+      <div class="view-switch modal-view-switch" [class.is-tutorias]="seccionNivelActivo() === 'SECUNDARIA'">
+        <span class="view-switch-thumb" aria-hidden="true"></span>
+        <button class="view-pill" type="button" [class.active]="seccionNivelActivo() === 'PRIMARIA'"
           (click)="seccionNivelActivo.set('PRIMARIA')">Primaria</button>
-        <button class="tab-button" type="button" [class.active]="seccionNivelActivo() === 'SECUNDARIA'"
+        <button class="view-pill" type="button" [class.active]="seccionNivelActivo() === 'SECUNDARIA'"
           (click)="seccionNivelActivo.set('SECUNDARIA')">Secundaria</button>
       </div>
 
@@ -588,7 +566,7 @@
           (input)="seccionModalBusqueda.set($any($event.target).value)" />
       </div>
 
-      @if (cargandoSecciones()) {
+      @if (cargandoSecciones() || !!errorSecciones()) {
       <div class="table-scroll">
         <table class="app-table">
           <thead>
@@ -617,17 +595,30 @@
           </tbody>
         </table>
       </div>
-      } @else if (errorSecciones()) {
-      <div class="table-state error">
-        <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
-        <span>{{ errorSecciones() }}</span>
-        <button class="action-button secondary" type="button" (click)="cargarSecciones()">Reintentar</button>
-      </div>
       } @else if (!seccionesModalFiltradas().length) {
       <div class="table-state">
-        <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-        <span>No se encontraron secciones en este nivel con esa busqueda.</span>
-      </div>
+        <table class="app-table">
+          <thead>
+            <tr>
+              @if (seccionModalContexto() === 'asignacion') {
+              <th>Sel.</th>
+              }
+              <th>Seccion</th>
+              <th>Grado</th>
+              <th>Nivel</th>
+              <th>Capacidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              @if (seccionModalContexto() === 'asignacion') {
+              <td></td>
+              }
+              <td colspan="4">No se encontraron secciones en este nivel con esa busqueda.</td>
+            </tr>
+           
+          </tbody>
+        </table>      </div>
       } @else {
       <div class="table-scroll modal-table">
         <table class="app-table">
@@ -691,7 +682,7 @@
         </button>
       </div>
 
-      @if (cargandoPeriodos()) {
+      @if (cargandoPeriodos() || !!errorPeriodos()) {
       <div class="table-scroll">
         <table class="app-table">
           <thead>
@@ -711,12 +702,6 @@
             }
           </tbody>
         </table>
-      </div>
-      } @else if (errorPeriodos()) {
-      <div class="table-state error">
-        <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
-        <span>{{ errorPeriodos() }}</span>
-        <button class="action-button secondary" type="button" (click)="cargarPeriodos()">Reintentar</button>
       </div>
       } @else if (!periodosModalFiltrados().length) {
       <div class="table-state">

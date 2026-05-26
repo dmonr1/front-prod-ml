@@ -318,7 +318,7 @@
 .stepper-progress {
   height: 100%;
   border-radius: 999px;
-  background: #2159b6;
+  background: #6d77e5;
   transition: width 220ms ease;
 }
 
@@ -361,8 +361,8 @@
 
 .step-node.completed .step-node-circle,
 .step-node.active .step-node-circle {
-  border-color: #2159b6;
-  background: #2159b6;
+  border-color: #6d77e5;
+  background: #6d77e5;
   color: #ffffff;
   box-shadow: 0 8px 18px rgba(33, 89, 182, 0.18);
 }
@@ -924,8 +924,8 @@ select {
   width: 34px;
   height: 34px;
   border-radius: 12px;
-  background: #eaf3ff;
-  color: #1d5fc4 !important;
+  background: #e2e5ff;
+  color: #6d77e5 !important;
   font-weight: 800;
 }
 
@@ -979,14 +979,14 @@ select {
 
 .action-button.primary {
   color: #ffffff;
-  border-color: #2159b6;
-  background: #2159b6;
+  border-color: #6d77e5;
+  background: #6d77e5;
 }
 
 .action-button.secondary {
   color: #ffffff;
   border-color: #d4e4fb;
-  background: #1d5fc4;
+  background: #6d77e5;
   gap: 10px;
 }
 

@@ -234,8 +234,27 @@
 
             @if (!prediccionesFiltradas().length) {
             <div class="state-card empty-state">
-              <span class="state-title">Sin resultados</span>
-              <p>No hay predicciones para los filtros elegidos.</p>
+              <table class="prediction-table prediction-table--skeleton">
+                <thead>
+                  <tr>
+                    <th style="width: 250px;">Alumno</th>
+                    <th>Curso</th>
+                    <th>Riesgo</th>
+                    <th>Riesgo de fracaso</th>
+                    <th style="width: 300px;">Alerta</th>
+                    <th>Ficha</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colspan="7">
+                      <div class="empty-state-content">
+                        <p>No se encontraron resultados para los filtros seleccionados.</p>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
             } @else {
             <div class="table-scroll prediction-table-scroll">

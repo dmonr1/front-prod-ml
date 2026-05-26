@@ -8,7 +8,7 @@
     }
 
     <div class="reports-card">
-      <div class="card-head">
+      <div class="card-head reports-slide-in reports-slide-in-top">
         <div class="panel-head">
           <span class="eyebrow">Data mining aplicado</span>
           <h2>Hallazgos y recomendaciones</h2>
@@ -16,30 +16,83 @@
         </div>
 
         <div class="filters-corner">
-          <label class="corner-filter">
-            <span>Periodo</span>
-            <select [value]="periodoEvaluacionSeleccionadoId() ?? ''"
-              (change)="onPeriodoChange($any($event.target).value)">
-              @for (periodo of periodosDisponibles(); track periodo.id) {
-              <option [value]="periodo.id">{{ periodo.nombre }} · {{ periodo.anioAcademico }}</option>
-              }
-            </select>
-          </label>
+          <div class="tutoria-dropdown filter-dropdown">
+            <span class="section-picker-label">Periodo:</span>
+            <button class="summary-pill section-picker" type="button" (click)="toggleSelectorPeriodo()">
+              <i class="fa-solid fa-calendar-days"></i>
+              <strong>{{ periodoSeleccionado()?.nombre || 'Elegir periodo' }}</strong>
+              <i class="fa-solid fa-chevron-down"></i>
+            </button>
 
-          <label class="corner-filter">
-            <span>Sección</span>
-            <select [value]="seccionSeleccionadaId() ?? ''" (change)="onSeccionChange($any($event.target).value)">
-              @for (seccion of secciones(); track seccion.id) {
-              <option [value]="seccion.id">{{ etiquetaSeccion(seccion) }}</option>
+            @if (mostrarSelectorPeriodo()) {
+            <div class="tutoria-dropdown-menu period-dropdown-menu">
+              @for (periodo of periodosDisponibles(); track periodo.id) {
+              <button
+                type="button"
+                class="tutoria-option-card"
+                [class.active]="periodo.id === periodoEvaluacionSeleccionadoId()"
+                (click)="onPeriodoChange('' + periodo.id)">
+                <div class="tutoria-option-head">
+                  <span class="tutoria-option-title">{{ periodo.nombre }}</span>
+                  <span class="tutoria-option-badge">{{ periodo.anioAcademico }}</span>
+                </div>
+                <strong class="tutoria-option-strong">Periodo {{ periodo.numero }}</strong>
+                <small>{{ periodo.fechaInicio }} - {{ periodo.fechaFin }}</small>
+
+                <div class="tutoria-option-footer">
+                  <span><i class="fa-solid fa-calendar-check"></i> Cambio de periodo</span>
+                  <span class="tutoria-option-link">
+                    <i class="fa-solid fa-arrow-right"></i>
+                    <span>{{ periodo.id === periodoEvaluacionSeleccionadoId() ? 'Activo' : 'Abrir' }}</span>
+                  </span>
+                </div>
+              </button>
               }
-            </select>
-          </label>
+            </div>
+            }
+          </div>
+
+          <div class="tutoria-dropdown filter-dropdown">
+            <span class="section-picker-label">Seccion:</span>
+            <button class="summary-pill section-picker" type="button" (click)="toggleSelectorSeccion()">
+              <i class="fa-solid fa-layer-group"></i>
+              <strong>{{ seccionSeleccionada() ? etiquetaSeccion(seccionSeleccionada()!) : 'Elegir seccion' }}</strong>
+              <i class="fa-solid fa-chevron-down"></i>
+            </button>
+
+            @if (mostrarSelectorSeccion()) {
+            <div class="tutoria-dropdown-menu">
+              @for (seccion of secciones(); track seccion.id) {
+              <button
+                type="button"
+                class="tutoria-option-card"
+                [class.active]="seccion.id === seccionSeleccionadaId()"
+                (click)="onSeccionChange('' + seccion.id)">
+                <div class="tutoria-option-head">
+                  <span class="tutoria-option-title">{{ seccion.nombre }}</span>
+                  <span class="tutoria-option-badge">{{ seccion.nivelNombre || 'Nivel' }}</span>
+                </div>
+                <strong class="tutoria-option-strong">{{ etiquetaSeccion(seccion) }}</strong>
+                <small>{{ seccion.nivelNombre || 'Nivel' }} - {{ seccion.gradoNombre || 'Grado' }}</small>
+
+                <div class="tutoria-option-footer">
+                  <span><i class="fa-solid fa-users"></i> Hallazgos de seccion</span>
+                  <span class="tutoria-option-link">
+                    <i class="fa-solid fa-arrow-right"></i>
+                    <span>{{ seccion.id === seccionSeleccionadaId() ? 'Activa' : 'Abrir' }}</span>
+                  </span>
+                </div>
+              </button>
+              }
+            </div>
+            }
+          </div>
         </div>
       </div>
 
       @if (mostrarSkeleton()) {
       <div class="dashboard-layout">
-        <section class="left-zone">
+        <section class="left-zone reports-slide-in reports-slide-in-middle">
           <div class="metrics-grid">
             @for (item of [0, 1, 2, 3]; track item) {
             <article class="metric-card-mini skeleton-card">
@@ -92,7 +145,7 @@
           </div>
         </section>
 
-        <aside class="right-zone">
+        <aside class="right-zone reports-slide-in reports-slide-in-bottom">
           <article class="list-card skeleton-card full-height">
             <div class="section-header skeleton-header">
               <div class="skeleton-stack">
@@ -130,7 +183,7 @@
       </div>
       } @else {
       <div class="dashboard-layout">
-        <section class="left-zone">
+        <section class="left-zone reports-slide-in reports-slide-in-middle">
           <div class="metrics-grid">
             @for (metrica of metricas(); track metrica.label) {
             <article class="metric-card">
@@ -255,12 +308,12 @@
           </div>
         </section>
 
-        <aside class="right-zone">
+        <aside class="right-zone reports-slide-in reports-slide-in-bottom">
           <article class="list-card tracking-card full-height">
             <div class="section-header">
               <div>
                 <span class="section-kicker">Seguimiento recomendado</span>
-                <h3>Recomendaciones registradas</h3>
+                <h3>Recomendaciones</h3>
               </div>
               <span class="result-chip">{{ recomendaciones().length }} registradas</span>
             </div>
@@ -313,3 +366,4 @@
     </div>
   </section>
 </app-shell>
+

@@ -17,9 +17,8 @@
   padding: 20px;
   border-radius: 30px;
   background: #ffffff;
-
+  height: 100%;
   border: 1px solid rgba(210, 225, 244, 0.95);
-  box-shadow: 0 22px 52px rgba(15, 23, 42, 0.06);
 }
 
 .profile-head {
@@ -32,17 +31,27 @@
 .back-link-button {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  width: fit-content;
-  padding: 10px 14px;
-  border-radius: 14px;
-  background: #eef4ff;
-  color: #4f46e5;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 2px solid #4e5de2;
+  background: #ffffff;
+  color: #4e5de2;
   font-size: 12px;
   font-weight: 700;
   text-decoration: none;
-  box-shadow: 0 10px 22px rgba(79, 70, 229, 0.08);
+  transition:
+  background 160ms ease,
+  color 160ms ease,
+  border-color 160ms ease,
+  transform 160ms ease,
+  opacity 160ms ease;
 }
+
+.back-link-button:not(:disabled):hover {
+  transform: scale(0.92);
+}
+
 
 .profile-layout {
   display: grid;

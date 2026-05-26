@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, HostListener, computed, inject, signal } from '@angular/core';
 import { forkJoin } from 'rxjs';
 import { CustomAlertComponent } from '../../components/custom-alert/custom-alert';
 import { Shell } from '../../layouts/shell/shell';
@@ -27,6 +27,7 @@ import { TutoriaService } from '../../services/asignaciones/tutoria.service';
   styleUrl: './hallazgos-recomendaciones.scss'
 })
 export class HallazgosRecomendaciones {
+  private readonly elementRef = inject(ElementRef<HTMLElement>);
   private readonly authService = inject(AuthService);
   private readonly periodoAcademicoService = inject(PeriodoAcademicoService);
   private readonly periodoEvaluacionService = inject(PeriodoEvaluacionService);
@@ -45,6 +46,8 @@ export class HallazgosRecomendaciones {
   readonly secciones = signal<Seccion[]>([]);
   readonly periodoEvaluacionSeleccionadoId = signal<number | null>(null);
   readonly seccionSeleccionadaId = signal<number | null>(null);
+  readonly mostrarSelectorPeriodo = signal(false);
+  readonly mostrarSelectorSeccion = signal(false);
 
   readonly hallazgos = signal<HallazgoDataMining[]>([]);
   readonly recomendaciones = signal<RecomendacionSeguimiento[]>([]);
@@ -104,6 +107,10 @@ export class HallazgosRecomendaciones {
     () => this.secciones().find((seccion) => seccion.id === this.seccionSeleccionadaId()) ?? null
   );
 
+  readonly periodoSeleccionado = computed(
+    () => this.periodosDisponibles().find((periodo) => periodo.id === this.periodoEvaluacionSeleccionadoId()) ?? null
+  );
+
   readonly periodosDisponibles = computed(() => {
     const seccion = this.seccionSeleccionada();
     const periodos = this.periodosEvaluacion();
@@ -156,13 +163,48 @@ export class HallazgosRecomendaciones {
 
   onPeriodoChange(value: string): void {
     this.periodoEvaluacionSeleccionadoId.set(value ? Number(value) : null);
+    this.mostrarSelectorPeriodo.set(false);
     this.cargarVista();
   }
 
   onSeccionChange(value: string): void {
     this.seccionSeleccionadaId.set(value ? Number(value) : null);
+    this.mostrarSelectorSeccion.set(false);
     this.ajustarPeriodo();
     this.cargarVista();
+  }
+
+  toggleSelectorPeriodo(): void {
+    this.mostrarSelectorPeriodo.update((valor) => !valor);
+    if (this.mostrarSelectorPeriodo()) {
+      this.mostrarSelectorSeccion.set(false);
+    }
+  }
+
+  toggleSelectorSeccion(): void {
+    this.mostrarSelectorSeccion.update((valor) => !valor);
+    if (this.mostrarSelectorSeccion()) {
+      this.mostrarSelectorPeriodo.set(false);
+    }
+  }
+
+  cerrarSelectores(): void {
+    this.mostrarSelectorPeriodo.set(false);
+    this.mostrarSelectorSeccion.set(false);
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (!this.mostrarSelectorPeriodo() && !this.mostrarSelectorSeccion()) {
+      return;
+    }
+
+    const target = event.target as Node | null;
+    if (target && this.elementRef.nativeElement.contains(target)) {
+      return;
+    }
+
+    this.cerrarSelectores();
   }
 
   formatearResultado(raw: string | null): string[] {

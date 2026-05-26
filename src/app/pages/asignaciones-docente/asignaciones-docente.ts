@@ -69,6 +69,8 @@ export class AsignacionesTutorias {
   readonly errorAsignaciones = signal<string | null>(null);
   readonly actualizandoEstadoAsignacionId = signal<number | null>(null);
   readonly actualizandoEstadoTutoriaId = signal<number | null>(null);
+  readonly cargaPendienteAlerta = signal<'asignaciones' | 'tutorias' | null>(null);
+  readonly modalCargaPendiente = signal<'docentes' | 'cursos' | 'secciones' | 'periodos' | null>(null);
   readonly alertState = signal<AlertState>({
     open: false,
     type: 'info',
@@ -196,6 +198,17 @@ export class AsignacionesTutorias {
       error: () => {
         this.errorDocentes.set('No se pudieron cargar los docentes.');
         this.cargandoDocentes.set(false);
+        this.modalCargaPendiente.set('docentes');
+        this.mostrarAlerta(
+          'error',
+          'Sin conexion con el servicio',
+          'No se pudo cargar la lista de docentes. Puedes cerrar este aviso o volver a intentar.',
+          {
+            confirmText: 'Volver a intentar',
+            cancelText: 'Cerrar',
+            autoCloseMs: null
+          }
+        );
       }
     });
   }
@@ -235,6 +248,17 @@ export class AsignacionesTutorias {
       error: () => {
         this.errorCursos.set('No se pudieron cargar los cursos habilitados para este periodo.');
         this.cargandoCursos.set(false);
+        this.modalCargaPendiente.set('cursos');
+        this.mostrarAlerta(
+          'error',
+          'Sin conexion con el servicio',
+          'No se pudo cargar la lista de cursos. Puedes cerrar este aviso o volver a intentar.',
+          {
+            confirmText: 'Volver a intentar',
+            cancelText: 'Cerrar',
+            autoCloseMs: null
+          }
+        );
       }
     });
   }
@@ -251,6 +275,17 @@ export class AsignacionesTutorias {
       error: () => {
         this.errorSecciones.set('No se pudieron cargar las secciones.');
         this.cargandoSecciones.set(false);
+        this.modalCargaPendiente.set('secciones');
+        this.mostrarAlerta(
+          'error',
+          'Sin conexion con el servicio',
+          'No se pudo cargar la lista de secciones. Puedes cerrar este aviso o volver a intentar.',
+          {
+            confirmText: 'Volver a intentar',
+            cancelText: 'Cerrar',
+            autoCloseMs: null
+          }
+        );
       }
     });
   }
@@ -286,9 +321,22 @@ export class AsignacionesTutorias {
       },
       error: () => {
         this.errorPeriodos.set('No se pudieron cargar los periodos academicos.');
+        this.errorAsignaciones.set('No se pudieron cargar las asignaciones del periodo.');
+        this.errorTutorias.set('No se pudieron cargar las tutorias del periodo.');
         this.cargandoPeriodos.set(false);
         this.cargandoAsignaciones.set(false);
         this.cargandoTutorias.set(false);
+        this.cargaPendienteAlerta.set(this.vistaActiva() === 'asignaciones' ? 'asignaciones' : 'tutorias');
+        this.mostrarAlerta(
+          'error',
+          'Sin conexion con el servicio',
+          'No se pudo cargar la configuracion base de periodos. Puedes cerrar este aviso o volver a intentar.',
+          {
+            confirmText: 'Volver a intentar',
+            cancelText: 'Cerrar',
+            autoCloseMs: null
+          }
+        );
       }
     });
   }
@@ -315,6 +363,17 @@ export class AsignacionesTutorias {
           error?.error?.mensaje ?? 'No se pudieron cargar las asignaciones del periodo.'
         );
         this.cargandoAsignaciones.set(false);
+        this.cargaPendienteAlerta.set('asignaciones');
+        this.mostrarAlerta(
+          'error',
+          'Sin conexion con el servicio',
+          'No se pudo cargar la tabla de asignaciones. Puedes cerrar este aviso o volver a intentar.',
+          {
+            confirmText: 'Volver a intentar',
+            cancelText: 'Cerrar',
+            autoCloseMs: null
+          }
+        );
       }
     });
   }
@@ -341,6 +400,17 @@ export class AsignacionesTutorias {
           error?.error?.mensaje ?? 'No se pudieron cargar las tutorias del periodo.'
         );
         this.cargandoTutorias.set(false);
+        this.cargaPendienteAlerta.set('tutorias');
+        this.mostrarAlerta(
+          'error',
+          'Sin conexion con el servicio',
+          'No se pudo cargar la tabla de tutorias. Puedes cerrar este aviso o volver a intentar.',
+          {
+            confirmText: 'Volver a intentar',
+            cancelText: 'Cerrar',
+            autoCloseMs: null
+          }
+        );
       }
     });
   }
@@ -670,6 +740,38 @@ export class AsignacionesTutorias {
   }
 
   confirmarCambioEstadoTutoria(): void {
+    const modalPendiente = this.modalCargaPendiente();
+    if (modalPendiente) {
+      this.modalCargaPendiente.set(null);
+      this.cerrarAlerta();
+      if (modalPendiente === 'docentes') {
+        this.cargarDocentes();
+      } else if (modalPendiente === 'cursos') {
+        this.cargarCursos();
+      } else if (modalPendiente === 'secciones') {
+        this.cargarSecciones(
+          this.seccionModalContexto() === 'asignacion'
+            ? this.asignacionPeriodo()?.id ?? null
+            : this.tutoriaPeriodo()?.id ?? null
+        );
+      } else if (modalPendiente === 'periodos') {
+        this.cargarPeriodos();
+      }
+      return;
+    }
+
+    const cargaPendiente = this.cargaPendienteAlerta();
+    if (cargaPendiente) {
+      this.cargaPendienteAlerta.set(null);
+      this.cerrarAlerta();
+      if (cargaPendiente === 'asignaciones') {
+        this.cargarAsignaciones();
+      } else {
+        this.cargarTutorias();
+      }
+      return;
+    }
+
     const asignacionPendiente = this.asignacionPendienteEstado();
     if (asignacionPendiente) {
       this.cerrarAlerta();
@@ -690,6 +792,8 @@ export class AsignacionesTutorias {
   }
 
   cancelarCambioEstadoTutoria(): void {
+    this.modalCargaPendiente.set(null);
+    this.cargaPendienteAlerta.set(null);
     this.asignacionPendienteEstado.set(null);
     this.tutoriaPendienteEstado.set(null);
     this.cerrarAlerta();
