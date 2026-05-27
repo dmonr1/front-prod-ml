@@ -20,3 +20,28 @@ export interface LoginResponse {
   expiracionSegundos: number;
   usuario: UsuarioSesion;
 }
+
+export interface MensajeRespuesta {
+  mensaje: string;
+}
+
+export interface RecuperacionSolicitarRequest {
+  identificador: string;
+  correo: string;
+}
+
+export interface RecuperacionVerificarRequest {
+  identificador: string;
+  codigo: string;
+}
+
+export interface RecuperacionCambiarPasswordRequest {
+  tokenRecuperacion: string;
+  nuevaPassword: string;
+  confirmarPassword: string;
+}
+
+export interface RecuperacionTokenRespuesta {
+  mensaje: string;
+  tokenRecuperacion: string;
+}

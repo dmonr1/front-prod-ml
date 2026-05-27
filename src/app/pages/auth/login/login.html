@@ -1,45 +1,142 @@
 <main class="login-page">
+  @if (introVisible()) {
+    <div class="login-intro-overlay" aria-hidden="true">
+      <div class="login-intro-text">
+        <span class="login-intro-text-inner">Predice antes. Actua mejor.</span>
+      </div>
+    </div>
+  }
+
   <section class="login-visual" #visualPanel>
+    <div class="login-decor" aria-hidden="true">
+      <span class="login-shape login-shape--circle-pink"></span>
+      <span class="login-shape login-shape--circle-blue"></span>
+      <span class="login-shape login-shape--capsule-cream"></span>
+      <span class="login-shape login-shape--quarter-peach"></span>
+      <svg class="login-decor-card login-decor-card--top" viewBox="0 0 160 104" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="8" y="10" width="144" height="84" rx="22" fill="#FFFFFF" />
+        <rect x="26" y="30" width="54" height="10" rx="5" fill="#DCE8FF" />
+        <rect x="26" y="48" width="96" height="8" rx="4" fill="#EEF4FF" />
+        <rect x="26" y="62" width="78" height="8" rx="4" fill="#EEF4FF" />
+      </svg>
+      <svg class="login-decor-card login-decor-card--bottom" viewBox="0 0 132 132" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="66" cy="66" r="42" fill="#FFFFFF" />
+        <circle cx="66" cy="66" r="32" fill="#F6F9FF" stroke="#DCE8FF" stroke-width="10" />
+        <path d="M66 34 A32 32 0 1 1 41 86" stroke="#7CCF63" stroke-width="10" stroke-linecap="round" />
+      </svg>
+    </div>
+
     <div class="login-copy">
-      <h1>Seguimiento de riesgo</h1>
-
-      <div class="dashboard-preview" data-preview-anim>
-        <div class="preview-toolbar">
-          <span class="preview-chip" data-preview-anim>{{ previewData().chips[0] }}</span>
-          <span class="preview-chip" data-preview-anim>{{ previewData().chips[1] }}</span>
-          <span class="preview-switch" [class.is-curso]="previewMode() === 'curso'" data-preview-anim>
-            <span class="preview-switch-thumb" aria-hidden="true"></span>
-            <span class="preview-switch-pill" [class.is-active]="previewMode() === 'global'">Riesgo global</span>
-            <span class="preview-switch-pill" [class.is-active]="previewMode() === 'curso'">Riesgo por curso</span>
+      <div class="login-title" data-title-anim>
+        <h1>
+          <span class="login-title-badge" [class.is-amber]="activeTitle().tone === 'amber'"
+            [class.is-rose]="activeTitle().tone === 'rose'" [class.is-mint]="activeTitle().tone === 'mint'">
+            {{ activeTitle().badge }}
           </span>
-        </div>
+          {{ activeTitle().title }}
+        </h1>
+      </div>
 
-        <div class="preview-main">
-          <section class="preview-left-column">
-            <div class="preview-kpis">
-              @for (kpi of previewData().kpis; track kpi.label) {
-                <article class="preview-kpi" data-preview-anim>
-                  <small>{{ kpi.label }}</small>
-                  <strong>{{ kpi.value }}</strong>
-                </article>
-              }
+      <div class="preview-stage">
+        <div class="dashboard-preview" data-preview-anim>
+          <div class="preview-toolbar">
+            <div class="preview-toolbar-copy" data-preview-anim>
+              <span class="preview-eyebrow">Seguimiento estudiantil</span>
+              <strong>Seguimiento de riesgo</strong>
             </div>
 
-            <section class="preview-table-card" data-preview-anim>
-              <div class="preview-card-head">
-                <span>Listado principal</span>
-                <strong>{{ previewData().headerTitle }}</strong>
+            <div class="preview-toolbar-controls" data-preview-anim>
+              <div class="preview-chip-group">
+                <span class="preview-chip-label">Periodo:</span>
+                <span class="preview-chip">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M7 2h2v2h6V2h2v2h3v18H4V4h3V2Zm11 8H6v10h12V10ZM6 8h12V6H6v2Zm2 4h3v3H8v-3Z" fill="currentColor" />
+                  </svg>
+                  {{ previewData().chips[0] }}
+                </span>
               </div>
 
-              <div class="preview-table">
-                <div class="preview-row preview-row-head">
-                  <span>Alumno</span>
-                  <span>Riesgo</span>
-                  <span>Fracaso</span>
+              <div class="preview-chip-group">
+                <span class="preview-chip-label">Mis secciones:</span>
+                <span class="preview-chip">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 2 1 7l11 5 11-5-11-5Zm-7 9.91V15l7 3 7-3v-3.09l-7 3-7-3ZM5 16.91V20l7 3 7-3v-3.09l-7 3-7-3Z" fill="currentColor" />
+                  </svg>
+                  {{ previewData().chips[1] }}
+                </span>
+              </div>
+
+              <span class="preview-switch" [class.is-curso]="previewMode() === 'curso'">
+                <span class="preview-switch-thumb" aria-hidden="true"></span>
+                <span class="preview-switch-pill" [class.is-active]="previewMode() === 'global'">Riesgo global</span>
+                <span class="preview-switch-pill" [class.is-active]="previewMode() === 'curso'">Riesgo por curso</span>
+              </span>
+            </div>
+          </div>
+
+          <div class="preview-main">
+            <section class="preview-left-column">
+              <div class="preview-kpis">
+                @for (kpi of previewData().kpis; track kpi.label) {
+                <article class="preview-kpi" data-preview-anim>
+                  <div class="preview-kpi-head">
+                    <span class="preview-kpi-icon" [class.is-amber]="kpi.tone === 'amber'" [class.is-rose]="kpi.tone === 'rose'">
+                      @switch (kpi.icon) {
+                        @case ('users') {
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-8 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0 2c-2.33 0-7 1.17-7 3.5V19h10v-2.5C11 14.17 6.33 13 4 13Zm12 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h3v-2.5c0-2.33-4.67-3.5-7-3.5Z" fill="currentColor" />
+                        </svg>
+                        }
+                        @case ('target') {
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M12 3a9 9 0 1 0 9 9h-2a7 7 0 1 1-7-7V3Zm0 4a5 5 0 1 0 5 5h-2a3 3 0 1 1-3-3V7Zm0 3a2 2 0 1 0 2 2h3V9h-3v3h-2v-2Z" fill="currentColor" />
+                        </svg>
+                        }
+                        @case ('book') {
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H7a3 3 0 0 0-3 3V5.5ZM7 19h11V5H6.5A.5.5 0 0 0 6 5.5v13.05A4.98 4.98 0 0 1 7 18.1V19Zm2-10h6v2H9V9Zm0 4h6v2H9v-2Z" fill="currentColor" />
+                        </svg>
+                        }
+                        @case ('chart') {
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M4 19h16v2H2V3h2v16Zm3-4 3-3 3 2 5-6 2 1.5-6.3 7.5-3.1-2.1-2.2 2.1L7 15Z" fill="currentColor" />
+                        </svg>
+                        }
+                        @case ('users-group') {
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M9 11a3 3 0 1 0-3-3 3 3 0 0 0 3 3Zm6 0a3 3 0 1 0-3-3 3 3 0 0 0 3 3ZM3 18.5C3 16.57 6.13 15 9 15s6 1.57 6 3.5V20H3v-1.5Zm12 1.5v-1c0-1.15-.53-2.2-1.45-3.01 2.37.19 5.45 1.38 5.45 3.01V20h-4Z" fill="currentColor" />
+                        </svg>
+                        }
+                        @case ('alert') {
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M12 3 1.8 20.5c-.4.68.1 1.5.9 1.5h18.6c.78 0 1.27-.82.87-1.5L12 3Zm1 14h-2v-2h2v2Zm0-4h-2V9h2v4Z" fill="currentColor" />
+                        </svg>
+                        }
+                      }
+                    </span>
+                    <small>{{ kpi.label }}</small>
+                  </div>
+                  <strong class="preview-kpi-value-skeleton" [style.--preview-kpi-value-width]="kpi.valueWidth"></strong>
+                  <span class="preview-kpi-detail-skeleton" [style.--preview-kpi-detail-width]="kpi.detailWidth"></span>
+                </article>
+                }
+              </div>
+
+              <section class="preview-table-card" data-preview-anim>
+                <div class="preview-card-head">
+                  <span>Listado principal</span>
+                  <strong>{{ previewData().headerTitle }}</strong>
                 </div>
-                @for (row of previewData().rows; track row.name) {
+
+                <div class="preview-table">
+                  <div class="preview-row preview-row-head">
+                    <span>Alumno</span>
+                    <span>Riesgo</span>
+                    <span>Fracaso</span>
+                  </div>
+                  @for (row of previewData().rows; track $index) {
                   <div class="preview-row" data-preview-anim>
-                    <strong>{{ row.name }}</strong>
+                    <span class="preview-name-skeleton" [style.--preview-name-width]="row.nameWidth"></span>
                     <span class="risk-pill" [class.is-low]="row.tone === 'low'" [class.is-medium]="row.tone === 'medium'" [class.is-high]="row.tone === 'high'">
                       {{ row.risk }}
                     </span>
@@ -47,51 +144,55 @@
                       {{ row.failure }}
                     </span>
                   </div>
-                }
-              </div>
+                  }
+                </div>
+              </section>
             </section>
-          </section>
 
-          <aside class="preview-right-column">
-            <section class="preview-chart-card" data-preview-anim>
-              <div class="preview-card-head">
-                <strong>{{ previewData().chart.title }}</strong>
-              </div>
-
-              <div class="preview-chart-layout">
-                <div class="preview-donut">
-                  <div class="preview-donut-ring"></div>
-                  <div class="preview-donut-core">
-                    <strong>{{ previewData().chart.total }}</strong>
-                    <span>ALUMNOS</span>
-                  </div>
+            <aside class="preview-right-column">
+              <section class="preview-chart-card" data-preview-anim>
+                <div class="preview-card-head">
+                  <strong>{{ previewData().chart.title }}</strong>
                 </div>
 
-                <div class="preview-chart-legend">
-                  @for (item of previewData().chart.legend; track item.label) {
+                <div class="preview-chart-layout">
+                  <div class="preview-donut">
+                    <div class="preview-donut-ring" [style.--preview-high]="previewData().chart.segments.high + '%'" [style.--preview-medium]="previewData().chart.segments.medium + '%'" [style.--preview-low]="previewData().chart.segments.low + '%'"></div>
+                    <div class="preview-donut-core">
+                      <strong>{{ previewData().chart.total }}</strong>
+                      <span>ALUMNOS</span>
+                    </div>
+                  </div>
+
+                  <div class="preview-chart-legend">
+                    @for (item of previewData().chart.legend; track item.label) {
                     <div class="preview-legend-row">
                       <span class="preview-legend-dot" [class.is-high]="item.tone === 'high'" [class.is-medium]="item.tone === 'medium'" [class.is-low]="item.tone === 'low'"></span>
                       <span>{{ item.label }}</span>
                       <strong>{{ item.value }}</strong>
                     </div>
+                    }
+                  </div>
+                </div>
+              </section>
+
+              <aside class="preview-side-card" data-preview-anim>
+                <div class="preview-card-head">
+                  <span>Detalle</span>
+                  <strong>{{ previewData().sideTitle }}</strong>
+                </div>
+
+                <div class="preview-side-list">
+                  @for (metric of previewData().sideMetrics; track $index) {
+                  <div data-preview-anim>
+                    <span>{{ metric.label }}</span>
+                    <strong class="preview-value-skeleton" [style.--preview-value-width]="metric.valueWidth"></strong>
+                  </div>
                   }
                 </div>
-              </div>
-            </section>
-
-            <aside class="preview-side-card" data-preview-anim>
-              <div class="preview-card-head">
-                <span>Detalle</span>
-                <strong>{{ previewData().sideTitle }}</strong>
-              </div>
-
-              <div class="preview-side-list">
-                @for (metric of previewData().sideMetrics; track metric.label) {
-                  <div data-preview-anim><span>{{ metric.label }}</span><strong>{{ metric.value }}</strong></div>
-                }
-              </div>
+              </aside>
             </aside>
-          </aside>
+          </div>
         </div>
       </div>
     </div>
@@ -99,70 +200,212 @@
 
   <section class="auth-card-shell" #authCard>
     <section class="auth-card">
-      <div class="auth-floating auth-floating--top" aria-hidden="true">
-        <svg viewBox="0 0 120 88" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="10" y="12" width="100" height="64" rx="18" fill="#FFFFFF"/>
-          <rect x="24" y="28" width="40" height="8" rx="4" fill="#DCE8FF"/>
-          <rect x="24" y="44" width="68" height="7" rx="3.5" fill="#EEF4FF"/>
-          <rect x="24" y="56" width="52" height="7" rx="3.5" fill="#EEF4FF"/>
-        </svg>
-      </div>
-      <div class="auth-floating auth-floating--middle" aria-hidden="true">
-        <svg viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="45" cy="45" r="30" fill="#F5F8FF" stroke="#DCE8FF" stroke-width="10"/>
-          <path d="M45 15 A30 30 0 1 1 22 63" stroke="#47CF14" stroke-width="10" stroke-linecap="round"/>
-        </svg>
-      </div>
-      <div class="auth-floating auth-floating--bottom" aria-hidden="true">
-        <svg viewBox="0 0 126 70" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="8" y="12" width="110" height="46" rx="23" fill="#FFFFFF" stroke="#DCE8FF"/>
-          <rect x="24" y="30" width="46" height="8" rx="4" fill="#DCE8FF"/>
-          <circle cx="92" cy="35" r="12" fill="#6D77E5"/>
-        </svg>
-      </div>
-      <h2>Inicia sesion</h2>
+      <div class="auth-panel-viewport">
+        <div class="auth-panel-track" [class.is-recover]="panelMode() === 'recover'">
+          <div class="auth-panel-stage auth-panel-stage--login">
+            <div class="auth-orbit-lines" aria-hidden="true">
+              <svg class="auth-orbit auth-orbit--one" viewBox="0 0 320 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 194C70 118 136 74 214 82C270 88 316 132 352 214" pathLength="100" />
+              </svg>
+              <svg class="auth-orbit auth-orbit--two" viewBox="0 0 320 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M34 230C90 172 142 148 196 150C242 152 278 180 308 226" pathLength="100" />
+              </svg>
+              <svg class="auth-orbit auth-orbit--three" viewBox="0 0 320 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M42 28C118 34 182 66 234 126C270 168 292 214 312 286 " pathLength="100" />
+              </svg>
+            </div>
+            <div class="auth-floating auth-floating--bottom" aria-hidden="true">
+              <svg viewBox="0 0 126 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="8" y="12" width="110" height="46" rx="23" fill="#FFFFFF" stroke="#DCE8FF" />
+                <rect x="24" y="30" width="46" height="8" rx="4" fill="#DCE8FF" />
+                <circle cx="92" cy="35" r="12" fill="#6D77E5" />
+              </svg>
+            </div>
+            <h2>Inicia sesion</h2>
 
-      <div class="auth-card-layout">
-        <form [formGroup]="form" (ngSubmit)="iniciarSesion()">
-          <label>
-            Usuario
-            <input
-              type="text"
-              formControlName="identificador"
-              placeholder="Ingresa tu usuario"
-              autocomplete="username"
-            />
-          </label>
-          @if (campoInvalido('identificador')) {
-            <small class="field-error">El usuario es obligatorio.</small>
-          }
+            <div class="auth-card-layout">
+              <form [formGroup]="form" (ngSubmit)="iniciarSesion()">
+                <label>
+                  Usuario
+                  <input type="text" formControlName="identificador" placeholder="Ingresa tu usuario" autocomplete="username" />
+                </label>
+                @if (campoInvalido('identificador')) {
+                <small class="field-error">El usuario es obligatorio.</small>
+                }
 
-          <label>
-            Contrasena
-            <input
-              type="password"
-              formControlName="password"
-              placeholder="Ingresa tu contrasena"
-              autocomplete="current-password"
-            />
-          </label>
-          @if (campoInvalido('password')) {
-            <small class="field-error">La contrasena es obligatoria.</small>
-          }
+                <label>
+                  Contrasena
+                  <div class="password-field">
+                    <input [type]="mostrarPassword() ? 'text' : 'password'" formControlName="password" placeholder="Ingresa tu contrasena" autocomplete="current-password" />
+                    <button class="password-toggle" type="button" (click)="toggleMostrarPassword()" [attr.aria-label]="mostrarPassword() ? 'Ocultar contrasena' : 'Mostrar contrasena'">
+                      @if (mostrarPassword()) {
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M3.27 2 2 3.27l3.02 3.02C3.22 7.72 1.88 9.57 1 12c1.73 4.39 5.94 7.5 11 7.5 2.02 0 3.91-.49 5.57-1.35L20.73 22 22 20.73 3.27 2ZM12 17.5A5.5 5.5 0 0 1 6.5 12c0-.68.12-1.33.33-1.93l7.1 7.1c-.6.21-1.25.33-1.93.33Zm0-11c5.06 0 9.27 3.11 11 7.5-.56 1.42-1.45 2.71-2.57 3.77l-2.17-2.17c.15-.51.24-1.04.24-1.6A6.5 6.5 0 0 0 9.6 7.5L7.91 5.81A11.8 11.8 0 0 1 12 6.5Z" fill="currentColor" />
+                      </svg>
+                      } @else {
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 6.5c5.06 0 9.27 3.11 11 7.5-1.73 4.39-5.94 7.5-11 7.5S2.73 18.39 1 14c1.73-4.39 5.94-7.5 11-7.5Zm0 2C8.35 8.5 5.18 10.59 3.76 14 5.18 17.41 8.35 19.5 12 19.5S18.82 17.41 20.24 14C18.82 10.59 15.65 8.5 12 8.5Zm0 2A3.5 3.5 0 1 1 8.5 14 3.5 3.5 0 0 1 12 10.5Zm0 2A1.5 1.5 0 1 0 13.5 14 1.5 1.5 0 0 0 12 12.5Z" fill="currentColor" />
+                      </svg>
+                      }
+                    </button>
+                  </div>
+                </label>
+                @if (campoInvalido('password')) {
+                <small class="field-error">La contrasena es obligatoria.</small>
+                }
 
-          @if (error()) {
-            <p class="request-error">{{ error() }}</p>
-          }
+                <div class="auth-form-meta">
+                  <label class="remember-toggle">
+                    <input type="checkbox" formControlName="recordar" />
+                    <span class="remember-indicator" aria-hidden="true">
+                      <svg viewBox="0 0 24 24">
+                        <path d="M9.2 16.6 4.95 12.35l1.4-1.4 2.85 2.85 8.45-8.45 1.4 1.4-9.85 9.85Z" fill="currentColor" />
+                      </svg>
+                    </span>
+                    <span>Recordar contrasena</span>
+                  </label>
 
-          <button class="primary-button full" type="submit" [disabled]="cargando()">
-            {{ cargando() ? 'Ingresando...' : 'Ingresar' }}
-          </button>
+                  <button class="secondary-link" type="button" (click)="abrirRecuperacion()">
+                    Olvidaste tu contrasena?
+                  </button>
+                </div>
 
-          <button class="secondary-link" type="button">
-            Cambiar contrasena
-          </button>
-        </form>
+                @if (error()) {
+                <p class="request-error">{{ error() }}</p>
+                }
+
+                <button class="primary-button full" type="submit" [disabled]="cargando()">
+                  {{ cargando() ? 'Ingresando...' : 'Ingresar' }}
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <div class="auth-panel-stage auth-panel-stage--recover">
+            <div class="auth-orbit-lines" aria-hidden="true">
+              <svg class="auth-orbit auth-orbit--two" viewBox="0 0 320 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22 248C74 212 118 176 166 174C214 172 258 196 314 246" pathLength="100" />
+              </svg>
+              <svg class="auth-orbit auth-orbit--one" viewBox="0 0 320 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 216C62 134 112 82 164 74C208 68 244 96 270 146C292 188 314 206 346 212" pathLength="100" />
+              </svg>
+            </div>
+            
+            <button class="secondary-link secondary-link--icon secondary-link--recover-top" type="button" (click)="volverAlLogin()" aria-label="Volver al inicio de sesion">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M14.71 6.29a1 1 0 0 1 0 1.42L11.41 11H20a1 1 0 1 1 0 2h-8.59l3.3 3.29a1 1 0 0 1-1.42 1.42l-5-5a1 1 0 0 1 0-1.42l5-5a1 1 0 0 1 1.42 0Z" fill="currentColor" />
+              </svg>
+            </button>
+            <h2>
+              @switch (recoveryStep()) {
+                @case ('solicitar') { Recuperar contrasena }
+                @case ('verificar') { Verificar codigo }
+                @default { Nueva contrasena }
+              }
+            </h2>
+            <p class="auth-copy">
+              @switch (recoveryStep()) {
+                @case ('solicitar') { Ingresa tu usuario y correo institucional para enviarte un codigo de verificacion. }
+                @case ('verificar') { Revisa tu correo e ingresa el codigo recibido para continuar. }
+                @default { Define una nueva contrasena para restablecer tu acceso institucional. }
+              }
+            </p>
+
+            <div class="auth-card-layout">
+              <form [formGroup]="recoveryForm" (ngSubmit)="enviarRecuperacion()">
+                <label>
+                  Usuario
+                  <input type="text" formControlName="identificador" placeholder="Ingresa tu usuario" autocomplete="username" />
+                </label>
+                @if (campoRecoveryInvalido('identificador')) {
+                <small class="field-error">El usuario es obligatorio.</small>
+                }
+
+                @if (recoveryStep() === 'solicitar') {
+                <label>
+                  Correo institucional
+                  <input type="email" formControlName="correo" placeholder="Ingresa tu correo institucional" autocomplete="email" />
+                </label>
+                @if (campoRecoveryInvalido('correo')) {
+                <small class="field-error">Ingresa un correo institucional valido.</small>
+                }
+                }
+
+                @if (recoveryStep() === 'verificar') {
+                <label>
+                  Codigo de verificacion
+                  <input type="text" formControlName="codigo" placeholder="Ingresa el codigo recibido" autocomplete="one-time-code" />
+                </label>
+                @if (campoRecoveryInvalido('codigo')) {
+                <small class="field-error">El codigo es obligatorio.</small>
+                }
+                }
+
+                @if (recoveryStep() === 'cambiar') {
+                <label>
+                  Nueva contrasena
+                  <div class="password-field">
+                    <input [type]="mostrarRecoveryPassword() ? 'text' : 'password'" formControlName="nuevaPassword" placeholder="Ingresa tu nueva contrasena" autocomplete="new-password" />
+                    <button class="password-toggle" type="button" (click)="toggleMostrarRecoveryPassword()" [attr.aria-label]="mostrarRecoveryPassword() ? 'Ocultar contrasena' : 'Mostrar contrasena'">
+                      @if (mostrarRecoveryPassword()) {
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M3.27 2 2 3.27l3.02 3.02C3.22 7.72 1.88 9.57 1 12c1.73 4.39 5.94 7.5 11 7.5 2.02 0 3.91-.49 5.57-1.35L20.73 22 22 20.73 3.27 2ZM12 17.5A5.5 5.5 0 0 1 6.5 12c0-.68.12-1.33.33-1.93l7.1 7.1c-.6.21-1.25.33-1.93.33Zm0-11c5.06 0 9.27 3.11 11 7.5-.56 1.42-1.45 2.71-2.57 3.77l-2.17-2.17c.15-.51.24-1.04.24-1.6A6.5 6.5 0 0 0 9.6 7.5L7.91 5.81A11.8 11.8 0 0 1 12 6.5Z" fill="currentColor" />
+                      </svg>
+                      } @else {
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 6.5c5.06 0 9.27 3.11 11 7.5-1.73 4.39-5.94 7.5-11 7.5S2.73 18.39 1 14c1.73-4.39 5.94-7.5 11-7.5Zm0 2C8.35 8.5 5.18 10.59 3.76 14 5.18 17.41 8.35 19.5 12 19.5S18.82 17.41 20.24 14C18.82 10.59 15.65 8.5 12 8.5Zm0 2A3.5 3.5 0 1 1 8.5 14 3.5 3.5 0 0 1 12 10.5Zm0 2A1.5 1.5 0 1 0 13.5 14 1.5 1.5 0 0 0 12 12.5Z" fill="currentColor" />
+                      </svg>
+                      }
+                    </button>
+                  </div>
+                </label>
+                @if (campoRecoveryInvalido('nuevaPassword')) {
+                <small class="field-error">Ingresa una contrasena valida.</small>
+                }
+
+                <label>
+                  Confirmar contrasena
+                  <div class="password-field">
+                    <input [type]="mostrarRecoveryConfirmPassword() ? 'text' : 'password'" formControlName="confirmarPassword" placeholder="Confirma tu nueva contrasena" autocomplete="new-password" />
+                    <button class="password-toggle" type="button" (click)="toggleMostrarRecoveryConfirmPassword()" [attr.aria-label]="mostrarRecoveryConfirmPassword() ? 'Ocultar contrasena' : 'Mostrar contrasena'">
+                      @if (mostrarRecoveryConfirmPassword()) {
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M3.27 2 2 3.27l3.02 3.02C3.22 7.72 1.88 9.57 1 12c1.73 4.39 5.94 7.5 11 7.5 2.02 0 3.91-.49 5.57-1.35L20.73 22 22 20.73 3.27 2ZM12 17.5A5.5 5.5 0 0 1 6.5 12c0-.68.12-1.33.33-1.93l7.1 7.1c-.6.21-1.25.33-1.93.33Zm0-11c5.06 0 9.27 3.11 11 7.5-.56 1.42-1.45 2.71-2.57 3.77l-2.17-2.17c.15-.51.24-1.04.24-1.6A6.5 6.5 0 0 0 9.6 7.5L7.91 5.81A11.8 11.8 0 0 1 12 6.5Z" fill="currentColor" />
+                      </svg>
+                      } @else {
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 6.5c5.06 0 9.27 3.11 11 7.5-1.73 4.39-5.94 7.5-11 7.5S2.73 18.39 1 14c1.73-4.39 5.94-7.5 11-7.5Zm0 2C8.35 8.5 5.18 10.59 3.76 14 5.18 17.41 8.35 19.5 12 19.5S18.82 17.41 20.24 14C18.82 10.59 15.65 8.5 12 8.5Zm0 2A3.5 3.5 0 1 1 8.5 14 3.5 3.5 0 0 1 12 10.5Zm0 2A1.5 1.5 0 1 0 13.5 14 1.5 1.5 0 0 0 12 12.5Z" fill="currentColor" />
+                      </svg>
+                      }
+                    </button>
+                  </div>
+                </label>
+                @if (campoRecoveryInvalido('confirmarPassword')) {
+                <small class="field-error">Confirma tu nueva contrasena.</small>
+                }
+                }
+
+                @if (recoverySuccess()) {
+                <p class="request-success">{{ recoverySuccess() }}</p>
+                }
+
+                @if (recoveryError()) {
+                <p class="request-error">{{ recoveryError() }}</p>
+                }
+
+                <button class="primary-button full" type="submit" [disabled]="recoveryLoading()">
+                  {{
+                    recoveryStep() === 'solicitar'
+                      ? (recoveryLoading() ? 'Enviando...' : 'Enviar codigo')
+                      : recoveryStep() === 'verificar'
+                        ? (recoveryLoading() ? 'Verificando...' : 'Verificar codigo')
+                        : (recoveryLoading() ? 'Actualizando...' : 'Actualizar contrasena')
+                  }}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   </section>
-</main>
