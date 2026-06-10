@@ -1,7 +1,11 @@
-import { Component, inject, input, signal } from '@angular/core';
+import { Component, HostListener, inject, input, OnInit, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { catchError, of } from 'rxjs';
 import { BrandMark } from '../brand-mark/brand-mark';
 import { AuthService } from '../../services/auth/auth.service';
+import { DocenteService } from '../../services/academico/docente.service';
+import { Docente } from '../../models/docente';
+import { ThemeService } from '../../services/ui/theme.service';
 
 export interface SidebarChildItem {
   label: string;
@@ -24,23 +28,48 @@ export interface SidebarItem {
   templateUrl: './sidebar.html',
   styleUrl: './sidebar.scss'
 })
-export class Sidebar {
+export class Sidebar implements OnInit {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
+  private readonly docenteService = inject(DocenteService);
+  private readonly themeService = inject(ThemeService);
   private readonly storageKey = 'academic-analytics-sidebar-open';
 
   readonly collapsed = signal(localStorage.getItem('academic-analytics-sidebar') === 'collapsed');
   readonly expandedSections = signal(this.obtenerSeccionesIniciales());
+  readonly userFlyoutOpen = signal(false);
+  readonly docenteVinculado = signal<Docente | null>(null);
+  readonly isDarkMode = this.themeService.isDark;
   readonly items = input<SidebarItem[]>([]);
   readonly userName = input('Usuario del sistema');
   readonly roleLabel = input('Acceso institucional');
+
+  ngOnInit(): void {
+    this.cargarDocenteVinculado();
+  }
 
   toggleCollapsed(): void {
     this.collapsed.update((value) => {
       const next = !value;
       localStorage.setItem('academic-analytics-sidebar', next ? 'collapsed' : 'expanded');
+      if (!next) {
+        this.userFlyoutOpen.set(false);
+      }
       return next;
     });
+  }
+
+  toggleUserFlyout(event: MouseEvent): void {
+    event.stopPropagation();
+    this.userFlyoutOpen.update((value) => !value);
+  }
+
+  cerrarUserFlyout(): void {
+    this.userFlyoutOpen.set(false);
+  }
+
+  toggleTheme(): void {
+    this.themeService.toggleTheme();
   }
 
   toggleSection(item: SidebarItem): void {
@@ -109,8 +138,14 @@ export class Sidebar {
   }
 
   cerrarSesion(): void {
+    this.userFlyoutOpen.set(false);
     this.authService.cerrarSesion();
     void this.router.navigateByUrl('/login');
+  }
+
+  @HostListener('document:click')
+  onDocumentClick(): void {
+    this.userFlyoutOpen.set(false);
   }
 
   private obtenerSeccionesIniciales(): string[] {
@@ -160,5 +195,25 @@ export class Sidebar {
     }
 
     return [];
+  }
+
+  private cargarDocenteVinculado(): void {
+    const usuario = this.authService.obtenerUsuario();
+    if (!usuario || (!usuario.docenteId && !usuario.usuarioId)) {
+      this.docenteVinculado.set(null);
+      return;
+    }
+
+    this.docenteService
+      .listar()
+      .pipe(catchError(() => of([])))
+      .subscribe((docentes) => {
+        const docente =
+          docentes.find((item) => usuario.docenteId !== null && item.id === usuario.docenteId) ??
+          docentes.find((item) => item.usuarioId !== null && item.usuarioId === usuario.usuarioId) ??
+          null;
+
+        this.docenteVinculado.set(docente);
+      });
   }
 }

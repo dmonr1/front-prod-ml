@@ -2,11 +2,22 @@ import { AfterViewInit, Component, ElementRef, OnDestroy, ViewChild, computed, i
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { gsap } from 'gsap';
+import { CustomAlertComponent, CustomAlertType } from '../../../components/custom-alert/custom-alert';
 import { AuthService } from '../../../services/auth/auth.service';
+
+interface LoginAlertState {
+  open: boolean;
+  type: CustomAlertType;
+  title: string;
+  message: string;
+  confirmText: string | null;
+  cancelText: string | null;
+  autoCloseMs: number | null;
+}
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, CustomAlertComponent],
   templateUrl: './login.html',
   styleUrls: ['./login.scss']
 })
@@ -34,6 +45,15 @@ export class Login implements AfterViewInit, OnDestroy {
   readonly recoveryLoading = signal(false);
   readonly recoveryToken = signal('');
   readonly introVisible = signal(true);
+  readonly alertState = signal<LoginAlertState>({
+    open: false,
+    type: 'info',
+    title: '',
+    message: '',
+    confirmText: 'Entendido',
+    cancelText: null,
+    autoCloseMs: null
+  });
   readonly previewMode = signal<'global' | 'curso'>('global');
   readonly titleIndex = signal(0);
   readonly titlePhrases = [
@@ -393,6 +413,13 @@ export class Login implements AfterViewInit, OnDestroy {
   iniciarSesion(): void {
     if (this.form.invalid || this.cargando()) {
       this.form.markAllAsTouched();
+      if (this.form.controls.identificador.invalid && this.form.controls.password.invalid) {
+        this.mostrarAlerta('warning', 'Faltan tus datos', 'Ingresa tu usuario y tu contrasena para continuar.');
+      } else if (this.form.controls.identificador.invalid) {
+        this.mostrarAlerta('warning', 'Falta el usuario', 'Ingresa tu usuario para iniciar sesion.');
+      } else if (this.form.controls.password.invalid) {
+        this.mostrarAlerta('warning', 'Falta la contrasena', 'Ingresa tu contrasena para iniciar sesion.');
+      }
       return;
     }
 
@@ -552,6 +579,18 @@ export class Login implements AfterViewInit, OnDestroy {
     this.error.set('');
   }
 
+  cerrarAlerta(): void {
+    this.alertState.set({
+      open: false,
+      type: 'info',
+      title: '',
+      message: '',
+      confirmText: 'Entendido',
+      cancelText: null,
+      autoCloseMs: null
+    });
+  }
+
   private iniciarRotacionesPreview(): void {
     this.previewIntervalId = setInterval(() => {
       this.previewMode.update((mode) => (mode === 'global' ? 'curso' : 'global'));
@@ -569,6 +608,13 @@ export class Login implements AfterViewInit, OnDestroy {
     if (!identificador || !correo || this.recoveryForm.controls.correo.invalid) {
       this.recoveryForm.controls.identificador.markAsTouched();
       this.recoveryForm.controls.correo.markAsTouched();
+      if (!identificador && !correo) {
+        this.mostrarAlerta('warning', 'Faltan tus datos', 'Ingresa tu usuario y tu correo institucional para enviarte el codigo.');
+      } else if (!identificador) {
+        this.mostrarAlerta('warning', 'Falta el usuario', 'Ingresa tu usuario para iniciar la recuperacion.');
+      } else {
+        this.mostrarAlerta('warning', 'Correo no valido', 'Ingresa un correo institucional valido para continuar.');
+      }
       return;
     }
 
@@ -597,6 +643,13 @@ export class Login implements AfterViewInit, OnDestroy {
     if (!identificador || !codigo) {
       this.recoveryForm.controls.identificador.markAsTouched();
       this.recoveryForm.controls.codigo.markAsTouched();
+      if (!identificador && !codigo) {
+        this.mostrarAlerta('warning', 'Faltan datos de verificacion', 'Ingresa tu usuario y el codigo recibido en tu correo.');
+      } else if (!identificador) {
+        this.mostrarAlerta('warning', 'Falta el usuario', 'Ingresa tu usuario para verificar el codigo.');
+      } else {
+        this.mostrarAlerta('warning', 'Falta el codigo', 'Ingresa el codigo de verificacion para continuar.');
+      }
       return;
     }
 
@@ -623,6 +676,18 @@ export class Login implements AfterViewInit, OnDestroy {
     if (!nuevaPassword || !confirmarPassword) {
       this.recoveryForm.controls.nuevaPassword.markAsTouched();
       this.recoveryForm.controls.confirmarPassword.markAsTouched();
+      if (!nuevaPassword && !confirmarPassword) {
+        this.mostrarAlerta('warning', 'Faltan las contrasenas', 'Ingresa y confirma tu nueva contrasena para actualizar tu acceso.');
+      } else if (!nuevaPassword) {
+        this.mostrarAlerta('warning', 'Falta la nueva contrasena', 'Ingresa tu nueva contrasena para continuar.');
+      } else {
+        this.mostrarAlerta('warning', 'Falta la confirmacion', 'Confirma tu nueva contrasena para completar el cambio.');
+      }
+      return;
+    }
+
+    if (nuevaPassword !== confirmarPassword) {
+      this.mostrarAlerta('warning', 'Las contrasenas no coinciden', 'Asegurate de escribir la misma contrasena en ambos campos.');
       return;
     }
 
@@ -669,5 +734,22 @@ export class Login implements AfterViewInit, OnDestroy {
       this.recoveryError.set('');
       this.recoverySuccess.set('');
     }
+  }
+
+  private mostrarAlerta(
+    type: CustomAlertType,
+    title: string,
+    message: string,
+    autoCloseMs: number | null = 3200
+  ): void {
+    this.alertState.set({
+      open: true,
+      type,
+      title,
+      message,
+      confirmText: 'Entendido',
+      cancelText: null,
+      autoCloseMs
+    });
   }
 }

@@ -1,30 +1,128 @@
 <app-shell>
+  <section class="dashboard-page">
+    <article class="dashboard-surface dashboard-slide dashboard-slide-top">
+      <div class="dashboard-head">
+        <div class="dashboard-copy">
+          <h1>Estado general del sistema academico</h1>
+        </div>
 
-  <section class="dashboard-grid">
-    <article class="card dashboard-card">
-      <span class="eyebrow">Orden sugerido</span>
-      <h2>Empieza por los datos maestros.</h2>
-      <p>
-        Antes de cargar asignaciones, evaluaciones y predicciones, primero completa la
-        configuracion academica del colegio.
-      </p>
-      <div class="dashboard-actions">
-        <a class="primary-button" routerLink="/configuracion-academica">Ir a configuracion academica</a>
-        <a class="secondary-button" routerLink="/gestion-estudiantil">Abrir gestion estudiantil</a>
+        <div class="dashboard-quick">
+          <span class="status-pill is-live">
+            <i class="fa-solid fa-circle"></i>
+            Sistema activo
+          </span>
+          <span class="status-pill">
+            <i class="fa-regular fa-clock"></i>
+            Ultimo corte hoy 11:26
+          </span>
+        </div>
       </div>
     </article>
 
-    <article class="card dashboard-card">
-      <span class="eyebrow">Siguiente bloque</span>
-      <h2>Luego registra usuarios y flujo operativo.</h2>
-      <p>
-        Cuando los maestros esten listos, continua con usuarios, docentes, asignaciones y
-        tutorias.
-      </p>
-      <div class="dashboard-actions">
-        <a class="secondary-button" routerLink="/usuario">Usuarios y acceso</a>
-        <a class="secondary-button" routerLink="/mis-asignaciones">Asignaciones y flujo</a>
+    <section class="kpi-grid dashboard-slide dashboard-slide-mid">
+      @for (item of kpis(); track item.label) {
+        <article class="dashboard-surface kpi-card">
+          <div class="kpi-head">
+            <span class="kpi-icon" [class]="'tone-' + item.tone">
+              <i [class]="item.icon"></i>
+            </span>
+            <div class="kpi-copy">
+              <span>{{ item.label }}</span>
+              <strong>{{ item.value }}</strong>
+            </div>
+          </div>
+          <p>{{ item.detail }}</p>
+        </article>
+      }
+    </section>
+
+    <section class="dashboard-layout dashboard-slide dashboard-slide-bottom">
+      <div class="dashboard-main">
+        <article class="dashboard-surface section-card">
+          <div class="section-head">
+            <div>
+              <span class="section-kicker">Avance del sistema</span>
+              <h2>Cobertura operativa por modulo</h2>
+            </div>
+          </div>
+
+          <div class="progress-list">
+            @for (item of avances(); track item.label) {
+              <div class="progress-row">
+                <div class="progress-copy">
+                  <strong>{{ item.label }}</strong>
+                  <span>{{ item.value }}</span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill" [style.width]="item.width"></div>
+                </div>
+              </div>
+            }
+          </div>
+        </article>
+
+        <article class="dashboard-surface section-card">
+          <div class="section-head">
+            <div>
+              <span class="section-kicker">Accesos rapidos</span>
+              <h2>Rutas principales del flujo</h2>
+            </div>
+          </div>
+
+          <div class="quick-grid">
+            @for (item of accesos; track item.label) {
+              <a class="quick-card" [routerLink]="item.path">
+                <span class="quick-icon"><i [class]="item.icon"></i></span>
+                <strong>{{ item.label }}</strong>
+              </a>
+            }
+          </div>
+        </article>
       </div>
-    </article>
+
+      <aside class="dashboard-side">
+        <article class="dashboard-surface side-card">
+          <div class="section-head">
+            <div>
+              <span class="section-kicker">Actividad reciente</span>
+              <h2>Movimiento del sistema</h2>
+            </div>
+          </div>
+
+          <div class="activity-list">
+            @for (item of actividad(); track item.time + item.title) {
+              <div class="activity-row">
+                <span class="activity-icon"><i [class]="item.icon"></i></span>
+                <div class="activity-copy">
+                  <div class="activity-title">
+                    <strong>{{ item.title }}</strong>
+                    <span>{{ item.time }}</span>
+                  </div>
+                  <p>{{ item.detail }}</p>
+                </div>
+              </div>
+            }
+          </div>
+        </article>
+
+        <article class="dashboard-surface side-card">
+          <div class="section-head">
+            <div>
+              <span class="section-kicker">Pendientes clave</span>
+              <h2>Lo que requiere seguimiento</h2>
+            </div>
+          </div>
+
+          <ul class="pending-list">
+            @for (item of pendientes(); track item.text) {
+              <li>
+                <span class="pending-dot"></span>
+                <p>{{ item.text }}</p>
+              </li>
+            }
+          </ul>
+        </article>
+      </aside>
+    </section>
   </section>
 </app-shell>

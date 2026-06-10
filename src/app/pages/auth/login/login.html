@@ -1,4 +1,16 @@
 <main class="login-page">
+  <app-custom-alert
+    [open]="alertState().open"
+    [type]="alertState().type"
+    [title]="alertState().title"
+    [message]="alertState().message"
+    [confirmText]="alertState().confirmText"
+    [cancelText]="alertState().cancelText"
+    [autoCloseMs]="alertState().autoCloseMs"
+    (confirm)="cerrarAlerta()"
+    (cancel)="cerrarAlerta()"
+    (dismiss)="cerrarAlerta()" />
+
   @if (introVisible()) {
     <div class="login-intro-overlay" aria-hidden="true">
       <div class="login-intro-text">
@@ -38,8 +50,9 @@
       </div>
 
       <div class="preview-stage">
-        <div class="dashboard-preview" data-preview-anim>
-          <div class="preview-toolbar">
+        <div class="dashboard-preview-scale">
+          <div class="dashboard-preview" data-preview-anim>
+            <div class="preview-toolbar">
             <div class="preview-toolbar-copy" data-preview-anim>
               <span class="preview-eyebrow">Seguimiento estudiantil</span>
               <strong>Seguimiento de riesgo</strong>
@@ -194,6 +207,7 @@
             </aside>
           </div>
         </div>
+        </div>
       </div>
     </div>
   </section>
@@ -221,7 +235,7 @@
                 <circle cx="92" cy="35" r="12" fill="#6D77E5" />
               </svg>
             </div>
-            <h2>Inicia sesion</h2>
+            <h2>Iniciar Sesión</h2>
 
             <div class="auth-card-layout">
               <form [formGroup]="form" (ngSubmit)="iniciarSesion()">
@@ -229,12 +243,9 @@
                   Usuario
                   <input type="text" formControlName="identificador" placeholder="Ingresa tu usuario" autocomplete="username" />
                 </label>
-                @if (campoInvalido('identificador')) {
-                <small class="field-error">El usuario es obligatorio.</small>
-                }
 
                 <label>
-                  Contrasena
+                  Contraseña
                   <div class="password-field">
                     <input [type]="mostrarPassword() ? 'text' : 'password'" formControlName="password" placeholder="Ingresa tu contrasena" autocomplete="current-password" />
                     <button class="password-toggle" type="button" (click)="toggleMostrarPassword()" [attr.aria-label]="mostrarPassword() ? 'Ocultar contrasena' : 'Mostrar contrasena'">
@@ -250,9 +261,6 @@
                     </button>
                   </div>
                 </label>
-                @if (campoInvalido('password')) {
-                <small class="field-error">La contrasena es obligatoria.</small>
-                }
 
                 <div class="auth-form-meta">
                   <label class="remember-toggle">
@@ -262,11 +270,11 @@
                         <path d="M9.2 16.6 4.95 12.35l1.4-1.4 2.85 2.85 8.45-8.45 1.4 1.4-9.85 9.85Z" fill="currentColor" />
                       </svg>
                     </span>
-                    <span>Recordar contrasena</span>
+                    <span>Recordar contraseña</span>
                   </label>
 
                   <button class="secondary-link" type="button" (click)="abrirRecuperacion()">
-                    Olvidaste tu contrasena?
+                    Olvidaste tu contraseña?
                   </button>
                 </div>
 
@@ -298,7 +306,7 @@
             </button>
             <h2>
               @switch (recoveryStep()) {
-                @case ('solicitar') { Recuperar contrasena }
+                @case ('solicitar') { Recuperar contraseña }
                 @case ('verificar') { Verificar codigo }
                 @default { Nueva contrasena }
               }
@@ -317,18 +325,12 @@
                   Usuario
                   <input type="text" formControlName="identificador" placeholder="Ingresa tu usuario" autocomplete="username" />
                 </label>
-                @if (campoRecoveryInvalido('identificador')) {
-                <small class="field-error">El usuario es obligatorio.</small>
-                }
 
                 @if (recoveryStep() === 'solicitar') {
                 <label>
                   Correo institucional
                   <input type="email" formControlName="correo" placeholder="Ingresa tu correo institucional" autocomplete="email" />
                 </label>
-                @if (campoRecoveryInvalido('correo')) {
-                <small class="field-error">Ingresa un correo institucional valido.</small>
-                }
                 }
 
                 @if (recoveryStep() === 'verificar') {
@@ -336,9 +338,6 @@
                   Codigo de verificacion
                   <input type="text" formControlName="codigo" placeholder="Ingresa el codigo recibido" autocomplete="one-time-code" />
                 </label>
-                @if (campoRecoveryInvalido('codigo')) {
-                <small class="field-error">El codigo es obligatorio.</small>
-                }
                 }
 
                 @if (recoveryStep() === 'cambiar') {
@@ -359,9 +358,6 @@
                     </button>
                   </div>
                 </label>
-                @if (campoRecoveryInvalido('nuevaPassword')) {
-                <small class="field-error">Ingresa una contrasena valida.</small>
-                }
 
                 <label>
                   Confirmar contrasena
@@ -380,9 +376,6 @@
                     </button>
                   </div>
                 </label>
-                @if (campoRecoveryInvalido('confirmarPassword')) {
-                <small class="field-error">Confirma tu nueva contrasena.</small>
-                }
                 }
 
                 @if (recoverySuccess()) {

@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterOutlet } from '@angular/router';
 import { AuthService } from './services/auth/auth.service';
+import { ThemeService } from './services/ui/theme.service';
 
 @Component({
   selector: 'app-root',
@@ -11,6 +12,7 @@ import { AuthService } from './services/auth/auth.service';
 })
 export class App {
   private readonly authService = inject(AuthService);
+  private readonly themeService = inject(ThemeService);
 
   readonly usuario = computed(() => this.authService.usuarioSesion());
   readonly mostrarCambioPassword = computed(

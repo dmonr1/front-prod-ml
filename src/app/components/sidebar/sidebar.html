@@ -59,14 +59,63 @@
   </nav>
 
   <div class="sidebar-footer">
-    <a class="sidebar-action user-sidebar-card" routerLink="/usuario" [title]="collapsed() ? userName() : ''">
+    <div class="user-flyout-wrap" [class.open]="userFlyoutOpen()">
+      <button
+        class="sidebar-action user-sidebar-card"
+        type="button"
+        [title]="collapsed() ? userName() : ''"
+        (click)="toggleUserFlyout($event)"
+      >
       <span class="nav-icon user-avatar-icon"><i class="fa-solid fa-circle-user"></i></span>
       <span class="nav-label user-summary">
-        <strong>{{ userName() }}</strong>
-        <small>{{ roleLabel() }}</small>
+        <strong>{{ docenteVinculado() ? docenteVinculado()!.nombres + ' ' + docenteVinculado()!.apellidos : userName() }}</strong>
+        <small>{{ docenteVinculado()?.especialidad || roleLabel() }}</small>
       </span>
       <i class="fa-solid fa-chevron-right user-enter-icon"></i>
-    </a>
+      </button>
+
+      <div class="user-flyout" (click)="$event.stopPropagation()">
+        <div class="user-flyout-head">
+          <span class="user-flyout-avatar"><i class="fa-solid fa-circle-user"></i></span>
+          <div class="user-flyout-copy">
+            <strong>{{ docenteVinculado() ? docenteVinculado()!.nombres + ' ' + docenteVinculado()!.apellidos : userName() }}</strong>
+            <small>{{ roleLabel() }}</small>
+          </div>
+        </div>
+        <div class="user-flyout-body">
+          <div class="user-flyout-row">
+            <span>Usuario</span>
+            <strong>{{ docenteVinculado()?.username || userName() }}</strong>
+          </div>
+          <div class="user-flyout-row">
+            <span>Correo</span>
+            <strong>{{ docenteVinculado()?.correo || '' }}</strong>
+          </div>
+          <div class="user-flyout-row">
+            <span>Especialidad</span>
+            <strong>{{ docenteVinculado()?.especialidad || '' }}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button
+      class="theme-switch"
+      type="button"
+      [class.dark]="isDarkMode()"
+      [attr.aria-pressed]="isDarkMode()"
+      [title]="isDarkMode() ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+      (click)="toggleTheme()"
+    >
+      <span class="theme-switch-icon is-sun">
+        <i class="fa-solid fa-sun"></i>
+      </span>
+      <span class="theme-switch-track">
+        <span class="theme-switch-thumb"></span>
+      </span>
+      <span class="theme-switch-icon is-moon">
+        <i class="fa-solid fa-moon"></i>
+      </span>
+    </button>
     <button class="logout" type="button" [title]="collapsed() ? 'Cerrar sesion' : ''" (click)="cerrarSesion()">
       <i class="fa-solid fa-right-from-bracket"></i>
       <span class="nav-label">Cerrar sesion</span>
