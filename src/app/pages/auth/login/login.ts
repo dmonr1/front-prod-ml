@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, OnDestroy, ViewChild, computed, inject, signal } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnDestroy, QueryList, ViewChild, ViewChildren, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { gsap } from 'gsap';
@@ -29,9 +29,11 @@ export class Login implements AfterViewInit, OnDestroy {
   private animationContext: gsap.Context | null = null;
   private previewIntervalId: ReturnType<typeof setInterval> | null = null;
   private titleIntervalId: ReturnType<typeof setInterval> | null = null;
+  private resendIntervalId: ReturnType<typeof setInterval> | null = null;
 
   @ViewChild('visualPanel', { static: true }) visualPanel?: ElementRef<HTMLElement>;
   @ViewChild('authCard', { static: true }) authCard?: ElementRef<HTMLElement>;
+  @ViewChildren('otpInput') otpInputs?: QueryList<ElementRef<HTMLInputElement>>;
 
   readonly cargando = signal(false);
   readonly error = signal('');
@@ -44,6 +46,8 @@ export class Login implements AfterViewInit, OnDestroy {
   readonly recoveryStep = signal<'solicitar' | 'verificar' | 'cambiar'>('solicitar');
   readonly recoveryLoading = signal(false);
   readonly recoveryToken = signal('');
+  readonly otpDigits = signal<string[]>(['', '', '', '', '', '']);
+  readonly resendCountdown = signal(0);
   readonly introVisible = signal(true);
   readonly alertState = signal<LoginAlertState>({
     open: false,
@@ -176,7 +180,7 @@ export class Login implements AfterViewInit, OnDestroy {
       gsap.set('.auth-orbit path', { strokeDashoffset: 100 });
       gsap.set('.auth-panel-stage--login h2', { y: 18, opacity: 0 });
       gsap.set(
-        '.auth-panel-stage--login label, .auth-panel-stage--login .field-error, .auth-panel-stage--login .auth-form-meta, .auth-panel-stage--login .request-error, .auth-panel-stage--login .primary-button',
+        '.auth-panel-stage--login label, .auth-panel-stage--login .field-error, .auth-panel-stage--login .auth-form-meta, .auth-panel-stage--login .primary-button',
         { y: 16, opacity: 0 }
       );
       gsap.set('.auth-floating', { scale: 0.92, opacity: 0 });
@@ -206,7 +210,7 @@ export class Login implements AfterViewInit, OnDestroy {
           '-=0.5'
         )
         .to(
-          '.auth-panel-stage--login label, .auth-panel-stage--login .field-error, .auth-panel-stage--login .auth-form-meta, .auth-panel-stage--login .request-error, .auth-panel-stage--login .primary-button',
+          '.auth-panel-stage--login label, .auth-panel-stage--login .field-error, .auth-panel-stage--login .auth-form-meta, .auth-panel-stage--login .primary-button',
           {
             opacity: 1,
             y: 0,
@@ -403,6 +407,7 @@ export class Login implements AfterViewInit, OnDestroy {
     if (this.titleIntervalId) {
       clearInterval(this.titleIntervalId);
     }
+    this.detenerTemporizadorReenvio();
     this.animationContext?.revert();
   }
 
@@ -433,8 +438,11 @@ export class Login implements AfterViewInit, OnDestroy {
       },
       error: (error) => {
         this.cargando.set(false);
-        this.error.set(
-          error?.error?.mensaje ?? 'No se pudo iniciar sesión. Verifica tus credenciales.'
+        this.error.set('');
+        this.mostrarAlerta(
+          'error',
+          'No se pudo iniciar sesion',
+          error?.error?.mensaje ?? 'Verifica tus credenciales e intenta nuevamente.'
         );
       }
     });
@@ -462,6 +470,60 @@ export class Login implements AfterViewInit, OnDestroy {
   ): boolean {
     const control = this.recoveryForm.controls[nombre];
     return control.invalid && control.touched;
+  }
+
+  actualizarDigitoCodigo(index: number, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const digit = input.value.replace(/\D/g, '').slice(-1);
+    this.setOtpDigit(index, digit);
+    input.value = digit;
+
+    if (digit && index < 5) {
+      this.focusOtp(index + 1);
+    }
+
+    this.verificarCodigoSiEstaCompleto();
+  }
+
+  manejarTeclaCodigo(index: number, event: KeyboardEvent): void {
+    if (event.key === 'Backspace' && !this.otpDigits()[index] && index > 0) {
+      event.preventDefault();
+      this.setOtpDigit(index - 1, '');
+      this.focusOtp(index - 1);
+    }
+
+    if (event.key === 'ArrowLeft' && index > 0) {
+      event.preventDefault();
+      this.focusOtp(index - 1);
+    }
+
+    if (event.key === 'ArrowRight' && index < 5) {
+      event.preventDefault();
+      this.focusOtp(index + 1);
+    }
+  }
+
+  pegarCodigo(event: ClipboardEvent): void {
+    const code = event.clipboardData?.getData('text')?.replace(/\D/g, '').slice(0, 6) ?? '';
+    if (!code) {
+      return;
+    }
+
+    event.preventDefault();
+    const digits = Array.from({ length: 6 }, (_, digitIndex) => code[digitIndex] ?? '');
+    this.otpDigits.set(digits);
+    this.recoveryForm.controls.codigo.setValue(digits.join(''));
+    this.recoveryForm.controls.codigo.markAsTouched();
+    this.focusOtp(Math.min(code.length, 6) - 1);
+    this.verificarCodigoSiEstaCompleto();
+  }
+
+  reenviarCodigoRecuperacion(): void {
+    if (this.resendCountdown() > 0 || this.recoveryLoading()) {
+      return;
+    }
+
+    this.solicitarCodigoRecuperacion();
   }
 
   enviarRecuperacion(): void {
@@ -579,6 +641,30 @@ export class Login implements AfterViewInit, OnDestroy {
     this.error.set('');
   }
 
+  private setOtpDigit(index: number, value: string): void {
+    this.otpDigits.update((digits) => {
+      const next = [...digits];
+      next[index] = value;
+      this.recoveryForm.controls.codigo.setValue(next.join(''));
+      this.recoveryForm.controls.codigo.markAsTouched();
+      return next;
+    });
+  }
+
+  private focusOtp(index: number): void {
+    queueMicrotask(() => {
+      this.otpInputs?.get(index)?.nativeElement.focus();
+      this.otpInputs?.get(index)?.nativeElement.select();
+    });
+  }
+
+  private verificarCodigoSiEstaCompleto(): void {
+    const codigo = this.recoveryForm.controls.codigo.value;
+    if (this.recoveryStep() === 'verificar' && codigo.length === 6 && !this.recoveryLoading()) {
+      this.verificarCodigoRecuperacion();
+    }
+  }
+
   cerrarAlerta(): void {
     this.alertState.set({
       open: false,
@@ -625,13 +711,18 @@ export class Login implements AfterViewInit, OnDestroy {
     this.authService.solicitarRecuperacion({ identificador, correo }).subscribe({
       next: (response) => {
         this.recoveryLoading.set(false);
-        this.recoverySuccess.set(response.mensaje);
+        this.recoverySuccess.set('');
+        this.mostrarAlerta('success', 'Codigo enviado', response.mensaje);
         this.recoveryStep.set('verificar');
+        this.iniciarTemporizadorReenvio();
         this.recoveryForm.controls.codigo.markAsUntouched();
       },
       error: (error) => {
         this.recoveryLoading.set(false);
-        this.recoveryError.set(
+        this.recoveryError.set('');
+        this.mostrarAlerta(
+          'error',
+          'No se pudo enviar el codigo',
           error?.error?.mensaje ?? 'No se pudo enviar el codigo de recuperacion.'
         );
       }
@@ -661,12 +752,18 @@ export class Login implements AfterViewInit, OnDestroy {
       next: (response) => {
         this.recoveryLoading.set(false);
         this.recoveryToken.set(response.tokenRecuperacion);
-        this.recoverySuccess.set(response.mensaje);
+        this.recoverySuccess.set('');
+        this.mostrarAlerta('success', 'Codigo verificado', response.mensaje);
         this.recoveryStep.set('cambiar');
       },
       error: (error) => {
         this.recoveryLoading.set(false);
-        this.recoveryError.set(error?.error?.mensaje ?? 'El codigo no pudo verificarse.');
+        this.recoveryError.set('');
+        this.mostrarAlerta(
+          'error',
+          'Codigo no verificado',
+          error?.error?.mensaje ?? 'El codigo no pudo verificarse.'
+        );
       }
     });
   }
@@ -704,13 +801,17 @@ export class Login implements AfterViewInit, OnDestroy {
       .subscribe({
         next: (response) => {
           this.recoveryLoading.set(false);
-          this.recoverySuccess.set(response.mensaje);
+          this.recoverySuccess.set('');
+          this.mostrarAlerta('success', 'Contrasena actualizada', response.mensaje);
           this.reiniciarRecuperacion(false);
           this.animarCambioPanel('login');
         },
         error: (error) => {
           this.recoveryLoading.set(false);
-          this.recoveryError.set(
+          this.recoveryError.set('');
+          this.mostrarAlerta(
+            'error',
+            'No se pudo actualizar',
             error?.error?.mensaje ?? 'No se pudo actualizar la contrasena.'
           );
         }
@@ -727,6 +828,8 @@ export class Login implements AfterViewInit, OnDestroy {
     });
     this.recoveryStep.set('solicitar');
     this.recoveryToken.set('');
+    this.otpDigits.set(['', '', '', '', '', '']);
+    this.detenerTemporizadorReenvio();
     this.recoveryLoading.set(false);
     this.mostrarRecoveryPassword.set(false);
     this.mostrarRecoveryConfirmPassword.set(false);
@@ -751,5 +854,27 @@ export class Login implements AfterViewInit, OnDestroy {
       cancelText: null,
       autoCloseMs
     });
+  }
+
+  private iniciarTemporizadorReenvio(): void {
+    this.detenerTemporizadorReenvio();
+    this.resendCountdown.set(30);
+    this.resendIntervalId = setInterval(() => {
+      const next = this.resendCountdown() - 1;
+      this.resendCountdown.set(Math.max(0, next));
+      if (next <= 0) {
+        this.detenerTemporizadorReenvio(false);
+      }
+    }, 1000);
+  }
+
+  private detenerTemporizadorReenvio(reset: boolean = true): void {
+    if (this.resendIntervalId) {
+      clearInterval(this.resendIntervalId);
+      this.resendIntervalId = null;
+    }
+    if (reset) {
+      this.resendCountdown.set(0);
+    }
   }
 }

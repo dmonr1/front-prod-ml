@@ -1086,31 +1086,80 @@ input:focus {
   transform: translateY(-1px);
 }
 
-.field-error,
-.request-error {
+.otp-label {
+  gap: 9px;
+  margin-top: 4px;
+  text-align: center;
+}
+
+.otp-inputs {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+.otp-input {
+  width: 100%;
+  aspect-ratio: 1;
+  min-width: 0;
+  padding: 0;
+  border-color: rgba(83, 103, 211, 0.38);
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(44, 55, 110, 0.08);
+  text-align: center;
+  font-size: 1.08rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.otp-input:focus {
+  border-color: rgba(83, 103, 211, 0.78);
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(109, 119, 229, 0.16), 0 10px 22px rgba(44, 55, 110, 0.12);
+}
+
+.otp-help {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+  color: rgba(64, 74, 112, 0.74);
+  font-size: 0.74rem;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.otp-help span {
+  color: rgba(64, 74, 112, 0.62);
+}
+
+.otp-resend {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #5367d3;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.otp-resend:hover {
+  color: #3f50bd;
+}
+
+.field-error {
   margin: 0 0 2px;
   font-size: 0.82rem;
 }
 
 .field-error {
   color: #b24444;
-}
-
-.request-error {
-  padding: 11px 13px;
-  border: 1px solid rgba(214, 76, 76, 0.12);
-  border-radius: 14px;
-  background: #fff2f2;
-  color: #a03333;
-}
-
-.request-success {
-  margin: 0 0 2px;
-  padding: 11px 13px;
-  border: 1px solid rgba(75, 172, 102, 0.14);
-  border-radius: 14px;
-  background: #eefbf1;
-  color: #2c7a43;
 }
 
 .primary-button {
@@ -1170,15 +1219,22 @@ input:focus {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  gap: 7px;
+  width: auto;
+  min-height: 32px;
   padding: 0;
   border-radius: 999px;
 }
 
 .secondary-link--icon svg {
-  width: 18px;
-  height: 18px;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+}
+
+.secondary-link--icon span {
+  font-size: 0.9rem;
+  font-weight: 800;
 }
 
 .secondary-link--recover-top {

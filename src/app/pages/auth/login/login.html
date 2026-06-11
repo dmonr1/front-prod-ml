@@ -278,10 +278,6 @@
                   </button>
                 </div>
 
-                @if (error()) {
-                <p class="request-error">{{ error() }}</p>
-                }
-
                 <button class="primary-button full" type="submit" [disabled]="cargando()">
                   {{ cargando() ? 'Ingresando...' : 'Ingresar' }}
                 </button>
@@ -303,6 +299,7 @@
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M14.71 6.29a1 1 0 0 1 0 1.42L11.41 11H20a1 1 0 1 1 0 2h-8.59l3.3 3.29a1 1 0 0 1-1.42 1.42l-5-5a1 1 0 0 1 0-1.42l5-5a1 1 0 0 1 1.42 0Z" fill="currentColor" />
               </svg>
+              <span>Volver</span>
             </button>
             <h2>
               @switch (recoveryStep()) {
@@ -334,9 +331,34 @@
                 }
 
                 @if (recoveryStep() === 'verificar') {
-                <label>
+                <label class="otp-label">
                   Codigo de verificacion
-                  <input type="text" formControlName="codigo" placeholder="Ingresa el codigo recibido" autocomplete="one-time-code" />
+                  <div class="otp-inputs" role="group" aria-label="Codigo de verificacion de 6 digitos">
+                    @for (digit of otpDigits(); track $index) {
+                    <input
+                      #otpInput
+                      class="otp-input"
+                      type="text"
+                      inputmode="numeric"
+                      autocomplete="one-time-code"
+                      maxlength="1"
+                      [value]="digit"
+                      [attr.aria-label]="'Digito ' + ($index + 1)"
+                      (input)="actualizarDigitoCodigo($index, $event)"
+                      (keydown)="manejarTeclaCodigo($index, $event)"
+                      (paste)="pegarCodigo($event)" />
+                    }
+                  </div>
+                  <small class="otp-help">
+                    Si no encuentras el correo, revisa la bandeja de Spam.
+                    @if (resendCountdown() > 0) {
+                    <span>Podras pedir otro codigo en {{ resendCountdown() }}s.</span>
+                    } @else {
+                    <button class="otp-resend" type="button" (click)="reenviarCodigoRecuperacion()">
+                      Volver a enviar
+                    </button>
+                    }
+                  </small>
                 </label>
                 }
 
@@ -376,14 +398,6 @@
                     </button>
                   </div>
                 </label>
-                }
-
-                @if (recoverySuccess()) {
-                <p class="request-success">{{ recoverySuccess() }}</p>
-                }
-
-                @if (recoveryError()) {
-                <p class="request-error">{{ recoveryError() }}</p>
                 }
 
                 <button class="primary-button full" type="submit" [disabled]="recoveryLoading()">
