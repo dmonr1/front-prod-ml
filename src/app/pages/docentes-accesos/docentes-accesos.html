@@ -198,6 +198,9 @@
                     type="text"
                     placeholder="12345678"
                     maxlength="8"
+                    inputmode="numeric"
+                    pattern="[0-9]{8}"
+                    autocomplete="off"
                     [ngModel]="form().dni"
                     (ngModelChange)="actualizarCampo('dni', $event)"
                     name="docenteDni" />

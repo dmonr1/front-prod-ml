@@ -227,6 +227,16 @@ export class DocentesAccesos {
       return;
     }
 
+    if (!/^\d{8}$/.test(dni)) {
+      this.mostrarAlerta(
+        'warning',
+        'DNI no valido',
+        'El DNI debe contener exactamente 8 digitos numericos.',
+        { confirmText: null, autoCloseMs: 3200 }
+      );
+      return;
+    }
+
     const payload: DocentePayload = {
       nombres,
       apellidos,
