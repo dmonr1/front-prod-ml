@@ -8,7 +8,10 @@
     }
 
     <div class="page-card page-slide-in">
-      <div class="sections-layout">
+      <div
+        class="sections-layout"
+        [class.without-tutorias]="!mostrarSkeleton() && !seccionesTutoradas().length"
+      >
         <section class="cards-section assignments-slide-in assignments-slide-in-top">
           <div class="section-head">
             <div class="panel-head">

@@ -1,7 +1,7 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, ElementRef, HostListener, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
 import { CustomAlertComponent } from '../../components/custom-alert/custom-alert';
 import { Shell } from '../../layouts/shell/shell';
 import { PeriodoEvaluacion } from '../../models/periodo-evaluacion';
@@ -16,6 +16,7 @@ import {
   RecomendacionSeguimiento
 } from '../../services/alerta/alerta-seguimiento.service';
 import { AuthService } from '../../services/auth/auth.service';
+import { AsignacionAcademicaService } from '../../services/asignaciones/asignacion-academica.service';
 import { TutoriaService } from '../../services/asignaciones/tutoria.service';
 import {
   PrediccionRiesgo,
@@ -49,6 +50,7 @@ export class Predicciones {
   private readonly periodoAcademicoService = inject(PeriodoAcademicoService);
   private readonly periodoEvaluacionService = inject(PeriodoEvaluacionService);
   private readonly seccionService = inject(SeccionService);
+  private readonly asignacionAcademicaService = inject(AsignacionAcademicaService);
   private readonly tutoriaService = inject(TutoriaService);
   private readonly prediccionService = inject(PrediccionService);
   private readonly alertaSeguimientoService = inject(AlertaSeguimientoService);
@@ -64,6 +66,7 @@ export class Predicciones {
   readonly periodosEvaluacion = signal<PeriodoEvaluacion[]>([]);
   readonly secciones = signal<Seccion[]>([]);
   readonly tutoriasFiltro = signal<Tutoria[]>([]);
+  readonly cursoIdsVisibles = signal<ReadonlySet<number> | null>(null);
   readonly periodoEvaluacionSeleccionadoId = signal<number | null>(null);
   readonly seccionSeleccionadaId = signal<number | null>(null);
   readonly cursoSeleccionadoId = signal<number | null>(null);
@@ -645,51 +648,79 @@ export class Predicciones {
           );
 
         const usuario = this.authService.obtenerUsuario();
-        const esTutor = Boolean(
-          usuario?.esTutor || usuario?.roles.includes('DOCENTE_TUTOR')
-        );
+        const esAdmin = usuario?.roles.includes('ADMIN') ?? false;
+        const esDocente = usuario?.roles.includes('DOCENTE') ?? false;
+        const esTutor = Boolean(usuario?.esTutor || usuario?.roles.includes('DOCENTE_TUTOR'));
         const docenteId = usuario?.docenteId;
 
-        if (esTutor && docenteId) {
+        if (esAdmin) {
+          this.cursoIdsVisibles.set(null);
+          this.tutoriasFiltro.set([]);
+          this.configurarFiltros(periodosActivos, seccionesActivas);
+          return;
+        }
+
+        if (docenteId && (esDocente || esTutor)) {
           const periodosAcademicosActivos = [...periodosAcademicos]
             .filter((periodo) => periodo.estado !== 'INACTIVO')
             .sort((a, b) => b.anio - a.anio);
 
           if (!periodosAcademicosActivos.length) {
-            this.configurarFiltros(periodosActivos, seccionesActivas);
+            this.configurarFiltros(periodosActivos, []);
             return;
           }
 
-          forkJoin(
-            periodosAcademicosActivos.map((periodo) =>
-              this.tutoriaService.listarPorDocente(docenteId, periodo.id)
-            )
-          ).subscribe({
-            next: (tutoriasPorPeriodo) => {
+          forkJoin({
+            asignacionesPorPeriodo: esDocente
+              ? forkJoin(
+                  periodosAcademicosActivos.map((periodo) =>
+                    this.asignacionAcademicaService.listarAsignaciones(docenteId, periodo.id)
+                  )
+                )
+              : of([]),
+            tutoriasPorPeriodo: esTutor
+              ? forkJoin(
+                  periodosAcademicosActivos.map((periodo) =>
+                    this.tutoriaService.listarPorDocente(docenteId, periodo.id)
+                  )
+                )
+              : of([])
+          }).subscribe({
+            next: ({ asignacionesPorPeriodo, tutoriasPorPeriodo }) => {
+              const asignacionesActivas = asignacionesPorPeriodo
+                .flat()
+                .filter((asignacion) => (asignacion.estado ?? 'ACTIVO') === 'ACTIVO');
               const tutoriasActivas = tutoriasPorPeriodo
                 .flat()
                 .filter((tutoria) => (tutoria.estado ?? 'ACTIVO') === 'ACTIVO');
-              const seccionesTutoradas = this.mapearSeccionesDesdeTutorias(
-                tutoriasActivas,
-                seccionesActivas
-              );
-              this.tutoriasFiltro.set(tutoriasActivas);
+              const seccionesPermitidas = new Set([
+                ...asignacionesActivas.map((asignacion) => asignacion.seccionId),
+                ...tutoriasActivas.map((tutoria) => tutoria.seccionId)
+              ]);
 
+              this.tutoriasFiltro.set(tutoriasActivas);
+              this.cursoIdsVisibles.set(
+                esDocente && !esTutor
+                  ? new Set(asignacionesActivas.map((asignacion) => asignacion.cursoId))
+                  : null
+              );
               this.configurarFiltros(
                 periodosActivos,
-                seccionesTutoradas.length ? seccionesTutoradas : seccionesActivas
+                seccionesActivas.filter((seccion) => seccionesPermitidas.has(seccion.id))
               );
             },
             error: () => {
               this.tutoriasFiltro.set([]);
-              this.configurarFiltros(periodosActivos, seccionesActivas);
+              this.cursoIdsVisibles.set(new Set());
+              this.configurarFiltros(periodosActivos, []);
             }
           });
           return;
         }
 
         this.tutoriasFiltro.set([]);
-        this.configurarFiltros(periodosActivos, seccionesActivas);
+        this.cursoIdsVisibles.set(new Set());
+        this.configurarFiltros(periodosActivos, []);
       },
       error: () => {
         this.cargandoFiltros.set(false);
@@ -723,8 +754,14 @@ export class Predicciones {
         this.prediccionesGlobales.set(
           globales.map((item) => this.mapearPrediccion(item, alertas, recomendaciones))
         );
+        const cursoIdsVisibles = this.cursoIdsVisibles();
         this.prediccionesCurso.set(
-          cursos.map((item) => this.mapearPrediccion(item, alertas, recomendaciones))
+          cursos
+            .filter((item) =>
+              cursoIdsVisibles === null ||
+              (item.cursoId !== null && cursoIdsVisibles.has(item.cursoId))
+            )
+            .map((item) => this.mapearPrediccion(item, alertas, recomendaciones))
         );
         this.ajustarCursoSeleccionado();
         this.cargandoVista.set(false);

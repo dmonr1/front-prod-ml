@@ -1,5 +1,5 @@
 import { Component, ElementRef, HostListener, computed, inject, signal } from '@angular/core';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
 import { CustomAlertComponent } from '../../components/custom-alert/custom-alert';
 import { Shell } from '../../layouts/shell/shell';
 import { UsuarioSesion } from '../../models/auth';
@@ -18,6 +18,7 @@ import { PeriodoAcademicoService } from '../../services/academico/periodo-academ
 import { PeriodoEvaluacionService } from '../../services/academico/periodo-evaluacion.service';
 import { SeccionService } from '../../services/academico/seccion.service';
 import { AuthService } from '../../services/auth/auth.service';
+import { AsignacionAcademicaService } from '../../services/asignaciones/asignacion-academica.service';
 import { TutoriaService } from '../../services/asignaciones/tutoria.service';
 
 @Component({
@@ -32,6 +33,7 @@ export class HallazgosRecomendaciones {
   private readonly periodoAcademicoService = inject(PeriodoAcademicoService);
   private readonly periodoEvaluacionService = inject(PeriodoEvaluacionService);
   private readonly seccionService = inject(SeccionService);
+  private readonly asignacionAcademicaService = inject(AsignacionAcademicaService);
   private readonly tutoriaService = inject(TutoriaService);
   private readonly hallazgoService = inject(HallazgoDataMiningService);
   private readonly alertaSeguimientoService = inject(AlertaSeguimientoService);
@@ -46,6 +48,7 @@ export class HallazgosRecomendaciones {
   readonly secciones = signal<Seccion[]>([]);
   readonly periodoEvaluacionSeleccionadoId = signal<number | null>(null);
   readonly seccionSeleccionadaId = signal<number | null>(null);
+  readonly cursoIdsVisibles = signal<ReadonlySet<number> | null>(null);
   readonly mostrarSelectorPeriodo = signal(false);
   readonly mostrarSelectorSeccion = signal(false);
 
@@ -261,6 +264,7 @@ export class HallazgosRecomendaciones {
         const esAdmin = usuario?.roles.includes('ADMIN') ?? false;
 
         if (esAdmin) {
+          this.cursoIdsVisibles.set(null);
           this.periodosEvaluacion.set(periodosActivos);
           this.secciones.set(seccionesActivas);
           this.seccionSeleccionadaId.set(this.obtenerSeccionInicial(seccionesActivas)?.id ?? null);
@@ -281,23 +285,46 @@ export class HallazgosRecomendaciones {
           return;
         }
 
-        this.tutoriaService.listarPorDocente(docenteId, periodoReferencia.id).subscribe({
-          next: (tutorias) => {
+        const esDocente = usuario?.roles.includes('DOCENTE') ?? false;
+        const esTutor = Boolean(usuario?.esTutor || usuario?.roles.includes('DOCENTE_TUTOR'));
+
+        forkJoin({
+          asignaciones: esDocente
+            ? this.asignacionAcademicaService.listarAsignaciones(docenteId, periodoReferencia.id)
+            : of([]),
+          tutorias: esTutor
+            ? this.tutoriaService.listarPorDocente(docenteId, periodoReferencia.id)
+            : of([])
+        }).subscribe({
+          next: ({ asignaciones, tutorias }) => {
+            const asignacionesActivas = asignaciones.filter(
+              (asignacion) => (asignacion.estado ?? 'ACTIVO') === 'ACTIVO'
+            );
             const tutoriasActivas = tutorias.filter(
               (tutoria) => (tutoria.estado ?? 'ACTIVO') === 'ACTIVO'
             );
-            const seccionesTutor = seccionesActivas.filter((seccion) =>
-              tutoriasActivas.some((tutoria) => tutoria.seccionId === seccion.id)
+            const seccionesPermitidas = new Set([
+              ...asignacionesActivas.map((asignacion) => asignacion.seccionId),
+              ...tutoriasActivas.map((tutoria) => tutoria.seccionId)
+            ]);
+            const seccionesVisibles = seccionesActivas.filter((seccion) =>
+              seccionesPermitidas.has(seccion.id)
             );
 
+            this.cursoIdsVisibles.set(
+              esDocente && !esTutor
+                ? new Set(asignacionesActivas.map((asignacion) => asignacion.cursoId))
+                : null
+            );
             this.periodosEvaluacion.set(periodosActivos);
-            this.secciones.set(seccionesTutor);
-            this.seccionSeleccionadaId.set(this.obtenerSeccionInicial(seccionesTutor)?.id ?? null);
+            this.secciones.set(seccionesVisibles);
+            this.seccionSeleccionadaId.set(this.obtenerSeccionInicial(seccionesVisibles)?.id ?? null);
             this.ajustarPeriodo();
             this.cargandoFiltros.set(false);
             this.cargarVista();
           },
           error: () => {
+            this.cursoIdsVisibles.set(new Set());
             this.periodosEvaluacion.set(periodosActivos);
             this.secciones.set([]);
             this.seccionSeleccionadaId.set(null);
@@ -334,8 +361,14 @@ export class HallazgosRecomendaciones {
       recomendaciones: this.alertaSeguimientoService.listarRecomendaciones(periodoEvaluacionId, seccionId)
     }).subscribe({
       next: ({ hallazgos, recomendaciones }) => {
-        this.hallazgos.set(hallazgos);
-        this.recomendaciones.set(recomendaciones);
+        const cursoIdsVisibles = this.cursoIdsVisibles();
+        const perteneceACursoVisible = (cursoId: number | null): boolean =>
+          cursoIdsVisibles === null || cursoId === null || cursoIdsVisibles.has(cursoId);
+
+        this.hallazgos.set(hallazgos.filter((hallazgo) => perteneceACursoVisible(hallazgo.cursoId)));
+        this.recomendaciones.set(
+          recomendaciones.filter((recomendacion) => perteneceACursoVisible(recomendacion.cursoId))
+        );
         this.cargandoVista.set(false);
       },
       error: () => {

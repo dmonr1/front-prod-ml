@@ -28,6 +28,10 @@
   min-height: 0;
 }
 
+.sections-layout.without-tutorias {
+  grid-template-rows: minmax(0, 1fr);
+}
+
 .page-slide-in {
   animation: slide-in 240ms ease;
 }

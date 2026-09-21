@@ -76,7 +76,11 @@ export class Shell {
       });
     }
 
-    if (esAdmin || (esTutor && this.tieneTutoriasActivas())) {
+    if (
+      esAdmin ||
+      (esTutor && this.tieneTutoriasActivas()) ||
+      (esDocente && this.tieneAsignacionesActivas())
+    ) {
       items.push({
         id: 'seguimiento',
         label: 'Seguimiento',
