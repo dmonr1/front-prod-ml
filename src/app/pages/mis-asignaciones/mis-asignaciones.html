@@ -100,6 +100,7 @@
           }
         </section>
 
+        @if (mostrarSkeleton() || seccionesTutoradas().length) {
         <section class="cards-section assignments-slide-in assignments-slide-in-bottom">
           <div class="section-head">
             <div class="panel-head">
@@ -129,13 +130,6 @@
                 </div>
               </article>
               }
-            </div>
-          </div>
-          } @else if (!seccionesTutoradas().length) {
-          <div class="cards-surface state-surface">
-            <div class="table-state">
-              <span class="table-state-icon"><i class="fa-solid fa-people-roof"></i></span>
-              <span>No tienes secciones tutoradas en el periodo academico actual.</span>
             </div>
           </div>
           } @else {
@@ -170,6 +164,7 @@
           </div>
           }
         </section>
+        }
       </div>
     </div>
   </section>
