@@ -176,8 +176,8 @@
                     type="text"
                     placeholder="Ejemplo: Juan Carlos"
                     autocomplete="given-name"
-                    [ngModel]="form().nombres"
-                    (ngModelChange)="actualizarCampo('nombres', $event)"
+                    [value]="form().nombres"
+                    (input)="onCampoEntrada('nombres', $event)"
                     name="docenteNombres" />
                 </label>
 
@@ -187,8 +187,8 @@
                     type="text"
                     placeholder="Ejemplo: Perez Lopez"
                     autocomplete="family-name"
-                    [ngModel]="form().apellidos"
-                    (ngModelChange)="actualizarCampo('apellidos', $event)"
+                    [value]="form().apellidos"
+                    (input)="onCampoEntrada('apellidos', $event)"
                     name="docenteApellidos" />
                 </label>
               </div>
@@ -203,8 +203,8 @@
                     inputmode="numeric"
                     pattern="[0-9]{8}"
                     autocomplete="off"
-                    [ngModel]="form().dni"
-                    (ngModelChange)="actualizarCampo('dni', $event)"
+                    [value]="form().dni"
+                    (input)="onCampoEntrada('dni', $event)"
                     name="docenteDni" />
                 </label>
 
@@ -217,8 +217,8 @@
                     inputmode="numeric"
                     pattern="[0-9]{9}"
                     autocomplete="tel"
-                    [ngModel]="form().telefono"
-                    (ngModelChange)="actualizarCampo('telefono', $event)"
+                    [value]="form().telefono"
+                    (input)="onCampoEntrada('telefono', $event)"
                     name="docenteTelefono" />
                 </label>
               </div>
@@ -229,8 +229,8 @@
                 <input
                   type="text"
                   placeholder="Ejemplo: Matematica"
-                  [ngModel]="form().especialidad"
-                  (ngModelChange)="actualizarCampo('especialidad', $event)"
+                  [value]="form().especialidad"
+                  (input)="onCampoEntrada('especialidad', $event)"
                   name="docenteEspecialidad" />
               </label>
 
@@ -241,8 +241,8 @@
                     placeholder="docente@colegio.edu.pe"
                     maxlength="120"
                     autocomplete="email"
-                  [ngModel]="form().correo"
-                  (ngModelChange)="actualizarCampo('correo', $event)"
+                  [value]="form().correo"
+                  (input)="onCampoEntrada('correo', $event)"
                   name="docenteCorreo" />
               </label>
 

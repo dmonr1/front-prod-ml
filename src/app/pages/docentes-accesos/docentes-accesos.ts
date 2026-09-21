@@ -143,6 +143,13 @@ export class DocentesAccesos {
     this.form.update((actual) => ({ ...actual, [campo]: valorNormalizado }));
   }
 
+  onCampoEntrada(campo: keyof DocenteRegistroForm, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const valorNormalizado = this.normalizarCampo(campo, input.value);
+    input.value = valorNormalizado;
+    this.actualizarCampo(campo, valorNormalizado);
+  }
+
   abrirPanelRegistro(): void {
     this.cerrandoPanelRegistro.set(false);
     this.mostrarPanelRegistro.set(true);
