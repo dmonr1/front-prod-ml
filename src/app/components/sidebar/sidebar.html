@@ -98,24 +98,6 @@
         </div>
       </div>
     </div>
-    <button
-      class="theme-switch"
-      type="button"
-      [class.dark]="isDarkMode()"
-      [attr.aria-pressed]="isDarkMode()"
-      [title]="isDarkMode() ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
-      (click)="toggleTheme()"
-    >
-      <span class="theme-switch-icon is-sun">
-        <i class="fa-solid fa-sun"></i>
-      </span>
-      <span class="theme-switch-track">
-        <span class="theme-switch-thumb"></span>
-      </span>
-      <span class="theme-switch-icon is-moon">
-        <i class="fa-solid fa-moon"></i>
-      </span>
-    </button>
     <button class="logout" type="button" [title]="collapsed() ? 'Cerrar sesion' : ''" (click)="cerrarSesion()">
       <i class="fa-solid fa-right-from-bracket"></i>
       <span class="nav-label">Cerrar sesion</span>

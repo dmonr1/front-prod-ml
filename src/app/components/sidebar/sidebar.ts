@@ -5,7 +5,6 @@ import { BrandMark } from '../brand-mark/brand-mark';
 import { AuthService } from '../../services/auth/auth.service';
 import { DocenteService } from '../../services/academico/docente.service';
 import { Docente } from '../../models/docente';
-import { ThemeService } from '../../services/ui/theme.service';
 
 export interface SidebarChildItem {
   label: string;
@@ -32,14 +31,12 @@ export class Sidebar implements OnInit {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   private readonly docenteService = inject(DocenteService);
-  private readonly themeService = inject(ThemeService);
   private readonly storageKey = 'academic-analytics-sidebar-open';
 
   readonly collapsed = signal(localStorage.getItem('academic-analytics-sidebar') === 'collapsed');
   readonly expandedSections = signal(this.obtenerSeccionesIniciales());
   readonly userFlyoutOpen = signal(false);
   readonly docenteVinculado = signal<Docente | null>(null);
-  readonly isDarkMode = this.themeService.isDark;
   readonly items = input<SidebarItem[]>([]);
   readonly userName = input('Usuario del sistema');
   readonly roleLabel = input('Acceso institucional');
@@ -66,10 +63,6 @@ export class Sidebar implements OnInit {
 
   cerrarUserFlyout(): void {
     this.userFlyoutOpen.set(false);
-  }
-
-  toggleTheme(): void {
-    this.themeService.toggleTheme();
   }
 
   toggleSection(item: SidebarItem): void {

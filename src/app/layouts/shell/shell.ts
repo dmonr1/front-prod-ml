@@ -76,18 +76,20 @@ export class Shell {
       });
     }
 
-    if (esTutor && this.tieneTutoriasActivas()) {
+    if (esAdmin || (esTutor && this.tieneTutoriasActivas())) {
       items.push({
         id: 'seguimiento',
         label: 'Seguimiento',
         icon: 'fa-solid fa-shield-heart',
         children: [
-          {
-            label: 'Seccion tutorada',
-            path: '/seccion-tutorada',
-            icon: 'fa-solid fa-users',
-            activePaths: ['/mis-asignaciones/tutorias']
-          },
+          ...(esTutor && this.tieneTutoriasActivas()
+            ? [{
+                label: 'Seccion tutorada',
+                path: '/seccion-tutorada',
+                icon: 'fa-solid fa-users',
+                activePaths: ['/mis-asignaciones/tutorias']
+              }]
+            : []),
           {
             label: 'Seguimiento de riesgo',
             path: '/predicciones',
