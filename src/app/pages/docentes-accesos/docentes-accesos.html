@@ -175,6 +175,7 @@
                   <input
                     type="text"
                     placeholder="Ejemplo: Juan Carlos"
+                    autocomplete="given-name"
                     [ngModel]="form().nombres"
                     (ngModelChange)="actualizarCampo('nombres', $event)"
                     name="docenteNombres" />
@@ -185,6 +186,7 @@
                   <input
                     type="text"
                     placeholder="Ejemplo: Perez Lopez"
+                    autocomplete="family-name"
                     [ngModel]="form().apellidos"
                     (ngModelChange)="actualizarCampo('apellidos', $event)"
                     name="docenteApellidos" />
@@ -209,8 +211,12 @@
                 <label>
                   Teléfono
                   <input
-                    type="text"
+                    type="tel"
                     placeholder="987654321"
+                    maxlength="9"
+                    inputmode="numeric"
+                    pattern="[0-9]{9}"
+                    autocomplete="tel"
                     [ngModel]="form().telefono"
                     (ngModelChange)="actualizarCampo('telefono', $event)"
                     name="docenteTelefono" />
@@ -230,9 +236,11 @@
 
               <label>
                 Correo institucional
-                <input
-                  type="email"
-                  placeholder="docente@colegio.edu.pe"
+                  <input
+                    type="email"
+                    placeholder="docente@colegio.edu.pe"
+                    maxlength="120"
+                    autocomplete="email"
                   [ngModel]="form().correo"
                   (ngModelChange)="actualizarCampo('correo', $event)"
                   name="docenteCorreo" />

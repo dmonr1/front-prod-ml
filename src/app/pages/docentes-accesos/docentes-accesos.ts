@@ -139,7 +139,8 @@ export class DocentesAccesos {
   }
 
   actualizarCampo(campo: keyof DocenteRegistroForm, valor: string): void {
-    this.form.update((actual) => ({ ...actual, [campo]: valor }));
+    const valorNormalizado = this.normalizarCampo(campo, valor);
+    this.form.update((actual) => ({ ...actual, [campo]: valorNormalizado }));
   }
 
   abrirPanelRegistro(): void {
@@ -215,6 +216,7 @@ export class DocentesAccesos {
     const nombres = form.nombres.trim();
     const apellidos = form.apellidos.trim();
     const dni = form.dni.trim();
+    const telefono = form.telefono.trim();
     const correo = form.correo.trim();
 
     if (!nombres || !apellidos || !dni || !correo) {
@@ -237,11 +239,31 @@ export class DocentesAccesos {
       return;
     }
 
+    if (telefono && !/^\d{9}$/.test(telefono)) {
+      this.mostrarAlerta(
+        'warning',
+        'Telefono no valido',
+        'El telefono debe contener exactamente 9 digitos numericos.',
+        { confirmText: null, autoCloseMs: 3200 }
+      );
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+      this.mostrarAlerta(
+        'warning',
+        'Correo no valido',
+        'Ingresa un correo con un formato valido, por ejemplo docente@colegio.edu.pe.',
+        { confirmText: null, autoCloseMs: 3200 }
+      );
+      return;
+    }
+
     const payload: DocentePayload = {
       nombres,
       apellidos,
       dni,
-      telefono: form.telefono.trim() || null,
+      telefono: telefono || null,
       especialidad: form.especialidad.trim() || null,
       correo
     };
@@ -270,6 +292,22 @@ export class DocentesAccesos {
         );
       }
     });
+  }
+
+  private normalizarCampo(campo: keyof DocenteRegistroForm, valor: string): string {
+    if (campo === 'dni') {
+      return valor.replace(/\D/g, '').slice(0, 8);
+    }
+
+    if (campo === 'telefono') {
+      return valor.replace(/\D/g, '').slice(0, 9);
+    }
+
+    if (campo === 'nombres' || campo === 'apellidos') {
+      return valor.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ'\-\s]/g, '').replace(/\s{2,}/g, ' ');
+    }
+
+    return valor;
   }
 
   guardarAcceso(): void {
