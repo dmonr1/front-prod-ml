@@ -55,8 +55,11 @@ export class Predicciones {
   readonly vistaActiva = signal<VistaPrediccion>('global');
   readonly cargandoFiltros = signal(true);
   readonly cargandoVista = signal(false);
+  readonly recalculando = signal(false);
   readonly error = signal<string | null>(null);
   readonly alertaConexionAbierta = signal(false);
+  readonly alertaRecalculoAbierta = signal(false);
+  readonly mensajeRecalculo = signal('');
 
   readonly periodosEvaluacion = signal<PeriodoEvaluacion[]>([]);
   readonly secciones = signal<Seccion[]>([]);
@@ -73,6 +76,15 @@ export class Predicciones {
   readonly resumenApi = signal<ResumenPrediccion | null>(null);
   readonly prediccionesGlobales = signal<PrediccionVista[]>([]);
   readonly prediccionesCurso = signal<PrediccionVista[]>([]);
+
+  readonly puedeRecalcular = computed(() => {
+    const usuario = this.authService.obtenerUsuario();
+    return Boolean(
+      usuario?.roles.includes('ADMIN') ||
+      usuario?.roles.includes('DOCENTE_TUTOR') ||
+      usuario?.esTutor
+    );
+  });
 
   constructor() {
     this.cargarFiltros();
@@ -543,6 +555,35 @@ export class Predicciones {
     this.asegurarSeleccion();
   }
 
+  recalcularPredicciones(): void {
+    const periodoEvaluacionId = this.periodoEvaluacionSeleccionadoId();
+    const seccionId = this.seccionSeleccionadaId();
+
+    if (!periodoEvaluacionId || !seccionId || this.recalculando()) {
+      return;
+    }
+
+    this.recalculando.set(true);
+    this.error.set(null);
+    this.alertaConexionAbierta.set(false);
+
+    this.prediccionService.recalcular(periodoEvaluacionId, seccionId).subscribe({
+      next: (respuesta) => {
+        this.recalculando.set(false);
+        this.mensajeRecalculo.set(
+          `${respuesta.matriculasProcesadas} alumnos procesados con el modelo ${respuesta.modeloVersion}.`
+        );
+        this.alertaRecalculoAbierta.set(true);
+        this.cargarVista();
+      },
+      error: (error) => {
+        this.recalculando.set(false);
+        this.error.set(error?.error?.mensaje ?? 'No se pudieron recalcular las predicciones.');
+        this.alertaConexionAbierta.set(true);
+      }
+    });
+  }
+
   reintentarCarga(): void {
     this.alertaConexionAbierta.set(false);
     this.error.set(null);
@@ -557,6 +598,10 @@ export class Predicciones {
 
   cerrarAlertaError(): void {
     this.alertaConexionAbierta.set(false);
+  }
+
+  cerrarAlertaRecalculo(): void {
+    this.alertaRecalculoAbierta.set(false);
   }
 
   seleccionarPrediccion(id: number): void {

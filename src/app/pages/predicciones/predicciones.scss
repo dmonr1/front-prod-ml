@@ -274,6 +274,34 @@
   gap: 16px;
 }
 
+.recalculate-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 13px;
+  border: 1px solid #1d5fc4;
+  border-radius: 8px;
+  background: #1d5fc4;
+  color: #ffffff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease, opacity 160ms ease;
+}
+
+.recalculate-button:not(:disabled):hover {
+  background: #174a98;
+  border-color: #174a98;
+}
+
+.recalculate-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
 .view-switch {
   position: relative;
   display: inline-flex;

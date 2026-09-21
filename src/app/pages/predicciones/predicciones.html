@@ -81,6 +81,17 @@
               }
             </div>
             <div class="toolbar-top">
+              @if (puedeRecalcular()) {
+              <button
+                type="button"
+                class="recalculate-button"
+                [disabled]="recalculando() || !periodoEvaluacionSeleccionadoId() || !seccionSeleccionadaId()"
+                (click)="recalcularPredicciones()">
+                <i [class]="recalculando() ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-arrows-rotate'"></i>
+                <span>{{ recalculando() ? 'Actualizando...' : 'Actualizar riesgo' }}</span>
+              </button>
+              }
+
               <div class="view-switch" [class.is-curso]="vistaActiva() === 'curso'">
                 <span class="view-switch-thumb" aria-hidden="true"></span>
                 <button type="button" class="view-pill" [class.active]="vistaActiva() === 'global'"
@@ -406,6 +417,14 @@
       (confirm)="reintentarCarga()"
       (cancel)="cerrarAlertaError()"
       (dismiss)="cerrarAlertaError()" />
+
+    <app-custom-alert
+      [open]="alertaRecalculoAbierta()"
+      type="success"
+      title="Predicciones actualizadas"
+      [message]="mensajeRecalculo()"
+      [confirmText]="null"
+      [autoCloseMs]="3500"
+      (dismiss)="cerrarAlertaRecalculo()" />
   </section>
 </app-shell>
-

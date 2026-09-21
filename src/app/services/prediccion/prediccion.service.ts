@@ -39,6 +39,14 @@ export interface ResumenPrediccion {
   promedioPuntajeRiesgo: number | null;
 }
 
+export interface RecalculoPrediccionesRespuesta {
+  mensaje: string;
+  periodoEvaluacionId: number;
+  seccionId: number;
+  matriculasProcesadas: number;
+  modeloVersion: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PrediccionService {
   private readonly http = inject(HttpClient);
@@ -62,6 +70,12 @@ export class PrediccionService {
 
   obtenerResumen(periodoEvaluacionId: number, seccionId: number): Observable<ResumenPrediccion> {
     return this.http.get<ResumenPrediccion>(`${this.api}/resumen`, {
+      params: { periodoEvaluacionId, seccionId }
+    });
+  }
+
+  recalcular(periodoEvaluacionId: number, seccionId: number): Observable<RecalculoPrediccionesRespuesta> {
+    return this.http.post<RecalculoPrediccionesRespuesta>(`${this.api}/recalcular`, null, {
       params: { periodoEvaluacionId, seccionId }
     });
   }
