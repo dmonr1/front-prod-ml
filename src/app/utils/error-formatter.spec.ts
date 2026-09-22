@@ -31,13 +31,13 @@ describe('Error Formatter Utility', () => {
   it('debe manejar codigo 403 con mensaje de permisos', () => {
     const errorObj = { status: 403, error: { message: 'Forbidden' } };
     const formateado = formatearMensajeError(errorObj);
-    expect(formateado).toBe('No tienes permisos suficientes para realizar esta accion.');
+    expect(formateado).toBe('No tienes permisos suficientes para realizar esta acción.');
   });
 
   it('debe manejar codigo 404 con mensaje amigable', () => {
     const errorObj = { status: 404, error: { message: 'Not Found' } };
     const formateado = formatearMensajeError(errorObj);
-    expect(formateado).toBe('El registro o recurso solicitado no fue encontrado o ya no esta disponible.');
+    expect(formateado).toBe('El registro o recurso solicitado no fue encontrado o ya no está disponible.');
   });
 
   it('debe traducir violaciones de constraint SQL a mensaje de duplicidad', () => {
@@ -46,7 +46,7 @@ describe('Error Formatter Utility', () => {
       error: { message: 'could not execute statement; SQL [n/a]; constraint [uk_codigo_alumno]' }
     };
     const formateado = formatearMensajeError(errorObj);
-    expect(formateado).toContain('Ya existe un registro con informacion duplicada');
+    expect(formateado).toContain('Ya existe un registro con información duplicada');
   });
 
   it('debe preservar mensajes claros de negocio del backend', () => {

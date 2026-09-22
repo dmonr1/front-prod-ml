@@ -39,6 +39,12 @@
 }
 
 .card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-self: stretch;
   padding-bottom: 10px;
   border-bottom: 1px solid #e8eef5;
 }
@@ -154,15 +160,7 @@
   min-height: 0;
   height: 100%;
   width: 100%;
-  grid-template-rows: auto minmax(0, 1fr);
-}
-
-.section-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
-  flex-wrap: wrap;
+  grid-template-rows: minmax(0, 1fr);
 }
 
 .content {
@@ -672,10 +670,6 @@ select:focus {
   .assignment-card {
     min-height: auto;
     padding: 18px;
-  }
-
-  .section-head {
-    flex-direction: column;
   }
 
   .view-switch {

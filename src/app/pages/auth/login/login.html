@@ -7,7 +7,7 @@
   @if (introVisible()) {
   <div class="login-intro-overlay" aria-hidden="true">
     <div class="login-intro-text">
-      <span class="login-intro-text-inner">Predice antes. Actua mejor.</span>
+      <span class="login-intro-text-inner">Predice antes. Actúa mejor.</span>
     </div>
   </div>
   }
@@ -273,7 +273,7 @@
                       formControlName="password" placeholder="Ingresa tu contraseña" autocomplete="current-password"
                       (keydown)="bloquearEspacio($event)" (input)="limpiarEspacios('password')" />
                     <button class="password-toggle" type="button" (click)="toggleMostrarPassword()"
-                      [attr.aria-label]="mostrarPassword() ? 'Ocultar contrasena' : 'Mostrar contrasena'">
+                      [attr.aria-label]="mostrarPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'">
                       @if (mostrarPassword()) {
                       <svg viewBox="0 0 24 24" aria-hidden="true">
                         <path
@@ -304,7 +304,7 @@
                   </label>
 
                   <button class="secondary-link" type="button" (click)="abrirRecuperacion()">
-                    Olvidaste tu contraseña?
+                    ¿Olvidaste tu contraseña?
                   </button>
                 </div>
 
@@ -336,7 +336,7 @@
               </svg>
               <span>Volver</span>
             </button>
-            <div class="recovery-steps" aria-label="Progreso de recuperacion de contrasena"
+            <div class="recovery-steps" aria-label="Progreso de recuperación de contraseña"
               [class.step-buscar]="recoveryStep() === 'buscar'"
               [class.step-correo]="recoveryStep() === 'correo'"
               [class.step-verificar]="recoveryStep() === 'verificar'"
@@ -360,16 +360,16 @@
               @switch (recoveryStep()) {
               @case ('buscar') { Busca tu usuario }
               @case ('correo') { Confirma tu correo }
-              @case ('verificar') { Verifica el codigo }
-              @default { Nueva contrasena }
+              @case ('verificar') { Verifica el código }
+              @default { Nueva contraseña }
               }
             </h2>
             <p class="auth-copy">
               @switch (recoveryStep()) {
               @case ('buscar') { Ingresa tu usuario para localizar la cuenta que deseas recuperar. }
-              @case ('correo') { El codigo se enviara al correo vinculado: {{ correoRecuperacionEnmascarado() }}. }
-              @case ('verificar') { Revisa tu correo e ingresa el codigo de seis digitos recibido. }
-              @default { Define una nueva contrasena para restablecer tu acceso institucional. }
+              @case ('correo') { El código se enviará al correo vinculado: {{ correoRecuperacionEnmascarado() }}. }
+              @case ('verificar') { Revisa tu correo e ingresa el código de seis dígitos recibido. }
+              @default { Define una nueva contraseña para restablecer tu acceso institucional. }
               }
             </p>
 
@@ -393,11 +393,11 @@
 
                 @if (recoveryStep() === 'verificar') {
                 <label class="otp-label">
-                  Codigo de verificacion
-                  <div class="otp-inputs" role="group" aria-label="Codigo de verificacion de 6 digitos">
+                  Código de verificación
+                  <div class="otp-inputs" role="group" aria-label="Código de verificación de 6 dígitos">
                     @for (digit of otpDigits(); track $index) {
                     <input #otpInput class="otp-input" type="text" inputmode="numeric" autocomplete="one-time-code"
-                      maxlength="1" [value]="digit" [attr.aria-label]="'Digito ' + ($index + 1)"
+                      maxlength="1" [value]="digit" [attr.aria-label]="'Dígito ' + ($index + 1)"
                       (input)="actualizarDigitoCodigo($index, $event)" (keydown)="manejarTeclaCodigo($index, $event)"
                       (paste)="pegarCodigo($event)" />
                     }
@@ -405,7 +405,7 @@
                   <small class="otp-help">
                     Si no encuentras el correo, revisa la bandeja de Spam.
                     @if (resendCountdown() > 0) {
-                    <span>Podras pedir otro codigo en {{ resendCountdown() }}s.</span>
+                    <span>Podrás pedir otro código en {{ resendCountdown() }}s.</span>
                     } @else {
                     <button class="otp-resend" type="button" (click)="reenviarCodigoRecuperacion()">
                       Volver a enviar
@@ -417,14 +417,14 @@
 
                 @if (recoveryStep() === 'cambiar') {
                 <label>
-                  Nueva contrasena
+                  Nueva contraseña
                   <div class="password-field">
                     <input id="recovery-nueva-password" [type]="mostrarRecoveryPassword() ? 'text' : 'password'"
-                      formControlName="nuevaPassword" placeholder="Ingresa tu nueva contrasena"
+                      formControlName="nuevaPassword" placeholder="Ingresa tu nueva contraseña"
                       autocomplete="new-password" (keydown)="bloquearEspacio($event)"
                       (input)="limpiarEspacios('nuevaPassword', 'recoveryForm')" />
                     <button class="password-toggle" type="button" (click)="toggleMostrarRecoveryPassword()"
-                      [attr.aria-label]="mostrarRecoveryPassword() ? 'Ocultar contrasena' : 'Mostrar contrasena'">
+                      [attr.aria-label]="mostrarRecoveryPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'">
                       @if (mostrarRecoveryPassword()) {
                       <svg viewBox="0 0 24 24" aria-hidden="true">
                         <path
@@ -458,15 +458,15 @@
                 </label>
 
                 <label>
-                  Confirmar contrasena
+                  Confirmar contraseña
                   <div class="password-field">
                     <input id="recovery-confirmar-password"
                       [type]="mostrarRecoveryConfirmPassword() ? 'text' : 'password'"
-                      formControlName="confirmarPassword" placeholder="Confirma tu nueva contrasena"
+                      formControlName="confirmarPassword" placeholder="Confirma tu nueva contraseña"
                       autocomplete="new-password" (keydown)="bloquearEspacio($event)"
                       (input)="limpiarEspacios('confirmarPassword', 'recoveryForm')" />
                     <button class="password-toggle" type="button" (click)="toggleMostrarRecoveryConfirmPassword()"
-                      [attr.aria-label]="mostrarRecoveryConfirmPassword() ? 'Ocultar contrasena' : 'Mostrar contrasena'">
+                      [attr.aria-label]="mostrarRecoveryConfirmPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'">
                       @if (mostrarRecoveryConfirmPassword()) {
                       <svg viewBox="0 0 24 24" aria-hidden="true">
                         <path
@@ -490,10 +490,10 @@
                   recoveryStep() === 'buscar'
                   ? (recoveryLoading() ? 'Buscando...' : 'Buscar usuario')
                   : recoveryStep() === 'correo'
-                  ? (recoveryLoading() ? 'Enviando...' : 'Enviar codigo')
+                  ? (recoveryLoading() ? 'Enviando...' : 'Enviar código')
                   : recoveryStep() === 'verificar'
-                  ? (recoveryLoading() ? 'Verificando...' : 'Verificar codigo')
-                  : (recoveryLoading() ? 'Actualizando...' : 'Actualizar contrasena')
+                  ? (recoveryLoading() ? 'Verificando...' : 'Verificar código')
+                  : (recoveryLoading() ? 'Actualizando...' : 'Actualizar contraseña')
                   }}
                 </button>
               </form>

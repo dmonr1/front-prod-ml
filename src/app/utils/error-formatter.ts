@@ -5,17 +5,17 @@
  */
 
 const ERRORES_ESTATUS_HTTP: Record<number, string> = {
-  0: 'No se pudo conectar con el servidor. Revisa tu conexion a internet o verifica que el servicio este disponible.',
-  400: 'Los datos enviados no son validos o estan incompletos. Revisa la informacion ingresada.',
-  401: 'Tu sesion ha expirado o no cuentas con autorizacion. Inicia sesion nuevamente.',
-  403: 'No tienes permisos suficientes para realizar esta accion.',
-  404: 'El registro o recurso solicitado no fue encontrado o ya no esta disponible.',
-  409: 'Ya existe un registro con esta informacion o la operacion genera un conflicto.',
+  0: 'No se pudo conectar con el servidor. Revisa tu conexión a internet o verifica que el servicio esté disponible.',
+  400: 'Los datos enviados no son válidos o están incompletos. Revisa la información ingresada.',
+  401: 'Tu sesión ha expirado o no cuentas con autorización. Inicia sesión nuevamente.',
+  403: 'No tienes permisos suficientes para realizar esta acción.',
+  404: 'El registro o recurso solicitado no fue encontrado o ya no está disponible.',
+  409: 'Ya existe un registro con esta información o la operación genera un conflicto.',
   422: 'No se pudo procesar la solicitud con los datos proporcionados.',
-  500: 'Ocurrio un problema interno en el servidor. Por favor, intenta nuevamente en unos momentos.',
+  500: 'Ocurrió un problema interno en el servidor. Por favor, intenta nuevamente en unos momentos.',
   502: 'El servidor no se encuentra disponible en este momento.',
-  503: 'El servicio esta temporalmente fuera de linea por mantenimiento.',
-  504: 'El servidor tardo demasiado tiempo en responder. Intenta nuevamente.'
+  503: 'El servicio está temporalmente fuera de línea por mantenimiento.',
+  504: 'El servidor tardó demasiado tiempo en responder. Intenta nuevamente.'
 };
 
 const PATRONES_TECNICOS: RegExp[] = [
@@ -92,7 +92,7 @@ function extraerMensajeSpring(texto: string): string | null {
  */
 export function sanitizarMensajeAlerta(
   mensaje: string | null | undefined,
-  fallback: string = 'Ocurrio un problema al procesar la solicitud. Intenta nuevamente.'
+  fallback: string = 'Ocurrió un problema al procesar la solicitud. Intenta nuevamente.'
 ): string {
   if (!mensaje || typeof mensaje !== 'string') {
     return fallback;
@@ -111,12 +111,12 @@ export function sanitizarMensajeAlerta(
 
   // Si es un error de conflicto de base de datos conocido
   if (/could not execute statement|DataIntegrityViolation|duplicate key|unique constraint/i.test(texto)) {
-    return 'Ya existe un registro con informacion duplicada (por ejemplo nombre, codigo, DNI o correo en uso).';
+    return 'Ya existe un registro con información duplicada (por ejemplo nombre, código, DNI o correo en uso).';
   }
 
   // Si es un error de conexion HTTP
   if (/Http failure response/i.test(texto)) {
-    return 'No se pudo conectar con el servidor. Revisa tu conexion o verifica que el servicio este activo.';
+    return 'No se pudo conectar con el servidor. Revisa tu conexión o verifica que el servicio esté activo.';
   }
 
   // Si es puramente un codigo o texto tecnico
@@ -133,7 +133,7 @@ export function sanitizarMensajeAlerta(
  */
 export function formatearMensajeError(
   error: any,
-  fallbackDefault: string = 'Ocurrio un problema al procesar la solicitud.'
+  fallbackDefault: string = 'Ocurrió un problema al procesar la solicitud.'
 ): string {
   if (!error) {
     return fallbackDefault;
@@ -172,7 +172,7 @@ export function formatearMensajeError(
   // 3. Si el candidato contiene un mensaje de negocio humano o conflicto de BD conocido
   if (candidato) {
     if (/could not execute statement|DataIntegrityViolation|duplicate key|unique constraint|foreign key/i.test(candidato)) {
-      return 'Ya existe un registro con informacion duplicada (por ejemplo nombre, codigo, DNI o correo en uso).';
+      return 'Ya existe un registro con información duplicada (por ejemplo nombre, código, DNI o correo en uso).';
     }
 
     const extraido = extraerMensajeSpring(candidato);
@@ -189,7 +189,7 @@ export function formatearMensajeError(
   if (status !== undefined && ERRORES_ESTATUS_HTTP[status]) {
     // Si tenemos un fallback especifico provisto por el componente (ej: "No se pudo registrar la seccion"),
     // y el estatus es 400 (Bad Request genérico), combinamos con contexto si es oportuno
-    if (status === 400 && fallbackDefault && fallbackDefault !== 'Ocurrio un problema al procesar la solicitud.') {
+    if (status === 400 && fallbackDefault && fallbackDefault !== 'Ocurrió un problema al procesar la solicitud.') {
       return normalizarTexto(fallbackDefault);
     }
     return ERRORES_ESTATUS_HTTP[status];

@@ -168,7 +168,7 @@
                   </label>
 
                   <label>
-                    Numero de documento
+                    Número de documento
                     <input type="text" [ngModel]="formAlumno().numeroDocumento"
                       (ngModelChange)="actualizarNumeroDocumentoAlumno($event)" name="numeroDocumento"
                       [attr.maxlength]="tipoDocumentoAlumno()?.longitud ?? 15"

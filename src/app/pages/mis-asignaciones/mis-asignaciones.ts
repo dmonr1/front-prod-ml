@@ -73,7 +73,7 @@ export class MisAsignaciones implements OnInit {
 
         if (!periodoActual) {
           this.cargando.set(true);
-          this.error.set('No existe un periodo academico configurado para cargar asignaciones.');
+          this.error.set('No existe un período académico configurado para cargar asignaciones.');
           this.mostrarError.set(true);
           return;
         }
@@ -84,7 +84,7 @@ export class MisAsignaciones implements OnInit {
       error: (error) => {
         this.cargando.set(true);
         this.error.set(
-          formatearMensajeError(error, 'No se pudo resolver el periodo academico actual.')
+          formatearMensajeError(error, 'No se pudo resolver el período académico actual.')
         );
         this.mostrarError.set(true);
       }
@@ -97,14 +97,14 @@ export class MisAsignaciones implements OnInit {
 
     if (!docenteId) {
       this.cargando.set(true);
-      this.error.set('Tu usuario no tiene un docente vinculado. Revisa la configuracion del backend.');
+      this.error.set('Tu usuario no tiene un docente vinculado. Revisa la configuración del backend.');
       this.mostrarError.set(true);
       return;
     }
 
     if (!periodoAcademicoId) {
       this.cargando.set(true);
-      this.error.set('No se pudo identificar el periodo academico actual.');
+      this.error.set('No se pudo identificar el período académico actual.');
       this.mostrarError.set(true);
       return;
     }
@@ -139,7 +139,7 @@ export class MisAsignaciones implements OnInit {
   }
 
   obtenerDescripcion(asignacion: AsignacionDocente): string {
-    return `${asignacion.grado} - Seccion ${asignacion.seccion}`;
+    return `${asignacion.grado} - Sección ${asignacion.seccion}`;
   }
 
   obtenerAnioPeriodo(etiqueta: string): string {
@@ -148,7 +148,7 @@ export class MisAsignaciones implements OnInit {
   }
 
   obtenerDescripcionTutoria(tutoria: Tutoria): string {
-    return `${tutoria.grado} - Seccion ${tutoria.seccion}`;
+    return `${tutoria.grado} - Sección ${tutoria.seccion}`;
   }
 
   obtenerResumenAlumnosTutoria(tutoria: Tutoria): string {

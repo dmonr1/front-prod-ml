@@ -34,7 +34,7 @@ interface PrediccionVista extends PrediccionRiesgo {
   factores: string[];
   alertaPrincipal: string;
   recomendacionPrincipal: string;
-  tendencia: 'Critico' | 'Controlado';
+  tendencia: 'Crítico' | 'Controlado';
   factorDominante: 'asistencia' | 'rendimiento' | 'mixto' | 'controlado';
 }
 
@@ -267,7 +267,7 @@ export class Predicciones {
     const registros = this.prediccionesFiltradas();
     return [
       {
-        label: 'Alumnos criticos',
+        label: 'Alumnos críticos',
         value: registros.filter((item) => item.nivelRiesgoNormalizado === 'ALTO').length.toString(),
         tone: 'high'
       },
@@ -278,7 +278,7 @@ export class Predicciones {
       },
       {
         label: 'Modelo activo',
-        value: this.prediccionSeleccionada()?.modeloVersion || 'Sin version',
+        value: this.prediccionSeleccionada()?.modeloVersion || 'Sin versión',
         tone: 'low'
       }
     ];
@@ -360,7 +360,7 @@ export class Predicciones {
         value: `${this.formatearNumero(asistencia.porcentaje)}%`
       },
       {
-        label: 'Meta de asistencia del periodo',
+        label: 'Meta de asistencia del período',
         value: `${this.formatearNumero(asistencia.meta)}%`
       },
       {
@@ -404,7 +404,7 @@ export class Predicciones {
         {
           label: 'Alumnos evaluados',
           value: `${resumen.total}`,
-          detail: 'Casos visibles en esta seccion.',
+          detail: 'Casos visibles en esta sección.',
           icon: 'fa-solid fa-users',
           tone: 'neutral'
         },
@@ -418,14 +418,14 @@ export class Predicciones {
         {
           label: 'Riesgo promedio',
           value: `${this.formatearNumero(resumen.promedio)}%`,
-          detail: 'Probabilidad promedio de fracaso en la seccion.',
+          detail: 'Probabilidad promedio de fracaso en la sección.',
           icon: 'fa-solid fa-chart-line',
           tone: 'neutral'
         },
         {
           label: 'Riesgo alto',
           value: `${resumen.alto}`,
-          detail: 'Alumnos con atencion inmediata.',
+          detail: 'Alumnos con atención inmediata.',
           icon: 'fa-solid fa-triangle-exclamation',
           tone: 'high'
         }
@@ -436,7 +436,7 @@ export class Predicciones {
       {
         label: 'Curso seleccionado',
         value: this.cursoSeleccionadoNombre() ?? 'Curso',
-        detail: 'Filtro activo del analisis por curso.',
+        detail: 'Filtro activo del análisis por curso.',
         icon: 'fa-solid fa-book-open',
         tone: 'neutral'
       },
@@ -470,7 +470,7 @@ export class Predicciones {
     if (promedio >= 70) {
       return {
         nivel: 'Alto',
-        detalle: 'La seccion requiere seguimiento prioritario.',
+        detalle: 'La sección requiere seguimiento prioritario.',
         tone: 'high' as const
       };
     }
@@ -478,14 +478,14 @@ export class Predicciones {
     if (promedio >= 40) {
       return {
         nivel: 'Medio',
-        detalle: 'La seccion necesita monitoreo cercano.',
+        detalle: 'La sección necesita monitoreo cercano.',
         tone: 'medium' as const
       };
     }
 
     return {
       nivel: 'Bajo',
-      detalle: 'La seccion mantiene un riesgo controlado.',
+      detalle: 'La sección mantiene un riesgo controlado.',
       tone: 'low' as const
     };
   });
@@ -725,7 +725,7 @@ export class Predicciones {
       },
       error: () => {
         this.cargandoFiltros.set(false);
-        this.error.set('No se pudieron cargar los filtros de prediccion.');
+        this.error.set('No se pudieron cargar los filtros de predicción.');
         this.alertaConexionAbierta.set(true);
       }
     });
@@ -829,8 +829,8 @@ export class Predicciones {
         recomendacion?.descripcion ??
         (item.cursoId != null
           ? 'Aplicar seguimiento focalizado por curso y revisar evaluaciones recientes.'
-          : 'Mantener monitoreo tutorial y seguimiento academico general.'),
-      tendencia: nivel === 'ALTO' ? 'Critico' : 'Controlado'
+          : 'Mantener monitoreo tutorial y seguimiento académico general.'),
+      tendencia: nivel === 'ALTO' ? 'Crítico' : 'Controlado'
     };
   }
 
@@ -915,18 +915,18 @@ export class Predicciones {
     if (hayAsistenciaAlta && hayRendimientoFragil) {
       const piezas = [
         promedio != null ? `promedio ${this.formatearNumero(promedio)}` : null,
-        peorNota != null ? `nota minima ${this.formatearNumero(peorNota)}` : null,
+        peorNota != null ? `nota mínima ${this.formatearNumero(peorNota)}` : null,
         notaExamen != null ? `examen ${this.formatearNumero(notaExamen)}` : null
       ].filter(Boolean);
 
       return nivel === 'ALTO'
-        ? `Asiste regularmente (${this.formatearNumero(asistencia)}%), pero sus resultados siguen siendo fragiles${piezas.length ? `: ${piezas.join(', ')}` : ''}. Requiere refuerzo academico prioritario.`
-        : `Mantiene buena asistencia (${this.formatearNumero(asistencia)}%), pero aun presenta fragilidad academica${piezas.length ? `: ${piezas.join(', ')}` : ''}.`;
+        ? `Asiste regularmente (${this.formatearNumero(asistencia)}%), pero sus resultados siguen siendo frágiles${piezas.length ? `: ${piezas.join(', ')}` : ''}. Requiere refuerzo académico prioritario.`
+        : `Mantiene buena asistencia (${this.formatearNumero(asistencia)}%), pero aún presenta fragilidad académica${piezas.length ? `: ${piezas.join(', ')}` : ''}.`;
     }
 
     if (asistencia != null && asistencia < 60) {
       return nivel === 'ALTO'
-        ? `Alto riesgo de fracaso por asistencia critica (${this.formatearNumero(asistencia)}%).`
+        ? `Alto riesgo de fracaso por asistencia crítica (${this.formatearNumero(asistencia)}%).`
         : `Seguimiento por asistencia baja (${this.formatearNumero(asistencia)}%).`;
     }
 
@@ -942,18 +942,18 @@ export class Predicciones {
     ) {
       const detallePromedio = [
         promedio != null ? `promedio ${this.formatearNumero(promedio)}` : null,
-        peorNota != null ? `nota minima ${this.formatearNumero(peorNota)}` : null,
+        peorNota != null ? `nota mínima ${this.formatearNumero(peorNota)}` : null,
         notaExamen != null ? `examen ${this.formatearNumero(notaExamen)}` : null
       ]
         .filter(Boolean)
         .join(', ');
       return nivel === 'ALTO'
-        ? `Alto riesgo de fracaso por rendimiento academico comprometido${detallePromedio ? `: ${detallePromedio}` : ''}.`
-        : `Seguimiento por rendimiento academico vulnerable${detallePromedio ? `: ${detallePromedio}` : ''}.`;
+        ? `Alto riesgo de fracaso por rendimiento académico comprometido${detallePromedio ? `: ${detallePromedio}` : ''}.`
+        : `Seguimiento por rendimiento académico vulnerable${detallePromedio ? `: ${detallePromedio}` : ''}.`;
     }
 
     if (asistencia != null && asistencia < 80 && promedio != null && promedio < 14) {
-      return `Riesgo ${nivel.toLowerCase()} de fracaso por combinacion de asistencia (${this.formatearNumero(asistencia)}%) y rendimiento (${this.formatearNumero(promedio)}).`;
+      return `Riesgo ${nivel.toLowerCase()} de fracaso por combinación de asistencia (${this.formatearNumero(asistencia)}%) y rendimiento (${this.formatearNumero(promedio)}).`;
     }
 
     if (nivel === 'ALTO') {
@@ -1074,7 +1074,7 @@ export class Predicciones {
 
   etiquetaSeccion(seccion: Seccion | null): string {
     if (!seccion) {
-      return 'Sin seccion';
+      return 'Sin sección';
     }
 
     return `${seccion.gradoNombre ?? ''} ${seccion.nombre}`.trim();

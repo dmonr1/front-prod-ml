@@ -22,8 +22,8 @@ export class ConfiguracionAcademica {
   readonly modulos: ModuloMaestro[] = [
     {
       key: 'gestion-estudiantil',
-      title: 'Gestion estudiantil',
-      description: 'Centraliza periodos, grados, secciones y registro de alumnos dentro de un solo flujo por periodo academico.',
+      title: 'Gestión estudiantil',
+      description: 'Centraliza períodos, grados, secciones y registro de alumnos dentro de un solo flujo por período académico.',
       route: '/gestion-estudiantil',
       icon: 'fa-solid fa-user-graduate',
       status: 'prioridad',
@@ -32,16 +32,16 @@ export class ConfiguracionAcademica {
     {
       key: 'cursos',
       title: 'Cursos',
-      description: 'Registra los cursos que luego se asignaran a docentes y secciones.',
+      description: 'Registra los cursos que luego se asignarán a docentes y secciones.',
       route: '/cursos',
       icon: 'fa-solid fa-book-open-reader',
       status: 'operativo',
-      helper: 'Catalogo'
+      helper: 'Catálogo'
     },
     {
       key: 'docentes',
       title: 'Docentes y accesos',
-      description: 'Relaciona usuarios, docentes y multiples roles dentro del sistema.',
+      description: 'Relaciona usuarios, docentes y múltiples roles dentro del sistema.',
       route: '/docentes-accesos',
       icon: 'fa-solid fa-user-gear',
       status: 'operativo',
@@ -50,7 +50,7 @@ export class ConfiguracionAcademica {
     {
       key: 'asignaciones-docente',
       title: 'Asignaciones docentes',
-      description: 'Une docentes, cursos, secciones, periodos y tutorias dentro de un mismo flujo operativo.',
+      description: 'Une docentes, cursos, secciones, períodos y tutorías dentro de un mismo flujo operativo.',
       route: '/asignaciones-docente',
       icon: 'fa-solid fa-chalkboard-user',
       status: 'operativo',
@@ -58,8 +58,8 @@ export class ConfiguracionAcademica {
     },
     {
       key: 'tutorias',
-      title: 'Tutorias por seccion',
-      description: 'Relaciona cada seccion con su docente tutor para el seguimiento global del aula.',
+      title: 'Tutorías por sección',
+      description: 'Relaciona cada sección con su docente tutor para el seguimiento global del aula.',
       route: '/asignaciones-docente',
       icon: 'fa-solid fa-people-roof',
       status: 'operativo',

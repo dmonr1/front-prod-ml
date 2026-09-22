@@ -27,8 +27,8 @@
             <div class="student-meta">
               <h2>{{ detalle.alumnoNombreCompleto }}</h2>
               <span>{{ detalle.codigoAlumno }}</span>
-              <span>{{ detalle.grado }} · Seccion {{ detalle.seccion }}</span>
-              <span>Periodo {{ detalle.anioAcademico || 'Actual' }}</span>
+              <span>{{ detalle.grado }} · Sección {{ detalle.seccion }}</span>
+              <span>Período {{ detalle.anioAcademico || 'Actual' }}</span>
             </div>
           </article>
 
@@ -36,7 +36,7 @@
             <div class="section-head">
               <span class="eyebrow">Resumen</span>
               <h3>Casos detectados</h3>
-              <p>Selecciona el caso que quieres revisar con mas detalle.</p>
+              <p>Selecciona el caso que quieres revisar con más detalle.</p>
             </div>
 
             <div class="case-list">
@@ -76,7 +76,7 @@
               <div class="analysis-head">
                 <div class="head-card">
                   <div>
-                    <span class="eyebrow">Prediccion de riesgo academico</span>
+                    <span class="eyebrow">Predicción de riesgo académico</span>
                     <h3>{{ detalle.curso || 'Vista global del alumno' }}</h3>
                   </div>
 
@@ -132,7 +132,7 @@
               </div>
 
               <div class="hero-copy">
-                <h4>Interpretacion del riesgo</h4>
+                <h4>Interpretación del riesgo</h4>
                 <p>{{ detalle.alertaPrincipal }}</p>
               </div>
             </article>
@@ -171,8 +171,8 @@
             <article class="analysis-card evolution-card">
               <div class="analysis-head">
                 <div>
-                  <span class="eyebrow">Evolucion del riesgo</span>
-                  <h3>Por periodos de evaluacion</h3>
+                  <span class="eyebrow">Evolución del riesgo</span>
+                  <h3>Por períodos de evaluación</h3>
                 </div>
               </div>
 
@@ -224,7 +224,7 @@
               } @else {
               <div class="mini-state">
                 <i class="fa-solid fa-chart-line"></i>
-                <span>Aun no hay suficientes periodos para mostrar una evolucion de riesgo.</span>
+                <span>Aún no hay suficientes períodos para mostrar una evolución de riesgo.</span>
               </div>
               }
             </article>

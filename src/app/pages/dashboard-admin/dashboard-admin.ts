@@ -64,8 +64,8 @@ export class DashboardAdmin implements OnInit {
   readonly pendientes = signal<DashboardPending[]>([]);
 
   readonly accesos = [
-    { label: 'Gestion estudiantil', path: '/gestion-estudiantil', icon: 'fa-solid fa-users-gear' },
-    { label: 'Configuracion academica', path: '/configuracion-academica', icon: 'fa-solid fa-sliders' },
+    { label: 'Gestión estudiantil', path: '/gestion-estudiantil', icon: 'fa-solid fa-users-gear' },
+    { label: 'Configuración académica', path: '/configuracion-academica', icon: 'fa-solid fa-sliders' },
     { label: 'Docentes y accesos', path: '/docentes-accesos', icon: 'fa-solid fa-id-card' },
     { label: 'Asignaciones', path: '/asignaciones-docente', icon: 'fa-solid fa-diagram-project' },
     { label: 'Predicciones', path: '/predicciones', icon: 'fa-solid fa-chart-line' },
@@ -186,14 +186,14 @@ export class DashboardAdmin implements OnInit {
 
     this.kpis.set([
       {
-        label: 'Periodo academico',
+        label: 'Período académico',
         value: data.periodoActivo?.anio?.toString() ?? '--',
         icon: 'fa-regular fa-calendar',
         tone: 'blue',
-        detail: data.periodoActivo?.nombre ?? 'Sin periodo activo'
+        detail: data.periodoActivo?.nombre ?? 'Sin período activo'
       },
       {
-        label: 'Periodo evaluacion',
+        label: 'Período de evaluación',
         value: data.periodoEvaluacionActivo?.nombre ?? '--',
         icon: 'fa-regular fa-clock',
         tone: 'violet',
@@ -220,14 +220,14 @@ export class DashboardAdmin implements OnInit {
         value: `${totalSecciones}`,
         icon: 'fa-solid fa-layer-group',
         tone: 'amber',
-        detail: 'Secciones del periodo activo'
+        detail: 'Secciones del período activo'
       },
       {
         label: 'Cursos configurados',
         value: `${totalCursosPeriodo}`,
         icon: 'fa-solid fa-book-open',
         tone: 'rose',
-        detail: 'Cursos ligados al periodo actual'
+        detail: 'Cursos ligados al período actual'
       }
     ]);
 
@@ -243,12 +243,12 @@ export class DashboardAdmin implements OnInit {
         width: `${coberturaAlumnos}%`
       },
       {
-        label: 'Cursos configurados en el periodo',
+        label: 'Cursos configurados en el período',
         value: `${coberturaCursos}%`,
         width: `${coberturaCursos}%`
       },
       {
-        label: 'Periodos de evaluacion listos',
+        label: 'Períodos de evaluación listos',
         value: `${coberturaPeriodos}%`,
         width: `${coberturaPeriodos}%`
       }
@@ -257,24 +257,24 @@ export class DashboardAdmin implements OnInit {
     this.actividad.set([
       {
         time: data.periodoActivo?.fechaInicio?.slice(0, 10) ?? '--',
-        title: 'Periodo academico detectado',
+        title: 'Período académico detectado',
         detail: data.periodoActivo
           ? `${data.periodoActivo.nombre} ${data.periodoActivo.anio} se encuentra disponible en el dashboard.`
-          : 'Aun no se detecta un periodo academico activo.',
+          : 'Aún no se detecta un período académico activo.',
         icon: 'fa-regular fa-calendar'
       },
       {
         time: data.periodoEvaluacionActivo?.fechaInicio?.slice(5, 10) ?? '--',
-        title: 'Periodo de evaluacion activo',
+        title: 'Período de evaluación activo',
         detail: data.periodoEvaluacionActivo
           ? `${data.periodoEvaluacionActivo.nombre} es el corte usado para la vista general.`
-          : 'No hay un periodo de evaluacion activo para consolidar resumenes.',
+          : 'No hay un período de evaluación activo para consolidar resúmenes.',
         icon: 'fa-regular fa-clock'
       },
       {
         time: `${seccionesConPrediccion}/${totalSecciones || 0}`,
         title: 'Cobertura de secciones',
-        detail: 'Resume cuantas secciones ya tienen informacion suficiente para mostrar predicciones.',
+        detail: 'Resume cuántas secciones ya tienen información suficiente para mostrar predicciones.',
         icon: 'fa-solid fa-layer-group'
       },
       {
@@ -287,26 +287,26 @@ export class DashboardAdmin implements OnInit {
 
     const pendientes: DashboardPending[] = [];
     if (!data.periodoActivo) {
-      pendientes.push({ text: 'No se detecta un periodo academico activo para consolidar el tablero.' });
+      pendientes.push({ text: 'No se detecta un período académico activo para consolidar el tablero.' });
     }
     if (!data.periodoEvaluacionActivo) {
-      pendientes.push({ text: 'No hay un periodo de evaluacion activo para calcular el resumen general.' });
+      pendientes.push({ text: 'No hay un período de evaluación activo para calcular el resumen general.' });
     }
     if (totalSecciones > seccionesConPrediccion) {
       pendientes.push({
-        text: `${totalSecciones - seccionesConPrediccion} secciones aun no cuentan con resumen predictivo disponible.`
+        text: `${totalSecciones - seccionesConPrediccion} secciones aún no cuentan con resumen predictivo disponible.`
       });
     }
     if (totalAlumnos > totalPredicciones) {
       pendientes.push({
-        text: `${Math.max(totalAlumnos - totalPredicciones, 0)} alumnos aun no tienen ficha predictiva del corte actual.`
+        text: `${Math.max(totalAlumnos - totalPredicciones, 0)} alumnos aún no tienen ficha predictiva del corte actual.`
       });
     }
     if (totalCursosPeriodo === 0) {
-      pendientes.push({ text: 'El periodo activo aun no muestra cursos configurados para operar en el dashboard.' });
+      pendientes.push({ text: 'El período activo aún no muestra cursos configurados para operar en el dashboard.' });
     }
     if (pendientes.length === 0) {
-      pendientes.push({ text: 'No hay pendientes criticos detectados con la informacion disponible actualmente.' });
+      pendientes.push({ text: 'No hay pendientes críticos detectados con la información disponible actualmente.' });
     }
 
     this.pendientes.set(pendientes);

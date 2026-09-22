@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CustomAlertComponent, CustomAlertType } from '../../components/custom-alert/custom-alert';
@@ -122,6 +122,10 @@ export class Alumnos {
     fechaInicio: '',
     fechaFin: '',
     tipoPeriodoEvaluacion: 'BIMESTRAL'
+  });
+  readonly anioCalendario = computed(() => {
+    const anio = Number(this.formPeriodo().anio);
+    return Number.isInteger(anio) && anio >= 2000 && anio <= 2100 ? anio : this.currentYear;
   });
 
   constructor() {
@@ -286,7 +290,7 @@ export class Alumnos {
         this.mostrarAlerta(
           'error',
           'No se pudo cargar',
-          'No se pudo cargar el detalle del periodo academico.'
+          'No se pudo cargar el detalle del período académico.'
         );
       }
     });
@@ -299,12 +303,18 @@ export class Alumnos {
   }
 
   irAPasoModal(paso: PasoRegistroPeriodo): void {
+    for (let pasoActual = this.pasoModalPeriodo(); pasoActual < paso; pasoActual += 1) {
+      if (!this.validarPasoModal(pasoActual as PasoRegistroPeriodo)) {
+        return;
+      }
+    }
+
     this.pasoModalPeriodo.set(paso);
   }
 
   siguientePasoModal(): void {
     const paso = this.pasoModalPeriodo();
-    if (paso < 4) {
+    if (paso < 4 && this.validarPasoModal(paso)) {
       this.pasoModalPeriodo.set((paso + 1) as PasoRegistroPeriodo);
     }
   }
@@ -328,6 +338,19 @@ export class Alumnos {
     if (campo === 'fechaInicio' || campo === 'fechaFin') {
       this.regenerarPeriodosEvaluacionBorrador();
     }
+  }
+
+  actualizarAnioPeriodo(valor: number | string): void {
+    const anio = Number(valor);
+    const anioAnterior = this.formPeriodo().anio;
+
+    this.formPeriodo.update((actual) => ({
+      ...actual,
+      anio,
+      fechaInicio: anio === anioAnterior ? actual.fechaInicio : '',
+      fechaFin: anio === anioAnterior ? actual.fechaFin : ''
+    }));
+    this.regenerarPeriodosEvaluacionBorrador();
   }
 
   cambiarTipoPeriodoEvaluacion(tipo: TipoPeriodoEvaluacion): void {
@@ -425,7 +448,7 @@ export class Alumnos {
       this.mostrarAlerta(
         'warning',
         'Falta el nombre',
-        'Ingresa el nombre del nuevo tipo de evaluacion.'
+        'Ingresa el nombre del nuevo tipo de evaluación.'
       );
       return;
     }
@@ -458,7 +481,7 @@ export class Alumnos {
         this.mostrarAlerta(
           'error',
           'No se pudo crear',
-          formatearMensajeError(error, 'No se pudo registrar el nuevo tipo de evaluacion.')
+          formatearMensajeError(error, 'No se pudo registrar el nuevo tipo de evaluación.')
         );
       }
     });
@@ -515,8 +538,8 @@ export class Alumnos {
     if (!periodoAnterior) {
       this.mostrarAlerta(
         'warning',
-        'No hay periodo anterior',
-        'Todavia no existe un periodo academico anterior desde donde copiar cursos.'
+        'No hay período anterior',
+        'Todavía no existe un período académico anterior desde donde copiar cursos.'
       );
       return;
     }
@@ -534,7 +557,7 @@ export class Alumnos {
           this.mostrarAlerta(
             'warning',
             'Sin cursos para copiar',
-            'El periodo anterior no tiene cursos activos registrados.'
+            'El período anterior no tiene cursos activos registrados.'
           );
           return;
         }
@@ -544,7 +567,7 @@ export class Alumnos {
         this.mostrarAlerta(
           'success',
           'Cursos copiados',
-          `Se seleccionaron ${cursosActivosIds.length} cursos del periodo ${periodoAnterior.anio}.`
+          `Se seleccionaron ${cursosActivosIds.length} cursos del período ${periodoAnterior.anio}.`
         );
       },
       error: (error) => {
@@ -552,7 +575,7 @@ export class Alumnos {
         this.mostrarAlerta(
           'error',
           'No se pudo copiar',
-          formatearMensajeError(error, 'No se pudieron cargar los cursos del periodo anterior.')
+          formatearMensajeError(error, 'No se pudieron cargar los cursos del período anterior.')
         );
       }
     });
@@ -699,17 +722,11 @@ export class Alumnos {
   guardarPeriodo(): void {
     const payload = this.formPeriodo();
 
-    if (!payload.nombre.trim() || !payload.anio || !payload.fechaInicio || !payload.fechaFin) {
-      this.mostrarAlerta(
-        'warning',
-        'Completa los datos',
-        'Completa nombre, ano, fecha de inicio y fecha de fin.'
-      );
+    if (!this.validarPasoModal(1)) {
       return;
     }
 
     const periodosEvaluacion = this.periodosEvaluacionBorrador();
-    const tieneFechasIncompletas = periodosEvaluacion.some((periodo) => !periodo.fechaInicio || !periodo.fechaFin);
     const configuracionesEvaluacion = this.configuracionesEvaluacionBorrador()
       .filter((configuracion) => configuracion.seleccionado)
       .map((configuracion) => ({
@@ -719,29 +736,19 @@ export class Alumnos {
       }))
       .filter((configuracion) => configuracion.cantidadEvaluaciones > 0);
 
-    if (!periodosEvaluacion.length || tieneFechasIncompletas) {
-      this.mostrarAlerta(
-        'warning',
-        'Faltan periodos de evaluacion',
-        'Configura las fechas de todos los periodos de evaluacion.'
-      );
+    if (!this.validarPasoModal(2)) {
       return;
     }
 
-    if (!configuracionesEvaluacion.length) {
-      this.mostrarAlerta(
-        'warning',
-        'Falta la plantilla anual',
-        'Configura al menos un tipo de evaluacion con cantidad mayor a cero.'
-      );
+    if (!this.validarPasoModal(3)) {
       return;
     }
 
     if (!this.cursosSeleccionadosIds().length) {
       this.mostrarAlerta(
         'warning',
-        'Falta cursos del periodo',
-        'Selecciona cursos manualmente o copialos desde el periodo anterior.'
+        'Falta cursos del período',
+        'Selecciona cursos manualmente o cópialos desde el período anterior.'
       );
       return;
     }
@@ -781,10 +788,10 @@ export class Alumnos {
           this.cerrarModalPeriodo();
           this.mostrarAlerta(
             'success',
-            periodoEditandoId ? 'Periodo actualizado' : 'Periodo registrado',
+            periodoEditandoId ? 'Período actualizado' : 'Período registrado',
             periodoEditandoId
-              ? 'El periodo academico se actualizo correctamente.'
-              : 'El periodo academico y sus periodos de evaluacion se guardaron correctamente.'
+              ? 'El período académico se actualizó correctamente.'
+              : 'El período académico y sus períodos de evaluación se guardaron correctamente.'
           );
         },
         error: (error) => {
@@ -792,9 +799,89 @@ export class Alumnos {
           this.mostrarAlerta(
             'error',
             'No se pudo guardar',
-            formatearMensajeError(error, 'No se pudo registrar el periodo academico.')
+            formatearMensajeError(error, 'No se pudo registrar el período académico.')
           );
         }
       });
+  }
+
+  private validarPasoModal(paso: PasoRegistroPeriodo): boolean {
+    const payload = this.formPeriodo();
+
+    if (paso === 1) {
+      if (!payload.nombre.trim() || !payload.anio || !payload.fechaInicio || !payload.fechaFin) {
+        this.mostrarAlerta(
+          'warning',
+          'Completa los datos',
+          'Completa nombre, año, fecha de inicio y fecha de fin.'
+        );
+        return false;
+      }
+
+      const anio = Number(payload.anio);
+      if (!Number.isInteger(anio) || anio < 2000 || anio > 2100) {
+        this.mostrarAlerta('warning', 'Año no válido', 'Ingresa un año entre 2000 y 2100.');
+        return false;
+      }
+
+      const inicio = this.parseDate(payload.fechaInicio);
+      const fin = this.parseDate(payload.fechaFin);
+      if (inicio.getUTCFullYear() !== anio || fin.getUTCFullYear() !== anio) {
+        this.mostrarAlerta(
+          'warning',
+          'Fechas fuera del año',
+          `Las fechas de inicio y fin deben pertenecer al año ${anio}.`
+        );
+        return false;
+      }
+
+      if (fin.getTime() < inicio.getTime()) {
+        this.mostrarAlerta('warning', 'Rango de fechas no válido', 'La fecha de fin debe ser posterior a la fecha de inicio.');
+        return false;
+      }
+    }
+
+    if (paso === 2) {
+      const inicioPeriodo = this.parseDate(payload.fechaInicio).getTime();
+      const finPeriodo = this.parseDate(payload.fechaFin).getTime();
+      const borradores = this.periodosEvaluacionBorrador();
+
+      if (!borradores.length || borradores.some((periodo) => !periodo.fechaInicio || !periodo.fechaFin)) {
+        this.mostrarAlerta(
+          'warning',
+          'Faltan períodos de evaluación',
+          'Configura las fechas de todos los períodos de evaluación.'
+        );
+        return false;
+      }
+
+      const rangoInvalido = borradores.some((periodo) => {
+        const inicio = this.parseDate(periodo.fechaInicio).getTime();
+        const fin = this.parseDate(periodo.fechaFin).getTime();
+        return inicio < inicioPeriodo || fin > finPeriodo || fin < inicio;
+      });
+
+      if (rangoInvalido) {
+        this.mostrarAlerta(
+          'warning',
+          'Períodos de evaluación no válidos',
+          'Cada período de evaluación debe estar dentro del período académico y tener un rango de fechas válido.'
+        );
+        return false;
+      }
+    }
+
+    if (paso === 3 && !this.configuracionesEvaluacionBorrador().some(
+      (configuracion) => configuracion.seleccionado && Number(configuracion.cantidadEvaluaciones) > 0
+    )) {
+      this.mostrarAlerta(
+        'warning',
+        'Falta la plantilla anual',
+        'Configura al menos un tipo de evaluación con cantidad mayor a cero.'
+      );
+      return false;
+    }
+
+    return true;
   }
 }

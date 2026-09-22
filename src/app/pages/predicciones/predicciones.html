@@ -10,10 +10,10 @@
 
           <div class="filters-corner">
             <div class="tutoria-dropdown filter-dropdown">
-              <span class="section-picker-label">Periodo:</span>
+              <span class="section-picker-label">Período:</span>
               <button class="summary-pill section-picker" type="button" (click)="toggleSelectorPeriodo()">
                 <i class="fa-solid fa-calendar-days"></i>
-                <strong>{{ periodoEvaluacionSeleccionado()?.nombre || 'Elegir periodo' }}</strong>
+                <strong>{{ periodoEvaluacionSeleccionado()?.nombre || 'Elegir período' }}</strong>
                 <i class="fa-solid fa-chevron-down"></i>
               </button>
 
@@ -29,11 +29,11 @@
                     <span class="tutoria-option-title">{{ periodo.nombre }}</span>
                     <span class="tutoria-option-badge">{{ periodo.anioAcademico }}</span>
                   </div>
-                  <strong class="tutoria-option-strong">Periodo {{ periodo.numero }}</strong>
+                  <strong class="tutoria-option-strong">Período {{ periodo.numero }}</strong>
                   <small>{{ periodo.fechaInicio }} - {{ periodo.fechaFin }}</small>
 
                   <div class="tutoria-option-footer">
-                    <span><i class="fa-solid fa-calendar-check"></i> Cambio de periodo</span>
+                    <span><i class="fa-solid fa-calendar-check"></i> Cambio de período</span>
                     <span class="tutoria-option-link">
                       <i class="fa-solid fa-arrow-right"></i>
                       <span>{{ periodo.id === periodoEvaluacionSeleccionadoId() ? 'Activo' : 'Abrir' }}</span>
@@ -49,7 +49,7 @@
               <span class="section-picker-label">Mis secciones:</span>
               <button class="summary-pill section-picker" type="button" (click)="toggleSelectorSeccion()">
                 <i class="fa-solid fa-layer-group"></i>
-                <strong>{{ etiquetaSeccion(seccionSeleccionada()) || 'Elegir seccion' }}</strong>
+                <strong>{{ etiquetaSeccion(seccionSeleccionada()) || 'Elegir sección' }}</strong>
                 <i class="fa-solid fa-chevron-down"></i>
               </button>
 
@@ -359,7 +359,7 @@
             @if (vistaActiva() === 'global') {
             <div class="mini-card-head">
               <h3>Detalle del riesgo global</h3>
-              <span>{{ periodoEvaluacionSeleccionado()?.nombre || 'Periodo actual' }}</span>
+              <span>{{ periodoEvaluacionSeleccionado()?.nombre || 'Período actual' }}</span>
             </div>
 
             <div class="attendance-panel">
@@ -375,7 +375,7 @@
             </div>
             } @else {
             <div class="mini-card-head">
-              <h3>Prioridad de intervencion</h3>
+              <h3>Prioridad de intervención</h3>
               <span>Casos para revisar primero</span>
             </div>
 

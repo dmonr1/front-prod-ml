@@ -145,7 +145,7 @@ export class EvaluacionesCursoPeriodo {
         }
       },
       error: () => {
-        this.errorCursos.set('No se pudieron cargar los cursos del periodo.');
+        this.errorCursos.set('No se pudieron cargar los cursos del período.');
         this.cargandoCursos.set(false);
       }
     });
@@ -172,7 +172,7 @@ export class EvaluacionesCursoPeriodo {
       error: () => {
         this.detalleCurso.set(null);
         this.configuracionesEditables.set([]);
-        this.errorDetalle.set('No se pudo cargar la configuracion del curso.');
+        this.errorDetalle.set('No se pudo cargar la configuración del curso.');
         this.cargandoDetalle.set(false);
       }
     });
@@ -247,14 +247,14 @@ export class EvaluacionesCursoPeriodo {
               : curso
           )
         );
-        this.mostrarAlerta('success', 'Configuracion guardada', 'Las evaluaciones del curso se actualizaron correctamente.');
+        this.mostrarAlerta('success', 'Configuración guardada', 'Las evaluaciones del curso se actualizaron correctamente.');
       },
       error: (error) => {
         this.guardando.set(false);
         this.mostrarAlerta(
           'error',
           'No se pudo guardar',
-          formatearMensajeError(error, 'No se pudo guardar la configuracion del curso.')
+          formatearMensajeError(error, 'No se pudo guardar la configuración del curso.')
         );
       }
     });

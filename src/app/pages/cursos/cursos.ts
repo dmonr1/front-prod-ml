@@ -62,26 +62,26 @@ export class Cursos {
   readonly formPortadaImagen = signal<string | null>(null);
   readonly skeletonRows = Array.from({ length: 6 }, (_, index) => index);
   readonly iconosPortada: IconoPortada[] = [
-    { valor: 'fa-solid fa-calculator', etiqueta: 'Calculo' },
+    { valor: 'fa-solid fa-calculator', etiqueta: 'Cálculo' },
     { valor: 'fa-solid fa-book-open', etiqueta: 'Lectura' },
     { valor: 'fa-solid fa-flask', etiqueta: 'Ciencia' },
     { valor: 'fa-solid fa-seedling', etiqueta: 'Naturaleza' },
     { valor: 'fa-solid fa-palette', etiqueta: 'Arte' },
     { valor: 'fa-solid fa-globe', etiqueta: 'Social' },
-    { valor: 'fa-solid fa-music', etiqueta: 'Musica' },
+    { valor: 'fa-solid fa-music', etiqueta: 'Música' },
     { valor: 'fa-solid fa-language', etiqueta: 'Idioma' },
-    { valor: 'fa-solid fa-laptop-code', etiqueta: 'Tecnologia' },
+    { valor: 'fa-solid fa-laptop-code', etiqueta: 'Tecnología' },
     { valor: 'fa-solid fa-dumbbell', etiqueta: 'Deporte' },
     { valor: 'fa-solid fa-landmark', etiqueta: 'Historia' },
-    { valor: 'fa-solid fa-shapes', etiqueta: 'Geometria' }
+    { valor: 'fa-solid fa-shapes', etiqueta: 'Geometría' }
   ];
   readonly imagenesPortada: ImagenPortada[] = [
-    { ruta: 'assets/course-covers/cover-numbers.svg', etiqueta: 'Numeros' },
+    { ruta: 'assets/course-covers/cover-numbers.svg', etiqueta: 'Números' },
     { ruta: 'assets/course-covers/cover-reading.svg', etiqueta: 'Lectura' },
     { ruta: 'assets/course-covers/cover-science.svg', etiqueta: 'Ciencia' },
     { ruta: 'assets/course-covers/cover-nature.svg', etiqueta: 'Naturaleza' },
     { ruta: 'assets/course-covers/cover-art.svg', etiqueta: 'Arte' },
-    { ruta: 'assets/course-covers/cover-geography.svg', etiqueta: 'Geografia' }
+    { ruta: 'assets/course-covers/cover-geography.svg', etiqueta: 'Geografía' }
   ];
   readonly mostrarSkeleton = computed(() => this.cargando() || !!this.error());
   readonly alertState = signal<AlertState>({
@@ -282,7 +282,7 @@ export class Cursos {
         this.mostrarAlerta(
           'success',
           'Curso registrado',
-          'El curso se registro correctamente.'
+          'El curso se registró correctamente.'
         );
       },
       error: (error) => {
@@ -312,7 +312,7 @@ export class Cursos {
       this.mostrarAlerta(
         'warning',
         'Deshabilitar curso',
-        'Esta seguro que quiere deshabilitar este curso?',
+        '¿Está seguro de que desea deshabilitar este curso?',
         { confirmText: 'Deshabilitar', cancelText: 'Cancelar' }
       );
       return;

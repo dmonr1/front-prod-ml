@@ -595,6 +595,26 @@ export class AsignacionesTutorias {
       return;
     }
 
+    const seccionesOcupadas = secciones.filter((seccion) =>
+      this.asignaciones().some((asignacion) =>
+        asignacion.cursoId === curso.id &&
+        asignacion.seccionId === seccion.id &&
+        asignacion.periodoAcademicoId === periodo.id &&
+        asignacion.estado !== 'INACTIVO'
+      )
+    );
+
+    if (seccionesOcupadas.length) {
+      this.mostrarAlerta(
+        'warning',
+        'Asignación ya registrada',
+        `El curso ${curso.nombre} ya tiene docente asignado en: ${seccionesOcupadas
+          .map((seccion) => this.etiquetaSeccion(seccion))
+          .join(', ')}.`
+      );
+      return;
+    }
+
     this.guardandoAsignacion.set(true);
 
     forkJoin(
@@ -659,6 +679,22 @@ export class AsignacionesTutorias {
         'warning',
         'Completa la tutoría',
         'Selecciona docente tutor, sección y período antes de guardar la tutoría.'
+      );
+      return;
+    }
+
+    const tutoriaActiva = this.tutorias().find(
+      (tutoria) =>
+        tutoria.seccionId === seccion.id &&
+        tutoria.periodoAcademicoId === periodo.id &&
+        (tutoria.estado ?? 'ACTIVO') === 'ACTIVO'
+    );
+
+    if (tutoriaActiva) {
+      this.mostrarAlerta(
+        'warning',
+        'Tutoría ya registrada',
+        `${this.etiquetaSeccion(seccion)} ya tiene como tutor(a) a ${tutoriaActiva.docenteNombreCompleto} en este período.`
       );
       return;
     }

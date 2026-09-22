@@ -60,7 +60,7 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
   readonly recoverySteps = [
     { id: 'buscar', label: 'Usuario' },
     { id: 'correo', label: 'Correo' },
-    { id: 'verificar', label: 'Codigo' },
+    { id: 'verificar', label: 'Código' },
     { id: 'cambiar', label: 'Clave' }
   ] as const;
   readonly otpDigits = signal<string[]>(['', '', '', '', '', '']);
@@ -442,11 +442,11 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
     if (this.form.invalid || this.cargando()) {
       this.form.markAllAsTouched();
       if (this.form.controls.identificador.invalid && this.form.controls.password.invalid) {
-        this.mostrarAlerta('warning', 'Faltan tus datos', 'Ingresa tu usuario y tu contrasena para continuar.');
+        this.mostrarAlerta('warning', 'Faltan tus datos', 'Ingresa tu usuario y tu contraseña para continuar.');
       } else if (this.form.controls.identificador.invalid) {
-        this.mostrarAlerta('warning', 'Falta el usuario', 'Ingresa tu usuario para iniciar sesion.');
+        this.mostrarAlerta('warning', 'Falta el usuario', 'Ingresa tu usuario para iniciar sesión.');
       } else if (this.form.controls.password.invalid) {
-        this.mostrarAlerta('warning', 'Falta la contrasena', 'Ingresa tu contrasena para iniciar sesion.');
+        this.mostrarAlerta('warning', 'Falta la contraseña', 'Ingresa tu contraseña para iniciar sesión.');
       }
       return;
     }
@@ -472,7 +472,7 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
         this.error.set('');
         this.mostrarAlerta(
           'error',
-          'No se pudo iniciar sesion',
+          'No se pudo iniciar sesión',
           formatearMensajeError(error, 'Verifica tus credenciales e intenta nuevamente.')
         );
       }
@@ -760,7 +760,7 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
         this.recoveryLoading.set(false);
         this.mostrarAlerta(
           'error',
-          'No se encontro la cuenta',
+          'No se encontró la cuenta',
           formatearMensajeError(error, 'No se pudo encontrar un usuario con esos datos.')
         );
       }
@@ -771,7 +771,7 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
     const { identificador, correo } = this.recoveryForm.getRawValue();
     if (!correo || this.recoveryForm.controls.correo.invalid) {
       this.recoveryForm.controls.correo.markAsTouched();
-      this.mostrarAlerta('warning', 'Correo no valido', 'Ingresa el correo vinculado a tu cuenta para continuar.');
+      this.mostrarAlerta('warning', 'Correo no válido', 'Ingresa el correo vinculado a tu cuenta para continuar.');
       return;
     }
 
@@ -783,7 +783,7 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
       next: (response) => {
         this.recoveryLoading.set(false);
         this.recoverySuccess.set('');
-        this.mostrarAlerta('success', 'Codigo enviado', response.mensaje);
+        this.mostrarAlerta('success', 'Código enviado', response.mensaje);
         this.recoveryStep.set('verificar');
         this.iniciarTemporizadorReenvio();
         this.recoveryForm.controls.codigo.markAsUntouched();
@@ -793,8 +793,8 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
         this.recoveryError.set('');
         this.mostrarAlerta(
           'error',
-          'No se pudo enviar el codigo',
-          formatearMensajeError(error, 'No se pudo enviar el codigo de recuperacion.')
+          'No se pudo enviar el código',
+          formatearMensajeError(error, 'No se pudo enviar el código de recuperación.')
         );
       }
     });
@@ -806,11 +806,11 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
       this.recoveryForm.controls.identificador.markAsTouched();
       this.recoveryForm.controls.codigo.markAsTouched();
       if (!identificador && !codigo) {
-        this.mostrarAlerta('warning', 'Faltan datos de verificacion', 'Ingresa tu usuario y el codigo recibido en tu correo.');
+        this.mostrarAlerta('warning', 'Faltan datos de verificación', 'Ingresa tu usuario y el código recibido en tu correo.');
       } else if (!identificador) {
-        this.mostrarAlerta('warning', 'Falta el usuario', 'Ingresa tu usuario para verificar el codigo.');
+        this.mostrarAlerta('warning', 'Falta el usuario', 'Ingresa tu usuario para verificar el código.');
       } else {
-        this.mostrarAlerta('warning', 'Falta el codigo', 'Ingresa el codigo de verificacion para continuar.');
+        this.mostrarAlerta('warning', 'Falta el código', 'Ingresa el código de verificación para continuar.');
       }
       return;
     }
@@ -824,7 +824,7 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
         this.recoveryLoading.set(false);
         this.recoveryToken.set(response.tokenRecuperacion);
         this.recoverySuccess.set('');
-        this.mostrarAlerta('success', 'Codigo verificado', response.mensaje);
+        this.mostrarAlerta('success', 'Código verificado', response.mensaje);
         this.recoveryStep.set('cambiar');
       },
       error: (error) => {
@@ -832,8 +832,8 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
         this.recoveryError.set('');
         this.mostrarAlerta(
           'error',
-          'Codigo no verificado',
-          formatearMensajeError(error, 'El codigo no pudo verificarse.')
+          'Código no verificado',
+          formatearMensajeError(error, 'El código no pudo verificarse.')
         );
       }
     });
@@ -845,11 +845,11 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
       this.recoveryForm.controls.nuevaPassword.markAsTouched();
       this.recoveryForm.controls.confirmarPassword.markAsTouched();
       if (!nuevaPassword && !confirmarPassword) {
-        this.mostrarAlerta('warning', 'Faltan las contrasenas', 'Ingresa y confirma tu nueva contrasena para actualizar tu acceso.');
+        this.mostrarAlerta('warning', 'Faltan las contraseñas', 'Ingresa y confirma tu nueva contraseña para actualizar tu acceso.');
       } else if (!nuevaPassword) {
-        this.mostrarAlerta('warning', 'Falta la nueva contrasena', 'Ingresa tu nueva contrasena para continuar.');
+        this.mostrarAlerta('warning', 'Falta la nueva contraseña', 'Ingresa tu nueva contraseña para continuar.');
       } else {
-        this.mostrarAlerta('warning', 'Falta la confirmacion', 'Confirma tu nueva contrasena para completar el cambio.');
+        this.mostrarAlerta('warning', 'Falta la confirmación', 'Confirma tu nueva contraseña para completar el cambio.');
       }
       return;
     }
@@ -857,14 +857,14 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
     if (!this.passwordRecuperacionSegura()) {
       this.mostrarAlerta(
         'warning',
-        'Contrasena no segura',
+        'Contraseña no segura',
         'Completa todos los requisitos de seguridad para continuar.'
       );
       return;
     }
 
     if (nuevaPassword !== confirmarPassword) {
-      this.mostrarAlerta('warning', 'Las contrasenas no coinciden', 'Asegurate de escribir la misma contrasena en ambos campos.');
+      this.mostrarAlerta('warning', 'Las contraseñas no coinciden', 'Asegúrate de escribir la misma contraseña en ambos campos.');
       return;
     }
 
@@ -882,7 +882,7 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
         next: (response) => {
           this.recoveryLoading.set(false);
           this.recoverySuccess.set('');
-          this.mostrarAlerta('success', 'Contrasena actualizada', response.mensaje);
+          this.mostrarAlerta('success', 'Contraseña actualizada', response.mensaje);
 
           const { identificador: usuarioRecuperado } = this.recoveryForm.getRawValue();
           this.form.patchValue({
@@ -903,7 +903,7 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
           this.mostrarAlerta(
             'error',
             'No se pudo actualizar',
-            formatearMensajeError(error, 'No se pudo actualizar la contrasena.')
+            formatearMensajeError(error, 'No se pudo actualizar la contraseña.')
           );
         }
       });
@@ -913,10 +913,10 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
     const password = this.recoveryForm.controls.nuevaPassword.value;
     return [
       { texto: 'Al menos 8 caracteres', cumplido: password.length >= 8 },
-      { texto: 'Una letra mayuscula', cumplido: /[A-Z]/.test(password) },
-      { texto: 'Una letra minuscula', cumplido: /[a-z]/.test(password) },
-      { texto: 'Un numero', cumplido: /\d/.test(password) },
-      { texto: 'Un simbolo', cumplido: /[^A-Za-z0-9]/.test(password) }
+      { texto: 'Una letra mayúscula', cumplido: /[A-Z]/.test(password) },
+      { texto: 'Una letra minúscula', cumplido: /[a-z]/.test(password) },
+      { texto: 'Un número', cumplido: /\d/.test(password) },
+      { texto: 'Un símbolo', cumplido: /[^A-Za-z0-9]/.test(password) }
     ];
   }
 

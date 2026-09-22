@@ -205,7 +205,7 @@ export class CargaAsistencias implements OnInit {
 
         if (!periodoActual) {
           this.cargando.set(true);
-          this.error.set('No se encontro un periodo academico para cargar la asignacion.');
+          this.error.set('No se encontró un período académico para cargar la asignación.');
           this.mostrarErrorCarga.set(true);
           return;
         }
@@ -230,7 +230,7 @@ export class CargaAsistencias implements OnInit {
                 null;
               if (!primeraTutoria) {
                 this.cargando.set(true);
-                this.error.set('No tienes una seccion tutorada activa para registrar asistencias.');
+                this.error.set('No tienes una sección tutorada activa para registrar asistencias.');
                 this.mostrarErrorCarga.set(true);
                 return;
               }
@@ -240,7 +240,7 @@ export class CargaAsistencias implements OnInit {
             error: (error) => {
               this.cargando.set(true);
               this.error.set(
-                formatearMensajeError(error, 'No se pudo cargar la informacion inicial.')
+                formatearMensajeError(error, 'No se pudo cargar la información inicial.')
               );
               this.mostrarErrorCarga.set(true);
             }
@@ -263,7 +263,7 @@ export class CargaAsistencias implements OnInit {
 
             if (!asignacion) {
               this.cargando.set(true);
-              this.error.set('No se encontro la asignacion seleccionada para tu usuario.');
+              this.error.set('No se encontró la asignación seleccionada para tu usuario.');
               this.mostrarErrorCarga.set(true);
               return;
             }
@@ -279,7 +279,7 @@ export class CargaAsistencias implements OnInit {
           error: (error) => {
             this.cargando.set(true);
             this.error.set(
-              formatearMensajeError(error, 'No se pudo cargar la informacion inicial.')
+              formatearMensajeError(error, 'No se pudo cargar la información inicial.')
             );
             this.mostrarErrorCarga.set(true);
           }
@@ -288,7 +288,7 @@ export class CargaAsistencias implements OnInit {
       error: (error) => {
         this.cargando.set(true);
         this.error.set(
-          formatearMensajeError(error, 'No se pudo resolver el periodo academico actual.')
+          formatearMensajeError(error, 'No se pudo resolver el período académico actual.')
         );
         this.mostrarErrorCarga.set(true);
       }
@@ -375,7 +375,7 @@ export class CargaAsistencias implements OnInit {
         this.error.set(
           formatearMensajeError(
             error,
-            'No se pudo cargar la informacion del periodo de evaluacion.'
+            'No se pudo cargar la información del período de evaluación.'
           )
         );
         this.mostrarErrorCarga.set(true);
@@ -640,7 +640,7 @@ export class CargaAsistencias implements OnInit {
         if (mostrarError) {
           this.mostrarAlerta(
             'warning',
-            'Asistencia invalida',
+            'Asistencia inválida',
             'Las clases asistidas no pueden ser mayores que las programadas.'
           );
         }
@@ -660,7 +660,7 @@ export class CargaAsistencias implements OnInit {
         error: (error) => {
           this.mostrarAlerta(
             'error',
-            'No se pudo guardar la configuracion',
+            'No se pudo guardar la configuración',
             formatearMensajeError(error, 'No se pudieron guardar las clases programadas.')
           );
         }
@@ -720,7 +720,7 @@ export class CargaAsistencias implements OnInit {
       if (mostrarError) {
         this.mostrarAlerta(
           'warning',
-          'Asistencia invalida',
+          'Asistencia inválida',
           'Las clases asistidas no pueden ser mayores que las programadas.'
         );
       }
@@ -797,7 +797,7 @@ export class CargaAsistencias implements OnInit {
         this.mostrarAlerta(
           'error',
           'No se pudo guardar la asistencia',
-          formatearMensajeError(error, 'No se pudo guardar la asistencia automaticamente.')
+          formatearMensajeError(error, 'No se pudo guardar la asistencia automáticamente.')
         );
       }
     });

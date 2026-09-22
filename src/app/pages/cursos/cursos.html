@@ -16,7 +16,7 @@
       <div class="card-head">
         <div class="card-head-inline">
           <div class="panel-head">
-            <h2>Catalogo de Cursos</h2>
+            <h2>Catálogo de Cursos</h2>
             <p>Administración de cursos base del sistema.</p>
           </div>
 
@@ -36,7 +36,7 @@
           </button>
 
           <div class="level-slider-title">
-            <span class="slider-kicker">Nivel academico</span>
+            <span class="slider-kicker">Nivel académico</span>
             <h3>{{ nivelActualTitulo() }}</h3>
           </div>
 
@@ -52,7 +52,7 @@
                 <tr>
                   <th>Curso</th>
                   <th>Nivel</th>
-                  <th>Descripcion</th>
+                  <th>Descripción</th>
                   <th>Estado</th>
                   <th>Acciones</th>
                 </tr>
@@ -83,7 +83,7 @@
                 <tr>
                   <th>Curso</th>
                   <th>Nivel</th>
-                  <th>Descripcion</th>
+                  <th>Descripción</th>
                   <th>Estado</th>
                   <th>Acciones</th>
                 </tr>
@@ -98,7 +98,7 @@
                       </div>
                     </td>
                     <td>{{ curso.nivelNombre }}</td>
-                    <td>{{ curso.descripcion || 'Sin descripcion registrada' }}</td>
+                    <td>{{ curso.descripcion || 'Sin descripción registrada' }}</td>
                     <td>
                       <span
                         class="status-badge"
@@ -143,7 +143,7 @@
           <div class="mini-modal-head">
             <div class="panel-head">
               <h3>Registrar curso</h3>
-              <p>Agrega un nuevo curso al catalogo academico institucional.</p>
+              <p>Agrega un nuevo curso al catálogo académico institucional.</p>
             </div>
 
             <button class="drawer-close" type="button" (click)="cerrarModalRegistro()">
@@ -170,7 +170,7 @@
                       [ngModel]="formNombre()"
                       (ngModelChange)="formNombre.set($event)"
                       name="nombreCurso"
-                      placeholder="Ejemplo: Matematica" />
+                      placeholder="Ejemplo: Matemática" />
                   </label>
                 </div>
 
@@ -214,7 +214,7 @@
                     (ngModelChange)="formDescripcion.set($event)"
                     name="descripcionCurso"
                     rows="4"
-                    placeholder="Descripcion breve del curso"></textarea>
+                    placeholder="Descripción breve del curso"></textarea>
                 </label>
 
                 @if (!esAdmin()) {
@@ -248,11 +248,11 @@
                         <i [class]="formPortadaIcono()"></i>
                       </span>
                     </div>
-                    <small>{{ formDescripcion().trim() || 'Descripcion breve del curso' }}</small>
+                    <small>{{ formDescripcion().trim() || 'Descripción breve del curso' }}</small>
                   </div>
 
                   <div class="course-preview-footer">
-                    <span><i class="fa-solid fa-users"></i> Seccion A</span>
+                    <span><i class="fa-solid fa-users"></i> Sección A</span>
                     <span class="course-preview-action">
                       <i class="fa-solid fa-pen-to-square"></i>
                       <span>Registrar Notas</span>
@@ -282,7 +282,7 @@
             <div class="panel-head">
               <span class="panel-kicker">Portada</span>
               <h3>Seleccionar icono</h3>
-              <p>Elige el icono que identificara visualmente al curso.</p>
+              <p>Elige el icono que identificará visualmente al curso.</p>
             </div>
 
             <button class="drawer-close" type="button" (click)="cerrarModalIconos()">

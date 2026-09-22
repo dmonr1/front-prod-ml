@@ -137,7 +137,7 @@ export class CargaNotas implements OnInit {
 
     this.evaluaciones().forEach((evaluacion) => {
       const abreviatura = this.abreviarTipoEvaluacion(evaluacion.tipoEvaluacion);
-      const nombre = evaluacion.tipoEvaluacion?.trim() || 'Evaluacion';
+      const nombre = evaluacion.tipoEvaluacion?.trim() || 'Evaluación';
       if (!mapa.has(abreviatura)) {
         mapa.set(abreviatura, nombre);
       }
@@ -172,7 +172,7 @@ export class CargaNotas implements OnInit {
   nombreTipoEvaluacionVisible(nombre: string | null): string {
     const valor = (nombre ?? '').trim();
     if (!valor) {
-      return 'Evaluacion';
+      return 'Evaluación';
     }
 
     return valor
@@ -232,7 +232,7 @@ export class CargaNotas implements OnInit {
 
         if (!periodoActual) {
           this.cargando.set(false);
-          this.error.set('No se encontro un periodo academico para cargar la asignacion.');
+          this.error.set('No se encontró un período académico para cargar la asignación.');
           return;
         }
 
@@ -247,7 +247,7 @@ export class CargaNotas implements OnInit {
             this.cargando.set(false);
 
             if (!asignacion) {
-              this.error.set('No se encontro la asignacion seleccionada para tu usuario.');
+              this.error.set('No se encontró la asignación seleccionada para tu usuario.');
               return;
             }
 
@@ -264,7 +264,7 @@ export class CargaNotas implements OnInit {
           error: (error) => {
             this.cargando.set(false);
             this.error.set(
-              formatearMensajeError(error, 'No se pudo cargar la informacion inicial.')
+              formatearMensajeError(error, 'No se pudo cargar la información inicial.')
             );
           }
         });
@@ -272,7 +272,7 @@ export class CargaNotas implements OnInit {
       error: (error) => {
         this.cargando.set(false);
         this.error.set(
-          formatearMensajeError(error, 'No se pudo resolver el periodo academico actual.')
+          formatearMensajeError(error, 'No se pudo resolver el período académico actual.')
         );
       }
     });
@@ -325,7 +325,7 @@ export class CargaNotas implements OnInit {
       },
       error: (error) => {
         this.error.set(
-          formatearMensajeError(error, 'No se pudo cargar la informacion del periodo de evaluacion.')
+          formatearMensajeError(error, 'No se pudo cargar la información del período de evaluación.')
         );
       }
     });
@@ -397,7 +397,7 @@ export class CargaNotas implements OnInit {
         this.mostrarAlerta(
           'success',
           'Evaluaciones actualizadas',
-          'La grilla de evaluaciones se resincronizo para esta asignacion.'
+          'La grilla de evaluaciones se resincronizó para esta asignación.'
         );
 
         if (periodoEvaluacionId) {
@@ -406,11 +406,11 @@ export class CargaNotas implements OnInit {
       },
       error: (error) => {
         this.guardandoConfiguracion.set(false);
-        this.errorConfiguracion.set(formatearMensajeError(error, 'No se pudo actualizar la configuracion.'));
+        this.errorConfiguracion.set(formatearMensajeError(error, 'No se pudo actualizar la configuración.'));
         this.mostrarAlerta(
           'error',
           'No se pudo guardar',
-          formatearMensajeError(error, 'No se pudo actualizar la configuracion de evaluaciones.')
+          formatearMensajeError(error, 'No se pudo actualizar la configuración de evaluaciones.')
         );
       }
     });
@@ -471,7 +471,7 @@ export class CargaNotas implements OnInit {
       this.mostrarAlerta(
         'warning',
         'No hay evaluaciones',
-        'No hay evaluaciones programadas para guardar notas en este periodo.'
+        'No hay evaluaciones programadas para guardar notas en este período.'
       );
       return;
     }
@@ -501,8 +501,8 @@ export class CargaNotas implements OnInit {
     if (!solicitudes.length || notasInvalidas) {
       this.mostrarAlerta(
         'warning',
-        'Notas invalidas',
-        'Ingresa notas validas entre 0 y 20 antes de guardar.'
+        'Notas inválidas',
+        'Ingresa notas válidas entre 0 y 20 antes de guardar.'
       );
       return;
     }
@@ -526,7 +526,7 @@ export class CargaNotas implements OnInit {
         this.mostrarAlerta(
           'success',
           'Notas guardadas',
-          'Las notas se guardaron y el promedio del periodo se recalculo correctamente.'
+          'Las notas se guardaron y el promedio del período se recalculó correctamente.'
         );
       },
       error: (error) => {
@@ -617,7 +617,7 @@ export class CargaNotas implements OnInit {
           this.configuracionesEditables.set([]);
           this.cargandoConfiguracion.set(false);
           this.errorConfiguracion.set(
-            formatearMensajeError(error, 'No se pudo cargar la configuracion de evaluaciones.')
+            formatearMensajeError(error, 'No se pudo cargar la configuración de evaluaciones.')
           );
         }
       });
@@ -728,7 +728,7 @@ export class CargaNotas implements OnInit {
           this.mostrarAlerta(
             'error',
             'No se pudo guardar la nota',
-            formatearMensajeError(error, 'No se pudo guardar la nota automaticamente.')
+            formatearMensajeError(error, 'No se pudo guardar la nota automáticamente.')
           );
         }
       });

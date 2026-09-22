@@ -114,7 +114,7 @@ export class PerfilAlumno {
       .sort((a, b) => a.numero - b.numero)
       .map((periodo) => ({
         id: periodo.id,
-        nombre: periodo.nombre || `Periodo ${periodo.numero}`,
+        nombre: periodo.nombre || `Período ${periodo.numero}`,
         numero: periodo.numero
       }));
 
@@ -130,7 +130,7 @@ export class PerfilAlumno {
       if (!mapa.has(item.periodoEvaluacionId)) {
         mapa.set(item.periodoEvaluacionId, {
           id: item.periodoEvaluacionId,
-          nombre: item.nombrePeriodoEvaluacion || `Periodo ${item.numeroPeriodoEvaluacion ?? ''}`.trim(),
+          nombre: item.nombrePeriodoEvaluacion || `Período ${item.numeroPeriodoEvaluacion ?? ''}`.trim(),
           numero: item.numeroPeriodoEvaluacion ?? 0
         });
       }
@@ -171,8 +171,8 @@ export class PerfilAlumno {
     const serie = this.prediccionesGlobales();
     if (serie.length < 2) {
       return {
-        titulo: 'En observacion',
-        detalle: 'Aun no hay suficientes periodos para comparar',
+        titulo: 'En observación',
+        detalle: 'Aún no hay suficientes períodos para comparar',
         tono: 'medium' as TonoFactor
       };
     }
@@ -184,7 +184,7 @@ export class PerfilAlumno {
     if (diferencia <= -5) {
       return {
         titulo: 'En descenso',
-        detalle: `Bajo ${Math.abs(diferencia).toFixed(1)} pts frente al primer periodo`,
+        detalle: `Bajó ${Math.abs(diferencia).toFixed(1)} pts frente al primer período`,
         tono: 'low' as TonoFactor
       };
     }
@@ -192,14 +192,14 @@ export class PerfilAlumno {
     if (diferencia >= 5) {
       return {
         titulo: 'En aumento',
-        detalle: `Subio ${diferencia.toFixed(1)} pts frente al primer periodo`,
+        detalle: `Subió ${diferencia.toFixed(1)} pts frente al primer período`,
         tono: 'high' as TonoFactor
       };
     }
 
     return {
       titulo: 'Estable',
-      detalle: 'Sin variacion importante entre periodos',
+      detalle: 'Sin variación importante entre períodos',
       tono: 'medium' as TonoFactor
     };
   });
@@ -214,11 +214,11 @@ export class PerfilAlumno {
       {
         etiqueta: 'Promedio general',
         valor: this.promedioGeneral() == null ? '--' : this.formatearNumero(this.promedioGeneral(), 1),
-        ayuda: this.promedioGeneral() != null && this.promedioGeneral()! >= 14 ? 'Buen rendimiento actual' : 'Revisar avance academico',
+        ayuda: this.promedioGeneral() != null && this.promedioGeneral()! >= 14 ? 'Buen rendimiento actual' : 'Revisar avance académico',
         tono: this.promedioGeneral() != null && this.promedioGeneral()! >= 14 ? 'low' : 'medium'
       },
       {
-        etiqueta: 'Riesgo academico',
+        etiqueta: 'Riesgo académico',
         valor: `${detalle.puntaje.toFixed(0)}%`,
         ayuda: detalle.nivelRiesgoNormalizado === 'ALTO' ? 'Probabilidad alta de riesgo' : detalle.nivelRiesgoNormalizado === 'MEDIO' ? 'Seguimiento preventivo' : 'Riesgo actualmente controlado',
         tono: this.mapearNivelATono(detalle.nivelRiesgoNormalizado)
@@ -260,7 +260,7 @@ export class PerfilAlumno {
 
     if (asistencia != null) {
       factores.push({
-        titulo: 'Asistencia del periodo',
+        titulo: 'Asistencia del período',
         subtitulo: `${this.formatearNumero(asistencia, 0)}% de asistencia`,
         valor: Math.max(0, Math.min(100, asistencia)),
         tono: asistencia >= 85 ? 'low' : asistencia >= 70 ? 'medium' : 'high',
@@ -270,8 +270,8 @@ export class PerfilAlumno {
 
     if (notaMinima != null) {
       factores.push({
-        titulo: 'Nota minima registrada',
-        subtitulo: `Nota minima ${this.formatearNumero(notaMinima, 1)}`,
+        titulo: 'Nota mínima registrada',
+        subtitulo: `Nota mínima ${this.formatearNumero(notaMinima, 1)}`,
         valor: Math.max(0, Math.min(100, (notaMinima / 20) * 100)),
         tono: notaMinima >= 14 ? 'low' : notaMinima >= 11 ? 'medium' : 'high',
         etiqueta: notaMinima >= 14 ? 'Bajo' : notaMinima >= 11 ? 'Medio' : 'Alto'
@@ -340,7 +340,7 @@ export class PerfilAlumno {
       .filter((entry) => entry.alumnoId === this.alumnoId)
       .slice(0, 3)
       .map((entry, index) => ({
-        titulo: entry.titulo || `Recomendacion ${index + 1}`,
+        titulo: entry.titulo || `Recomendación ${index + 1}`,
         descripcion: entry.descripcion,
         accion: 'Ver sugerencias',
         icono: index === 0 ? 'fa-solid fa-user-check' : index === 1 ? 'fa-solid fa-calendar-check' : 'fa-solid fa-book-open-reader',
@@ -359,7 +359,7 @@ export class PerfilAlumno {
     if (asistencia != null && asistencia < 85) {
       recomendaciones.push({
         titulo: 'Mejora tu asistencia',
-        descripcion: 'Tu porcentaje de asistencia esta por debajo del nivel recomendado para sostener el avance del periodo.',
+        descripcion: 'Tu porcentaje de asistencia está por debajo del nivel recomendado para sostener el avance del período.',
         accion: 'Ver sugerencias',
         icono: 'fa-solid fa-user-check',
         tono: asistencia < 70 ? 'high' : 'medium'
@@ -379,7 +379,7 @@ export class PerfilAlumno {
     if (riesgo !== 'BAJO') {
       recomendaciones.push({
         titulo: 'Organiza tu tiempo',
-        descripcion: 'Planifica una rutina de estudio semanal y prioriza tareas cercanas para evitar acumulacion.',
+        descripcion: 'Planifica una rutina de estudio semanal y prioriza tareas cercanas para evitar acumulación.',
         accion: 'Ver sugerencias',
         icono: 'fa-solid fa-calendar-check',
         tono: 'medium'
@@ -390,21 +390,21 @@ export class PerfilAlumno {
       recomendaciones.push(
         {
           titulo: 'Mantiene tu ritmo',
-          descripcion: 'Tus indicadores actuales estan controlados. Conserva constancia en asistencia y estudio.',
+          descripcion: 'Tus indicadores actuales están controlados. Conserva constancia en asistencia y estudio.',
           accion: 'Ver seguimiento',
           icono: 'fa-solid fa-shield-heart',
           tono: 'low'
         },
         {
           titulo: 'Sostiene tus avances',
-          descripcion: 'Sigue reforzando tus cursos principales para conservar un riesgo academico bajo.',
+          descripcion: 'Sigue reforzando tus cursos principales para conservar un riesgo académico bajo.',
           accion: 'Ver sugerencias',
           icono: 'fa-solid fa-book-open',
           tono: 'low'
         },
         {
-          titulo: 'Anticipa el siguiente periodo',
-          descripcion: 'Prepara tus apuntes y metas para el proximo corte de evaluacion.',
+          titulo: 'Anticipa el siguiente período',
+          descripcion: 'Prepara tus apuntes y metas para el próximo corte de evaluación.',
           accion: 'Ver sugerencias',
           icono: 'fa-solid fa-lightbulb',
           tono: 'medium'
@@ -454,11 +454,11 @@ export class PerfilAlumno {
 
   obtenerInicialPeriodo(nombre: string | null | undefined): string {
     if (!nombre) {
-      return 'PERIODO';
+      return 'PERÍODO';
     }
 
     const match = nombre.match(/\d+/);
-    return match ? `PERIODO ${match[0]}` : nombre.toUpperCase();
+    return match ? `PERÍODO ${match[0]}` : nombre.toUpperCase();
   }
 
   private cargarPerfil(): void {
@@ -521,7 +521,7 @@ export class PerfilAlumno {
         this.cargando.set(false);
 
         if (!detalle.length) {
-          this.error.set('No se encontraron predicciones para este alumno en el periodo seleccionado.');
+          this.error.set('No se encontraron predicciones para este alumno en el período seleccionado.');
         }
       },
       error: (error) => {
@@ -557,7 +557,7 @@ export class PerfilAlumno {
       factores: this.extraerFactores(item.variablesEntrada),
       alertaPrincipal: alerta?.mensaje ?? this.construirJustificacionRiesgo(nivel, variables),
       recomendacionPrincipal:
-        recomendacion?.descripcion ?? 'Sin recomendacion registrada para este caso.'
+        recomendacion?.descripcion ?? 'Sin recomendación registrada para este caso.'
     };
   }
 
@@ -620,18 +620,18 @@ export class PerfilAlumno {
     if (hayAsistenciaAlta && hayRendimientoFragil) {
       const piezas = [
         promedio != null ? `promedio ${this.formatearNumero(promedio, 1)}` : null,
-        peorNota != null ? `nota minima ${this.formatearNumero(peorNota, 1)}` : null,
+        peorNota != null ? `nota mínima ${this.formatearNumero(peorNota, 1)}` : null,
         notaExamen != null ? `examen ${this.formatearNumero(notaExamen, 1)}` : null
       ].filter(Boolean);
 
       return nivel === 'ALTO'
-        ? `Asiste regularmente (${this.formatearNumero(asistencia, 0)}%), pero sus resultados academicos siguen siendo fragiles${piezas.length ? `: ${piezas.join(', ')}` : ''}. Esto sugiere dificultades para consolidar el aprendizaje y un riesgo alto de fracaso si no recibe refuerzo oportuno.`
-        : `Aunque mantiene buena asistencia (${this.formatearNumero(asistencia, 0)}%), sus resultados academicos aun son inestables${piezas.length ? `: ${piezas.join(', ')}` : ''}. Conviene reforzar el aprendizaje antes del siguiente corte.`;
+        ? `Asiste regularmente (${this.formatearNumero(asistencia, 0)}%), pero sus resultados académicos siguen siendo frágiles${piezas.length ? `: ${piezas.join(', ')}` : ''}. Esto sugiere dificultades para consolidar el aprendizaje y un riesgo alto de fracaso si no recibe refuerzo oportuno.`
+        : `Aunque mantiene buena asistencia (${this.formatearNumero(asistencia, 0)}%), sus resultados académicos aún son inestables${piezas.length ? `: ${piezas.join(', ')}` : ''}. Conviene reforzar el aprendizaje antes del siguiente corte.`;
     }
 
     if (asistencia != null && asistencia < 60) {
       return nivel === 'ALTO'
-        ? `Alto riesgo de fracaso por asistencia critica (${this.formatearNumero(asistencia, 0)}%).`
+        ? `Alto riesgo de fracaso por asistencia crítica (${this.formatearNumero(asistencia, 0)}%).`
         : `Seguimiento por asistencia baja (${this.formatearNumero(asistencia, 0)}%).`;
     }
 
@@ -647,18 +647,18 @@ export class PerfilAlumno {
     ) {
       const detallePromedio = [
         promedio != null ? `promedio ${this.formatearNumero(promedio, 1)}` : null,
-        peorNota != null ? `nota minima ${this.formatearNumero(peorNota, 1)}` : null,
+        peorNota != null ? `nota mínima ${this.formatearNumero(peorNota, 1)}` : null,
         notaExamen != null ? `examen ${this.formatearNumero(notaExamen, 1)}` : null
       ]
         .filter(Boolean)
         .join(', ');
       return nivel === 'ALTO'
-        ? `Alto riesgo de fracaso por rendimiento academico comprometido${detallePromedio ? `: ${detallePromedio}` : ''}.`
-        : `Seguimiento por rendimiento academico vulnerable${detallePromedio ? `: ${detallePromedio}` : ''}.`;
+        ? `Alto riesgo de fracaso por rendimiento académico comprometido${detallePromedio ? `: ${detallePromedio}` : ''}.`
+        : `Seguimiento por rendimiento académico vulnerable${detallePromedio ? `: ${detallePromedio}` : ''}.`;
     }
 
     if (asistencia != null && asistencia < 80 && promedio != null && promedio < 14) {
-      return `Riesgo ${nivel.toLowerCase()} de fracaso por combinacion de asistencia (${this.formatearNumero(asistencia, 0)}%) y rendimiento (${this.formatearNumero(promedio, 1)}).`;
+      return `Riesgo ${nivel.toLowerCase()} de fracaso por combinación de asistencia (${this.formatearNumero(asistencia, 0)}%) y rendimiento (${this.formatearNumero(promedio, 1)}).`;
     }
 
     if (nivel === 'ALTO') {

@@ -143,7 +143,7 @@ export class SeccionTutorada implements OnInit {
         if (!periodoActual) {
           this.cargando.set(false);
           this.mantenerSkeletonPorError.set(true);
-          this.error.set('No existe un periodo academico configurado para cargar la seccion tutorada.');
+          this.error.set('No existe un período académico configurado para cargar la sección tutorada.');
           this.mostrarError.set(true);
           return;
         }
@@ -161,7 +161,7 @@ export class SeccionTutorada implements OnInit {
 
             if (!tutoria) {
               this.cargando.set(true);
-              this.error.set('No tienes una seccion tutorada activa en el periodo actual.');
+              this.error.set('No tienes una sección tutorada activa en el período actual.');
               this.mostrarError.set(true);
               return;
             }
@@ -177,7 +177,7 @@ export class SeccionTutorada implements OnInit {
             this.error.set(
               formatearMensajeError(
                 error,
-                'No se pudo cargar el resumen academico de la seccion tutorada.'
+                'No se pudo cargar el resumen académico de la sección tutorada.'
               )
             );
 
@@ -193,7 +193,7 @@ export class SeccionTutorada implements OnInit {
       error: (error) => {
         this.cargando.set(false);
         this.error.set(
-          formatearMensajeError(error, 'No se pudo resolver el periodo academico actual.')
+          formatearMensajeError(error, 'No se pudo resolver el período académico actual.')
         );
         this.resumenAcademico.set(null);
         this.mostrarError.set(true);
@@ -209,7 +209,7 @@ export class SeccionTutorada implements OnInit {
   ): void {
     const tutoriaId = this.tutoriaIdActiva();
     if (!tutoriaId) {
-      this.error.set('No se pudo identificar la tutoria activa.');
+      this.error.set('No se pudo identificar la tutoría activa.');
       return;
     }
 
@@ -235,7 +235,7 @@ export class SeccionTutorada implements OnInit {
         this.error.set(
           formatearMensajeError(
             error,
-            'No se pudo cargar el resumen academico de la seccion tutorada.'
+            'No se pudo cargar el resumen académico de la sección tutorada.'
           )
         );
         this.mostrarError.set(true);

@@ -18,14 +18,14 @@
           <div class="panel-head">
             <a class="back-link" [routerLink]="['/gestion-estudiantil/periodo', periodoId]">
               <i class="fa-solid fa-arrow-left"></i>
-              Volver al periodo
+              Volver al período
             </a>
             <h2>Evaluaciones por curso</h2>
-            <p>{{ periodo()?.nombre || 'Periodo academico' }}</p>
+            <p>{{ periodo()?.nombre || 'Período académico' }}</p>
           </div>
 
           @if (periodo()) {
-            <span class="period-chip">{{ esPeriodoEditable() ? 'Periodo editable' : 'Solo consulta' }}</span>
+            <span class="period-chip">{{ esPeriodoEditable() ? 'Período editable' : 'Solo consulta' }}</span>
           }
         </div>
       </div>
@@ -60,7 +60,7 @@
               [ngModel]="filtroCursos()"
               (ngModelChange)="actualizarFiltroCursos($event)"
               name="filtroCursosConfiguracion"
-              placeholder="Nombre, descripcion o nivel" />
+              placeholder="Nombre, descripción o nivel" />
           </label>
 
           @if (cargandoCursos()) {
@@ -86,7 +86,7 @@
             <div class="cards-surface state-surface">
               <div class="table-state">
                 <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-                <span>No hay cursos para mostrar en este periodo.</span>
+                <span>No hay cursos para mostrar en este período.</span>
               </div>
             </div>
           } @else {
@@ -108,7 +108,7 @@
                       </span>
                     </div>
                     <strong>{{ curso.nivelNombre }}</strong>
-                    <small>{{ curso.descripcionCurso || 'Sin descripcion adicional.' }}</small>
+                    <small>{{ curso.descripcionCurso || 'Sin descripción adicional.' }}</small>
                     <small>{{ curso.totalTiposConfigurados }} tipos configurados</small>
                   </button>
                 }
@@ -120,10 +120,10 @@
         <section class="editor-panel">
           <div class="section-head">
             <div class="panel-head">
-              <h3>{{ detalleCurso()?.nombreCurso || 'Configuracion del curso' }}</h3>
+              <h3>{{ detalleCurso()?.nombreCurso || 'Configuración del curso' }}</h3>
               <p>
                 @if (detalleCurso()) {
-                  {{ detalleCurso()!.usaConfiguracionPersonalizada ? 'Este curso ya usa una configuracion propia.' : 'Este curso usa la plantilla general del periodo.' }}
+                  {{ detalleCurso()!.usaConfiguracionPersonalizada ? 'Este curso ya usa una configuración propia.' : 'Este curso usa la plantilla general del período.' }}
                 } @else {
                   Selecciona un curso para editar sus evaluaciones.
                 }
@@ -164,7 +164,7 @@
             <div class="cards-surface state-surface">
               <div class="table-state">
                 <span class="table-state-icon"><i class="fa-solid fa-clipboard-list"></i></span>
-                <span>Selecciona un curso para abrir su configuracion.</span>
+                <span>Selecciona un curso para abrir su configuración.</span>
               </div>
             </div>
           } @else {
@@ -174,7 +174,7 @@
                   <article class="editor-row" [class.removed]="configuracion.cantidadActual === 0">
                     <div class="editor-type">
                       <strong>{{ configuracion.nombreTipoEvaluacion }}</strong>
-                      <small>{{ configuracion.descripcionTipoEvaluacion || 'Sin descripcion adicional.' }}</small>
+                      <small>{{ configuracion.descripcionTipoEvaluacion || 'Sin descripción adicional.' }}</small>
                     </div>
 
                     <div class="editor-values">

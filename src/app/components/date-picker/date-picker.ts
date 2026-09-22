@@ -61,7 +61,7 @@ export class DatePickerComponent implements OnChanges {
     'Diciembre'
   ];
 
-  readonly weekDays = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do'];
+  readonly weekDays = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['value'] || changes['minYear'] || changes['maxYear']) {

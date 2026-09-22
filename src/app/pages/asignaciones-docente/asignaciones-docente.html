@@ -9,6 +9,9 @@
       <div class="panel-head">
         <h2>Asignaciones académicas</h2>
       </div>
+      <span class="period-chip">
+        {{ (vistaActiva() === 'asignaciones' ? asignacionPeriodo()?.nombre : tutoriaPeriodo()?.nombre) || 'Sin período' }}
+      </span>
     </div>
 
     <div class="view-switch assignment-slide-in assignment-slide-in-middle" [class.is-tutorias]="vistaActiva() === 'tutorias'">
@@ -25,17 +28,6 @@
 
     @if (vistaActiva() === 'asignaciones') {
     <article class="assignment-panel assignment-slide-in assignment-slide-in-bottom">
-      <div class="section-head">
-        <div class="panel-head">
-          <span class="panel-kicker">Asignaciones de docentes por curso</span>
-          <p>Asigne un docente a cada curso para gestionar el registro de notas, asistencia y seguimiento académico.</p>
-        </div>
-
-        <div class="toolbar-inline">
-          <span class="period-chip">{{ asignacionPeriodo()?.nombre || 'Sin periodo' }}</span>
-        </div>
-      </div>
-
       <div class="content">
         <div class="form-cont">
           <form class="module-form">
@@ -227,17 +219,6 @@
 
     @if (vistaActiva() === 'tutorias') {
     <article class="assignment-panel assignment-slide-in assignment-slide-in-bottom">
-      <div class="section-head">
-        <div class="panel-head">
-          <span class="panel-kicker">Asignaciones de tutorías por sección</span>
-          <p>Docente responsable del seguimiento global de la sección durante el período.</p>
-        </div>
-
-        <div class="toolbar-inline">
-          <span class="period-chip">{{ tutoriaPeriodo()?.nombre || 'Sin periodo' }}</span>
-        </div>
-      </div>
-
       <div class="content">
         <div class="form-cont">
           <form class="module-form">

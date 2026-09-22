@@ -19,7 +19,7 @@
 
         <div class="subtitle-meta">
           <p>{{ asignacion()?.grado || 'Grado' }} -</p>
-          <p>Seccion {{ asignacion()?.seccion || '-' }} -</p>
+          <p>Sección {{ asignacion()?.seccion || '-' }} -</p>
           <p>{{ resumenNotas().registradas }} de {{ resumenNotas().notasEsperadas }} notas ingresadas</p>
         </div>
       </div>
@@ -36,8 +36,8 @@
 
     @if (cargando()) {
     <section class="state-card card">
-      <strong>Cargando modulo de notas...</strong>
-      <p>Estamos preparando periodos, alumnos y evaluaciones disponibles.</p>
+      <strong>Cargando módulo de notas...</strong>
+      <p>Estamos preparando períodos, alumnos y evaluaciones disponibles.</p>
     </section>
     } @else if (error()) {
     <section class="state-card card state-error">
@@ -59,7 +59,7 @@
           </button>
 
           <div class="calendar-current">
-            <strong>{{ periodoEvaluacionSeleccionado()?.nombre || 'Sin periodo' }}</strong>
+            <strong>{{ periodoEvaluacionSeleccionado()?.nombre || 'Sin período' }}</strong>
             <small>
               {{ periodoEvaluacionSeleccionado()?.fechaInicio || '--' }}
               -
@@ -79,7 +79,7 @@
       @if (!periodosEvaluacionPeriodo().length) {
       <div class="table-state">
         <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-        <span>No hay periodos registrados para esta asignacion.</span>
+        <span>No hay períodos registrados para esta asignación.</span>
       </div>
       } @else {
 
@@ -112,7 +112,7 @@
               <td [attr.colspan]="evaluaciones().length + 1">
                 <div class="table-state">
                   <span class="table-state-icon"><i class="fa-solid fa-users"></i></span>
-                  <span>No hay alumnos matriculados en esta seccion.</span>
+                  <span>No hay alumnos matriculados en esta sección.</span>
                 </div>
               </td>
             </tr>
@@ -140,7 +140,7 @@
       </div>
 
       <div class="form-actions footer-actions">
-        <span class="autosave-hint">Los cambios se guardan automaticamente.</span>
+        <span class="autosave-hint">Los cambios se guardan automáticamente.</span>
       </div>
       }
     </section>
@@ -151,7 +151,7 @@
       <section class="notes-config-modal" (click)="$event.stopPropagation()">
         <div class="notes-config-panel-head">
           <div class="panel-head">
-            <span class="panel-kicker">Configuracion de evaluaciones</span>
+            <span class="panel-kicker">Configuración de evaluaciones</span>
             <h3>Evaluaciones configuradas para {{ asignacion()?.curso || 'el curso' }}</h3>
           </div>
 
@@ -182,8 +182,8 @@
             @if (hayNotasRegistradas()) {
             <div class="notes-config-warning">
               <i class="fa-solid fa-circle-info"></i>
-              <span>Ya existen notas registradas en este periodo. Si reduces tipos o cantidades, la grilla se
-                resincronizara.</span>
+              <span>Ya existen notas registradas en este período. Si reduces tipos o cantidades, la grilla se
+                resincronizará.</span>
             </div>
             }
           </aside>
@@ -205,14 +205,14 @@
             </div>
             } @else {
             <div class="notes-config-list">
-              <span class="notes-config-list-title">Configuracion por tipo de evaluacion</span>
+              <span class="notes-config-list-title">Configuración por tipo de evaluación</span>
               <div class="notes-config-table-wrap">
                 <table class="notes-config-table">
                   <thead>
                     <tr>
                       <th>Tipo</th>
                       <th>Cantidad</th>
-                      <th>Accion</th>
+                      <th>Acción</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -221,7 +221,7 @@
                       <td>
                         <div class="config-row-copy">
                           <strong>{{ nombreTipoEvaluacionVisible(configuracion.nombreTipoEvaluacion) }}</strong>
-                          <small>{{ configuracion.descripcionTipoEvaluacion || 'Sin descripcion adicional.' }}</small>
+                          <small>{{ configuracion.descripcionTipoEvaluacion || 'Sin descripción adicional.' }}</small>
                         </div>
                       </td>
                       <td>

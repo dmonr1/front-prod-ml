@@ -16,11 +16,11 @@
           <div class="section-head">
             <div class="panel-head">
               <h2>Mis cursos asignados</h2>
-              <p>Haz clic en una tarjeta para continuar al detalle academico del curso.</p>
+              <p>Haz clic en una tarjeta para continuar al detalle académico del curso.</p>
             </div>
 
             <div class="head-actions">
-              <span class="records-chip">Periodo {{ periodoAcademicoAnio() || currentYear }}</span>
+              <span class="records-chip">Período {{ periodoAcademicoAnio() || currentYear }}</span>
             </div>
           </div>
 
@@ -57,7 +57,7 @@
           <div class="cards-surface state-surface">
             <div class="table-state">
               <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-              <span>No tienes cursos o secciones asignadas para el periodo academico actual.</span>
+              <span>No tienes cursos o secciones asignadas para el período académico actual.</span>
             </div>
           </div>
           } @else {
@@ -88,7 +88,7 @@
                 </div>
 
                 <div class="flow-card-footer">
-                  <span><i class="fa-solid fa-users"></i> Seccion {{ asignacion.seccion }}</span>
+                  <span><i class="fa-solid fa-users"></i> Sección {{ asignacion.seccion }}</span>
                   <div class="flow-card-actions">
                     <a class="flow-link-button" [routerLink]="['/mis-asignaciones', asignacion.id, 'notas']">
                       <i class="fa-solid fa-pen-to-square"></i>
@@ -108,7 +108,7 @@
           <div class="section-head">
             <div class="panel-head">
               <h2>Secciones tutoradas</h2>
-              <p>Revisa las secciones donde tienes seguimiento tutorial durante este periodo.</p>
+              <p>Revisa las secciones donde tienes seguimiento tutorial durante este período.</p>
             </div>
           </div>
 
@@ -141,7 +141,7 @@
               @for (tutoria of seccionesTutoradas(); track tutoria.id) {
               <article class="flow-card tutoria-card">
                 <div class="flow-card-top">
-                  <span class="flow-title">Seccion {{ tutoria.seccion }}</span>
+                  <span class="flow-title">Sección {{ tutoria.seccion }}</span>
                   <span class="status-badge active-1">{{ tutoria.nivel }}</span>
                 </div>
 

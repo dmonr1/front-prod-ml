@@ -17,7 +17,7 @@
       [open]="true"
       type="error"
       title="No se pudo cargar la información"
-      [message]="error() || 'Ocurrio un problema inesperado'"
+      [message]="error() || 'Ocurrió un problema inesperado'"
       confirmText="Reintentar"
       cancelText="Cerrar"
       (confirm)="reintentarCargaError()"
@@ -40,11 +40,11 @@
           @if (esVistaSeccionTutorada() && tutoriasDisponibles().length > 1) {
           <div class="tutoria-dropdown">
             <span class="section-picker-label">
-              {{ tutoriasDisponibles().length > 1 ? 'Cambiar de seccion:' : 'Elegir seccion:' }}
+              {{ tutoriasDisponibles().length > 1 ? 'Cambiar de sección:' : 'Elegir sección:' }}
             </span>
             <button class="summary-pill section-picker" type="button" (click)="toggleSelectorTutoria()">
               <i class="fa-solid fa-layer-group"></i>
-              <strong>Seccion {{ asignacion()?.seccion || tutoriaActiva()?.seccion || '-' }}</strong>
+              <strong>Sección {{ asignacion()?.seccion || tutoriaActiva()?.seccion || '-' }}</strong>
               <i class="fa-solid fa-chevron-down"></i>
             </button>
 
@@ -57,10 +57,10 @@
                   [class.active]="tutoria.id === tutoriaActivaId()"
                   (click)="seleccionarTutoria(tutoria.id)">
                   <div class="tutoria-option-head">
-                    <span class="tutoria-option-title">Seccion {{ tutoria.seccion }}</span>
+                    <span class="tutoria-option-title">Sección {{ tutoria.seccion }}</span>
                     <span class="tutoria-option-badge">{{ tutoria.nivel }}</span>
                   </div>
-                  <strong class="tutoria-option-strong">{{ tutoria.grado }} - Seccion {{ tutoria.seccion }}</strong>
+                  <strong class="tutoria-option-strong">{{ tutoria.grado }} - Sección {{ tutoria.seccion }}</strong>
                   <small>{{ tutoria.periodoAcademico }} - {{ tutoria.docenteNombreCompleto }}</small>
 
                   <div class="tutoria-option-footer">
@@ -76,7 +76,7 @@
             }
           </div>
           } @else {
-          <span class="summary-pill section-pill">Seccion {{ asignacion()?.seccion || tutoriaActiva()?.seccion || '-' }}</span>
+          <span class="summary-pill section-pill">Sección {{ asignacion()?.seccion || tutoriaActiva()?.seccion || '-' }}</span>
           }
 
           <span class="summary-pill prom">Promedio de asistencia: {{ resumenAsistencia().promedio }}%</span>
@@ -89,7 +89,7 @@
             <i class="fa-solid fa-calendar-check"></i>
           </span>
           <div class="attendance-step-copy">
-            <strong>Clases programadas generdadas automaticamente según la fecha de inicio y fin del periodo.</strong>
+            <strong>Clases programadas generadas automáticamente según la fecha de inicio y fin del período.</strong>
             <small>Si hubo feriados, suspensión de clases u otro motivo institucional, puedes ajustar manualmente ese valor.</small>
           </div>
         </div>
@@ -174,8 +174,8 @@
           </button>
 
           <div class="period-slider-title">
-            <span class="slider-kicker">Periodo de evaluacion</span>
-            <h3>{{ periodoEvaluacionSeleccionado()?.nombre || 'Sin periodo' }}</h3>
+            <span class="slider-kicker">Período de evaluación</span>
+            <h3>{{ periodoEvaluacionSeleccionado()?.nombre || 'Sin período' }}</h3>
             <small>
               {{ periodoEvaluacionSeleccionado()?.fechaInicio || '--' }}
               -
@@ -237,7 +237,7 @@
               <td colspan="3">
                 <div class="table-message neutral">
                   <i class="fa-regular fa-folder-open"></i>
-                  <span>No hay periodos registrados para esta seccion.</span>
+                  <span>No hay períodos registrados para esta sección.</span>
                 </div>
               </td>
             </tr>
@@ -249,7 +249,7 @@
 
       <div class="form-actions footer-actions">
         <span class="autosave-hint">
-          {{ puedeRegistrarAsistencia() ? 'Los cambios se guardan automaticamente.' : 'La seccion puede consultarse, pero el registro se habilitara cuando tenga una asignacion docente asociada.' }}
+          {{ puedeRegistrarAsistencia() ? 'Los cambios se guardan automáticamente.' : 'La sección puede consultarse, pero el registro se habilitará cuando tenga una asignación docente asociada.' }}
         </span>
       </div>
     </section>

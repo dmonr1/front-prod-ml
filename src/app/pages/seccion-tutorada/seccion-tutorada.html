@@ -17,7 +17,7 @@
       <div class="grades-toolbar-actions">
         @if (!mostrarSkeleton() && tutoriasDisponibles().length > 1) {
         <div class="tutoria-dropdown">
-          <span class="section-picker-label">Cambiar de seccion:</span>
+          <span class="section-picker-label">Cambiar de sección:</span>
           <button class="summary-pill section-picker" type="button" (click)="toggleSelectorTutoria()">
             <i class="fa-solid fa-layer-group"></i>
             <strong>Sección {{ tutoria()?.seccion || '-' }}</strong>
@@ -38,7 +38,7 @@
                 <span class="tutoria-option-badge">{{ item.nivel }}</span>
               </div>
 
-              <strong class="tutoria-option-strong">{{ item.grado }} - Seccion {{ item.seccion }}</strong>
+              <strong class="tutoria-option-strong">{{ item.grado }} - Sección {{ item.seccion }}</strong>
               <small>{{ item.periodoAcademico }} - {{ item.docenteNombreCompleto }}</small>
 
               <div class="tutoria-option-footer">
@@ -56,7 +56,7 @@
         }
 
         <span class="summary-pill prom">
-          Promedio General de la seccion: &nbsp; {{ resumenVista().promedioSeccion === null ? '--' : resumenVista().promedioSeccion }}
+          Promedio General de la sección: &nbsp; {{ resumenVista().promedioSeccion === null ? '--' : resumenVista().promedioSeccion }}
         </span>
       </div>
     </div>
@@ -136,8 +136,8 @@
     <app-custom-alert
       [open]="true"
       type="error"
-      title="No se pudo cargar la informacion"
-      [message]="error() || 'Ocurrio un problema inesperado'"
+      title="No se pudo cargar la información"
+      [message]="error() || 'Ocurrió un problema inesperado'"
       confirmText="Reintentar"
       cancelText="Cerrar"
       (confirm)="reintentarCarga()"
@@ -167,7 +167,7 @@
           </button>
 
           <div class="calendar-current">
-            <strong>{{ periodoEvaluacionSeleccionado()?.nombre || 'Sin periodo' }}</strong>
+            <strong>{{ periodoEvaluacionSeleccionado()?.nombre || 'Sin período' }}</strong>
             <small>
               {{ periodoEvaluacionSeleccionado()?.fechaInicio || '--' }}
               -
@@ -190,19 +190,19 @@
       @if (!periodosEvaluacionTutoria().length) {
       <div class="table-state">
         <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-        <span>No hay periodos de evaluacion registrados para esta seccion tutorada.</span>
+        <span>No hay períodos de evaluación registrados para esta sección tutorada.</span>
       </div>
       } @else if (!resumenAcademico()?.cursos?.length && !cargandoTabla()) {
       <div class="table-state">
         <span class="table-state-icon"><i class="fa-solid fa-book-open"></i></span>
-        <span>No hay cursos asignados a esta seccion en el periodo academico actual.</span>
+        <span>No hay cursos asignados a esta sección en el período académico actual.</span>
       </div>
       } @else {
       <div class="grades-table-shell" [class.is-loading]="cargandoTabla()">
         @if (cargandoTabla()) {
         <div class="table-loading-overlay">
           <span class="table-state-icon"><i class="fa-solid fa-rotate"></i></span>
-          <span>Actualizando el consolidado de la seccion seleccionada...</span>
+          <span>Actualizando el consolidado de la sección seleccionada...</span>
         </div>
         }
       <div class="table-scroll grades-table">
@@ -210,7 +210,7 @@
           <thead>
             <tr>
               <th>Alumno</th>
-              <th>Accion</th>
+              <th>Acción</th>
               <th>Asistencia</th>
               @for (curso of resumenAcademico()!.cursos; track curso.asignacionId) {
               <th [title]="curso.docenteNombreCompleto">{{ curso.curso }}</th>
@@ -259,7 +259,7 @@
               <td [attr.colspan]="(resumenAcademico()?.cursos?.length || 0) + 5">
                 <div class="table-state">
                   <span class="table-state-icon"><i class="fa-solid fa-users"></i></span>
-                  <span>No hay alumnos matriculados en esta seccion.</span>
+                  <span>No hay alumnos matriculados en esta sección.</span>
                 </div>
               </td>
             </tr>

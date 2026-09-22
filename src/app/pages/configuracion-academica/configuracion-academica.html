@@ -2,9 +2,9 @@
   <section class="setup-page">
     <div class="page-head">
       <div class="panel-head">
-        <span class="panel-kicker">Configuracion academica</span>
+        <span class="panel-kicker">Configuración académica</span>
         <h2>Base operativa del sistema</h2>
-        <p>Organiza los modulos principales para avanzar desde la gestion estudiantil hasta la operacion docente.</p>
+        <p>Organiza los módulos principales para avanzar desde la gestión estudiantil hasta la operación docente.</p>
       </div>
     </div>
 
@@ -28,10 +28,10 @@
 
         <div class="setup-card-foot">
           <span class="module-type">
-            {{ modulo.status === 'prioridad' ? 'Configuracion base' : modulo.status === 'operativo' ? 'Configuracion operativa' : 'Configuracion siguiente' }}
+            {{ modulo.status === 'prioridad' ? 'Configuración base' : modulo.status === 'operativo' ? 'Configuración operativa' : 'Configuración siguiente' }}
           </span>
           <a class="module-link" [routerLink]="modulo.route">
-            Abrir modulo
+            Abrir módulo
             <i class="fa-solid fa-arrow-right"></i>
           </a>
         </div>

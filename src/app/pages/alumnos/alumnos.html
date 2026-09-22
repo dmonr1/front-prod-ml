@@ -16,12 +16,12 @@
       <div class="card-head">
         <div class="card-head-inline">
           <div class="panel-head">
-            <h2>Gestion estudiantil por periodo academico</h2>
+            <h2>Gestión estudiantil por período académico</h2>
           </div>
 
           <div class="head-actions">
             <button class="action-button secondary" type="button" (click)="abrirModalPeriodo()"><i class="fa-solid fa-plus"></i>
-              Añadir periodo academico
+              Añadir período académico
             </button>
           </div>
         </div>
@@ -30,8 +30,8 @@
       <section class="periods-panel">
         <div class="panel-head section-head">
           <div>
-            <h3>Periodos academicos</h3>
-            <p>Haz clic en el periodo para ver sus grados y secciones.</p>
+            <h3>Períodos académicos</h3>
+            <p>Haz clic en el período para ver sus grados y secciones.</p>
           </div>
         </div>
 
@@ -94,7 +94,7 @@
                         class="bimester-state"
                         [class.complete]="periodo.anio === currentYear"
                         [class.historic]="periodo.anio !== currentYear">
-                        {{ periodo.anio === currentYear ? 'Editable' : 'Historico' }}
+                        {{ periodo.anio === currentYear ? 'Editable' : 'Histórico' }}
                       </span>
                     </div>
                   </div>
@@ -112,7 +112,7 @@
           <div class="modal-head">
             <div>
               <span class="panel-kicker">
-                {{ editandoPeriodoId() ? 'Editar periodo academico' : 'Registrar periodo academico' }}
+                {{ editandoPeriodoId() ? 'Editar período académico' : 'Registrar período académico' }}
               </span>
             </div>
             <button class="modal-close" type="button" (click)="cerrarModalPeriodo()">
@@ -124,7 +124,7 @@
               @if (cargandoDetallePeriodo()) {
                 <div class="modal-loading-state">
                   <span class="table-state-icon"><i class="fa-solid fa-pen-to-square"></i></span>
-                  <span>Cargando datos del periodo...</span>
+                  <span>Cargando datos del período...</span>
                 </div>
               } @else {
                 <div class="stepper-shell">
@@ -152,7 +152,7 @@
                   [class.completed]="pasoModalPeriodo() > 2"
                   (click)="irAPasoModal(2)">
                   <span class="step-node-circle">2</span>
-                  <span class="step-node-label">Periodos</span>
+                  <span class="step-node-label">Períodos</span>
                 </button>
 
                 <button
@@ -191,7 +191,7 @@
                           [ngModel]="formPeriodo().nombre"
                           (ngModelChange)="actualizarCampoPeriodo('nombre', $event)"
                           name="nombrePeriodo"
-                          placeholder="Ejemplo: Periodo 2026" />
+                          placeholder="Ejemplo: Período 2026" />
                       </label>
 
                       <label>
@@ -199,8 +199,11 @@
                         <input
                           type="number"
                           [ngModel]="formPeriodo().anio"
-                          (ngModelChange)="actualizarCampoPeriodo('anio', +$event)"
+                          (ngModelChange)="actualizarAnioPeriodo($event)"
                           name="anioPeriodo"
+                          min="2000"
+                          max="2100"
+                          step="1"
                           placeholder="2026" />
                       </label>
                     </div>
@@ -210,6 +213,8 @@
                         Fecha de inicio
                         <app-date-picker
                           [value]="formPeriodo().fechaInicio"
+                          [minYear]="anioCalendario()"
+                          [maxYear]="anioCalendario()"
                           (valueChange)="actualizarCampoPeriodo('fechaInicio', $event)" />
                       </label>
 
@@ -217,6 +222,8 @@
                         Fecha de fin
                         <app-date-picker
                           [value]="formPeriodo().fechaFin"
+                          [minYear]="anioCalendario()"
+                          [maxYear]="anioCalendario()"
                           (valueChange)="actualizarCampoPeriodo('fechaFin', $event)" />
                       </label>
                     </div>
@@ -239,7 +246,7 @@
               @if (pasoModalPeriodo() === 2) {
                 <section class="evaluation-draft step-panel">
                   <div class="draft-head">
-                    <strong>Periodos de evaluacion</strong>
+                    <strong>Períodos de evaluación</strong>
                     <span>{{ periodosEvaluacionBorrador().length }} por crear</span>
                   </div>
 
@@ -258,6 +265,8 @@
                             <span>Inicio</span>
                             <app-date-picker
                               [value]="periodoEvaluacion.fechaInicio"
+                              [minYear]="anioCalendario()"
+                              [maxYear]="anioCalendario()"
                               (valueChange)="actualizarFechaBorrador(i, 'fechaInicio', $event)" />
                           </div>
 
@@ -265,6 +274,8 @@
                             <span>Fin</span>
                             <app-date-picker
                               [value]="periodoEvaluacion.fechaFin"
+                              [minYear]="anioCalendario()"
+                              [maxYear]="anioCalendario()"
                               (valueChange)="actualizarFechaBorrador(i, 'fechaFin', $event)" />
                           </div>
                         </div>
@@ -278,7 +289,7 @@
                 <section class="evaluation-template step-panel">
                   <div class="draft-head">
                     <strong>Plantilla anual de evaluaciones</strong>
-                    <span>Selecciona solo los tipos que usaras y luego define su cantidad base.</span>
+                    <span>Selecciona solo los tipos que usarás y luego define su cantidad base.</span>
                   </div>
 
                   @if (cargandoTiposEvaluacion()) {
@@ -294,7 +305,7 @@
                   } @else if (!tiposEvaluacion().length) {
                     <div class="table-state">
                       <span class="table-state-icon"><i class="fa-solid fa-clipboard-list"></i></span>
-                      <span>No hay tipos de evaluacion disponibles para configurar.</span>
+                      <span>No hay tipos de evaluación disponibles para configurar.</span>
                     </div>
                   } @else {
                     <div class="evaluation-template-builder">
@@ -331,13 +342,13 @@
                       <div class="evaluation-template-table-wrap">
                         <div class="picker-head">
                           <strong>Configuración anual</strong>
-                          <span>Solo se guardaran los tipos seleccionados</span>
+                          <span>Solo se guardarán los tipos seleccionados</span>
                         </div>
 
                         @if (!configuracionesEvaluacionSeleccionadas().length) {
                           <div class="table-state compact-state">
                             <span class="table-state-icon"><i class="fa-solid fa-list-check"></i></span>
-                            <span>Agrega al menos un tipo de evaluacion para definir la plantilla anual.</span>
+                            <span>Agrega al menos un tipo de evaluación para definir la plantilla anual.</span>
                           </div>
                         } @else {
                           <div class="evaluation-template-table-scroll">
@@ -346,7 +357,7 @@
                                 <tr>
                                   <th>Tipo</th>
                                   <th>Cantidad</th>
-                                  <th>Accion</th>
+                                  <th>Acción</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -355,7 +366,7 @@
                                     <td>
                                       <div class="template-type">
                                         <strong>{{ nombreTipoEvaluacionVisible(configuracion.nombreTipoEvaluacion) }}</strong>
-                                        <small>{{ configuracion.descripcionTipoEvaluacion || 'Sin descripcion adicional.' }}</small>
+                                        <small>{{ configuracion.descripcionTipoEvaluacion || 'Sin descripción adicional.' }}</small>
                                       </div>
                                     </td>
                                     <td>
@@ -390,7 +401,7 @@
               @if (pasoModalPeriodo() === 4) {
                 <section class="courses-template step-panel">
                   <div class="draft-head">
-                    <strong>Cursos del periodo</strong>
+                    <strong>Cursos del período</strong>
                     <span>{{ cursosSeleccionadosIds().length }} seleccionados</span>
                   </div>
 
@@ -402,13 +413,13 @@
                         [disabled]="copiandoCursosAnteriores()"
                         (click)="copiarCursosPeriodoAnterior()">
                         <i class="fa-solid fa-copy"></i>
-                        {{ copiandoCursosAnteriores() ? 'Copiando cursos...' : 'Copiar cursos del periodo anterior' }}
+                        {{ copiandoCursosAnteriores() ? 'Copiando cursos...' : 'Copiar cursos del período anterior' }}
                       </button>
                       <button class="action-button ghost" type="button" (click)="seleccionarTodosCursosFiltrados()">
                         Seleccionar visibles
                       </button>
                       <button class="action-button ghost" type="button" (click)="limpiarSeleccionCursos()">
-                        Limpiar seleccion
+                        Limpiar selección
                       </button>
                     </div>
                   </div>
@@ -420,7 +431,7 @@
                       [ngModel]="filtroCursos()"
                       (ngModelChange)="actualizarFiltroCursos($event)"
                       name="filtroCursosPeriodo"
-                      placeholder="Nombre, descripcion o nivel" />
+                      placeholder="Nombre, descripción o nivel" />
                   </label>
 
                   @if (cargandoCursos()) {
@@ -435,12 +446,12 @@
                   } @else if (!cursos().length) {
                     <div class="table-state">
                       <span class="table-state-icon"><i class="fa-solid fa-book"></i></span>
-                      <span>No hay cursos disponibles para asignar al periodo.</span>
+                      <span>No hay cursos disponibles para asignar al período.</span>
                     </div>
                   } @else if (!cursosFiltrados().length) {
                     <div class="table-state">
                       <span class="table-state-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
-                      <span>No hay cursos que coincidan con la busqueda.</span>
+                      <span>No hay cursos que coincidan con la búsqueda.</span>
                     </div>
                   } @else {
                     <div class="courses-list">
@@ -452,7 +463,7 @@
                           (click)="alternarCurso(curso.id)">
                           <div class="course-option-main">
                             <strong>{{ curso.nombre }}</strong>
-                            <small>{{ curso.descripcion || 'Sin descripcion adicional.' }}</small>
+                            <small>{{ curso.descripcion || 'Sin descripción adicional.' }}</small>
                           </div>
                           <span class="course-option-level">{{ curso.nivelNombre }}</span>
                         </button>
@@ -464,6 +475,14 @@
                 </div>
 
                 <div class="form-actions">
+                  <button class="action-button ghost" type="button" (click)="cerrarModalPeriodo()">
+                    Cancelar
+                  </button>
+
+                  <button class="action-button secondary" type="button" (click)="limpiarFormularioPeriodo()">Limpiar</button>
+
+                  <span class="form-actions-spacer" aria-hidden="true"></span>
+
                   <button
                     class="action-button ghost"
                     type="button"
@@ -481,11 +500,6 @@
                       {{ guardandoPeriodo() ? 'Guardando...' : (editandoPeriodoId() ? 'Guardar cambios' : 'Guardar periodo') }}
                     </button>
                   }
-
-                  <button class="action-button secondary" type="button" (click)="limpiarFormularioPeriodo()">Limpiar</button>
-                  <button class="action-button ghost" type="button" (click)="cerrarModalPeriodo()">
-                    Cancelar
-                  </button>
                 </div>
               }
             </form>
@@ -494,7 +508,7 @@
               <div class="new-type-overlay" (click)="cancelarNuevoTipoEvaluacion()">
                 <div class="new-type-popover" (click)="$event.stopPropagation()">
                   <div class="new-type-popover-head">
-                    <strong>Nuevo tipo de evaluacion</strong>
+                    <strong>Nuevo tipo de evaluación</strong>
                     <button class="popover-close" type="button" (click)="cancelarNuevoTipoEvaluacion()">
                       <i class="fa-solid fa-xmark"></i>
                     </button>
@@ -510,7 +524,7 @@
                   </label>
 
                   <label class="form-field">
-                    <span>Descripcion</span>
+                    <span>Descripción</span>
                     <input
                       type="text"
                       [ngModel]="nuevoTipoEvaluacionForm().descripcion"
@@ -518,7 +532,7 @@
                       name="nuevo-tipo-descripcion" />
                   </label>
 
-                  <small class="new-type-hint">El orden se asignara automaticamente al final de la lista.</small>
+                  <small class="new-type-hint">El orden se asignará automáticamente al final de la lista.</small>
 
                   <div class="new-type-actions">
                     <button class="action-button ghost" type="button" (click)="cancelarNuevoTipoEvaluacion()">

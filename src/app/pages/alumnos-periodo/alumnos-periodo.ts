@@ -140,7 +140,7 @@ export class AlumnosPeriodo {
         this.cargandoPeriodo.set(false);
       },
       error: () => {
-        this.errorPeriodo.set('No se pudo cargar el periodo academico.');
+        this.errorPeriodo.set('No se pudo cargar el período académico.');
         this.cargandoPeriodo.set(false);
       }
     });
@@ -189,7 +189,7 @@ export class AlumnosPeriodo {
         this.cargandoMatriculas.set(false);
       },
       error: () => {
-        this.errorMatriculas.set('No se pudieron cargar las matriculas del periodo.');
+        this.errorMatriculas.set('No se pudieron cargar las matrículas del período.');
         this.cargandoMatriculas.set(false);
       }
     });
@@ -223,7 +223,7 @@ export class AlumnosPeriodo {
       this.mostrarAlerta(
         'warning',
         'Sin permisos',
-        'Solo un administrador puede registrar secciones en este modulo.'
+        'Solo un administrador puede registrar secciones en este módulo.'
       );
       return;
     }
@@ -244,7 +244,7 @@ export class AlumnosPeriodo {
       this.mostrarAlerta(
         'warning',
         'Selecciona un grado',
-        'Selecciona un grado antes de crear una seccion.'
+        'Selecciona un grado antes de crear una sección.'
       );
       return;
     }
@@ -253,7 +253,7 @@ export class AlumnosPeriodo {
       this.mostrarAlerta(
         'warning',
         'Falta el nombre',
-        'Ingresa el nombre de la seccion.'
+        'Ingresa el nombre de la sección.'
       );
       return;
     }
@@ -276,8 +276,8 @@ export class AlumnosPeriodo {
           this.cerrarModalSeccion();
           this.mostrarAlerta(
             'success',
-            'Seccion registrada',
-            'Seccion registrada correctamente para este periodo.'
+            'Sección registrada',
+            'Sección registrada correctamente para este período.'
           );
         },
         error: (error) => {
@@ -285,7 +285,7 @@ export class AlumnosPeriodo {
           this.mostrarAlerta(
             'error',
             'No se pudo registrar',
-            formatearMensajeError(error, 'No se pudo registrar la seccion.')
+            formatearMensajeError(error, 'No se pudo registrar la sección.')
           );
         }
       });
@@ -306,8 +306,8 @@ export class AlumnosPeriodo {
     if (!this.periodoAnterior()) {
       this.mostrarAlerta(
         'warning',
-        'No hay periodo anterior',
-        'No existe un periodo anterior para copiar secciones.'
+        'No hay período anterior',
+        'No existe un período anterior para copiar secciones.'
       );
       return;
     }
@@ -326,7 +326,7 @@ export class AlumnosPeriodo {
           this.mostrarAlerta(
             'success',
             'Secciones cargadas',
-            'Secciones del periodo anterior cargadas correctamente.'
+            'Secciones del período anterior cargadas correctamente.'
           );
         },
         error: (error) => {
@@ -334,7 +334,7 @@ export class AlumnosPeriodo {
           this.mostrarAlerta(
             'error',
             'No se pudieron cargar',
-            formatearMensajeError(error, 'No se pudieron cargar las secciones del periodo anterior.')
+            formatearMensajeError(error, 'No se pudieron cargar las secciones del período anterior.')
           );
         }
       });
@@ -351,8 +351,8 @@ export class AlumnosPeriodo {
       this.seccionPendienteEstado.set({ id: seccion.id, activa: false });
       this.mostrarAlerta(
         'warning',
-        'Deshabilitar seccion',
-        'Esta seguro que quiere deshabilitar esta seccion para este periodo?',
+        'Deshabilitar sección',
+        '¿Está seguro de que desea deshabilitar esta sección para este período?',
         {
           confirmText: 'Deshabilitar',
           cancelText: 'Cancelar'
@@ -392,10 +392,10 @@ export class AlumnosPeriodo {
         );
         this.mostrarAlerta(
           'success',
-          activa ? 'Seccion habilitada' : 'Seccion deshabilitada',
+          activa ? 'Sección habilitada' : 'Sección deshabilitada',
           activa
-            ? 'Seccion habilitada correctamente para este periodo.'
-            : 'Seccion deshabilitada correctamente para este periodo.'
+            ? 'Sección habilitada correctamente para este período.'
+            : 'Sección deshabilitada correctamente para este período.'
         );
       },
       error: (error) => {
@@ -405,7 +405,7 @@ export class AlumnosPeriodo {
           activa ? 'No se pudo habilitar' : 'No se pudo deshabilitar',
           formatearMensajeError(
             error,
-            activa ? 'No se pudo habilitar la seccion.' : 'No se pudo deshabilitar la seccion.'
+            activa ? 'No se pudo habilitar la sección.' : 'No se pudo deshabilitar la sección.'
           )
         );
       }

@@ -18,9 +18,9 @@
           <div class="panel-head">
             <a class="back-link" routerLink="/gestion-estudiantil">
               <i class="fa-solid fa-arrow-left"></i>
-              Volver a periodos
+              Volver a períodos
             </a>
-            <h2>{{ periodo()?.nombre || 'Periodo academico' }}</h2>
+            <h2>{{ periodo()?.nombre || 'Período académico' }}</h2>
           </div>
 
           <div class="head-actions">
@@ -31,7 +31,7 @@
               </a>
             }
             @if (periodo()) {
-              <span class="period-chip">{{ esPeriodoEditable() ? 'Periodo editable' : 'Solo consulta' }}</span>
+              <span class="period-chip">{{ esPeriodoEditable() ? 'Período editable' : 'Solo consulta' }}</span>
             }
           </div>
         </div>
@@ -91,7 +91,7 @@
               <strong>
                 {{ grado.nivelNombre || (nivelSeleccionadoId() === 1 ? 'Primaria' : 'Secundaria') }}
               </strong>
-              <small>{{ totalMatriculadosGrado(grado.id) }} matriculados en este periodo</small>
+              <small>{{ totalMatriculadosGrado(grado.id) }} matriculados en este período</small>
             </button>
             }
           </div>
@@ -117,7 +117,7 @@
               [disabled]="!periodoAnterior() || cargandoSeccionesAnteriores()"
               (click)="cargarSeccionesPeriodoAnterior()">
               <i class="fa-solid fa-upload"></i>
-              {{ cargandoSeccionesAnteriores() ? 'Cargando...' : 'Cargar secciones del periodo anterior' }}
+              {{ cargandoSeccionesAnteriores() ? 'Cargando...' : 'Cargar secciones del período anterior' }}
             </button>
             <button class="action-button primary" type="button" (click)="abrirModalSeccion()">
               <i class="fa-solid fa-plus"></i>
@@ -149,7 +149,7 @@
         <div class="cards-surface state-surface">
           <div class="table-state">
             <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-            <span>Este grado todavía no tiene secciones registradas en este periodo.</span>
+            <span>Este grado todavía no tiene secciones registradas en este período.</span>
           </div>
         </div>
         } @else {
@@ -159,7 +159,7 @@
             <article class="flow-card flow-card-clickable" tabindex="0" (click)="abrirSeccion(seccion.id)"
               (keydown.enter)="abrirSeccion(seccion.id)" (keydown.space)="abrirSeccion(seccion.id); $event.preventDefault()">
               <div class="flow-card-top">
-                <span class="flow-title">Seccion {{ seccion.nombre }}</span>
+                <span class="flow-title">Sección {{ seccion.nombre }}</span>
                 <div class="flow-card-actions">
                   @if (esPeriodoEditable()) {
                   <button
@@ -197,11 +197,11 @@
       <div class="modal-card modal-card--compact" (click)="$event.stopPropagation()">
         <div class="modal-head">
           <div class="panel-head">
-            <span class="panel-kicker">Nueva seccion</span>
-            <h3>Agregar seccion al periodo</h3>
+            <span class="panel-kicker">Nueva sección</span>
+            <h3>Agregar sección al período</h3>
             <p>
               {{ gradoSeleccionado()?.nombre || 'Grado seleccionado' }} -
-              {{ periodo()?.nombre || 'Periodo actual' }}
+              {{ periodo()?.nombre || 'Período actual' }}
             </p>
           </div>
           <button class="modal-close" type="button" (click)="cerrarModalSeccion()">
@@ -212,9 +212,9 @@
         <form class="master-form">
           <div class="form-two-columns">
             <label>
-              Nombre de la seccion
+              Nombre de la sección
               <input type="text" [ngModel]="formSeccionNombre()" (ngModelChange)="formSeccionNombre.set($event)"
-                name="nombreSeccion" placeholder="Ejemplo: A o UNICA" />
+                name="nombreSeccion" placeholder="Ejemplo: A o ÚNICA" />
             </label>
 
             <label>
@@ -227,7 +227,7 @@
           <div class="form-actions">
             <button class="action-button primary" type="button" [disabled]="guardandoSeccion()"
               (click)="guardarSeccion()">
-              {{ guardandoSeccion() ? 'Guardando...' : 'Guardar seccion' }}
+              {{ guardandoSeccion() ? 'Guardando...' : 'Guardar sección' }}
             </button>
             <button class="action-button secondary" type="button" (click)="cerrarModalSeccion()">
               Cerrar

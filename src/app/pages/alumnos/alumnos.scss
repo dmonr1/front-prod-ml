@@ -956,6 +956,10 @@ select {
   justify-content: end;
 }
 
+.form-actions-spacer {
+  flex: 1 1 auto;
+}
+
 .action-button {
   display: inline-flex;
   align-items: center;
@@ -1049,6 +1053,10 @@ select {
   .evaluation-draft-row {
     grid-template-columns: 1fr;
     flex-direction: column;
+  }
+
+  .form-actions-spacer {
+    display: none;
   }
 
   .head-actions {

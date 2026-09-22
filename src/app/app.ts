@@ -34,7 +34,7 @@ export class App {
     }
 
     if (nuevaPassword !== confirmarPassword) {
-      this.errorPassword.set('La confirmacion de contraseña no coincide.');
+      this.errorPassword.set('La confirmación de contraseña no coincide.');
       return;
     }
 

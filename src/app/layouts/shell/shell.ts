@@ -53,10 +53,10 @@ export class Shell {
     if (esAdmin) {
       items.push({
         id: 'configuracion-academica',
-        label: 'Configuracion academica',
+        label: 'Configuración académica',
         icon: 'fa-solid fa-sliders',
         children: [
-          { label: 'Gestion estudiantil', path: '/gestion-estudiantil', icon: 'fa-solid fa-user-graduate' },
+          { label: 'Gestión estudiantil', path: '/gestion-estudiantil', icon: 'fa-solid fa-user-graduate' },
           { label: 'Cursos', path: '/cursos', icon: 'fa-solid fa-book-open-reader' },
           { label: 'Docentes y accesos', path: '/docentes-accesos', icon: 'fa-solid fa-user-gear' },
           { label: 'Asignaciones docentes', path: '/asignaciones-docente', icon: 'fa-solid fa-chalkboard-user' }
@@ -67,7 +67,7 @@ export class Shell {
     if (esDocente && this.tieneAsignacionesActivas()) {
       items.push({
         id: 'academico',
-        label: 'Gestion academica',
+        label: 'Gestión académica',
         icon: 'fa-solid fa-graduation-cap',
         children: [
           { label: 'Mis asignaciones', path: '/mis-asignaciones', icon: 'fa-solid fa-chalkboard-user' },
@@ -88,7 +88,7 @@ export class Shell {
         children: [
           ...(esTutor && this.tieneTutoriasActivas()
             ? [{
-                label: 'Seccion tutorada',
+                label: 'Sección tutorada',
                 path: '/seccion-tutorada',
                 icon: 'fa-solid fa-users',
                 activePaths: ['/mis-asignaciones/tutorias']

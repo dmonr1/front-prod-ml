@@ -61,7 +61,7 @@ export class HallazgosRecomendaciones {
       matriculaId: 0,
       alumnoId: 0,
       codigoAlumno: 'SECCION',
-      alumnoNombreCompleto: 'Recomendacion para la seccion tutorada',
+      alumnoNombreCompleto: 'Recomendación para la sección tutorada',
       cursoId: hallazgo.cursoId,
       curso: hallazgo.curso,
       titulo: this.tituloRecomendacionHallazgo(hallazgo),
@@ -136,7 +136,7 @@ export class HallazgosRecomendaciones {
 
     return [
       {
-        label: 'Hallazgos criticos',
+        label: 'Hallazgos críticos',
         value: altas,
         detail: 'Casos con mayor relevancia.',
         icon: 'fa-solid fa-triangle-exclamation'
@@ -144,7 +144,7 @@ export class HallazgosRecomendaciones {
       {
         label: 'Tipos detectados',
         value: tipos.size,
-        detail: 'Categorias de patrones encontradas.',
+        detail: 'Categorías de patrones encontradas.',
         icon: 'fa-solid fa-layer-group'
       },
       {
@@ -227,7 +227,7 @@ export class HallazgosRecomendaciones {
   }
 
   etiquetaSeccion(seccion: Seccion): string {
-    return `${seccion.gradoNombre ?? ''} · Seccion ${seccion.nombre}`.trim();
+    return `${seccion.gradoNombre ?? ''} · Sección ${seccion.nombre}`.trim();
   }
 
   private cargarFiltros(): void {
@@ -424,22 +424,22 @@ export class HallazgosRecomendaciones {
       case 'ASISTENCIA_CRITICA':
         return 'Seguimiento de asistencia';
       case 'FACTOR_PREDOMINANTE':
-        return 'Intervencion sobre factor predominante';
+        return 'Intervención sobre factor predominante';
       case 'MULTIPLES_ALERTAS':
         return 'Plan de seguimiento prioritario';
       default:
-        return 'Accion sugerida para la seccion';
+        return 'Acción sugerida para la sección';
     }
   }
 
   private descripcionRecomendacionHallazgo(hallazgo: HallazgoDataMining): string {
     switch (hallazgo.codigo) {
       case 'CURSO_CRITICO':
-        return 'Coordinar refuerzo academico y revisar evaluaciones recientes del curso con mayor criticidad.';
+        return 'Coordinar refuerzo académico y revisar evaluaciones recientes del curso con mayor criticidad.';
       case 'ASISTENCIA_CRITICA':
-        return 'Revisar inasistencias, contactar a las familias y establecer monitoreo tutorial del periodo.';
+        return 'Revisar inasistencias, contactar a las familias y establecer monitoreo tutorial del período.';
       case 'FACTOR_PREDOMINANTE':
-        return 'Priorizar acciones segun el factor de riesgo detectado con mayor frecuencia en la seccion.';
+        return 'Priorizar acciones según el factor de riesgo detectado con mayor frecuencia en la sección.';
       case 'MULTIPLES_ALERTAS':
         return 'Dar seguimiento inmediato a los alumnos que acumulan varias alertas activas y registrar acuerdos.';
       default:

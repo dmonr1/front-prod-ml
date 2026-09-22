@@ -329,7 +329,26 @@ input {
     background 180ms ease;
 }
 
-input:focus {
+select {
+  width: 100%;
+  min-height: 37px;
+  padding: 8px 36px 8px 13px;
+  border: 1px solid #d6e1ef;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #112033;
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
+}
+
+input:focus,
+select:focus {
   border-color: #2f6edb;
   box-shadow: 0 0 0 4px rgba(47, 110, 219, 0.12);
 }
