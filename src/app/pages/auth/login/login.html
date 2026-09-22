@@ -336,33 +336,52 @@
               </svg>
               <span>Volver</span>
             </button>
+            <div class="recovery-steps" aria-label="Progreso de recuperacion de contrasena">
+              @for (step of recoverySteps; track step.id; let index = $index) {
+              <button
+                type="button"
+                class="recovery-step"
+                [class.current]="recoveryStep() === step.id"
+                [class.available]="puedeVolverAPasoRecuperacion(step.id)"
+                [disabled]="!puedeVolverAPasoRecuperacion(step.id)"
+                (click)="irAPasoRecuperacion(step.id)"
+              >
+                <span>{{ index + 1 }}</span>
+                <small>{{ step.label }}</small>
+              </button>
+              }
+            </div>
             <h2>
               @switch (recoveryStep()) {
-              @case ('solicitar') { Recuperar contraseña }
-              @case ('verificar') { Verificar codigo }
+              @case ('buscar') { Busca tu usuario }
+              @case ('correo') { Confirma tu correo }
+              @case ('verificar') { Verifica el codigo }
               @default { Nueva contrasena }
               }
             </h2>
             <p class="auth-copy">
               @switch (recoveryStep()) {
-              @case ('solicitar') { Ingresa tu usuario y correo institucional para enviarte un codigo de verificacion. }
-              @case ('verificar') { Revisa tu correo e ingresa el codigo recibido para continuar. }
+              @case ('buscar') { Ingresa tu usuario para localizar la cuenta que deseas recuperar. }
+              @case ('correo') { El codigo se enviara al correo vinculado: {{ correoRecuperacionEnmascarado() }}. }
+              @case ('verificar') { Revisa tu correo e ingresa el codigo de seis digitos recibido. }
               @default { Define una nueva contrasena para restablecer tu acceso institucional. }
               }
             </p>
 
             <div class="auth-card-layout">
               <form [formGroup]="recoveryForm" (ngSubmit)="enviarRecuperacion()">
+                @if (recoveryStep() === 'buscar') {
                 <label>
                   Usuario
                   <input type="text" formControlName="identificador" placeholder="Ingresa tu usuario"
                     autocomplete="username" />
                 </label>
+                }
 
-                @if (recoveryStep() === 'solicitar') {
+                @if (recoveryStep() === 'correo') {
                 <label>
-                  Correo institucional
-                  <input type="email" formControlName="correo" placeholder="Ingresa tu correo institucional"
+                  Correo vinculado
+                  <input type="email" formControlName="correo" placeholder="Confirma tu correo completo"
                     autocomplete="email" />
                 </label>
                 }
@@ -448,7 +467,9 @@
 
                 <button class="primary-button full" type="submit" [disabled]="recoveryLoading()">
                   {{
-                  recoveryStep() === 'solicitar'
+                  recoveryStep() === 'buscar'
+                  ? (recoveryLoading() ? 'Buscando...' : 'Buscar usuario')
+                  : recoveryStep() === 'correo'
                   ? (recoveryLoading() ? 'Enviando...' : 'Enviar codigo')
                   : recoveryStep() === 'verificar'
                   ? (recoveryLoading() ? 'Verificando...' : 'Verificar codigo')

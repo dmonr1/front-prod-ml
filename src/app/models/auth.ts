@@ -25,6 +25,15 @@ export interface MensajeRespuesta {
   mensaje: string;
 }
 
+export interface RecuperacionBuscarUsuarioRequest {
+  identificador: string;
+}
+
+export interface RecuperacionBuscarUsuarioRespuesta {
+  mensaje: string;
+  correoEnmascarado: string;
+}
+
 export interface RecuperacionSolicitarRequest {
   identificador: string;
   correo: string;

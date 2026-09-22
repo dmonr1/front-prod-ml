@@ -6,6 +6,8 @@ import {
   LoginRequest,
   LoginResponse,
   MensajeRespuesta,
+  RecuperacionBuscarUsuarioRequest,
+  RecuperacionBuscarUsuarioRespuesta,
   RecuperacionCambiarPasswordRequest,
   RecuperacionSolicitarRequest,
   RecuperacionTokenRespuesta,
@@ -36,6 +38,15 @@ export class AuthService {
     return this.http
       .post<UsuarioSesion>(`${this.api}/cambiar-password-inicial`, payload)
       .pipe(tap((usuario) => this.actualizarUsuario(usuario)));
+  }
+
+  buscarUsuarioRecuperacion(
+    payload: RecuperacionBuscarUsuarioRequest
+  ): Observable<RecuperacionBuscarUsuarioRespuesta> {
+    return this.http.post<RecuperacionBuscarUsuarioRespuesta>(
+      `${this.api}/recuperacion/buscar-usuario`,
+      payload
+    );
   }
 
   solicitarRecuperacion(payload: RecuperacionSolicitarRequest): Observable<MensajeRespuesta> {

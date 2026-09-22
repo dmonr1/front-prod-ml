@@ -53,9 +53,16 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
   readonly mostrarRecoveryPassword = signal(false);
   readonly mostrarRecoveryConfirmPassword = signal(false);
   readonly panelMode = signal<'login' | 'recover'>('login');
-  readonly recoveryStep = signal<'solicitar' | 'verificar' | 'cambiar'>('solicitar');
+  readonly recoveryStep = signal<'buscar' | 'correo' | 'verificar' | 'cambiar'>('buscar');
   readonly recoveryLoading = signal(false);
   readonly recoveryToken = signal('');
+  readonly correoRecuperacionEnmascarado = signal('');
+  readonly recoverySteps = [
+    { id: 'buscar', label: 'Usuario' },
+    { id: 'correo', label: 'Correo' },
+    { id: 'verificar', label: 'Codigo' },
+    { id: 'cambiar', label: 'Clave' }
+  ] as const;
   readonly otpDigits = signal<string[]>(['', '', '', '', '', '']);
   readonly resendCountdown = signal(0);
   readonly introVisible = signal(true);
@@ -556,7 +563,12 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
     }
 
     const step = this.recoveryStep();
-    if (step === 'solicitar') {
+    if (step === 'buscar') {
+      this.buscarUsuarioRecuperacion();
+      return;
+    }
+
+    if (step === 'correo') {
       this.solicitarCodigoRecuperacion();
       return;
     }
@@ -585,6 +597,18 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
 
     this.reiniciarRecuperacion();
     this.animarCambioPanel('login');
+  }
+
+  irAPasoRecuperacion(step: 'buscar' | 'correo' | 'verificar' | 'cambiar'): void {
+    if (this.recoveryLoading() || this.indicePasoRecuperacion(step) > this.indicePasoRecuperacion(this.recoveryStep())) {
+      return;
+    }
+
+    this.recoveryStep.set(step);
+  }
+
+  puedeVolverAPasoRecuperacion(step: 'buscar' | 'correo' | 'verificar' | 'cambiar'): boolean {
+    return this.indicePasoRecuperacion(step) <= this.indicePasoRecuperacion(this.recoveryStep());
   }
 
   private obtenerRutaInicial(roles: string[]): string {
@@ -689,6 +713,10 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  private indicePasoRecuperacion(step: 'buscar' | 'correo' | 'verificar' | 'cambiar'): number {
+    return ['buscar', 'correo', 'verificar', 'cambiar'].indexOf(step);
+  }
+
   cerrarAlerta(): void {
     this.alertState.set({
       open: false,
@@ -713,18 +741,37 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
     }, 5000);
   }
 
+  private buscarUsuarioRecuperacion(): void {
+    const identificador = this.recoveryForm.controls.identificador.value.trim();
+    if (!identificador) {
+      this.recoveryForm.controls.identificador.markAsTouched();
+      this.mostrarAlerta('warning', 'Falta el usuario', 'Ingresa tu usuario para buscar tu cuenta.');
+      return;
+    }
+
+    this.recoveryLoading.set(true);
+    this.authService.buscarUsuarioRecuperacion({ identificador }).subscribe({
+      next: (response) => {
+        this.recoveryLoading.set(false);
+        this.correoRecuperacionEnmascarado.set(response.correoEnmascarado);
+        this.recoveryStep.set('correo');
+      },
+      error: (error) => {
+        this.recoveryLoading.set(false);
+        this.mostrarAlerta(
+          'error',
+          'No se encontro la cuenta',
+          formatearMensajeError(error, 'No se pudo encontrar un usuario con esos datos.')
+        );
+      }
+    });
+  }
+
   private solicitarCodigoRecuperacion(): void {
     const { identificador, correo } = this.recoveryForm.getRawValue();
-    if (!identificador || !correo || this.recoveryForm.controls.correo.invalid) {
-      this.recoveryForm.controls.identificador.markAsTouched();
+    if (!correo || this.recoveryForm.controls.correo.invalid) {
       this.recoveryForm.controls.correo.markAsTouched();
-      if (!identificador && !correo) {
-        this.mostrarAlerta('warning', 'Faltan tus datos', 'Ingresa tu usuario y tu correo institucional para enviarte el codigo.');
-      } else if (!identificador) {
-        this.mostrarAlerta('warning', 'Falta el usuario', 'Ingresa tu usuario para iniciar la recuperacion.');
-      } else {
-        this.mostrarAlerta('warning', 'Correo no valido', 'Ingresa un correo institucional valido para continuar.');
-      }
+      this.mostrarAlerta('warning', 'Correo no valido', 'Ingresa el correo vinculado a tu cuenta para continuar.');
       return;
     }
 
@@ -861,8 +908,9 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
       nuevaPassword: '',
       confirmarPassword: ''
     });
-    this.recoveryStep.set('solicitar');
+    this.recoveryStep.set('buscar');
     this.recoveryToken.set('');
+    this.correoRecuperacionEnmascarado.set('');
     this.otpDigits.set(['', '', '', '', '', '']);
     this.detenerTemporizadorReenvio();
     this.recoveryLoading.set(false);
