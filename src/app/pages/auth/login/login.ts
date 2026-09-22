@@ -713,7 +713,7 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  private indicePasoRecuperacion(step: 'buscar' | 'correo' | 'verificar' | 'cambiar'): number {
+  indicePasoRecuperacion(step: 'buscar' | 'correo' | 'verificar' | 'cambiar'): number {
     return ['buscar', 'correo', 'verificar', 'cambiar'].indexOf(step);
   }
 
@@ -854,6 +854,15 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
+    if (!this.passwordRecuperacionSegura()) {
+      this.mostrarAlerta(
+        'warning',
+        'Contrasena no segura',
+        'Completa todos los requisitos de seguridad para continuar.'
+      );
+      return;
+    }
+
     if (nuevaPassword !== confirmarPassword) {
       this.mostrarAlerta('warning', 'Las contrasenas no coinciden', 'Asegurate de escribir la misma contrasena en ambos campos.');
       return;
@@ -898,6 +907,21 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
           );
         }
       });
+  }
+
+  requisitosPasswordRecuperacion(): Array<{ texto: string; cumplido: boolean }> {
+    const password = this.recoveryForm.controls.nuevaPassword.value;
+    return [
+      { texto: 'Al menos 8 caracteres', cumplido: password.length >= 8 },
+      { texto: 'Una letra mayuscula', cumplido: /[A-Z]/.test(password) },
+      { texto: 'Una letra minuscula', cumplido: /[a-z]/.test(password) },
+      { texto: 'Un numero', cumplido: /\d/.test(password) },
+      { texto: 'Un simbolo', cumplido: /[^A-Za-z0-9]/.test(password) }
+    ];
+  }
+
+  passwordRecuperacionSegura(): boolean {
+    return this.requisitosPasswordRecuperacion().every((requisito) => requisito.cumplido);
   }
 
   private reiniciarRecuperacion(limpiarMensajes: boolean = true): void {
