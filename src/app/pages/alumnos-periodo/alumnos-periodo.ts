@@ -12,6 +12,7 @@ import { AuthService } from '../../services/auth/auth.service';
 import { MatriculaService } from '../../services/academico/matricula.service';
 import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
 import { SeccionService } from '../../services/academico/seccion.service';
+import { formatearMensajeError } from '../../utils/error-formatter';
 
 interface AlertState {
   open: boolean;
@@ -222,8 +223,7 @@ export class AlumnosPeriodo {
       this.mostrarAlerta(
         'warning',
         'Sin permisos',
-        'Solo un administrador puede registrar secciones en este modulo.',
-        { confirmText: null, autoCloseMs: 3000 }
+        'Solo un administrador puede registrar secciones en este modulo.'
       );
       return;
     }
@@ -244,8 +244,7 @@ export class AlumnosPeriodo {
       this.mostrarAlerta(
         'warning',
         'Selecciona un grado',
-        'Selecciona un grado antes de crear una seccion.',
-        { confirmText: null, autoCloseMs: 3000 }
+        'Selecciona un grado antes de crear una seccion.'
       );
       return;
     }
@@ -254,8 +253,7 @@ export class AlumnosPeriodo {
       this.mostrarAlerta(
         'warning',
         'Falta el nombre',
-        'Ingresa el nombre de la seccion.',
-        { confirmText: null, autoCloseMs: 3000 }
+        'Ingresa el nombre de la seccion.'
       );
       return;
     }
@@ -279,8 +277,7 @@ export class AlumnosPeriodo {
           this.mostrarAlerta(
             'success',
             'Seccion registrada',
-            'Seccion registrada correctamente para este periodo.',
-            { confirmText: null, autoCloseMs: 3000 }
+            'Seccion registrada correctamente para este periodo.'
           );
         },
         error: (error) => {
@@ -288,9 +285,7 @@ export class AlumnosPeriodo {
           this.mostrarAlerta(
             'error',
             'No se pudo registrar',
-            error?.status === 403
-              ? 'Tu usuario no tiene permisos para registrar secciones.'
-              : error?.error?.mensaje ?? 'No se pudo registrar la seccion.'
+            formatearMensajeError(error, 'No se pudo registrar la seccion.')
           );
         }
       });
@@ -303,8 +298,7 @@ export class AlumnosPeriodo {
       this.mostrarAlerta(
         'warning',
         'Selecciona un grado',
-        'Selecciona un grado antes de cargar secciones.',
-        { confirmText: null, autoCloseMs: 3000 }
+        'Selecciona un grado antes de cargar secciones.'
       );
       return;
     }
@@ -313,8 +307,7 @@ export class AlumnosPeriodo {
       this.mostrarAlerta(
         'warning',
         'No hay periodo anterior',
-        'No existe un periodo anterior para copiar secciones.',
-        { confirmText: null, autoCloseMs: 3000 }
+        'No existe un periodo anterior para copiar secciones.'
       );
       return;
     }
@@ -333,8 +326,7 @@ export class AlumnosPeriodo {
           this.mostrarAlerta(
             'success',
             'Secciones cargadas',
-            'Secciones del periodo anterior cargadas correctamente.',
-            { confirmText: null, autoCloseMs: 3000 }
+            'Secciones del periodo anterior cargadas correctamente.'
           );
         },
         error: (error) => {
@@ -342,9 +334,7 @@ export class AlumnosPeriodo {
           this.mostrarAlerta(
             'error',
             'No se pudieron cargar',
-            error?.status === 403
-              ? 'Tu usuario no tiene permisos para copiar secciones desde el periodo anterior.'
-              : error?.error?.mensaje ?? 'No se pudieron cargar las secciones del periodo anterior.'
+            formatearMensajeError(error, 'No se pudieron cargar las secciones del periodo anterior.')
           );
         }
       });
@@ -405,8 +395,7 @@ export class AlumnosPeriodo {
           activa ? 'Seccion habilitada' : 'Seccion deshabilitada',
           activa
             ? 'Seccion habilitada correctamente para este periodo.'
-            : 'Seccion deshabilitada correctamente para este periodo.',
-          { confirmText: null, autoCloseMs: 3000 }
+            : 'Seccion deshabilitada correctamente para este periodo.'
         );
       },
       error: (error) => {
@@ -414,10 +403,10 @@ export class AlumnosPeriodo {
         this.mostrarAlerta(
           'error',
           activa ? 'No se pudo habilitar' : 'No se pudo deshabilitar',
-          error?.status === 403
-            ? 'Tu usuario no tiene permisos para cambiar el estado de la seccion.'
-            : error?.error?.mensaje ??
-          (activa ? 'No se pudo habilitar la seccion.' : 'No se pudo deshabilitar la seccion.')
+          formatearMensajeError(
+            error,
+            activa ? 'No se pudo habilitar la seccion.' : 'No se pudo deshabilitar la seccion.'
+          )
         );
       }
     });
@@ -429,7 +418,7 @@ export class AlumnosPeriodo {
       type: 'info',
       title: '',
       message: '',
-      confirmText: 'Aceptar',
+      confirmText: 'Entendido',
       cancelText: null,
       autoCloseMs: null
     });
@@ -450,9 +439,9 @@ export class AlumnosPeriodo {
       type,
       title,
       message,
-      confirmText: options?.confirmText ?? 'Aceptar',
+      confirmText: options?.confirmText ?? 'Entendido',
       cancelText: options?.cancelText ?? null,
-      autoCloseMs: options?.autoCloseMs ?? null
+      autoCloseMs: null
     });
   }
 

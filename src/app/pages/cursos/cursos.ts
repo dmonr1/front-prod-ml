@@ -5,6 +5,7 @@ import { Shell } from '../../layouts/shell/shell';
 import { Curso } from '../../models/curso';
 import { AuthService } from '../../services/auth/auth.service';
 import { CursoPayload, CursoService } from '../../services/academico/curso.service';
+import { formatearMensajeError } from '../../utils/error-formatter';
 
 type NivelTab = 1 | 2;
 
@@ -244,8 +245,7 @@ export class Cursos {
       this.mostrarAlerta(
         'warning',
         'Sin permisos',
-        'Solo un administrador puede registrar cursos.',
-        { confirmText: null, autoCloseMs: 3000 }
+        'Solo un administrador puede registrar cursos.'
       );
       return;
     }
@@ -257,8 +257,7 @@ export class Cursos {
       this.mostrarAlerta(
         'warning',
         'Falta el nombre',
-        'Ingresa el nombre del curso.',
-        { confirmText: null, autoCloseMs: 3000 }
+        'Ingresa el nombre del curso.'
       );
       return;
     }
@@ -283,8 +282,7 @@ export class Cursos {
         this.mostrarAlerta(
           'success',
           'Curso registrado',
-          'El curso se registro correctamente.',
-          { confirmText: null, autoCloseMs: 2800 }
+          'El curso se registro correctamente.'
         );
       },
       error: (error) => {
@@ -292,9 +290,7 @@ export class Cursos {
         this.mostrarAlerta(
           'error',
           'No se pudo guardar',
-          error?.status === 403
-            ? 'Tu usuario no tiene permisos para registrar cursos.'
-            : error?.error?.mensaje ?? 'No se pudo registrar el curso.'
+          formatearMensajeError(error, 'No se pudo registrar el curso.')
         );
       }
     });
@@ -305,8 +301,7 @@ export class Cursos {
       this.mostrarAlerta(
         'warning',
         'Sin permisos',
-        'Solo un administrador puede cambiar el estado de un curso.',
-        { confirmText: null, autoCloseMs: 2800 }
+        'Solo un administrador puede cambiar el estado de un curso.'
       );
       return;
     }
@@ -366,9 +361,9 @@ export class Cursos {
       type,
       title,
       message,
-      confirmText: options?.confirmText ?? 'Aceptar',
+      confirmText: options?.confirmText ?? 'Entendido',
       cancelText: options?.cancelText ?? null,
-      autoCloseMs: options?.autoCloseMs ?? null
+      autoCloseMs: null
     });
   }
 
@@ -386,8 +381,7 @@ export class Cursos {
           activo ? 'Curso habilitado' : 'Curso deshabilitado',
           activo
             ? 'El curso fue habilitado correctamente.'
-            : 'El curso fue deshabilitado correctamente.',
-          { confirmText: null, autoCloseMs: 2600 }
+            : 'El curso fue deshabilitado correctamente.'
         );
       },
       error: (error) => {
@@ -395,8 +389,10 @@ export class Cursos {
         this.mostrarAlerta(
           'error',
           activo ? 'No se pudo habilitar' : 'No se pudo deshabilitar',
-          error?.error?.mensaje ??
-            (activo ? 'No se pudo habilitar el curso.' : 'No se pudo deshabilitar el curso.')
+          formatearMensajeError(
+            error,
+            activo ? 'No se pudo habilitar el curso.' : 'No se pudo deshabilitar el curso.'
+          )
         );
       }
     });
@@ -408,7 +404,7 @@ export class Cursos {
       type: 'info',
       title: '',
       message: '',
-      confirmText: 'Aceptar',
+      confirmText: 'Entendido',
       cancelText: null,
       autoCloseMs: null
     });

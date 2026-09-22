@@ -13,6 +13,7 @@ import { GradoService } from '../../services/academico/grado.service';
 import { MatriculaService } from '../../services/academico/matricula.service';
 import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
 import { SeccionService } from '../../services/academico/seccion.service';
+import { formatearMensajeError } from '../../utils/error-formatter';
 
 interface AlertState {
   open: boolean;
@@ -164,8 +165,7 @@ export class AlumnosSeccion {
       this.mostrarAlerta(
         'warning',
         'No hay periodo anterior',
-        'No existe un periodo anterior disponible para esta seccion.',
-        { confirmText: null, autoCloseMs: 3000 }
+        'No existe un periodo anterior disponible para esta seccion.'
       );
       return;
     }
@@ -179,8 +179,7 @@ export class AlumnosSeccion {
           this.mostrarAlerta(
             'warning',
             'Sin alumnos previos',
-            'La seccion no tiene alumnos cargados en el periodo anterior.',
-            { confirmText: null, autoCloseMs: 3000 }
+            'La seccion no tiene alumnos cargados en el periodo anterior.'
           );
           return;
         }
@@ -195,8 +194,7 @@ export class AlumnosSeccion {
           this.mostrarAlerta(
             'info',
             'Sin cambios',
-            'Los alumnos del periodo anterior ya fueron cargados en esta seccion.',
-            { confirmText: null, autoCloseMs: 3000 }
+            'Los alumnos del periodo anterior ya fueron cargados en esta seccion.'
           );
           return;
         }
@@ -215,8 +213,7 @@ export class AlumnosSeccion {
             this.mostrarAlerta(
               'success',
               'Alumnos cargados',
-              'Se cargaron los alumnos del periodo anterior en esta seccion.',
-              { confirmText: null, autoCloseMs: 3000 }
+              'Se cargaron los alumnos del periodo anterior en esta seccion.'
             );
             this.cargarMatriculas();
           },
@@ -225,18 +222,17 @@ export class AlumnosSeccion {
             this.mostrarAlerta(
               'error',
               'No se pudieron cargar',
-              error?.error?.mensaje ??
-                'No se pudieron cargar los alumnos del periodo anterior.'
+              formatearMensajeError(error, 'No se pudieron cargar los alumnos del periodo anterior.')
             );
           }
         });
       },
-      error: () => {
+      error: (error) => {
         this.cargandoPeriodoAnterior.set(false);
         this.mostrarAlerta(
           'error',
           'No se pudieron consultar',
-          'No se pudieron consultar los alumnos del periodo anterior.'
+          formatearMensajeError(error, 'No se pudieron consultar los alumnos del periodo anterior.')
         );
       }
     });
@@ -270,8 +266,7 @@ export class AlumnosSeccion {
       this.mostrarAlerta(
         'warning',
         'Completa los datos',
-        'Completa nombres y apellidos antes de registrar el alumno.',
-        { confirmText: null, autoCloseMs: 3000 }
+        'Completa nombres y apellidos antes de registrar el alumno.'
       );
       return;
     }
@@ -291,8 +286,7 @@ export class AlumnosSeccion {
           this.mostrarAlerta(
             'success',
             'Alumno registrado',
-            'El alumno se creo y se agrego automaticamente a esta seccion.',
-            { confirmText: null, autoCloseMs: 3000 }
+            'El alumno se creo y se agrego automaticamente a esta seccion.'
           );
           this.matriculas.update((actual) => [...actual, matricula]);
           this.cargarBase();
@@ -303,7 +297,7 @@ export class AlumnosSeccion {
           this.mostrarAlerta(
             'error',
             'No se pudo registrar',
-            error?.error?.mensaje ?? 'No se pudo crear y agregar el alumno a la seccion.'
+            formatearMensajeError(error, 'No se pudo crear y agregar el alumno a la seccion.')
           );
         }
       });
@@ -315,7 +309,7 @@ export class AlumnosSeccion {
       type: 'info',
       title: '',
       message: '',
-      confirmText: 'Aceptar',
+      confirmText: 'Entendido',
       cancelText: null,
       autoCloseMs: null
     });
@@ -336,9 +330,9 @@ export class AlumnosSeccion {
       type,
       title,
       message,
-      confirmText: options?.confirmText ?? 'Aceptar',
+      confirmText: options?.confirmText ?? 'Entendido',
       cancelText: options?.cancelText ?? null,
-      autoCloseMs: options?.autoCloseMs ?? null
+      autoCloseMs: null
     });
   }
 

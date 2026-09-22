@@ -8,6 +8,7 @@ import { UsuarioGestion } from '../../models/usuario-gestion';
 import { DocentePayload, DocenteService } from '../../services/academico/docente.service';
 import { AuthService } from '../../services/auth/auth.service';
 import { UsuarioActualizacionPayload, UsuarioService } from '../../services/usuario/usuario.service';
+import { formatearMensajeError } from '../../utils/error-formatter';
 
 interface AlertState {
   open: boolean;
@@ -76,7 +77,7 @@ export class DocentesAccesos {
     type: 'info',
     title: '',
     message: '',
-    confirmText: 'Aceptar',
+    confirmText: 'Entendido',
     cancelText: null,
     autoCloseMs: null
   });
@@ -102,14 +103,13 @@ export class DocentesAccesos {
           this.filas.set(this.combinarDocentesConUsuarios(response, []));
           this.cargando.set(false);
         },
-        error: () => {
+        error: (error) => {
           this.error.set('No se pudieron cargar los docentes registrados.');
           this.cargando.set(false);
           this.mostrarAlerta(
             'error',
-            'No se puede conectar con el servidor',
-            'No se pudieron cargar los docentes registrados. Vuelve a intentarlo en unos segundos.',
-            { confirmText: null, autoCloseMs: 3500 }
+            'Error al cargar docentes',
+            formatearMensajeError(error, 'No se pudieron cargar los docentes registrados. Vuelve a intentarlo en unos segundos.')
           );
         }
       });
@@ -125,14 +125,13 @@ export class DocentesAccesos {
         this.filas.set(this.combinarDocentesConUsuarios(docentes, usuarios));
         this.cargando.set(false);
       },
-      error: () => {
+      error: (error) => {
         this.error.set('No se pudieron cargar los docentes registrados.');
         this.cargando.set(false);
         this.mostrarAlerta(
           'error',
-          'No se puede conectar con el servidor',
-          'No se pudieron cargar los docentes registrados. Vuelve a intentarlo en unos segundos.',
-          { confirmText: null, autoCloseMs: 3500 }
+          'Error al cargar docentes',
+          formatearMensajeError(error, 'No se pudieron cargar los docentes registrados. Vuelve a intentarlo en unos segundos.')
         );
       }
     });
@@ -171,8 +170,7 @@ export class DocentesAccesos {
       this.mostrarAlerta(
         'warning',
         'Sin acceso vinculado',
-        'Este docente todavia no tiene una cuenta de usuario vinculada para administrar roles.',
-        { confirmText: null, autoCloseMs: 3200 }
+        'Este docente todavia no tiene una cuenta de usuario vinculada para administrar roles.'
       );
       return;
     }
@@ -213,8 +211,7 @@ export class DocentesAccesos {
       this.mostrarAlerta(
         'warning',
         'Sin permisos',
-        'Solo un administrador puede registrar docentes y generar accesos.',
-        { confirmText: null, autoCloseMs: 3200 }
+        'Solo un administrador puede registrar docentes y generar accesos.'
       );
       return;
     }
@@ -230,8 +227,7 @@ export class DocentesAccesos {
       this.mostrarAlerta(
         'warning',
         'Faltan datos obligatorios',
-        'Completa nombres, apellidos, DNI y correo para registrar al docente.',
-        { confirmText: null, autoCloseMs: 3200 }
+        'Completa nombres, apellidos, DNI y correo para registrar al docente.'
       );
       return;
     }
@@ -240,8 +236,7 @@ export class DocentesAccesos {
       this.mostrarAlerta(
         'warning',
         'DNI no valido',
-        'El DNI debe contener exactamente 8 digitos numericos.',
-        { confirmText: null, autoCloseMs: 3200 }
+        'El DNI debe contener exactamente 8 digitos numericos.'
       );
       return;
     }
@@ -250,8 +245,7 @@ export class DocentesAccesos {
       this.mostrarAlerta(
         'warning',
         'Telefono no valido',
-        'El telefono debe contener exactamente 9 digitos numericos.',
-        { confirmText: null, autoCloseMs: 3200 }
+        'El telefono debe contener exactamente 9 digitos numericos.'
       );
       return;
     }
@@ -260,8 +254,7 @@ export class DocentesAccesos {
       this.mostrarAlerta(
         'warning',
         'Correo no valido',
-        'Ingresa un correo con un formato valido, por ejemplo docente@colegio.edu.pe.',
-        { confirmText: null, autoCloseMs: 3200 }
+        'Ingresa un correo con un formato valido, por ejemplo docente@colegio.edu.pe.'
       );
       return;
     }
@@ -286,8 +279,7 @@ export class DocentesAccesos {
         this.mostrarAlerta(
           'success',
           'Docente registrado',
-          `Se creo el docente y su acceso. Usuario generado: ${docente.username}. Contraseña temporal: su DNI.`,
-          { confirmText: 'Entendido', autoCloseMs: null }
+          `Se creo el docente y su acceso. Usuario generado: ${docente.username}. Contraseña temporal: su DNI.`
         );
       },
       error: (error) => {
@@ -295,7 +287,7 @@ export class DocentesAccesos {
         this.mostrarAlerta(
           'error',
           'No se pudo registrar',
-          error?.error?.mensaje ?? 'No se pudo registrar el docente y su acceso.'
+          formatearMensajeError(error, 'No se pudo registrar el docente y su acceso.')
         );
       }
     });
@@ -335,8 +327,7 @@ export class DocentesAccesos {
       this.mostrarAlerta(
         'info',
         'Sin cambios',
-        'No hiciste ningun cambio en el acceso seleccionado.',
-        { confirmText: null, autoCloseMs: 2600 }
+        'No hiciste ningun cambio en el acceso seleccionado.'
       );
       return;
     }
@@ -365,8 +356,7 @@ export class DocentesAccesos {
       this.mostrarAlerta(
         'warning',
         'Faltan datos',
-        'Completa username, correo y al menos un rol antes de guardar.',
-        { confirmText: null, autoCloseMs: 3000 }
+        'Completa username, correo y al menos un rol antes de guardar.'
       );
       return;
     }
@@ -380,8 +370,7 @@ export class DocentesAccesos {
         this.mostrarAlerta(
           'success',
           'Acceso actualizado',
-          'Los roles y datos del usuario se actualizaron correctamente.',
-          { confirmText: null, autoCloseMs: 2800 }
+          'Los roles y datos del usuario se actualizaron correctamente.'
         );
       },
       error: (error) => {
@@ -389,7 +378,7 @@ export class DocentesAccesos {
         this.mostrarAlerta(
           'error',
           'No se pudo guardar',
-          error?.error?.mensaje ?? 'No se pudieron actualizar los datos del usuario.'
+          formatearMensajeError(error, 'No se pudieron actualizar los datos del usuario.')
         );
       }
     });
@@ -400,8 +389,7 @@ export class DocentesAccesos {
       this.mostrarAlerta(
         'warning',
         'Sin acceso vinculado',
-        'Este docente todavia no tiene una cuenta para activar o inactivar.',
-        { confirmText: null, autoCloseMs: 3000 }
+        'Este docente todavia no tiene una cuenta para activar o inactivar.'
       );
       return;
     }
@@ -447,8 +435,7 @@ export class DocentesAccesos {
       this.mostrarAlerta(
         'warning',
         'Sin acceso vinculado',
-        'La cuenta seleccionada ya no tiene un usuario asociado para actualizar su estado.',
-        { confirmText: null, autoCloseMs: 3000 }
+        'La cuenta seleccionada ya no tiene un usuario asociado para actualizar su estado.'
       );
       return;
     }
@@ -459,15 +446,14 @@ export class DocentesAccesos {
         this.mostrarAlerta(
           'success',
           activo ? 'Acceso activado' : 'Acceso inactivado',
-          activo ? 'La cuenta vuelve a estar disponible.' : 'La cuenta fue marcada como inactiva.',
-          { confirmText: null, autoCloseMs: 2600 }
+          activo ? 'La cuenta vuelve a estar disponible.' : 'La cuenta fue marcada como inactiva.'
         );
       },
       error: (error) => {
         this.mostrarAlerta(
           'error',
           'No se pudo cambiar el estado',
-          error?.error?.mensaje ?? 'No se pudo actualizar el estado del usuario.'
+          formatearMensajeError(error, 'No se pudo actualizar el estado del usuario.')
         );
       }
     });
@@ -520,7 +506,7 @@ export class DocentesAccesos {
       type: 'info',
       title: '',
       message: '',
-      confirmText: 'Aceptar',
+      confirmText: 'Entendido',
       cancelText: null,
       autoCloseMs: null
     });
@@ -541,7 +527,7 @@ export class DocentesAccesos {
       type,
       title,
       message,
-      confirmText: options?.confirmText ?? 'Aceptar',
+      confirmText: options?.confirmText ?? 'Entendido',
       cancelText: options?.cancelText ?? null,
       autoCloseMs: options?.autoCloseMs ?? null
     });

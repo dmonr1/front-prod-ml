@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterOutlet } from '@angular/router';
 import { AuthService } from './services/auth/auth.service';
 import { ThemeService } from './services/ui/theme.service';
+import { formatearMensajeError } from './utils/error-formatter';
 
 @Component({
   selector: 'app-root',
@@ -49,7 +50,7 @@ export class App {
       error: (error) => {
         this.guardandoPassword.set(false);
         this.errorPassword.set(
-          error?.error?.mensaje ?? 'No se pudo actualizar la contraseña inicial.'
+          formatearMensajeError(error, 'No se pudo actualizar la contraseña inicial.')
         );
       }
     });

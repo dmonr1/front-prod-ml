@@ -1,9 +1,18 @@
-import { AfterViewInit, Component, ElementRef, OnDestroy, QueryList, ViewChild, ViewChildren, computed, inject, signal } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, QueryList, ViewChild, ViewChildren, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { gsap } from 'gsap';
 import { CustomAlertComponent, CustomAlertType } from '../../../components/custom-alert/custom-alert';
 import { AuthService } from '../../../services/auth/auth.service';
+import { formatearMensajeError } from '../../../utils/error-formatter';
+
+const REMEMBER_CREDENTIALS_KEY = 'auth_remembered_credentials';
+
+interface CredencialesRecordadas {
+  identificador: string;
+  password: string;
+}
 
 interface LoginAlertState {
   open: boolean;
@@ -21,7 +30,7 @@ interface LoginAlertState {
   templateUrl: './login.html',
   styleUrls: ['./login.scss']
 })
-export class Login implements AfterViewInit, OnDestroy {
+export class Login implements OnInit, AfterViewInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
@@ -30,6 +39,7 @@ export class Login implements AfterViewInit, OnDestroy {
   private previewIntervalId: ReturnType<typeof setInterval> | null = null;
   private titleIntervalId: ReturnType<typeof setInterval> | null = null;
   private resendIntervalId: ReturnType<typeof setInterval> | null = null;
+  private readonly subs = new Subscription();
 
   @ViewChild('visualPanel', { static: true }) visualPanel?: ElementRef<HTMLElement>;
   @ViewChild('authCard', { static: true }) authCard?: ElementRef<HTMLElement>;
@@ -400,6 +410,11 @@ export class Login implements AfterViewInit, OnDestroy {
     }, this.host.nativeElement);
   }
 
+  ngOnInit(): void {
+    this.inicializarRecordarCredenciales();
+    this.inicializarFiltroEspaciosPassword();
+  }
+
   ngOnDestroy(): void {
     if (this.previewIntervalId) {
       clearInterval(this.previewIntervalId);
@@ -408,6 +423,7 @@ export class Login implements AfterViewInit, OnDestroy {
       clearInterval(this.titleIntervalId);
     }
     this.detenerTemporizadorReenvio();
+    this.subs.unsubscribe();
     this.animationContext?.revert();
   }
 
@@ -431,8 +447,16 @@ export class Login implements AfterViewInit, OnDestroy {
     this.cargando.set(true);
     this.error.set('');
 
-    this.authService.login(this.form.getRawValue()).subscribe({
+    const { identificador, password, recordar } = this.form.getRawValue();
+    const passwordSanitizado = password.replace(/\s+/g, '');
+
+    this.authService.login({ identificador, password: passwordSanitizado }).subscribe({
       next: (response) => {
+        if (recordar) {
+          this.guardarCredencialesRecordadas(identificador, passwordSanitizado);
+        } else {
+          this.eliminarCredencialesRecordadas();
+        }
         this.cargando.set(false);
         this.router.navigateByUrl(this.obtenerRutaInicial(response.usuario.roles));
       },
@@ -442,7 +466,7 @@ export class Login implements AfterViewInit, OnDestroy {
         this.mostrarAlerta(
           'error',
           'No se pudo iniciar sesion',
-          error?.error?.mensaje ?? 'Verifica tus credenciales e intenta nuevamente.'
+          formatearMensajeError(error, 'Verifica tus credenciales e intenta nuevamente.')
         );
       }
     });
@@ -723,7 +747,7 @@ export class Login implements AfterViewInit, OnDestroy {
         this.mostrarAlerta(
           'error',
           'No se pudo enviar el codigo',
-          error?.error?.mensaje ?? 'No se pudo enviar el codigo de recuperacion.'
+          formatearMensajeError(error, 'No se pudo enviar el codigo de recuperacion.')
         );
       }
     });
@@ -762,7 +786,7 @@ export class Login implements AfterViewInit, OnDestroy {
         this.mostrarAlerta(
           'error',
           'Codigo no verificado',
-          error?.error?.mensaje ?? 'El codigo no pudo verificarse.'
+          formatearMensajeError(error, 'El codigo no pudo verificarse.')
         );
       }
     });
@@ -803,6 +827,17 @@ export class Login implements AfterViewInit, OnDestroy {
           this.recoveryLoading.set(false);
           this.recoverySuccess.set('');
           this.mostrarAlerta('success', 'Contrasena actualizada', response.mensaje);
+
+          const { identificador: usuarioRecuperado } = this.recoveryForm.getRawValue();
+          this.form.patchValue({
+            identificador: usuarioRecuperado,
+            password: nuevaPassword
+          });
+
+          if (this.form.controls.recordar.value) {
+            this.guardarCredencialesRecordadas(usuarioRecuperado, nuevaPassword);
+          }
+
           this.reiniciarRecuperacion(false);
           this.animarCambioPanel('login');
         },
@@ -812,7 +847,7 @@ export class Login implements AfterViewInit, OnDestroy {
           this.mostrarAlerta(
             'error',
             'No se pudo actualizar',
-            error?.error?.mensaje ?? 'No se pudo actualizar la contrasena.'
+            formatearMensajeError(error, 'No se pudo actualizar la contrasena.')
           );
         }
       });
@@ -843,7 +878,7 @@ export class Login implements AfterViewInit, OnDestroy {
     type: CustomAlertType,
     title: string,
     message: string,
-    autoCloseMs: number | null = 3200
+    autoCloseMs: number | null = null
   ): void {
     this.alertState.set({
       open: true,
@@ -852,7 +887,7 @@ export class Login implements AfterViewInit, OnDestroy {
       message,
       confirmText: 'Entendido',
       cancelText: null,
-      autoCloseMs
+      autoCloseMs: null
     });
   }
 
@@ -876,5 +911,100 @@ export class Login implements AfterViewInit, OnDestroy {
     if (reset) {
       this.resendCountdown.set(0);
     }
+  }
+
+  private inicializarRecordarCredenciales(): void {
+    this.cargarCredencialesRecordadas();
+
+    this.subs.add(
+      this.form.controls.recordar.valueChanges.subscribe((recordar) => {
+        if (!recordar) {
+          this.eliminarCredencialesRecordadas();
+        }
+      })
+    );
+  }
+
+  private inicializarFiltroEspaciosPassword(): void {
+    const sanitizar = (control: { value: string; setValue: (val: string, opts?: { emitEvent: boolean }) => void }) => {
+      const val = control.value;
+      if (typeof val === 'string' && /\s/.test(val)) {
+        control.setValue(val.replace(/\s+/g, ''), { emitEvent: false });
+      }
+    };
+
+    this.subs.add(
+      this.form.controls.password.valueChanges.subscribe(() => sanitizar(this.form.controls.password))
+    );
+    this.subs.add(
+      this.recoveryForm.controls.nuevaPassword.valueChanges.subscribe(() => sanitizar(this.recoveryForm.controls.nuevaPassword))
+    );
+    this.subs.add(
+      this.recoveryForm.controls.confirmarPassword.valueChanges.subscribe(() => sanitizar(this.recoveryForm.controls.confirmarPassword))
+    );
+  }
+
+  bloquearEspacio(event: KeyboardEvent): void {
+    if (event.key === ' ' || event.code === 'Space' || event.keyCode === 32) {
+      event.preventDefault();
+    }
+  }
+
+  limpiarEspacios(
+    campo: 'password' | 'nuevaPassword' | 'confirmarPassword',
+    origen: 'form' | 'recoveryForm' = 'form'
+  ): void {
+    const control =
+      origen === 'form'
+        ? this.form.get(campo as 'password')
+        : this.recoveryForm.get(campo as 'nuevaPassword' | 'confirmarPassword');
+    if (!control) {
+      return;
+    }
+    const valor = control.value;
+    if (typeof valor === 'string' && /\s/.test(valor)) {
+      control.setValue(valor.replace(/\s+/g, ''));
+    }
+  }
+
+  private cargarCredencialesRecordadas(): void {
+    try {
+      const raw = localStorage.getItem(REMEMBER_CREDENTIALS_KEY);
+      if (!raw) {
+        return;
+      }
+
+      let parsed: CredencialesRecordadas | null = null;
+      try {
+        const decoded = decodeURIComponent(escape(atob(raw)));
+        parsed = JSON.parse(decoded) as CredencialesRecordadas;
+      } catch {
+        parsed = JSON.parse(raw) as CredencialesRecordadas;
+      }
+
+      if (parsed && typeof parsed.identificador === 'string') {
+        this.form.patchValue({
+          identificador: parsed.identificador,
+          password: (parsed.password || '').replace(/\s+/g, ''),
+          recordar: true
+        });
+      }
+    } catch {
+      this.eliminarCredencialesRecordadas();
+    }
+  }
+
+  private guardarCredencialesRecordadas(identificador: string, password: string): void {
+    try {
+      const payload = JSON.stringify({ identificador, password });
+      const encoded = btoa(unescape(encodeURIComponent(payload)));
+      localStorage.setItem(REMEMBER_CREDENTIALS_KEY, encoded);
+    } catch {
+      localStorage.setItem(REMEMBER_CREDENTIALS_KEY, JSON.stringify({ identificador, password }));
+    }
+  }
+
+  private eliminarCredencialesRecordadas(): void {
+    localStorage.removeItem(REMEMBER_CREDENTIALS_KEY);
   }
 }

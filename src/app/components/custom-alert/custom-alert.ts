@@ -1,4 +1,5 @@
-import { Component, effect, input, output, signal } from '@angular/core';
+import { Component, HostListener, computed, effect, input, output, signal } from '@angular/core';
+import { sanitizarMensajeAlerta } from '../../utils/error-formatter';
 
 export type CustomAlertType = 'success' | 'error' | 'warning' | 'info';
 
@@ -15,7 +16,7 @@ export class CustomAlertComponent {
   readonly type = input<CustomAlertType>('info');
   readonly title = input('');
   readonly message = input('');
-  readonly confirmText = input<string | null>('Aceptar');
+  readonly confirmText = input<string | null>('Entendido');
   readonly cancelText = input<string | null>(null);
   readonly autoCloseMs = input<number | null>(null);
 
@@ -23,17 +24,33 @@ export class CustomAlertComponent {
   readonly cancel = output<void>();
   readonly dismiss = output<void>();
 
-  private timeoutId: ReturnType<typeof setTimeout> | null = null;
   private exitTimeoutId: ReturnType<typeof setTimeout> | null = null;
   readonly rendered = signal(false);
   readonly closing = signal(false);
 
+  /**
+   * Sanitiza el mensaje antes de mostrarlo, asegurando que cadenas técnicas
+   * como "400 BAD_REQUEST", excepciones SQL o errores HTTP crudos sean
+   * reemplazados por explicaciones comprensibles para el usuario.
+   */
+  readonly displayMessage = computed(() => sanitizarMensajeAlerta(this.message()));
+
+  /**
+   * Garantiza que siempre exista una acción de confirmación por defecto ('Entendido'),
+   * evitando que el pop-up quede sin botón para cerrarlo.
+   */
+  readonly effectiveConfirmText = computed<string>(() => {
+    const custom = this.confirmText();
+    if (custom !== undefined && custom !== null && custom.trim() !== '') {
+      return custom;
+    }
+    return 'Entendido';
+  });
+
   constructor() {
     effect(() => {
       const open = this.open();
-      const autoCloseMs = this.autoCloseMs();
 
-      this.clearTimeout();
       this.clearExitTimeout();
 
       if (open) {
@@ -46,13 +63,16 @@ export class CustomAlertComponent {
           this.closing.set(false);
         }, CustomAlertComponent.EXIT_MS);
       }
-
-      if (open && autoCloseMs && autoCloseMs > 0) {
-        this.timeoutId = setTimeout(() => {
-          this.dismiss.emit();
-        }, autoCloseMs);
-      }
+      // Nota: El temporizador de auto-cierre fue eliminado deliberadamente
+      // para que el pop-up nunca desaparezca solo; debe cerrarse mediante 'Entendido' o 'X'.
     });
+  }
+
+  @HostListener('document:keydown.escape')
+  handleEscape(): void {
+    if (this.open()) {
+      this.onClose();
+    }
   }
 
   iconClass(): string {
@@ -69,13 +89,20 @@ export class CustomAlertComponent {
   }
 
   hasActions(): boolean {
-    return Boolean(this.cancelText() || this.confirmText());
+    return Boolean(this.cancelText() || this.effectiveConfirmText());
   }
 
-  private clearTimeout(): void {
-    if (this.timeoutId) {
-      clearTimeout(this.timeoutId);
-      this.timeoutId = null;
+  onConfirm(): void {
+    this.confirm.emit();
+    if (!this.cancelText()) {
+      this.dismiss.emit();
+    }
+  }
+
+  onClose(): void {
+    this.dismiss.emit();
+    if (this.cancelText()) {
+      this.cancel.emit();
     }
   }
 

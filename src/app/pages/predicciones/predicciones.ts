@@ -23,6 +23,7 @@ import {
   PrediccionService,
   ResumenPrediccion
 } from '../../services/prediccion/prediccion.service';
+import { formatearMensajeError } from '../../utils/error-formatter';
 
 type VistaPrediccion = 'global' | 'curso';
 type NivelRiesgo = 'ALTO' | 'MEDIO' | 'BAJO';
@@ -581,7 +582,7 @@ export class Predicciones {
       },
       error: (error) => {
         this.recalculando.set(false);
-        this.error.set(error?.error?.mensaje ?? 'No se pudieron recalcular las predicciones.');
+        this.error.set(formatearMensajeError(error, 'No se pudieron recalcular las predicciones.'));
         this.alertaConexionAbierta.set(true);
       }
     });
@@ -770,7 +771,7 @@ export class Predicciones {
       },
       error: (error) => {
         this.cargandoVista.set(false);
-        this.error.set(error?.error?.mensaje ?? 'No se pudieron cargar las predicciones.');
+        this.error.set(formatearMensajeError(error, 'No se pudieron cargar las predicciones.'));
         this.alertaConexionAbierta.set(true);
       }
     });

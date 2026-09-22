@@ -18,6 +18,7 @@ import { PeriodoEvaluacionService } from '../../services/academico/periodo-evalu
 import { MatriculaService } from '../../services/academico/matricula.service';
 import { AsistenciaPeriodoEvaluacionService } from '../../services/evaluacion/asistencia-periodo-evaluacion.service';
 import { Tutoria } from '../../models/tutoria';
+import { formatearMensajeError } from '../../utils/error-formatter';
 
 interface AsistenciaFila {
   matricula: Matricula;
@@ -238,7 +239,9 @@ export class CargaAsistencias implements OnInit {
             },
             error: (error) => {
               this.cargando.set(true);
-              this.error.set(error?.error?.mensaje ?? 'No se pudo cargar la informacion inicial.');
+              this.error.set(
+                formatearMensajeError(error, 'No se pudo cargar la informacion inicial.')
+              );
               this.mostrarErrorCarga.set(true);
             }
           });
@@ -275,7 +278,9 @@ export class CargaAsistencias implements OnInit {
           },
           error: (error) => {
             this.cargando.set(true);
-            this.error.set(error?.error?.mensaje ?? 'No se pudo cargar la informacion inicial.');
+            this.error.set(
+              formatearMensajeError(error, 'No se pudo cargar la informacion inicial.')
+            );
             this.mostrarErrorCarga.set(true);
           }
         });
@@ -283,7 +288,7 @@ export class CargaAsistencias implements OnInit {
       error: (error) => {
         this.cargando.set(true);
         this.error.set(
-          error?.error?.mensaje ?? 'No se pudo resolver el periodo academico actual.'
+          formatearMensajeError(error, 'No se pudo resolver el periodo academico actual.')
         );
         this.mostrarErrorCarga.set(true);
       }
@@ -368,7 +373,10 @@ export class CargaAsistencias implements OnInit {
       },
       error: (error) => {
         this.error.set(
-          error?.error?.mensaje ?? 'No se pudo cargar la informacion del periodo de evaluacion.'
+          formatearMensajeError(
+            error,
+            'No se pudo cargar la informacion del periodo de evaluacion.'
+          )
         );
         this.mostrarErrorCarga.set(true);
         this.cargando.set(true);
@@ -557,7 +565,7 @@ export class CargaAsistencias implements OnInit {
       type: 'info',
       title: '',
       message: '',
-      confirmText: 'Aceptar',
+      confirmText: 'Entendido',
       cancelText: null,
       autoCloseMs: null
     });
@@ -578,9 +586,9 @@ export class CargaAsistencias implements OnInit {
       type,
       title,
       message,
-      confirmText: options?.confirmText ?? 'Aceptar',
+      confirmText: options?.confirmText ?? 'Entendido',
       cancelText: options?.cancelText ?? null,
-      autoCloseMs: options?.autoCloseMs ?? null
+      autoCloseMs: null
     });
   }
 
@@ -633,15 +641,14 @@ export class CargaAsistencias implements OnInit {
           this.mostrarAlerta(
             'warning',
             'Asistencia invalida',
-            'Las clases asistidas no pueden ser mayores que las programadas.',
-            { confirmText: null, autoCloseMs: 3000 }
+            'Las clases asistidas no pueden ser mayores que las programadas.'
           );
         }
         return;
       }
     }
 
-        this.asistenciaService
+    this.asistenciaService
       .guardarConfiguracion(periodoEvaluacionId, asignacion.id, clasesProgramadas)
       .subscribe({
         next: () => {
@@ -654,7 +661,7 @@ export class CargaAsistencias implements OnInit {
           this.mostrarAlerta(
             'error',
             'No se pudo guardar la configuracion',
-            error?.error?.mensaje ?? 'No se pudieron guardar las clases programadas.'
+            formatearMensajeError(error, 'No se pudieron guardar las clases programadas.')
           );
         }
       });
@@ -714,8 +721,7 @@ export class CargaAsistencias implements OnInit {
         this.mostrarAlerta(
           'warning',
           'Asistencia invalida',
-          'Las clases asistidas no pueden ser mayores que las programadas.',
-          { confirmText: null, autoCloseMs: 3000 }
+          'Las clases asistidas no pueden ser mayores que las programadas.'
         );
       }
       return;
@@ -791,10 +797,10 @@ export class CargaAsistencias implements OnInit {
         this.mostrarAlerta(
           'error',
           'No se pudo guardar la asistencia',
-          error?.error?.mensaje ?? 'No se pudo guardar la asistencia automaticamente.'
+          formatearMensajeError(error, 'No se pudo guardar la asistencia automaticamente.')
         );
       }
-      });
+    });
   }
 
   private construirClaveAsistencia(matriculaId: number): string {

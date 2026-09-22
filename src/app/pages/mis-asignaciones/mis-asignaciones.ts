@@ -14,6 +14,7 @@ import { SeccionService } from '../../services/academico/seccion.service';
 import { AsignacionAcademicaService } from '../../services/asignaciones/asignacion-academica.service';
 import { TutoriaService } from '../../services/asignaciones/tutoria.service';
 import { forkJoin } from 'rxjs';
+import { formatearMensajeError } from '../../utils/error-formatter';
 
 @Component({
   selector: 'app-mis-asignaciones',
@@ -83,7 +84,7 @@ export class MisAsignaciones implements OnInit {
       error: (error) => {
         this.cargando.set(true);
         this.error.set(
-          error?.error?.mensaje ?? 'No se pudo resolver el periodo academico actual.'
+          formatearMensajeError(error, 'No se pudo resolver el periodo academico actual.')
         );
         this.mostrarError.set(true);
       }
@@ -129,7 +130,7 @@ export class MisAsignaciones implements OnInit {
       },
       error: (error) => {
         this.error.set(
-          error?.error?.mensaje ?? 'No se pudieron cargar las asignaciones del docente.'
+          formatearMensajeError(error, 'No se pudieron cargar las asignaciones del docente.')
         );
         this.cargando.set(true);
         this.mostrarError.set(true);

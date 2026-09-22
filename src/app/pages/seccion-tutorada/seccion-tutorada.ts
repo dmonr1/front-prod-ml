@@ -13,6 +13,7 @@ import {
   TutoriaResumenAcademico,
   TutoriaService
 } from '../../services/asignaciones/tutoria.service';
+import { formatearMensajeError } from '../../utils/error-formatter';
 
 @Component({
   selector: 'app-seccion-tutorada',
@@ -174,8 +175,10 @@ export class SeccionTutorada implements OnInit {
           },
           error: (error) => {
             this.error.set(
-              error?.error?.mensaje ??
-              'No se pudo cargar el resumen academico de la seccion tutorada.'
+              formatearMensajeError(
+                error,
+                'No se pudo cargar el resumen academico de la seccion tutorada.'
+              )
             );
 
             this.resumenAcademico.set(null);
@@ -189,7 +192,9 @@ export class SeccionTutorada implements OnInit {
       },
       error: (error) => {
         this.cargando.set(false);
-        this.error.set(error?.error?.mensaje ?? 'No se pudo resolver el periodo academico actual.');
+        this.error.set(
+          formatearMensajeError(error, 'No se pudo resolver el periodo academico actual.')
+        );
         this.resumenAcademico.set(null);
         this.mostrarError.set(true);
         this.mantenerSkeletonPorError.set(true);
@@ -228,7 +233,10 @@ export class SeccionTutorada implements OnInit {
       },
       error: (error) => {
         this.error.set(
-          error?.error?.mensaje ?? 'No se pudo cargar el resumen academico de la seccion tutorada.'
+          formatearMensajeError(
+            error,
+            'No se pudo cargar el resumen academico de la seccion tutorada.'
+          )
         );
         this.mostrarError.set(true);
         this.cargando.set(false);

@@ -423,8 +423,8 @@
       type="success"
       title="Predicciones actualizadas"
       [message]="mensajeRecalculo()"
-      [confirmText]="null"
-      [autoCloseMs]="3500"
+      confirmText="Entendido"
+      (confirm)="cerrarAlertaRecalculo()"
       (dismiss)="cerrarAlertaRecalculo()" />
   </section>
 </app-shell>

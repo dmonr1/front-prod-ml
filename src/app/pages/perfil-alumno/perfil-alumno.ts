@@ -11,6 +11,7 @@ import {
 } from '../../services/alerta/alerta-seguimiento.service';
 import { PrediccionRiesgo, PrediccionService } from '../../services/prediccion/prediccion.service';
 import { PeriodoEvaluacion } from '../../models/periodo-evaluacion';
+import { formatearMensajeError } from '../../utils/error-formatter';
 
 type NivelRiesgo = 'ALTO' | 'MEDIO' | 'BAJO';
 type TonoFactor = 'high' | 'medium' | 'low';
@@ -525,7 +526,7 @@ export class PerfilAlumno {
       },
       error: (error) => {
         this.cargando.set(false);
-        this.error.set(error?.error?.mensaje ?? 'No se pudo cargar la ficha del alumno.');
+        this.error.set(formatearMensajeError(error, 'No se pudo cargar la ficha del alumno.'));
       }
     });
   }

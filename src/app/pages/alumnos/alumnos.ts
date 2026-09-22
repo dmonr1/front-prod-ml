@@ -18,6 +18,7 @@ import {
   PeriodoAcademicoService
 } from '../../services/academico/periodo-academico.service';
 import { TipoEvaluacionPayload, TipoEvaluacionService } from '../../services/evaluacion/tipo-evaluacion.service';
+import { formatearMensajeError } from '../../utils/error-formatter';
 
 type TipoPeriodoEvaluacion = 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL';
 
@@ -94,7 +95,7 @@ export class Alumnos {
     type: 'info',
     title: '',
     message: '',
-    confirmText: 'Aceptar',
+    confirmText: 'Entendido',
     cancelText: null,
     autoCloseMs: null
   });
@@ -424,11 +425,7 @@ export class Alumnos {
       this.mostrarAlerta(
         'warning',
         'Falta el nombre',
-        'Ingresa el nombre del nuevo tipo de evaluacion.',
-        {
-          confirmText: null,
-          autoCloseMs: 3000
-        }
+        'Ingresa el nombre del nuevo tipo de evaluacion.'
       );
       return;
     }
@@ -461,7 +458,7 @@ export class Alumnos {
         this.mostrarAlerta(
           'error',
           'No se pudo crear',
-          error?.error?.mensaje ?? 'No se pudo registrar el nuevo tipo de evaluacion.'
+          formatearMensajeError(error, 'No se pudo registrar el nuevo tipo de evaluacion.')
         );
       }
     });
@@ -519,11 +516,7 @@ export class Alumnos {
       this.mostrarAlerta(
         'warning',
         'No hay periodo anterior',
-        'Todavia no existe un periodo academico anterior desde donde copiar cursos.',
-        {
-          confirmText: null,
-          autoCloseMs: 3000
-        }
+        'Todavia no existe un periodo academico anterior desde donde copiar cursos.'
       );
       return;
     }
@@ -541,11 +534,7 @@ export class Alumnos {
           this.mostrarAlerta(
             'warning',
             'Sin cursos para copiar',
-            'El periodo anterior no tiene cursos activos registrados.',
-            {
-              confirmText: null,
-              autoCloseMs: 3000
-            }
+            'El periodo anterior no tiene cursos activos registrados.'
           );
           return;
         }
@@ -555,19 +544,15 @@ export class Alumnos {
         this.mostrarAlerta(
           'success',
           'Cursos copiados',
-          `Se seleccionaron ${cursosActivosIds.length} cursos del periodo ${periodoAnterior.anio}.`,
-          {
-            confirmText: null,
-            autoCloseMs: 2500
-          }
+          `Se seleccionaron ${cursosActivosIds.length} cursos del periodo ${periodoAnterior.anio}.`
         );
       },
-      error: () => {
+      error: (error) => {
         this.copiandoCursosAnteriores.set(false);
         this.mostrarAlerta(
           'error',
           'No se pudo copiar',
-          'No se pudieron cargar los cursos del periodo anterior.'
+          formatearMensajeError(error, 'No se pudieron cargar los cursos del periodo anterior.')
         );
       }
     });
@@ -705,9 +690,9 @@ export class Alumnos {
       type,
       title,
       message,
-      confirmText: options?.confirmText ?? 'Aceptar',
+      confirmText: options?.confirmText ?? 'Entendido',
       cancelText: options?.cancelText ?? null,
-      autoCloseMs: options?.autoCloseMs ?? null
+      autoCloseMs: null
     });
   }
 
@@ -718,11 +703,7 @@ export class Alumnos {
       this.mostrarAlerta(
         'warning',
         'Completa los datos',
-        'Completa nombre, ano, fecha de inicio y fecha de fin.',
-        {
-          confirmText: null,
-          autoCloseMs: 3000
-        }
+        'Completa nombre, ano, fecha de inicio y fecha de fin.'
       );
       return;
     }
@@ -742,11 +723,7 @@ export class Alumnos {
       this.mostrarAlerta(
         'warning',
         'Faltan periodos de evaluacion',
-        'Configura las fechas de todos los periodos de evaluacion.',
-        {
-          confirmText: null,
-          autoCloseMs: 3000
-        }
+        'Configura las fechas de todos los periodos de evaluacion.'
       );
       return;
     }
@@ -755,11 +732,7 @@ export class Alumnos {
       this.mostrarAlerta(
         'warning',
         'Falta la plantilla anual',
-        'Configura al menos un tipo de evaluacion con cantidad mayor a cero.',
-        {
-          confirmText: null,
-          autoCloseMs: 3000
-        }
+        'Configura al menos un tipo de evaluacion con cantidad mayor a cero.'
       );
       return;
     }
@@ -767,12 +740,8 @@ export class Alumnos {
     if (!this.cursosSeleccionadosIds().length) {
       this.mostrarAlerta(
         'warning',
-        'Faltan cursos del periodo',
-        'Selecciona cursos manualmente o copialos desde el periodo anterior.',
-        {
-          confirmText: null,
-          autoCloseMs: 3000
-        }
+        'Falta cursos del periodo',
+        'Selecciona cursos manualmente o copialos desde el periodo anterior.'
       );
       return;
     }
@@ -815,11 +784,7 @@ export class Alumnos {
             periodoEditandoId ? 'Periodo actualizado' : 'Periodo registrado',
             periodoEditandoId
               ? 'El periodo academico se actualizo correctamente.'
-              : 'El periodo academico y sus periodos de evaluacion se guardaron correctamente.',
-            {
-              confirmText: null,
-              autoCloseMs: 3000
-            }
+              : 'El periodo academico y sus periodos de evaluacion se guardaron correctamente.'
           );
         },
         error: (error) => {
@@ -827,7 +792,7 @@ export class Alumnos {
           this.mostrarAlerta(
             'error',
             'No se pudo guardar',
-            error?.error?.mensaje ?? 'No se pudo registrar el periodo academico.'
+            formatearMensajeError(error, 'No se pudo registrar el periodo academico.')
           );
         }
       });

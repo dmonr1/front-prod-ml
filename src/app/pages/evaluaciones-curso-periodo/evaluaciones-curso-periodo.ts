@@ -13,6 +13,7 @@ import { TipoEvaluacion } from '../../models/tipo-evaluacion';
 import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
 import { ConfiguracionEvaluacionCursoService } from '../../services/evaluacion/configuracion-evaluacion-curso.service';
 import { TipoEvaluacionService } from '../../services/evaluacion/tipo-evaluacion.service';
+import { formatearMensajeError } from '../../utils/error-formatter';
 
 interface ConfiguracionCursoEditable extends ConfiguracionEvaluacionCursoItem {
   cantidadActual: number;
@@ -246,17 +247,14 @@ export class EvaluacionesCursoPeriodo {
               : curso
           )
         );
-        this.mostrarAlerta('success', 'Configuracion guardada', 'Las evaluaciones del curso se actualizaron correctamente.', {
-          confirmText: null,
-          autoCloseMs: 2800
-        });
+        this.mostrarAlerta('success', 'Configuracion guardada', 'Las evaluaciones del curso se actualizaron correctamente.');
       },
       error: (error) => {
         this.guardando.set(false);
         this.mostrarAlerta(
           'error',
           'No se pudo guardar',
-          error?.error?.mensaje ?? 'No se pudo guardar la configuracion del curso.'
+          formatearMensajeError(error, 'No se pudo guardar la configuracion del curso.')
         );
       }
     });
@@ -284,7 +282,7 @@ export class EvaluacionesCursoPeriodo {
       type: 'info',
       title: '',
       message: '',
-      confirmText: 'Aceptar',
+      confirmText: 'Entendido',
       cancelText: null,
       autoCloseMs: null
     });
@@ -305,9 +303,9 @@ export class EvaluacionesCursoPeriodo {
       type,
       title,
       message,
-      confirmText: options?.confirmText ?? 'Aceptar',
+      confirmText: options?.confirmText ?? 'Entendido',
       cancelText: options?.cancelText ?? null,
-      autoCloseMs: options?.autoCloseMs ?? null
+      autoCloseMs: null
     });
   }
 }

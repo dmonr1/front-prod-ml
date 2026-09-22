@@ -8,6 +8,7 @@ import { AlumnoService } from '../../services/academico/alumno.service';
 import { MatriculaService } from '../../services/academico/matricula.service';
 import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
 import { SeccionService } from '../../services/academico/seccion.service';
+import { formatearMensajeError } from '../../utils/error-formatter';
 
 @Component({
   selector: 'app-matriculas-periodo',
@@ -194,7 +195,7 @@ export class MatriculasPeriodo {
       },
       error: (error) => {
         this.errorMatriculas.set(
-          error?.error?.mensaje ?? 'No se pudieron cargar las matriculas del periodo.'
+          formatearMensajeError(error, 'No se pudieron cargar las matriculas del periodo.')
         );
         this.cargandoMatriculas.set(false);
       }
@@ -304,7 +305,9 @@ export class MatriculasPeriodo {
         },
         error: (error) => {
           this.guardando.set(false);
-          this.mensajeFormulario.set(error?.error?.mensaje ?? 'No se pudo registrar la matricula.');
+          this.mensajeFormulario.set(
+            formatearMensajeError(error, 'No se pudo registrar la matricula.')
+          );
         }
       });
   }

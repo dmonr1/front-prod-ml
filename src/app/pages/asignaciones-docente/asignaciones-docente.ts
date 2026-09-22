@@ -15,6 +15,7 @@ import { PeriodoAcademicoService } from '../../services/academico/periodo-academ
 import { SeccionService } from '../../services/academico/seccion.service';
 import { AsignacionAcademicaService } from '../../services/asignaciones/asignacion-academica.service';
 import { TutoriaService } from '../../services/asignaciones/tutoria.service';
+import { formatearMensajeError } from '../../utils/error-formatter';
 
 interface AlertState {
   open: boolean;
@@ -360,7 +361,7 @@ export class AsignacionesTutorias {
       },
       error: (error) => {
         this.errorAsignaciones.set(
-          error?.error?.mensaje ?? 'No se pudieron cargar las asignaciones del periodo.'
+          formatearMensajeError(error, 'No se pudieron cargar las asignaciones del periodo.')
         );
         this.cargandoAsignaciones.set(false);
         this.cargaPendienteAlerta.set('asignaciones');
@@ -397,7 +398,7 @@ export class AsignacionesTutorias {
       },
       error: (error) => {
         this.errorTutorias.set(
-          error?.error?.mensaje ?? 'No se pudieron cargar las tutorias del periodo.'
+          formatearMensajeError(error, 'No se pudieron cargar las tutorias del periodo.')
         );
         this.cargandoTutorias.set(false);
         this.cargaPendienteAlerta.set('tutorias');
@@ -580,8 +581,7 @@ export class AsignacionesTutorias {
       this.mostrarAlerta(
         'warning',
         'Periodo historico',
-        'Solo puedes registrar asignaciones en el periodo academico del anio actual.',
-        { confirmText: null, autoCloseMs: 3000 }
+        'Solo puedes registrar asignaciones en el periodo academico del anio actual.'
       );
       return;
     }
@@ -590,8 +590,7 @@ export class AsignacionesTutorias {
       this.mostrarAlerta(
         'warning',
         'Completa la asignacion',
-        'Selecciona docente, curso, una o varias secciones y periodo antes de guardar la asignacion.',
-        { confirmText: null, autoCloseMs: 3000 }
+        'Selecciona docente, curso, una o varias secciones y periodo antes de guardar la asignacion.'
       );
       return;
     }
@@ -618,8 +617,7 @@ export class AsignacionesTutorias {
             'Asignacion registrada',
             secciones.length === 1
               ? 'La asignacion docente se registro correctamente.'
-              : `Se registraron ${secciones.length} asignaciones para las secciones seleccionadas.`,
-            { confirmText: null, autoCloseMs: 3000 }
+              : `Se registraron ${secciones.length} asignaciones para las secciones seleccionadas.`
           );
           this.cargarAsignaciones();
         },
@@ -628,7 +626,7 @@ export class AsignacionesTutorias {
           this.mostrarAlerta(
             'error',
             'No se pudo registrar',
-            error?.error?.mensaje ?? 'No se pudo registrar la asignacion docente.'
+            formatearMensajeError(error, 'No se pudo registrar la asignacion docente.')
           );
         }
       });
@@ -651,8 +649,7 @@ export class AsignacionesTutorias {
       this.mostrarAlerta(
         'warning',
         'Periodo historico',
-        'Solo puedes registrar tutorias en el periodo academico del anio actual.',
-        { confirmText: null, autoCloseMs: 3000 }
+        'Solo puedes registrar tutorias en el periodo academico del anio actual.'
       );
       return;
     }
@@ -661,8 +658,7 @@ export class AsignacionesTutorias {
       this.mostrarAlerta(
         'warning',
         'Completa la tutoria',
-        'Selecciona docente tutor, seccion y periodo antes de guardar la tutoria.',
-        { confirmText: null, autoCloseMs: 3000 }
+        'Selecciona docente tutor, seccion y periodo antes de guardar la tutoria.'
       );
       return;
     }
@@ -683,8 +679,7 @@ export class AsignacionesTutorias {
           this.mostrarAlerta(
             'success',
             'Tutoria registrada',
-            'La tutoria se registro correctamente.',
-            { confirmText: null, autoCloseMs: 3000 }
+            'La tutoria se registro correctamente.'
           );
           this.cargarTutorias();
         },
@@ -693,7 +688,7 @@ export class AsignacionesTutorias {
           this.mostrarAlerta(
             'error',
             'No se pudo registrar',
-            error?.error?.mensaje ?? 'No se pudo registrar la tutoria.'
+            formatearMensajeError(error, 'No se pudo registrar la tutoria.')
           );
         }
       });
@@ -815,8 +810,7 @@ export class AsignacionesTutorias {
           activa ? 'Asignacion habilitada' : 'Asignacion deshabilitada',
           activa
             ? 'Asignacion habilitada correctamente para este periodo.'
-            : 'Asignacion deshabilitada correctamente para este periodo.',
-          { confirmText: null, autoCloseMs: 3000 }
+            : 'Asignacion deshabilitada correctamente para este periodo.'
         );
       },
       error: (error) => {
@@ -824,10 +818,12 @@ export class AsignacionesTutorias {
         this.mostrarAlerta(
           'error',
           activa ? 'No se pudo habilitar' : 'No se pudo deshabilitar',
-          error?.error?.mensaje ??
-            (activa
+          formatearMensajeError(
+            error,
+            activa
               ? 'No se pudo habilitar la asignacion.'
-              : 'No se pudo deshabilitar la asignacion.')
+              : 'No se pudo deshabilitar la asignacion.'
+          )
         );
       }
     });
@@ -847,8 +843,7 @@ export class AsignacionesTutorias {
           activa ? 'Tutoria habilitada' : 'Tutoria deshabilitada',
           activa
             ? 'Tutoria habilitada correctamente para este periodo.'
-            : 'Tutoria deshabilitada correctamente para este periodo.',
-          { confirmText: null, autoCloseMs: 3000 }
+            : 'Tutoria deshabilitada correctamente para este periodo.'
         );
       },
       error: (error) => {
@@ -856,8 +851,10 @@ export class AsignacionesTutorias {
         this.mostrarAlerta(
           'error',
           activa ? 'No se pudo habilitar' : 'No se pudo deshabilitar',
-          error?.error?.mensaje ??
-            (activa ? 'No se pudo habilitar la tutoria.' : 'No se pudo deshabilitar la tutoria.')
+          formatearMensajeError(
+            error,
+            activa ? 'No se pudo habilitar la tutoria.' : 'No se pudo deshabilitar la tutoria.'
+          )
         );
       }
     });
@@ -869,7 +866,7 @@ export class AsignacionesTutorias {
       type: 'info',
       title: '',
       message: '',
-      confirmText: 'Aceptar',
+      confirmText: 'Entendido',
       cancelText: null,
       autoCloseMs: null
     });
@@ -890,9 +887,9 @@ export class AsignacionesTutorias {
       type,
       title,
       message,
-      confirmText: options?.confirmText ?? 'Aceptar',
+      confirmText: options?.confirmText ?? 'Entendido',
       cancelText: options?.cancelText ?? null,
-      autoCloseMs: options?.autoCloseMs ?? null
+      autoCloseMs: null
     });
   }
 

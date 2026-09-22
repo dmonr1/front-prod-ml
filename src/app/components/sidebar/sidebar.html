@@ -1,84 +1,69 @@
 <aside class="sidebar" [class.collapsed]="collapsed()">
   <div class="sidebar-head">
     @if (collapsed()) {
-      <button class="brand-toggle" type="button" (click)="toggleCollapsed()" aria-label="Expandir menu">
-        <app-brand-mark [compact]="true" />
-      </button>
+    <button class="brand-toggle" type="button" (click)="toggleCollapsed()" aria-label="Expandir menu">
+      <app-brand-mark [compact]="true" />
+    </button>
     } @else {
-      <app-brand-mark [compact]="false" />
-      <button class="sidebar-toggle" type="button" (click)="toggleCollapsed()" aria-label="Colapsar menu">
-        <i class="fa-solid fa-angles-left"></i>
-      </button>
+    <app-brand-mark [compact]="false" />
+    <button class="sidebar-toggle" type="button" (click)="toggleCollapsed()" aria-label="Colapsar menu">
+      <i class="fa-solid fa-angles-left"></i>
+    </button>
     }
   </div>
 
   <nav>
     @for (item of items(); track item.id) {
-      @if (item.children?.length) {
-        <section class="nav-section" [class.open]="isExpanded(item)">
-          <button
-            class="nav-parent"
-            type="button"
-            [class.active]="isParentActive(item)"
-            [title]="collapsed() ? item.label : ''"
-            (click)="toggleSection(item)"
-          >
-            <span class="nav-icon"><i [class]="item.icon"></i></span>
-            <span class="nav-label">{{ item.label }}</span>
-            <i class="fa-solid fa-chevron-down nav-chevron"></i>
-          </button>
+    @if (item.children?.length) {
+    <section class="nav-section" [class.open]="isExpanded(item)">
+      <button class="nav-parent" type="button" [class.active]="isParentActive(item)"
+        [title]="collapsed() ? item.label : ''" (click)="toggleSection(item)">
+        <span class="nav-icon"><i [class]="item.icon"></i></span>
+        <span class="nav-label">{{ item.label }}</span>
+        <i class="fa-solid fa-chevron-down nav-chevron"></i>
+      </button>
 
-          @if (collapsed() || isExpanded(item)) {
-            <div class="nav-children">
-              @for (child of item.children; track child.path) {
-                <a
-                  class="nav-child"
-                  [routerLink]="child.path"
-                  [class.active]="isChildActive(child)"
-                  (click)="mantenerSeccionAbierta($event, item.id)"
-                >
-                  <span class="nav-icon child-icon"><i [class]="child.icon"></i></span>
-                  <span class="nav-label">{{ child.label }}</span>
-                </a>
-              }
-            </div>
-          }
-        </section>
-      } @else {
-        <a
-          [routerLink]="item.path ?? '/admin'"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: true }"
-          [title]="collapsed() ? item.label : ''"
-        >
-          <span class="nav-icon"><i [class]="item.icon"></i></span>
-          <span class="nav-label">{{ item.label }}</span>
+      @if (collapsed() || isExpanded(item)) {
+      <div class="nav-children">
+        @for (child of item.children; track child.path) {
+        <a class="nav-child" [routerLink]="child.path" [class.active]="isChildActive(child)"
+          (click)="mantenerSeccionAbierta($event, item.id)">
+          <span class="nav-icon child-icon"><i [class]="child.icon"></i></span>
+          <span class="nav-label">{{ child.label }}</span>
         </a>
+        }
+      </div>
       }
+    </section>
+    } @else {
+    <a [routerLink]="item.path ?? '/admin'" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
+      [title]="collapsed() ? item.label : ''">
+      <span class="nav-icon"><i [class]="item.icon"></i></span>
+      <span class="nav-label">{{ item.label }}</span>
+    </a>
+    }
     }
   </nav>
 
   <div class="sidebar-footer">
     <div class="user-flyout-wrap" [class.open]="userFlyoutOpen()">
-      <button
-        class="sidebar-action user-sidebar-card"
-        type="button"
-        [title]="collapsed() ? userName() : ''"
-        (click)="toggleUserFlyout($event)"
-      >
-      <span class="nav-icon user-avatar-icon"><i class="fa-solid fa-circle-user"></i></span>
-      <span class="nav-label user-summary">
-        <strong>{{ docenteVinculado() ? docenteVinculado()!.nombres + ' ' + docenteVinculado()!.apellidos : userName() }}</strong>
-        <small>{{ docenteVinculado()?.especialidad || roleLabel() }}</small>
-      </span>
-      <i class="fa-solid fa-chevron-right user-enter-icon"></i>
+      <button class="sidebar-action user-sidebar-card" type="button" [title]="collapsed() ? userName() : ''"
+        (click)="toggleUserFlyout($event)">
+        <span class="nav-icon user-avatar-icon"><i class="fa-solid fa-circle-user"></i></span>
+        <span class="nav-label user-summary">
+          <strong>{{ docenteVinculado() ? docenteVinculado()!.nombres + ' ' + docenteVinculado()!.apellidos : userName()
+            }}</strong>
+          <small>{{ docenteVinculado()?.especialidad || roleLabel() }}</small>
+        </span>
+        <i class="fa-solid fa-chevron-right user-enter-icon"></i>
       </button>
 
       <div class="user-flyout" (click)="$event.stopPropagation()">
         <div class="user-flyout-head">
           <span class="user-flyout-avatar"><i class="fa-solid fa-circle-user"></i></span>
           <div class="user-flyout-copy">
-            <strong>{{ docenteVinculado() ? docenteVinculado()!.nombres + ' ' + docenteVinculado()!.apellidos : userName() }}</strong>
+            <strong>{{ docenteVinculado() ? docenteVinculado()!.nombres + ' ' + docenteVinculado()!.apellidos :
+              userName() }}</strong>
             <small>{{ roleLabel() }}</small>
           </div>
         </div>
@@ -98,9 +83,9 @@
         </div>
       </div>
     </div>
-    <button class="logout" type="button" [title]="collapsed() ? 'Cerrar sesion' : ''" (click)="cerrarSesion()">
+    <button class="logout" type="button" [title]="collapsed() ? 'Cerrar sesión' : ''" (click)="cerrarSesion()">
       <i class="fa-solid fa-right-from-bracket"></i>
-      <span class="nav-label">Cerrar sesion</span>
+      <span class="nav-label">Cerrar sesión</span>
     </button>
   </div>
 </aside>
