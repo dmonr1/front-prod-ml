@@ -1014,12 +1014,12 @@
 
 .password-requirements {
   display: grid;
-  gap: 5px;
+  gap: 6px;
   margin: 8px 0 0;
-  padding: 8px 10px;
-  border: 1px solid #e2e8f2;
-  border-radius: 8px;
-  background: #fbfcfe;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
   list-style: none;
 }
 
@@ -1028,9 +1028,12 @@
   align-items: center;
   gap: 7px;
   color: #8c3f4c;
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   font-weight: 700;
   line-height: 1.2;
+  border: none;
+  background: transparent;
+  box-shadow: none;
 }
 
 .password-requirement-icon {
@@ -1524,7 +1527,7 @@ input:focus {
     padding: 7px 9px;
   }
 
-  r .preview-kpi small,
+  .preview-kpi small,
   .preview-card-head span,
   .preview-side-list span {
     font-size: 0.56rem;

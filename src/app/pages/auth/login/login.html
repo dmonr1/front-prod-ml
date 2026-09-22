@@ -289,22 +289,6 @@
                       }
                     </button>
                   </div>
-                  @if (!passwordRecuperacionSegura()) {
-                  <ul class="password-requirements" aria-live="polite">
-                    @for (requisito of requisitosPasswordRecuperacion(); track requisito.texto) {
-                    <li [class.met]="requisito.cumplido">
-                      <span class="password-requirement-icon" aria-hidden="true">
-                        @if (requisito.cumplido) {
-                        <svg viewBox="0 0 24 24"><path d="m5 12 4.2 4.2L19 6.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.8" /></svg>
-                        } @else {
-                        <svg viewBox="0 0 24 24"><path d="m7.5 7.5 9 9m0-9-9 9" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.8" /></svg>
-                        }
-                      </span>
-                      <span>{{ requisito.texto }}</span>
-                    </li>
-                    }
-                  </ul>
-                  }
                 </label>
 
                 <div class="auth-form-meta">
@@ -456,6 +440,21 @@
                       }
                     </button>
                   </div>
+
+                  <ul class="password-requirements" aria-live="polite">
+                    @for (requisito of requisitosPasswordRecuperacion(); track requisito.texto) {
+                    <li [class.met]="requisito.cumplido">
+                      <span class="password-requirement-icon" aria-hidden="true">
+                        @if (requisito.cumplido) {
+                        <svg viewBox="0 0 24 24"><path d="m5 12 4.2 4.2L19 6.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.8" /></svg>
+                        } @else {
+                        <svg viewBox="0 0 24 24"><path d="m7.5 7.5 9 9m0-9-9 9" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.8" /></svg>
+                        }
+                      </span>
+                      <span>{{ requisito.texto }}</span>
+                    </li>
+                    }
+                  </ul>
                 </label>
 
                 <label>
