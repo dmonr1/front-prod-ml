@@ -5,7 +5,8 @@ import { environment } from '../../../environments/environments';
 import { Docente } from '../../models/docente';
 
 export interface DocentePayload {
-  dni: string;
+  tipoDocumentoId: number;
+  numeroDocumento: string;
   nombres: string;
   apellidos: string;
   telefono: string | null;

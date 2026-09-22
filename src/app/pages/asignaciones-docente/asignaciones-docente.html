@@ -7,7 +7,7 @@
   <section class="assignment-card assignment-page">
     <div class="card-head assignment-slide-in assignment-slide-in-top">
       <div class="panel-head">
-        <h2>Asignaciones academicas</h2>
+        <h2>Asignaciones académicas</h2>
       </div>
     </div>
 
@@ -19,7 +19,7 @@
       </button>
       <button class="view-pill" type="button" [class.active]="vistaActiva() === 'tutorias'"
         (click)="vistaActiva.set('tutorias')">
-        Tutorias por seccion
+        Tutorías por sección
       </button>
     </div>
 
@@ -54,7 +54,7 @@
                 @for (docente of docentesFiltrados('asignacion'); track docente.id) {
                 <button class="lookup-option" type="button" (mousedown)="seleccionarDocente('asignacion', docente)">
                   <strong>{{ formatearDocente(docente) }}</strong>
-                  <span>{{ docente.dni || 'Sin DNI' }} Â· {{ docente.especialidad || 'Sin especialidad' }}</span>
+                  <span>{{ docente.tipoDocumentoNombre }} {{ docente.numeroDocumento || 'Sin documento' }} · {{ docente.especialidad || 'Sin especialidad' }}</span>
                 </button>
                 }
               </div>
@@ -73,7 +73,7 @@
               </label>
 
               <label>
-                Seccion
+                Sección
                 <div class="lookup-field">
                   <input type="text" placeholder="Seleccionar una o varias secciones" [value]="asignacionSeccionQuery()"
                     readonly />
@@ -86,9 +86,9 @@
             </div>
 
             <label>
-              Periodo academico
+              Período académico
               <div class="lookup-field">
-                <input type="text" placeholder="Seleccionar periodo academico" [value]="asignacionPeriodoQuery()"
+                <input type="text" placeholder="Seleccionar período académico" [value]="asignacionPeriodoQuery()"
                   readonly />
                 <button class="lookup-button" type="button" (click)="abrirModalPeriodo('asignacion')">
                   <i class="fa-solid fa-magnifying-glass"></i>
@@ -109,9 +109,9 @@
                 <table class="selected-sections-native-table">
                   <thead>
                     <tr>
-                      <th>Seccion</th>
+                      <th>Sección</th>
                       <th>Nivel</th>
-                      <th>Accion</th>
+                      <th>Acción</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -136,7 +136,7 @@
           <div class="form-actions">
             <button class="action-button primary" type="button" [disabled]="guardandoAsignacion()"
               (click)="guardarAsignacion()">
-              {{ guardandoAsignacion() ? 'Guardando...' : 'Guardar asignacion' }}
+              {{ guardandoAsignacion() ? 'Guardando...' : 'Guardar asignación' }}
             </button>
             <button class="action-button secondary" type="button" (click)="limpiarAsignacion()">Limpiar</button>
           </div>
@@ -150,9 +150,9 @@
                 <tr>
                   <th>Docente</th>
                   <th>Curso</th>
-                  <th>Seccion</th>
+                  <th>Sección</th>
                   <th>Estado</th>
-                  <th>Accion</th>
+                  <th>Acción</th>
                 </tr>
               </thead>
               <tbody>
@@ -171,7 +171,7 @@
           } @else if (!asignaciones().length) {
           <div class="table-state">
             <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-            <span>No hay asignaciones registradas para este periodo.</span>
+            <span>No hay asignaciones registradas para este período.</span>
           </div>
           } @else {
           <div class="table-scroll assignment-results-scroll">
@@ -180,9 +180,9 @@
                 <tr>
                   <th>Docente</th>
                   <th>Curso</th>
-                  <th>Seccion</th>
+                  <th>Sección</th>
                   <th>Estado</th>
-                  <th>Accion</th>
+                  <th>Acción</th>
                 </tr>
               </thead>
               <tbody>
@@ -229,8 +229,8 @@
     <article class="assignment-panel assignment-slide-in assignment-slide-in-bottom">
       <div class="section-head">
         <div class="panel-head">
-          <span class="panel-kicker">Asignaciones de tutorias por sección</span>
-          <p>Docente responsable del seguimiento global de la seccion durante el periodo.</p>
+          <span class="panel-kicker">Asignaciones de tutorías por sección</span>
+          <p>Docente responsable del seguimiento global de la sección durante el período.</p>
         </div>
 
         <div class="toolbar-inline">
@@ -256,7 +256,7 @@
                 @for (docente of docentesFiltrados('tutoria'); track docente.id) {
                 <button class="lookup-option" type="button" (mousedown)="seleccionarDocente('tutoria', docente)">
                   <strong>{{ formatearDocente(docente) }}</strong>
-                  <span>{{ docente.dni || 'Sin DNI' }} Â· {{ docente.especialidad || 'Sin especialidad' }}</span>
+                  <span>{{ docente.tipoDocumentoNombre }} {{ docente.numeroDocumento || 'Sin documento' }} · {{ docente.especialidad || 'Sin especialidad' }}</span>
                 </button>
                 }
               </div>
@@ -265,9 +265,9 @@
 
             <div class="form-two-columns">
               <label>
-                Seccion
+                Sección
                 <div class="lookup-field">
-                  <input type="text" placeholder="Seleccionar seccion" [value]="tutoriaSeccionQuery()" readonly />
+                  <input type="text" placeholder="Seleccionar sección" [value]="tutoriaSeccionQuery()" readonly />
                   <button class="lookup-button" type="button" (click)="abrirModalSeccion('tutoria')">
                     <i class="fa-solid fa-magnifying-glass"></i>
                   </button>
@@ -275,9 +275,9 @@
               </label>
 
               <label>
-                Periodo
+                Período
                 <div class="lookup-field">
-                  <input type="text" placeholder="Seleccionar periodo" [value]="tutoriaPeriodoQuery()" readonly />
+                  <input type="text" placeholder="Seleccionar período" [value]="tutoriaPeriodoQuery()" readonly />
                   <button class="lookup-button" type="button" (click)="abrirModalPeriodo('tutoria')">
                     <i class="fa-solid fa-magnifying-glass"></i>
                   </button>
@@ -288,7 +288,7 @@
             <div class="form-actions">
               <button class="action-button primary" type="button" [disabled]="guardandoTutoria()"
                 (click)="guardarTutoria()">
-                {{ guardandoTutoria() ? 'Guardando...' : 'Guardar tutoria' }}
+                {{ guardandoTutoria() ? 'Guardando...' : 'Guardar tutoría' }}
               </button>
               <button class="action-button secondary" type="button" (click)="limpiarTutoria()">Limpiar</button>
             </div>
@@ -302,10 +302,10 @@
               <thead>
                 <tr>
                   <th>Docente tutor</th>
-                  <th>Seccion</th>
-                  <th>Periodo</th>
+                  <th>Sección</th>
+                  <th>Período</th>
                   <th>Estado</th>
-                  <th>Accion</th>
+                  <th>Acción</th>
                 </tr>
               </thead>
               <tbody>
@@ -324,7 +324,7 @@
           } @else if (!tutorias().length) {
           <div class="table-state">
             <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-            <span>No hay tutorias registradas para este periodo.</span>
+            <span>No hay tutorías registradas para este período.</span>
           </div>
           } @else {
           <div class="table-scroll">
@@ -332,10 +332,10 @@
               <thead>
                 <tr>
                   <th>Docente tutor</th>
-                  <th>Seccion</th>
-                  <th>Periodo</th>
+                  <th>Sección</th>
+                  <th>Período</th>
                   <th>Estado</th>
-                  <th>Accion</th>
+                  <th>Acción</th>
                 </tr>
               </thead>
               <tbody>
@@ -344,7 +344,7 @@
                   <td><strong>{{ tutoria.docenteNombreCompleto }}</strong></td>
                   <td>
                     <strong>{{ tutoria.seccion }}</strong>
-                    <div class="cell-help">{{ tutoria.grado }} Â· {{ tutoria.nivel }}</div>
+                    <div class="cell-help">{{ tutoria.grado }} · {{ tutoria.nivel }}</div>
                   </td>
                   <td>{{ tutoria.periodoAcademico }}</td>
                   <td>
@@ -380,7 +380,7 @@
     <div class="modal-card" (click)="$event.stopPropagation()">
       <div class="modal-head">
         <div class="panel-head">
-          <span class="panel-kicker">Busqueda completa</span>
+          <span class="panel-kicker">Búsqueda completa</span>
           <h3>Seleccionar docente</h3>
           <p>Busca y selecciona un docente de la lista completa.</p>
         </div>
@@ -390,7 +390,7 @@
       </div>
 
       <div class="modal-search">
-        <input type="text" placeholder="Buscar por nombre, DNI, especialidad o usuario" [value]="modalBusqueda()"
+        <input type="text" placeholder="Buscar por nombre, documento, especialidad o usuario" [value]="modalBusqueda()"
           (input)="modalBusqueda.set($any($event.target).value)" />
       </div>
 
@@ -400,7 +400,7 @@
           <thead>
             <tr>
               <th>Docente</th>
-              <th>DNI</th>
+              <th>Documento</th>
               <th>Especialidad</th>
               <th>Usuario</th>
             </tr>
@@ -420,7 +420,7 @@
       } @else if (!docentesModalFiltrados().length) {
       <div class="table-state">
         <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-        <span>No se encontraron docentes con esa busqueda.</span>
+        <span>No se encontraron docentes con esa búsqueda.</span>
       </div>
       } @else {
       <div class="table-scroll modal-table">
@@ -428,7 +428,7 @@
           <thead>
             <tr>
               <th>Docente</th>
-              <th>DNI</th>
+              <th>Documento</th>
               <th>Especialidad</th>
               <th>Usuario</th>
             </tr>
@@ -437,7 +437,7 @@
             @for (docente of docentesModalFiltrados(); track docente.id) {
             <tr class="selectable-row" (click)="seleccionarDocente(modalContexto()!, docente)">
               <td>{{ formatearDocente(docente) }}</td>
-              <td>{{ docente.dni || 'Sin DNI' }}</td>
+              <td>{{ docente.tipoDocumentoNombre }} {{ docente.numeroDocumento || 'Sin documento' }}</td>
               <td>{{ docente.especialidad || 'Sin especialidad' }}</td>
               <td>{{ docente.username || 'Sin usuario' }}</td>
             </tr>
@@ -455,9 +455,9 @@
     <div class="modal-card" (click)="$event.stopPropagation()">
       <div class="modal-head">
         <div class="panel-head">
-          <span class="panel-kicker">Busqueda de cursos</span>
+          <span class="panel-kicker">Búsqueda de cursos</span>
           <h3>Seleccionar curso</h3>
-          <p>Explora los cursos por nivel y selecciona el que corresponda a la asignacion.</p>
+          <p>Explora los cursos por nivel y selecciona el que corresponda a la asignación.</p>
         </div>
         <button class="modal-close" type="button" (click)="cerrarModalCurso()">
           <i class="fa-solid fa-xmark"></i>
@@ -472,7 +472,7 @@
       </div>
 
       <div class="modal-search">
-        <input type="text" placeholder="Buscar curso por nombre o descripcion" [value]="cursoModalBusqueda()"
+        <input type="text" placeholder="Buscar curso por nombre o descripción" [value]="cursoModalBusqueda()"
           (input)="cursoModalBusqueda.set($any($event.target).value)" />
       </div>
 
@@ -483,7 +483,7 @@
             <tr>
               <th>Curso</th>
               <th>Nivel</th>
-              <th>Descripcion</th>
+              <th>Descripción</th>
               <th>Estado</th>
             </tr>
           </thead>
@@ -502,7 +502,7 @@
       } @else if (!cursosModalFiltrados().length) {
       <div class="table-state">
         <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-        <span>No se encontraron cursos en este nivel con esa busqueda.</span>
+        <span>No se encontraron cursos en este nivel con esa búsqueda.</span>
       </div>
       } @else {
       <div class="table-scroll modal-table">
@@ -511,7 +511,7 @@
             <tr>
               <th>Curso</th>
               <th>Nivel</th>
-              <th>Descripcion</th>
+              <th>Descripción</th>
               <th>Estado</th>
             </tr>
           </thead>
@@ -520,7 +520,7 @@
             <tr class="selectable-row" (click)="seleccionarCurso(curso)">
               <td>{{ curso.nombre }}</td>
               <td>{{ curso.nivelNombre }}</td>
-              <td>{{ curso.descripcion || 'Sin descripcion' }}</td>
+              <td>{{ curso.descripcion || 'Sin descripción' }}</td>
               <td>
                 <span class="status-badge" [class.active]="(curso.estado || 'ACTIVO') === 'ACTIVO'"
                   [class.inactive]="(curso.estado || 'ACTIVO') === 'INACTIVO'">
@@ -542,10 +542,10 @@
     <div class="modal-card" (click)="$event.stopPropagation()">
       <div class="modal-head">
         <div class="panel-head">
-          <span class="panel-kicker">Busqueda de secciones</span>
-          <h3>Seleccionar seccion</h3>
+          <span class="panel-kicker">Búsqueda de secciones</span>
+          <h3>Seleccionar sección</h3>
           <p>@if (seccionModalContexto() === 'asignacion') { Explora las secciones por nivel y marca una o varias para
-            la asignacion docente. } @else { Explora las secciones por nivel y elige la que corresponda a la tutoria. }
+            la asignación docente. } @else { Explora las secciones por nivel y elige la que corresponda a la tutoría. }
           </p>
         </div>
         <button class="modal-close" type="button" (click)="cerrarModalSeccion()">
@@ -562,7 +562,7 @@
       </div>
 
       <div class="modal-search">
-        <input type="text" placeholder="Buscar por grado, seccion o capacidad" [value]="seccionModalBusqueda()"
+        <input type="text" placeholder="Buscar por grado, sección o capacidad" [value]="seccionModalBusqueda()"
           (input)="seccionModalBusqueda.set($any($event.target).value)" />
       </div>
 
@@ -574,7 +574,7 @@
               @if (seccionModalContexto() === 'asignacion') {
               <th>Sel.</th>
               }
-              <th>Seccion</th>
+              <th>Sección</th>
               <th>Grado</th>
               <th>Nivel</th>
               <th>Capacidad</th>
@@ -603,7 +603,7 @@
               @if (seccionModalContexto() === 'asignacion') {
               <th>Sel.</th>
               }
-              <th>Seccion</th>
+              <th>Sección</th>
               <th>Grado</th>
               <th>Nivel</th>
               <th>Capacidad</th>
@@ -614,7 +614,7 @@
               @if (seccionModalContexto() === 'asignacion') {
               <td></td>
               }
-              <td colspan="4">No se encontraron secciones en este nivel con esa busqueda.</td>
+              <td colspan="4">No se encontraron secciones en este nivel con esa búsqueda.</td>
             </tr>
            
           </tbody>
@@ -627,7 +627,7 @@
               @if (seccionModalContexto() === 'asignacion') {
               <th>Sel.</th>
               }
-              <th>Seccion</th>
+              <th>Sección</th>
               <th>Grado</th>
               <th>Nivel</th>
               <th>Capacidad</th>
@@ -659,7 +659,7 @@
           Confirmar secciones
         </button>
         <button class="action-button secondary" type="button" (click)="limpiarSeccionesAsignacion()">
-          Limpiar seleccion
+          Limpiar selección
         </button>
       </div>
       }
@@ -673,9 +673,9 @@
     <div class="modal-card modal-card--compact" (click)="$event.stopPropagation()">
       <div class="modal-head">
         <div class="panel-head">
-          <span class="panel-kicker">Busqueda de periodos</span>
-          <h3>Seleccionar periodo academico</h3>
-          <p>Elige el periodo en el que la asignacion o la tutoria quedaran activas.</p>
+          <span class="panel-kicker">Búsqueda de períodos</span>
+          <h3>Seleccionar período académico</h3>
+          <p>Elige el período en el que la asignación o la tutoría quedarán activas.</p>
         </div>
         <button class="modal-close" type="button" (click)="cerrarModalPeriodo()">
           <i class="fa-solid fa-xmark"></i>
@@ -687,8 +687,8 @@
         <table class="app-table">
           <thead>
             <tr>
-              <th>Periodo</th>
-              <th>Anio</th>
+              <th>Período</th>
+              <th>Año</th>
               <th>Fechas</th>
             </tr>
           </thead>
@@ -706,15 +706,15 @@
       } @else if (!periodosModalFiltrados().length) {
       <div class="table-state">
         <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-        <span>No se encontraron periodos academicos con esa busqueda.</span>
+        <span>No se encontraron períodos académicos con esa búsqueda.</span>
       </div>
       } @else {
       <div class="table-scroll modal-table">
         <table class="app-table">
           <thead>
             <tr>
-              <th>Periodo</th>
-              <th>Anio</th>
+              <th>Período</th>
+              <th>Año</th>
               <th>Fechas</th>
             </tr>
           </thead>

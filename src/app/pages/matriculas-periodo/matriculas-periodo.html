@@ -2,9 +2,9 @@
   <section class="management-card">
     <div class="card-head">
       <div class="panel-head">
-        <span class="panel-kicker">Configuracion operativa</span>
-        <h2>Matriculas por periodo</h2>
-        <p>Registra alumnos dentro del periodo academico activo y consulta la lista oficial de matriculados.</p>
+        <span class="panel-kicker">Configuración operativa</span>
+        <h2>Matrículas por período</h2>
+        <p>Registra alumnos dentro del período académico activo y consulta la lista oficial de matriculados.</p>
       </div>
     </div>
 
@@ -12,8 +12,8 @@
       <article class="panel form-panel">
         <div class="panel-head">
           <span class="panel-kicker">Nuevo registro</span>
-          <h3>Registrar alumno en el periodo</h3>
-          <p>El alumno se vincula al periodo seleccionado y su grado se toma automaticamente desde la seccion.</p>
+          <h3>Registrar alumno en el período</h3>
+          <p>El alumno se vincula al período seleccionado y su grado se toma automáticamente desde la sección.</p>
         </div>
 
         <form class="module-form">
@@ -35,7 +35,7 @@
                 @for (alumno of alumnosFiltrados(); track alumno.id) {
                   <button class="lookup-option" type="button" (mousedown)="seleccionarAlumno(alumno)">
                     <strong>{{ formatearAlumno(alumno) }}</strong>
-                    <span>{{ alumno.codigo }} · {{ alumno.dni || 'Sin DNI' }}</span>
+                    <span>{{ alumno.codigo }} · {{ alumno.tipoDocumentoNombre }} {{ alumno.numeroDocumento || 'Sin documento' }}</span>
                   </button>
                 }
               </div>
@@ -44,9 +44,9 @@
 
           <div class="form-two-columns">
             <label>
-              Seccion
+              Sección
               <div class="lookup-field">
-                <input type="text" placeholder="Seleccionar seccion" [value]="seccionQuery()" readonly />
+                <input type="text" placeholder="Seleccionar sección" [value]="seccionQuery()" readonly />
                 <button class="lookup-button" type="button" (click)="abrirModalSeccion()">
                   <i class="fa-solid fa-magnifying-glass"></i>
                 </button>
@@ -54,9 +54,9 @@
             </label>
 
             <label>
-              Periodo academico
+              Período académico
               <div class="lookup-field">
-                <input type="text" placeholder="Seleccionar periodo" [value]="periodoQuery()" readonly />
+                <input type="text" placeholder="Seleccionar período" [value]="periodoQuery()" readonly />
                 <button class="lookup-button" type="button" (click)="abrirModalPeriodo()">
                   <i class="fa-solid fa-magnifying-glass"></i>
                 </button>
@@ -74,7 +74,7 @@
 
           <div class="form-actions">
             <button class="action-button primary" type="button" [disabled]="guardando()" (click)="guardarMatricula()">
-              {{ guardando() ? 'Guardando...' : 'Registrar matricula' }}
+              {{ guardando() ? 'Guardando...' : 'Registrar matrícula' }}
             </button>
             <button class="action-button secondary" type="button" (click)="limpiarFormulario()">Limpiar</button>
           </div>
@@ -86,11 +86,11 @@
           <div class="panel-head">
             <span class="panel-kicker">Consulta</span>
             <h3>Alumnos matriculados</h3>
-            <p>La tabla refleja el periodo activo y, si quieres, puedes filtrarla por seccion.</p>
+            <p>La tabla refleja el período activo y, si quieres, puedes filtrarla por sección.</p>
           </div>
 
           <div class="toolbar-inline">
-            <span class="period-chip">{{ periodoSeleccionado()?.nombre || 'Sin periodo' }}</span>
+            <span class="period-chip">{{ periodoSeleccionado()?.nombre || 'Sin período' }}</span>
             @if (seccionSeleccionada()) {
               <button class="action-button secondary" type="button" (click)="limpiarFiltroSeccion()">Ver todas las secciones</button>
             }
@@ -105,7 +105,7 @@
                 <tr>
                   <th>Alumno</th>
                   <th>Grado</th>
-                  <th>Seccion</th>
+                  <th>Sección</th>
                   <th>Fecha</th>
                   <th>Estado</th>
                 </tr>
@@ -134,7 +134,7 @@
           <ng-container>
             <div class="table-state">
               <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-              <span>No hay alumnos matriculados en este periodo con el filtro actual.</span>
+              <span>No hay alumnos matriculados en este período con el filtro actual.</span>
             </div>
           </ng-container>
         } @else {
@@ -144,7 +144,7 @@
                 <tr>
                   <th>Alumno</th>
                   <th>Grado</th>
-                  <th>Seccion</th>
+                  <th>Sección</th>
                   <th>Fecha</th>
                   <th>Estado</th>
                 </tr>
@@ -178,9 +178,9 @@
       <div class="modal-card" (click)="$event.stopPropagation()">
         <div class="modal-head">
           <div class="panel-head">
-            <span class="panel-kicker">Busqueda completa</span>
+            <span class="panel-kicker">Búsqueda completa</span>
             <h3>Seleccionar alumno</h3>
-            <p>Solo se muestran alumnos que aun no estan matriculados en el periodo activo.</p>
+            <p>Solo se muestran alumnos que aún no están matriculados en el período activo.</p>
           </div>
           <button class="modal-close" type="button" (click)="cerrarModalAlumno()">
             <i class="fa-solid fa-xmark"></i>
@@ -190,7 +190,7 @@
         <div class="modal-search">
           <input
             type="text"
-            placeholder="Buscar por codigo, DNI o nombre"
+            placeholder="Buscar por código, documento o nombre"
             [value]="modalBusquedaAlumno()"
             (input)="modalBusquedaAlumno.set($any($event.target).value)" />
         </div>
@@ -199,7 +199,7 @@
           <div class="table-scroll">
             <table class="app-table">
               <thead>
-                <tr><th>Alumno</th><th>Codigo</th><th>DNI</th><th>Estado</th></tr>
+                <tr><th>Alumno</th><th>Código</th><th>Documento</th><th>Estado</th></tr>
               </thead>
               <tbody>
                 @for (row of [0,1,2,3,4]; track row) {
@@ -221,20 +221,20 @@
         } @else if (!alumnosModalFiltrados().length) {
           <div class="table-state">
             <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-            <span>No hay alumnos disponibles con esa busqueda para este periodo.</span>
+            <span>No hay alumnos disponibles con esa búsqueda para este período.</span>
           </div>
         } @else {
           <div class="table-scroll modal-table">
             <table class="app-table">
               <thead>
-                <tr><th>Alumno</th><th>Codigo</th><th>DNI</th><th>Estado</th></tr>
+                <tr><th>Alumno</th><th>Código</th><th>Documento</th><th>Estado</th></tr>
               </thead>
               <tbody>
                 @for (alumno of alumnosModalFiltrados(); track alumno.id) {
                   <tr class="selectable-row" (click)="seleccionarAlumno(alumno)">
                     <td>{{ formatearAlumno(alumno) }}</td>
                     <td>{{ alumno.codigo }}</td>
-                    <td>{{ alumno.dni || 'Sin DNI' }}</td>
+                    <td>{{ alumno.tipoDocumentoNombre }} {{ alumno.numeroDocumento || 'Sin documento' }}</td>
                     <td><span class="status-badge active">{{ alumno.estado || 'ACTIVO' }}</span></td>
                   </tr>
                 }
@@ -251,9 +251,9 @@
       <div class="modal-card" (click)="$event.stopPropagation()">
         <div class="modal-head">
           <div class="panel-head">
-            <span class="panel-kicker">Busqueda de secciones</span>
-            <h3>Seleccionar seccion</h3>
-            <p>La seccion define automaticamente el grado de la matricula.</p>
+            <span class="panel-kicker">Búsqueda de secciones</span>
+            <h3>Seleccionar sección</h3>
+            <p>La sección define automáticamente el grado de la matrícula.</p>
           </div>
           <button class="modal-close" type="button" (click)="cerrarModalSeccion()">
             <i class="fa-solid fa-xmark"></i>
@@ -268,7 +268,7 @@
         <div class="modal-search">
           <input
             type="text"
-            placeholder="Buscar por grado, seccion o capacidad"
+            placeholder="Buscar por grado, sección o capacidad"
             [value]="modalBusquedaSeccion()"
             (input)="modalBusquedaSeccion.set($any($event.target).value)" />
         </div>
@@ -277,7 +277,7 @@
           <div class="table-scroll">
             <table class="app-table">
               <thead>
-                <tr><th>Seccion</th><th>Grado</th><th>Nivel</th><th>Capacidad</th></tr>
+                <tr><th>Sección</th><th>Grado</th><th>Nivel</th><th>Capacidad</th></tr>
               </thead>
               <tbody>
                 @for (row of [0,1,2,3,4]; track row) {
@@ -299,13 +299,13 @@
         } @else if (!seccionesModalFiltradas().length) {
           <div class="table-state">
             <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-            <span>No se encontraron secciones con esa busqueda.</span>
+            <span>No se encontraron secciones con esa búsqueda.</span>
           </div>
         } @else {
           <div class="table-scroll modal-table">
             <table class="app-table">
               <thead>
-                <tr><th>Seccion</th><th>Grado</th><th>Nivel</th><th>Capacidad</th></tr>
+                <tr><th>Sección</th><th>Grado</th><th>Nivel</th><th>Capacidad</th></tr>
               </thead>
               <tbody>
                 @for (seccion of seccionesModalFiltradas(); track seccion.id) {
@@ -329,9 +329,9 @@
       <div class="modal-card modal-card--compact" (click)="$event.stopPropagation()">
         <div class="modal-head">
           <div class="panel-head">
-            <span class="panel-kicker">Busqueda de periodos</span>
-            <h3>Seleccionar periodo academico</h3>
-            <p>Todos los alumnos registrados aqui perteneceran a ese anio academico.</p>
+            <span class="panel-kicker">Búsqueda de períodos</span>
+            <h3>Seleccionar período académico</h3>
+            <p>Todos los alumnos registrados aquí pertenecerán a ese año académico.</p>
           </div>
           <button class="modal-close" type="button" (click)="cerrarModalPeriodo()">
             <i class="fa-solid fa-xmark"></i>
@@ -341,7 +341,7 @@
         <div class="modal-search">
           <input
             type="text"
-            placeholder="Buscar por nombre o anio"
+            placeholder="Buscar por nombre o año"
             [value]="modalBusquedaPeriodo()"
             (input)="modalBusquedaPeriodo.set($any($event.target).value)" />
         </div>
@@ -350,7 +350,7 @@
           <div class="table-scroll">
             <table class="app-table">
               <thead>
-                <tr><th>Periodo</th><th>Anio</th><th>Fechas</th><th>Estado</th></tr>
+                <tr><th>Período</th><th>Año</th><th>Fechas</th><th>Estado</th></tr>
               </thead>
               <tbody>
                 @for (row of [0,1,2,3]; track row) {
@@ -372,13 +372,13 @@
         } @else if (!periodosModalFiltrados().length) {
           <div class="table-state">
             <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-            <span>No se encontraron periodos academicos con esa busqueda.</span>
+            <span>No se encontraron períodos académicos con esa búsqueda.</span>
           </div>
         } @else {
           <div class="table-scroll modal-table">
             <table class="app-table">
               <thead>
-                <tr><th>Periodo</th><th>Anio</th><th>Fechas</th><th>Estado</th></tr>
+                <tr><th>Período</th><th>Año</th><th>Fechas</th><th>Estado</th></tr>
               </thead>
               <tbody>
                 @for (periodo of periodosModalFiltrados(); track periodo.id) {

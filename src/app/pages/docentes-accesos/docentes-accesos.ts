@@ -4,8 +4,10 @@ import { forkJoin } from 'rxjs';
 import { CustomAlertComponent, CustomAlertType } from '../../components/custom-alert/custom-alert';
 import { Shell } from '../../layouts/shell/shell';
 import { Docente } from '../../models/docente';
+import { TipoDocumento } from '../../models/tipo-documento';
 import { UsuarioGestion } from '../../models/usuario-gestion';
 import { DocentePayload, DocenteService } from '../../services/academico/docente.service';
+import { TipoDocumentoService } from '../../services/academico/tipo-documento.service';
 import { AuthService } from '../../services/auth/auth.service';
 import { UsuarioActualizacionPayload, UsuarioService } from '../../services/usuario/usuario.service';
 import { formatearMensajeError } from '../../utils/error-formatter';
@@ -23,7 +25,8 @@ interface AlertState {
 export interface DocenteRegistroForm {
   nombres: string;
   apellidos: string;
-  dni: string;
+  tipoDocumentoId: number;
+  numeroDocumento: string;
   telefono: string;
   especialidad: string;
   correo: string;
@@ -48,9 +51,11 @@ export class DocentesAccesos {
   private readonly docenteService = inject(DocenteService);
   private readonly authService = inject(AuthService);
   private readonly usuarioService = inject(UsuarioService);
+  private readonly tipoDocumentoService = inject(TipoDocumentoService);
 
   readonly docentes = signal<Docente[]>([]);
   readonly filas = signal<DocenteAccesoRow[]>([]);
+  readonly tiposDocumento = signal<TipoDocumento[]>([]);
   readonly cargando = signal(true);
   readonly error = signal<string | null>(null);
   readonly guardando = signal(false);
@@ -67,7 +72,8 @@ export class DocentesAccesos {
   readonly form = signal<DocenteRegistroForm>({
     nombres: '',
     apellidos: '',
-    dni: '',
+    tipoDocumentoId: 1,
+    numeroDocumento: '',
     telefono: '',
     especialidad: '',
     correo: ''
@@ -87,9 +93,20 @@ export class DocentesAccesos {
   readonly totalCuentasAdministrativas = computed(
     () => this.filas().filter((fila) => fila.esCuentaAdministrativa).length
   );
+  readonly tipoDocumentoSeleccionado = computed(() =>
+    this.tiposDocumento().find((tipo) => tipo.id === this.form().tipoDocumentoId) ?? null
+  );
 
   constructor() {
     this.cargarDocentes();
+    this.cargarTiposDocumento();
+  }
+
+  cargarTiposDocumento(): void {
+    this.tipoDocumentoService.listar().subscribe({
+      next: (tiposDocumento) => this.tiposDocumento.set(tiposDocumento),
+      error: () => this.mostrarAlerta('error', 'No se pudieron cargar los documentos', 'Intenta recargar la página.')
+    });
   }
 
   cargarDocentes(): void {
@@ -149,6 +166,10 @@ export class DocentesAccesos {
     this.actualizarCampo(campo, valorNormalizado);
   }
 
+  actualizarTipoDocumento(tipoDocumentoId: number): void {
+    this.form.update((actual) => ({ ...actual, tipoDocumentoId, numeroDocumento: '' }));
+  }
+
   abrirPanelRegistro(): void {
     this.cerrandoPanelRegistro.set(false);
     this.mostrarPanelRegistro.set(true);
@@ -199,7 +220,8 @@ export class DocentesAccesos {
     this.form.set({
       nombres: '',
       apellidos: '',
-      dni: '',
+      tipoDocumentoId: 1,
+      numeroDocumento: '',
       telefono: '',
       especialidad: '',
       correo: ''
@@ -219,24 +241,25 @@ export class DocentesAccesos {
     const form = this.form();
     const nombres = form.nombres.trim();
     const apellidos = form.apellidos.trim();
-    const dni = form.dni.trim();
+    const numeroDocumento = form.numeroDocumento.trim();
     const telefono = form.telefono.trim();
     const correo = form.correo.trim();
 
-    if (!nombres || !apellidos || !dni || !correo) {
+    if (!nombres || !apellidos || !numeroDocumento || !correo) {
       this.mostrarAlerta(
         'warning',
         'Faltan datos obligatorios',
-        'Completa nombres, apellidos, DNI y correo para registrar al docente.'
+        'Completa nombres, apellidos, documento y correo para registrar al docente.'
       );
       return;
     }
 
-    if (!/^\d{8}$/.test(dni)) {
+    const errorDocumento = this.validarDocumento(numeroDocumento, this.tipoDocumentoSeleccionado());
+    if (errorDocumento) {
       this.mostrarAlerta(
         'warning',
-        'DNI no valido',
-        'El DNI debe contener exactamente 8 digitos numericos.'
+        'Documento no valido',
+        errorDocumento
       );
       return;
     }
@@ -244,8 +267,8 @@ export class DocentesAccesos {
     if (telefono && !/^\d{9}$/.test(telefono)) {
       this.mostrarAlerta(
         'warning',
-        'Telefono no valido',
-        'El telefono debe contener exactamente 9 digitos numericos.'
+        'Teléfono no válido',
+        'El teléfono debe contener exactamente 9 dígitos numéricos.'
       );
       return;
     }
@@ -253,8 +276,8 @@ export class DocentesAccesos {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
       this.mostrarAlerta(
         'warning',
-        'Correo no valido',
-        'Ingresa un correo con un formato valido, por ejemplo docente@colegio.edu.pe.'
+        'Correo no válido',
+        'Ingresa un correo con un formato válido, por ejemplo docente@colegio.edu.pe.'
       );
       return;
     }
@@ -262,7 +285,8 @@ export class DocentesAccesos {
     const payload: DocentePayload = {
       nombres,
       apellidos,
-      dni,
+      tipoDocumentoId: form.tipoDocumentoId,
+      numeroDocumento,
       telefono: telefono || null,
       especialidad: form.especialidad.trim() || null,
       correo
@@ -279,7 +303,7 @@ export class DocentesAccesos {
         this.mostrarAlerta(
           'success',
           'Docente registrado',
-          `Se creo el docente y su acceso. Usuario generado: ${docente.username}. Contraseña temporal: su DNI.`
+          `Se creó el docente y su acceso. Usuario generado: ${docente.username}. Contraseña temporal: su número de documento.`
         );
       },
       error: (error) => {
@@ -294,8 +318,12 @@ export class DocentesAccesos {
   }
 
   private normalizarCampo(campo: keyof DocenteRegistroForm, valor: string): string {
-    if (campo === 'dni') {
-      return valor.replace(/\D/g, '').slice(0, 8);
+    if (campo === 'numeroDocumento') {
+      const tipoDocumento = this.tipoDocumentoSeleccionado();
+      const valorNormalizado = tipoDocumento?.tipo === 'NUMERICO'
+        ? valor.replace(/\D/g, '')
+        : valor.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+      return valorNormalizado.slice(0, tipoDocumento?.longitud ?? 15);
     }
 
     if (campo === 'telefono') {
@@ -307,6 +335,16 @@ export class DocentesAccesos {
     }
 
     return valor;
+  }
+
+  private validarDocumento(numeroDocumento: string, tipoDocumento: TipoDocumento | null): string | null {
+    if (!tipoDocumento) {
+      return 'Selecciona un tipo de documento valido.';
+    }
+    if (tipoDocumento.longitudExacta && numeroDocumento.length !== tipoDocumento.longitud) {
+      return `${tipoDocumento.descripcionCorta} debe tener exactamente ${tipoDocumento.longitud} caracteres.`;
+    }
+    return null;
   }
 
   guardarAcceso(): void {
@@ -327,7 +365,7 @@ export class DocentesAccesos {
       this.mostrarAlerta(
         'info',
         'Sin cambios',
-        'No hiciste ningun cambio en el acceso seleccionado.'
+        'No hiciste ningún cambio en el acceso seleccionado.'
       );
       return;
     }
@@ -389,7 +427,7 @@ export class DocentesAccesos {
       this.mostrarAlerta(
         'warning',
         'Sin acceso vinculado',
-        'Este docente todavia no tiene una cuenta para activar o inactivar.'
+        'Este docente todavía no tiene una cuenta para activar o inactivar.'
       );
       return;
     }
@@ -401,8 +439,8 @@ export class DocentesAccesos {
       this.alertState.set({
         open: true,
         type: 'warning',
-        title: 'Confirmar inactivacion',
-        message: `Se inactivara la cuenta ${fila.username ?? 'seleccionada'} y, si corresponde, tambien el docente vinculado. ¿Deseas continuar?`,
+        title: 'Confirmar inactivación',
+        message: `Se inactivará la cuenta ${fila.username ?? 'seleccionada'} y, si corresponde, también el docente vinculado. ¿Deseas continuar?`,
         confirmText: 'Inactivar',
         cancelText: 'Cancelar',
         autoCloseMs: null
@@ -485,7 +523,7 @@ export class DocentesAccesos {
     }
 
     if (fila.accesoEstado === 'ACTIVO' && fila.roles.includes('DOCENTE_TUTOR')) {
-      return 'Tutoria activa';
+      return 'Tutoría activa';
     }
 
     return fila.accesoEstado === 'ACTIVO' ? 'Deshabilitar' : 'Activar';
@@ -575,11 +613,14 @@ export class DocentesAccesos {
         usuarioId: usuario.id,
         username: usuario.username,
         correo: usuario.correo,
-        dni: null,
+        tipoDocumentoId: 1,
+        tipoDocumentoCodigo: '01',
+        tipoDocumentoNombre: 'DNI',
+        numeroDocumento: null,
         nombres: 'Cuenta',
         apellidos: 'Administrativa',
         telefono: null,
-        especialidad: usuario.docenteId ? 'Sincronizacion pendiente' : 'Cuenta administrativa',
+        especialidad: usuario.docenteId ? 'Sincronización pendiente' : 'Cuenta administrativa',
         estado: usuario.estado,
         usuarioGestionId: usuario.id,
         roles: usuario.roles,

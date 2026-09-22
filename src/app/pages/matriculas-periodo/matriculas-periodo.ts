@@ -169,7 +169,7 @@ export class MatriculasPeriodo {
         this.cargarMatriculas();
       },
       error: () => {
-        this.errorPeriodos.set('No se pudieron cargar los periodos academicos.');
+        this.errorPeriodos.set('No se pudieron cargar los períodos académicos.');
         this.cargandoPeriodos.set(false);
         this.cargandoMatriculas.set(false);
       }
@@ -195,7 +195,7 @@ export class MatriculasPeriodo {
       },
       error: (error) => {
         this.errorMatriculas.set(
-          formatearMensajeError(error, 'No se pudieron cargar las matriculas del periodo.')
+          formatearMensajeError(error, 'No se pudieron cargar las matrículas del período.')
         );
         this.cargandoMatriculas.set(false);
       }
@@ -281,7 +281,7 @@ export class MatriculasPeriodo {
 
     if (!alumno || !seccion || !periodo) {
       this.mensajeFormulario.set(
-        'Selecciona alumno, seccion y periodo antes de registrar la matricula.'
+        'Selecciona alumno, sección y período antes de registrar la matrícula.'
       );
       return;
     }
@@ -298,7 +298,7 @@ export class MatriculasPeriodo {
         next: () => {
           this.guardando.set(false);
           this.limpiarFormulario();
-          this.exitoFormulario.set('La matricula del alumno se registro correctamente.');
+          this.exitoFormulario.set('La matrícula del alumno se registró correctamente.');
           this.periodoQuery.set(this.formatearPeriodo(periodo));
           this.seccionQuery.set(`${seccion.gradoNombre ?? ''} - ${seccion.nombre}`.trim());
           this.cargarMatriculas();
@@ -306,7 +306,7 @@ export class MatriculasPeriodo {
         error: (error) => {
           this.guardando.set(false);
           this.mensajeFormulario.set(
-            formatearMensajeError(error, 'No se pudo registrar la matricula.')
+            formatearMensajeError(error, 'No se pudo registrar la matrícula.')
           );
         }
       });
@@ -325,7 +325,7 @@ export class MatriculasPeriodo {
       return true;
     }
 
-    return [alumno.codigo, alumno.dni ?? '', alumno.nombres, alumno.apellidos]
+    return [alumno.codigo, alumno.tipoDocumentoNombre ?? '', alumno.numeroDocumento ?? '', alumno.nombres, alumno.apellidos]
       .join(' ')
       .toLowerCase()
       .includes(query);

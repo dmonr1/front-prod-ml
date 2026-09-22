@@ -580,8 +580,8 @@ export class AsignacionesTutorias {
     if (!periodo || periodo.anio !== this.currentYear) {
       this.mostrarAlerta(
         'warning',
-        'Periodo historico',
-        'Solo puedes registrar asignaciones en el periodo academico del anio actual.'
+        'Período histórico',
+        'Solo puedes registrar asignaciones en el período académico del año actual.'
       );
       return;
     }
@@ -589,8 +589,8 @@ export class AsignacionesTutorias {
     if (!docente || !curso || !secciones.length) {
       this.mostrarAlerta(
         'warning',
-        'Completa la asignacion',
-        'Selecciona docente, curso, una o varias secciones y periodo antes de guardar la asignacion.'
+        'Completa la asignación',
+        'Selecciona docente, curso, una o varias secciones y período antes de guardar la asignación.'
       );
       return;
     }
@@ -614,9 +614,9 @@ export class AsignacionesTutorias {
           this.asignacionPeriodoQuery.set(this.formatearPeriodo(periodo));
           this.mostrarAlerta(
             'success',
-            'Asignacion registrada',
+            'Asignación registrada',
             secciones.length === 1
-              ? 'La asignacion docente se registro correctamente.'
+              ? 'La asignación docente se registró correctamente.'
               : `Se registraron ${secciones.length} asignaciones para las secciones seleccionadas.`
           );
           this.cargarAsignaciones();
@@ -626,7 +626,7 @@ export class AsignacionesTutorias {
           this.mostrarAlerta(
             'error',
             'No se pudo registrar',
-            formatearMensajeError(error, 'No se pudo registrar la asignacion docente.')
+            formatearMensajeError(error, 'No se pudo registrar la asignación docente.')
           );
         }
       });
@@ -648,8 +648,8 @@ export class AsignacionesTutorias {
     if (!this.esTutoriaEditable()) {
       this.mostrarAlerta(
         'warning',
-        'Periodo historico',
-        'Solo puedes registrar tutorias en el periodo academico del anio actual.'
+        'Período histórico',
+        'Solo puedes registrar tutorías en el período académico del año actual.'
       );
       return;
     }
@@ -657,8 +657,8 @@ export class AsignacionesTutorias {
     if (!docente || !seccion || !periodo) {
       this.mostrarAlerta(
         'warning',
-        'Completa la tutoria',
-        'Selecciona docente tutor, seccion y periodo antes de guardar la tutoria.'
+        'Completa la tutoría',
+        'Selecciona docente tutor, sección y período antes de guardar la tutoría.'
       );
       return;
     }
@@ -678,8 +678,8 @@ export class AsignacionesTutorias {
           this.tutoriaPeriodoQuery.set(this.formatearPeriodo(periodo));
           this.mostrarAlerta(
             'success',
-            'Tutoria registrada',
-            'La tutoria se registro correctamente.'
+            'Tutoría registrada',
+            'La tutoría se registró correctamente.'
           );
           this.cargarTutorias();
         },
@@ -688,7 +688,7 @@ export class AsignacionesTutorias {
           this.mostrarAlerta(
             'error',
             'No se pudo registrar',
-            formatearMensajeError(error, 'No se pudo registrar la tutoria.')
+            formatearMensajeError(error, 'No se pudo registrar la tutoría.')
           );
         }
       });
@@ -701,8 +701,8 @@ export class AsignacionesTutorias {
       this.tutoriaPendienteEstado.set({ id: tutoria.id, activa: false });
       this.mostrarAlerta(
         'warning',
-        'Deshabilitar tutoria',
-        'Esta seguro que quiere deshabilitar esta tutoria para este periodo?',
+        'Deshabilitar tutoría',
+        '¿Está seguro de que desea deshabilitar esta tutoría para este período?',
         {
           confirmText: 'Deshabilitar',
           cancelText: 'Cancelar'
@@ -721,8 +721,8 @@ export class AsignacionesTutorias {
       this.asignacionPendienteEstado.set({ id: asignacion.id, activa: false });
       this.mostrarAlerta(
         'warning',
-        'Deshabilitar asignacion',
-        'Esta seguro que quiere deshabilitar esta asignacion para este periodo?',
+        'Deshabilitar asignación',
+        '¿Está seguro de que desea deshabilitar esta asignación para este período?',
         {
           confirmText: 'Deshabilitar',
           cancelText: 'Cancelar'
@@ -807,10 +807,10 @@ export class AsignacionesTutorias {
         );
         this.mostrarAlerta(
           'success',
-          activa ? 'Asignacion habilitada' : 'Asignacion deshabilitada',
+          activa ? 'Asignación habilitada' : 'Asignación deshabilitada',
           activa
-            ? 'Asignacion habilitada correctamente para este periodo.'
-            : 'Asignacion deshabilitada correctamente para este periodo.'
+            ? 'Asignación habilitada correctamente para este período.'
+            : 'Asignación deshabilitada correctamente para este período.'
         );
       },
       error: (error) => {
@@ -821,8 +821,8 @@ export class AsignacionesTutorias {
           formatearMensajeError(
             error,
             activa
-              ? 'No se pudo habilitar la asignacion.'
-              : 'No se pudo deshabilitar la asignacion.'
+              ? 'No se pudo habilitar la asignación.'
+              : 'No se pudo deshabilitar la asignación.'
           )
         );
       }
@@ -840,10 +840,10 @@ export class AsignacionesTutorias {
         );
         this.mostrarAlerta(
           'success',
-          activa ? 'Tutoria habilitada' : 'Tutoria deshabilitada',
+          activa ? 'Tutoría habilitada' : 'Tutoría deshabilitada',
           activa
-            ? 'Tutoria habilitada correctamente para este periodo.'
-            : 'Tutoria deshabilitada correctamente para este periodo.'
+            ? 'Tutoría habilitada correctamente para este período.'
+            : 'Tutoría deshabilitada correctamente para este período.'
         );
       },
       error: (error) => {
@@ -853,7 +853,7 @@ export class AsignacionesTutorias {
           activa ? 'No se pudo habilitar' : 'No se pudo deshabilitar',
           formatearMensajeError(
             error,
-            activa ? 'No se pudo habilitar la tutoria.' : 'No se pudo deshabilitar la tutoria.'
+            activa ? 'No se pudo habilitar la tutoría.' : 'No se pudo deshabilitar la tutoría.'
           )
         );
       }
@@ -917,7 +917,7 @@ export class AsignacionesTutorias {
     }
 
     const primera = `${secciones[0].gradoNombre ?? ''} - ${secciones[0].nombre}`.trim();
-    return `${primera} y ${secciones.length - 1} mas`;
+    return `${primera} y ${secciones.length - 1} más`;
   }
 
   removerSeccionAsignacion(seccionId: number): void {
@@ -931,7 +931,7 @@ export class AsignacionesTutorias {
   }
 
   obtenerResumenAsignacion(asignacion: AsignacionDocente): string {
-    return `${asignacion.grado} · Seccion ${asignacion.seccion}`;
+    return `${asignacion.grado} · Sección ${asignacion.seccion}`;
   }
 
   private coincideDocente(docente: Docente, query: string): boolean {
@@ -942,7 +942,8 @@ export class AsignacionesTutorias {
     const texto = [
       docente.nombres,
       docente.apellidos,
-      docente.dni ?? '',
+      docente.tipoDocumentoNombre ?? '',
+      docente.numeroDocumento ?? '',
       docente.especialidad ?? '',
       docente.username ?? ''
     ]

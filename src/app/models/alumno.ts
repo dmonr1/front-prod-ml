@@ -1,7 +1,10 @@
 export interface Alumno {
   id: number;
   codigo: string;
-  dni: string | null;
+  tipoDocumentoId: number;
+  tipoDocumentoCodigo: string;
+  tipoDocumentoNombre: string;
+  numeroDocumento: string | null;
   nombres: string;
   apellidos: string;
   fechaNacimiento: string | null;

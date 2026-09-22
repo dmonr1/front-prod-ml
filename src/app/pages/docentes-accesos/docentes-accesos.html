@@ -15,7 +15,7 @@
     <div class="catalog-head docentes-slide-in docentes-slide-in-top">
       <div class="section-head">
         <div class="panel-head">
-          <span class="panel-kicker">Gestion institucional</span>
+          <span class="panel-kicker">Gestión institucional</span>
           <h2>Docentes y accesos</h2>
           <p>Registra y administra el acceso al sistema del personal docente e interno.</p>
         </div>
@@ -48,7 +48,7 @@
                 <thead>
                   <tr>
                     <th>Docente</th>
-                    <th>DNI</th>
+                    <th>Documento</th>
                     <th>Especialidad</th>
                     <th>Usuario</th>
                     <th>Roles</th>
@@ -74,7 +74,7 @@
           } @else if (!filas().length) {
             <div class="table-state">
               <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-              <span>No hay cuentas registradas todavia.</span>
+              <span>No hay cuentas registradas todavía.</span>
               <small>Registra el primer docente o crea accesos administrativos para empezar a gestionar el sistema.</small>
             </div>
           } @else {
@@ -83,7 +83,7 @@
                 <thead>
                   <tr>
                     <th>Docente</th>
-                    <th>DNI</th>
+                    <th>Documento</th>
                     <th>Especialidad</th>
                     <th>Usuario</th>
                     <th>Roles</th>
@@ -102,7 +102,7 @@
                           }
                         </div>
                       </td>
-                      <td>{{ fila.dni || 'Sin DNI' }}</td>
+                      <td>{{ fila.tipoDocumentoNombre }} {{ fila.numeroDocumento || 'Sin documento' }}</td>
                       <td>{{ fila.especialidad || (fila.esCuentaAdministrativa ? 'Cuenta administrativa' : 'Sin especialidad') }}</td>
                       <td>
                         <div class="identity-cell">
@@ -185,7 +185,7 @@
                   Apellidos
                   <input
                     type="text"
-                    placeholder="Ejemplo: Perez Lopez"
+                    placeholder="Ejemplo: Pérez López"
                     autocomplete="family-name"
                     [value]="form().apellidos"
                     (input)="onCampoEntrada('apellidos', $event)"
@@ -195,17 +195,26 @@
 
               <div class="form-two-columns">
                 <label>
-                  DNI
+                  Tipo de documento
+                  <select [ngModel]="form().tipoDocumentoId" (ngModelChange)="actualizarTipoDocumento($event)"
+                    name="docenteTipoDocumento">
+                    @for (tipoDocumento of tiposDocumento(); track tipoDocumento.id) {
+                    <option [ngValue]="tipoDocumento.id">{{ tipoDocumento.descripcionCorta }}</option>
+                    }
+                  </select>
+                </label>
+
+                <label>
+                  Numero de documento
                   <input
                     type="text"
-                    placeholder="12345678"
-                    maxlength="8"
-                    inputmode="numeric"
-                    pattern="[0-9]{8}"
+                    [placeholder]="tipoDocumentoSeleccionado()?.tipo === 'NUMERICO' ? '12345678' : 'Documento'"
+                    [attr.maxlength]="tipoDocumentoSeleccionado()?.longitud ?? 15"
+                    [attr.inputmode]="tipoDocumentoSeleccionado()?.tipo === 'NUMERICO' ? 'numeric' : 'text'"
                     autocomplete="off"
-                    [value]="form().dni"
-                    (input)="onCampoEntrada('dni', $event)"
-                    name="docenteDni" />
+                    [value]="form().numeroDocumento"
+                    (input)="onCampoEntrada('numeroDocumento', $event)"
+                    name="docenteNumeroDocumento" />
                 </label>
 
                 <label>
@@ -228,7 +237,7 @@
                 Especialidad
                 <input
                   type="text"
-                  placeholder="Ejemplo: Matematica"
+                  placeholder="Ejemplo: Matemática"
                   [value]="form().especialidad"
                   (input)="onCampoEntrada('especialidad', $event)"
                   name="docenteEspecialidad" />
@@ -248,11 +257,11 @@
 
               <div class="form-note">
                 <i class="fa-solid fa-key"></i>
-                <span>El sistema generara automaticamente el usuario y usara el DNI como contraseña temporal.</span>
+                <span>El sistema generará automáticamente el usuario y usará el número de documento como contraseña temporal.</span>
               </div>
 
               <div class="docente-preview">
-                <img src="assets/docente.png" alt="Ilustracion del registro docente" />
+                <img src="assets/docente.png" alt="Ilustración del registro docente" />
               </div>
 
               @if (!esAdmin()) {

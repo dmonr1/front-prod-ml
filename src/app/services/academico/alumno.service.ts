@@ -7,7 +7,8 @@ import { Matricula } from '../../models/matricula';
 
 export interface AlumnoPayload {
   codigo: string | null;
-  dni: string | null;
+  tipoDocumentoId: number | null;
+  numeroDocumento: string | null;
   nombres: string;
   apellidos: string;
   fechaNacimiento: string | null;

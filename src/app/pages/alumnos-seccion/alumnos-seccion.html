@@ -13,14 +13,14 @@
               <i class="fa-solid fa-arrow-left"></i>
               Volver a grados y secciones
             </a>
-            <h2 style="  margin-top: 15px;">{{ grado()?.nombre }} - Seccion {{ seccion()?.nombre }}</h2>
+            <h2 style="  margin-top: 15px;">{{ grado()?.nombre }} - Sección {{ seccion()?.nombre }}</h2>
 
           </div>
 
           <div class="head-context">
             <div class="context-chip">
-              <span>Periodo: </span>
-              <strong>{{ periodo()?.anio || 'Sin ano' }}</strong>
+              <span>Período: </span>
+              <strong>{{ periodo()?.anio || 'Sin año' }}</strong>
             </div>
             <div class="context-chip">
               <span>Grado: </span>
@@ -28,7 +28,7 @@
             </div>
             <div class="context-chip">
               <span>Sección: </span>
-              <strong>{{ seccion()?.nombre || 'Sin seccion' }}</strong>
+              <strong>{{ seccion()?.nombre || 'Sin sección' }}</strong>
             </div>
             <div class="context-chip">
               <span>Matriculados: </span>
@@ -60,7 +60,7 @@
                 <thead>
                   <tr>
                     <th>Alumno</th>
-                    <th>Codigo</th>
+                    <th>Código</th>
                     <th>Fecha de ingreso</th>
                     <th>Estado</th>
                   </tr>
@@ -88,7 +88,7 @@
                 <thead>
                   <tr>
                     <th>Alumno</th>
-                    <th>Codigo</th>
+                    <th>Código</th>
                     <th>Fecha de ingreso</th>
                     <th>Estado</th>
                   </tr>
@@ -96,7 +96,7 @@
                 <tbody>
                   @if (!matriculasSeccion().length) {
                   <tr>
-                    <td class="empty-row" colspan="4">No hay alumnos registrados en esta seccion para el periodo
+                    <td class="empty-row" colspan="4">No hay alumnos registrados en esta sección para el período
                       seleccionado.</td>
                   </tr>
                   } @else {
@@ -121,8 +121,8 @@
           <div class="readonly-note">
             <span class="table-state-icon"><i class="fa-solid fa-lock"></i></span>
             <div>
-              <strong>Periodo historico</strong>
-              <p>Los periodos anteriores solo quedan disponibles para consulta.</p>
+              <strong>Período histórico</strong>
+              <p>Los períodos anteriores solo quedan disponibles para consulta.</p>
             </div>
           </div>
           } @else {
@@ -135,7 +135,7 @@
               <div class="quick-actions">
                 <button class="action-button tertiary full-button" type="button"
                   [disabled]="!periodoAnterior() || cargandoPeriodoAnterior()" (click)="cargarAlumnosPeriodoAnterior()">
-                  {{ cargandoPeriodoAnterior() ? 'Cargando...' : 'Cargar alumnos del periodo anterior' }}
+                  {{ cargandoPeriodoAnterior() ? 'Cargando...' : 'Cargar alumnos del período anterior' }}
                 </button>
               </div>
 
@@ -156,11 +156,26 @@
                   </label>
                 </div>
 
-                <label>
-                  DNI
-                  <input type="text" [ngModel]="formAlumno().dni" (ngModelChange)="actualizarCampoAlumno('dni', $event)"
-                    name="dni" placeholder="Opcional" />
-                </label>
+                <div class="form-two-columns">
+                  <label>
+                    Tipo de documento
+                    <select [ngModel]="formAlumno().tipoDocumentoId"
+                      (ngModelChange)="actualizarTipoDocumentoAlumno($event)" name="tipoDocumentoId">
+                      @for (tipoDocumento of tiposDocumento(); track tipoDocumento.id) {
+                      <option [ngValue]="tipoDocumento.id">{{ tipoDocumento.descripcionCorta }}</option>
+                      }
+                    </select>
+                  </label>
+
+                  <label>
+                    Numero de documento
+                    <input type="text" [ngModel]="formAlumno().numeroDocumento"
+                      (ngModelChange)="actualizarNumeroDocumentoAlumno($event)" name="numeroDocumento"
+                      [attr.maxlength]="tipoDocumentoAlumno()?.longitud ?? 15"
+                      [attr.inputmode]="tipoDocumentoAlumno()?.tipo === 'NUMERICO' ? 'numeric' : 'text'"
+                      placeholder="Opcional" />
+                  </label>
+                </div>
 
                 <div class="form-two-columns">
                   <label>
@@ -181,10 +196,10 @@
                 </div>
 
                 <label>
-                  Direccion
+                  Dirección
                   <input type="text" [ngModel]="formAlumno().direccion"
                     (ngModelChange)="actualizarCampoAlumno('direccion', $event)" name="direccion"
-                    placeholder="Direccion del alumno" />
+                    placeholder="Dirección del alumno" />
                 </label>
 
                 <div class="form-two-columns">
@@ -196,10 +211,10 @@
                   </label>
 
                   <label>
-                    Telefono del apoderado
+                    Teléfono del apoderado
                     <input type="text" [ngModel]="formAlumno().telefonoApoderado"
                       (ngModelChange)="actualizarCampoAlumno('telefonoApoderado', $event)" name="telefonoApoderado"
-                      placeholder="Telefono de contacto" />
+                      placeholder="Teléfono de contacto" />
                   </label>
                 </div>
 

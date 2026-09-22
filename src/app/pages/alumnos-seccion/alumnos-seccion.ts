@@ -8,11 +8,13 @@ import { Grado } from '../../models/grado';
 import { Matricula } from '../../models/matricula';
 import { PeriodoAcademico } from '../../models/periodo-academico';
 import { Seccion } from '../../models/seccion';
+import { TipoDocumento } from '../../models/tipo-documento';
 import { AlumnoPayload, AlumnoService } from '../../services/academico/alumno.service';
 import { GradoService } from '../../services/academico/grado.service';
 import { MatriculaService } from '../../services/academico/matricula.service';
 import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
 import { SeccionService } from '../../services/academico/seccion.service';
+import { TipoDocumentoService } from '../../services/academico/tipo-documento.service';
 import { formatearMensajeError } from '../../utils/error-formatter';
 
 interface AlertState {
@@ -38,6 +40,7 @@ export class AlumnosSeccion {
   private readonly gradoService = inject(GradoService);
   private readonly seccionService = inject(SeccionService);
   private readonly matriculaService = inject(MatriculaService);
+  private readonly tipoDocumentoService = inject(TipoDocumentoService);
 
   readonly currentYear = new Date().getFullYear();
   readonly periodoId = Number(this.route.snapshot.paramMap.get('periodoId'));
@@ -48,6 +51,7 @@ export class AlumnosSeccion {
   readonly grado = signal<Grado | null>(null);
   readonly seccion = signal<Seccion | null>(null);
   readonly matriculas = signal<Matricula[]>([]);
+  readonly tiposDocumento = signal<TipoDocumento[]>([]);
   readonly alertState = signal<AlertState>({
     open: false,
     type: 'info',
@@ -68,7 +72,8 @@ export class AlumnosSeccion {
 
   readonly formAlumno = signal<AlumnoPayload>({
     codigo: null,
-    dni: null,
+    tipoDocumentoId: 1,
+    numeroDocumento: null,
     nombres: '',
     apellidos: '',
     fechaNacimiento: null,
@@ -82,6 +87,10 @@ export class AlumnosSeccion {
     const periodo = this.periodo();
     return periodo ? periodo.anio === this.currentYear : false;
   });
+
+  readonly tipoDocumentoAlumno = computed(() =>
+    this.tiposDocumento().find((tipo) => tipo.id === this.formAlumno().tipoDocumentoId) ?? null
+  );
 
   readonly matriculasSeccion = computed(() =>
     this.matriculas()
@@ -103,6 +112,14 @@ export class AlumnosSeccion {
   constructor() {
     this.cargarBase();
     this.cargarMatriculas();
+    this.cargarTiposDocumento();
+  }
+
+  cargarTiposDocumento(): void {
+    this.tipoDocumentoService.listar().subscribe({
+      next: (tiposDocumento) => this.tiposDocumento.set(tiposDocumento),
+      error: () => this.mostrarAlerta('error', 'No se pudieron cargar los documentos', 'Intenta recargar la página.')
+    });
   }
 
   cargarBase(): void {
@@ -124,7 +141,7 @@ export class AlumnosSeccion {
                 this.cargandoBase.set(false);
               },
               error: () => {
-                this.errorBase.set('No se pudo cargar la seccion.');
+                this.errorBase.set('No se pudo cargar la sección.');
                 this.cargandoBase.set(false);
               }
             });
@@ -136,7 +153,7 @@ export class AlumnosSeccion {
         });
       },
       error: () => {
-        this.errorBase.set('No se pudo cargar el periodo academico.');
+        this.errorBase.set('No se pudo cargar el período académico.');
         this.cargandoBase.set(false);
       }
     });
@@ -152,7 +169,7 @@ export class AlumnosSeccion {
         this.cargandoMatriculas.set(false);
       },
       error: () => {
-        this.errorMatriculas.set('No se pudieron cargar los alumnos matriculados de esta seccion.');
+        this.errorMatriculas.set('No se pudieron cargar los alumnos matriculados de esta sección.');
         this.cargandoMatriculas.set(false);
       }
     });
@@ -164,8 +181,8 @@ export class AlumnosSeccion {
     if (!periodoAnterior) {
       this.mostrarAlerta(
         'warning',
-        'No hay periodo anterior',
-        'No existe un periodo anterior disponible para esta seccion.'
+        'No hay período anterior',
+        'No existe un período anterior disponible para esta sección.'
       );
       return;
     }
@@ -179,7 +196,7 @@ export class AlumnosSeccion {
           this.mostrarAlerta(
             'warning',
             'Sin alumnos previos',
-            'La seccion no tiene alumnos cargados en el periodo anterior.'
+            'La sección no tiene alumnos cargados en el período anterior.'
           );
           return;
         }
@@ -194,7 +211,7 @@ export class AlumnosSeccion {
           this.mostrarAlerta(
             'info',
             'Sin cambios',
-            'Los alumnos del periodo anterior ya fueron cargados en esta seccion.'
+            'Los alumnos del período anterior ya fueron cargados en esta sección.'
           );
           return;
         }
@@ -213,7 +230,7 @@ export class AlumnosSeccion {
             this.mostrarAlerta(
               'success',
               'Alumnos cargados',
-              'Se cargaron los alumnos del periodo anterior en esta seccion.'
+              'Se cargaron los alumnos del período anterior en esta sección.'
             );
             this.cargarMatriculas();
           },
@@ -222,7 +239,7 @@ export class AlumnosSeccion {
             this.mostrarAlerta(
               'error',
               'No se pudieron cargar',
-              formatearMensajeError(error, 'No se pudieron cargar los alumnos del periodo anterior.')
+              formatearMensajeError(error, 'No se pudieron cargar los alumnos del período anterior.')
             );
           }
         });
@@ -232,7 +249,7 @@ export class AlumnosSeccion {
         this.mostrarAlerta(
           'error',
           'No se pudieron consultar',
-          formatearMensajeError(error, 'No se pudieron consultar los alumnos del periodo anterior.')
+          formatearMensajeError(error, 'No se pudieron consultar los alumnos del período anterior.')
         );
       }
     });
@@ -245,10 +262,25 @@ export class AlumnosSeccion {
     }));
   }
 
+  actualizarNumeroDocumentoAlumno(valor: string): void {
+    const tipoDocumento = this.tipoDocumentoAlumno();
+    const numeroDocumento = this.normalizarNumeroDocumento(valor, tipoDocumento);
+    this.actualizarCampoAlumno('numeroDocumento', numeroDocumento || null);
+  }
+
+  actualizarTipoDocumentoAlumno(tipoDocumentoId: number): void {
+    this.formAlumno.update((actual) => ({
+      ...actual,
+      tipoDocumentoId,
+      numeroDocumento: null
+    }));
+  }
+
   limpiarFormularioAlumno(): void {
     this.formAlumno.set({
       codigo: null,
-      dni: null,
+      tipoDocumentoId: 1,
+      numeroDocumento: null,
       nombres: '',
       apellidos: '',
       fechaNacimiento: null,
@@ -271,6 +303,12 @@ export class AlumnosSeccion {
       return;
     }
 
+    const errorDocumento = this.validarDocumentoAlumno(payload.numeroDocumento, this.tipoDocumentoAlumno());
+    if (errorDocumento) {
+      this.mostrarAlerta('warning', 'Documento no valido', errorDocumento);
+      return;
+    }
+
     this.guardandoAlumno.set(true);
 
     this.alumnoService
@@ -286,7 +324,7 @@ export class AlumnosSeccion {
           this.mostrarAlerta(
             'success',
             'Alumno registrado',
-            'El alumno se creo y se agrego automaticamente a esta seccion.'
+            'El alumno se creó y se agregó automáticamente a esta sección.'
           );
           this.matriculas.update((actual) => [...actual, matricula]);
           this.cargarBase();
@@ -297,7 +335,7 @@ export class AlumnosSeccion {
           this.mostrarAlerta(
             'error',
             'No se pudo registrar',
-            formatearMensajeError(error, 'No se pudo crear y agregar el alumno a la seccion.')
+            formatearMensajeError(error, 'No se pudo crear y agregar el alumno a la sección.')
           );
         }
       });
@@ -348,7 +386,8 @@ export class AlumnosSeccion {
 
     return {
       codigo: limpiar(payload.codigo),
-      dni: limpiar(payload.dni),
+      tipoDocumentoId: payload.tipoDocumentoId ?? 1,
+      numeroDocumento: limpiar(payload.numeroDocumento),
       nombres: payload.nombres.trim(),
       apellidos: payload.apellidos.trim(),
       fechaNacimiento: limpiar(payload.fechaNacimiento),
@@ -357,5 +396,27 @@ export class AlumnosSeccion {
       nombreApoderado: limpiar(payload.nombreApoderado),
       telefonoApoderado: limpiar(payload.telefonoApoderado)
     };
+  }
+
+  private normalizarNumeroDocumento(valor: string, tipoDocumento: TipoDocumento | null): string {
+    const maximo = tipoDocumento?.longitud ?? 15;
+    const soloNumeros = tipoDocumento?.tipo === 'NUMERICO';
+    const normalizado = soloNumeros
+      ? valor.replace(/\D/g, '')
+      : valor.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    return normalizado.slice(0, maximo);
+  }
+
+  private validarDocumentoAlumno(numeroDocumento: string | null, tipoDocumento: TipoDocumento | null): string | null {
+    if (!numeroDocumento) {
+      return null;
+    }
+    if (!tipoDocumento) {
+      return 'Selecciona un tipo de documento valido.';
+    }
+    if (tipoDocumento.longitudExacta && numeroDocumento.length !== tipoDocumento.longitud) {
+      return `${tipoDocumento.descripcionCorta} debe tener exactamente ${tipoDocumento.longitud} caracteres.`;
+    }
+    return null;
   }
 }
