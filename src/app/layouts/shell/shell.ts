@@ -1,6 +1,6 @@
 import { Component, computed, inject, input, signal } from '@angular/core';
 import { forkJoin, of } from 'rxjs';
-import { Sidebar, SidebarItem } from '../../components/sidebar/sidebar';
+import { Sidebar, SidebarChildItem, SidebarItem } from '../../components/sidebar/sidebar';
 import { PeriodoAcademico } from '../../models/periodo-academico';
 import { AuthService } from '../../services/auth/auth.service';
 import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
@@ -15,6 +15,12 @@ import { UsuarioSesion } from '../../models/auth';
   styleUrl: './shell.scss'
 })
 export class Shell {
+  private static readonly contextoCache = {
+    asignacionesActivas: true,
+    tutoriasActivas: true,
+    cargado: false
+  };
+
   private readonly authService = inject(AuthService);
   private readonly periodoAcademicoService = inject(PeriodoAcademicoService);
   private readonly asignacionAcademicaService = inject(AsignacionAcademicaService);
@@ -22,8 +28,16 @@ export class Shell {
 
   readonly items = input<SidebarItem[]>([]);
   readonly usuario = computed(() => this.authService.obtenerUsuario());
-  readonly tieneAsignacionesActivas = signal(false);
-  readonly tieneTutoriasActivas = signal(false);
+  readonly tieneAsignacionesActivas = signal(
+    Shell.contextoCache.cargado
+      ? Shell.contextoCache.asignacionesActivas
+      : (this.authService.obtenerUsuario()?.roles.includes('DOCENTE') ?? false)
+  );
+  readonly tieneTutoriasActivas = signal(
+    Shell.contextoCache.cargado
+      ? Shell.contextoCache.tutoriasActivas
+      : (this.authService.obtenerUsuario()?.esTutor ?? false)
+  );
   readonly menuItems = computed(() => {
     const customItems = this.items();
     if (customItems.length) {
@@ -59,41 +73,51 @@ export class Shell {
           { label: 'Estudiantes y matrículas', path: '/gestion-estudiantil', icon: 'fa-solid fa-user-graduate' },
           { label: 'Catálogo de cursos', path: '/cursos', icon: 'fa-solid fa-book-open-reader' },
           { label: 'Docentes y accesos', path: '/docentes-accesos', icon: 'fa-solid fa-user-gear' },
-          { label: 'Asignaciones y tutorías', path: '/asignaciones-docente', icon: 'fa-solid fa-chalkboard-user' }
+          { label: 'Asignaciones y tutorías', path: '/asignaciones-docente', icon: 'fa-solid fa-chalkboard-user' },
+          { label: 'Horarios y programación', path: '/horarios', icon: 'fa-regular fa-calendar-days' }
         ]
       });
     }
 
-    if (esDocente && this.tieneAsignacionesActivas()) {
-      items.push({
-        id: 'academico',
-        label: 'Gestión académica',
-        icon: 'fa-solid fa-graduation-cap',
-        children: [
+    const tieneAsig = this.tieneAsignacionesActivas();
+    const tieneTut = this.tieneTutoriasActivas();
+
+    if ((esDocente && tieneAsig) || (esTutor && tieneTut) || esAdmin) {
+      const hijosAcademicos: SidebarChildItem[] = [];
+
+      if ((esDocente && tieneAsig) || esAdmin) {
+        hijosAcademicos.push(
+          { label: 'Mi horario', path: '/mi-horario', icon: 'fa-regular fa-calendar-days' },
           { label: 'Mis cursos y notas', path: '/mis-asignaciones', icon: 'fa-solid fa-chalkboard-user' },
-          { label: 'Control de asistencia', path: '/asistencias', icon: 'fa-solid fa-user-check' }
-        ]
-      });
+          { label: 'Asistencias', path: '/asistencias', icon: 'fa-solid fa-user-check' }
+        );
+      }
+
+      if ((esTutor && tieneTut) || esAdmin) {
+        hijosAcademicos.push({
+          label: 'Mi sección tutorada',
+          path: '/seccion-tutorada',
+          icon: 'fa-solid fa-users',
+          activePaths: ['/mis-asignaciones/tutorias']
+        });
+      }
+
+      if (hijosAcademicos.length > 0) {
+        items.push({
+          id: 'academico',
+          label: 'Gestión académica',
+          icon: 'fa-solid fa-graduation-cap',
+          children: hijosAcademicos
+        });
+      }
     }
 
-    if (
-      esAdmin ||
-      (esTutor && this.tieneTutoriasActivas()) ||
-      (esDocente && this.tieneAsignacionesActivas())
-    ) {
+    if (esAdmin || (esDocente && tieneAsig)) {
       items.push({
         id: 'seguimiento',
-        label: 'Seguimiento y tutoría',
+        label: 'Seguimiento académico',
         icon: 'fa-solid fa-shield-heart',
         children: [
-          ...(esTutor && this.tieneTutoriasActivas()
-            ? [{
-                label: 'Mi sección tutorada',
-                path: '/seccion-tutorada',
-                icon: 'fa-solid fa-users',
-                activePaths: ['/mis-asignaciones/tutorias']
-              }]
-            : []),
           {
             label: 'Predicción de riesgo',
             path: '/predicciones',
@@ -141,12 +165,15 @@ export class Shell {
             : of([])
         }).subscribe({
           next: ({ asignaciones, tutorias }) => {
-            this.tieneAsignacionesActivas.set(
-              asignaciones.some((asignacion) => (asignacion.estado ?? 'ACTIVO') === 'ACTIVO')
-            );
-            this.tieneTutoriasActivas.set(
-              tutorias.some((tutoria) => (tutoria.estado ?? 'ACTIVO') === 'ACTIVO')
-            );
+            const tieneAsig = asignaciones.some((asignacion) => (asignacion.estado ?? 'ACTIVO') === 'ACTIVO');
+            const tieneTut = tutorias.some((tutoria) => (tutoria.estado ?? 'ACTIVO') === 'ACTIVO');
+
+            Shell.contextoCache.asignacionesActivas = tieneAsig;
+            Shell.contextoCache.tutoriasActivas = tieneTut;
+            Shell.contextoCache.cargado = true;
+
+            this.tieneAsignacionesActivas.set(tieneAsig);
+            this.tieneTutoriasActivas.set(tieneTut);
           },
           error: () => this.limpiarContextoAcademico()
         });
@@ -166,6 +193,9 @@ export class Shell {
   }
 
   private limpiarContextoAcademico(): void {
+    Shell.contextoCache.asignacionesActivas = false;
+    Shell.contextoCache.tutoriasActivas = false;
+    Shell.contextoCache.cargado = false;
     this.tieneAsignacionesActivas.set(false);
     this.tieneTutoriasActivas.set(false);
   }

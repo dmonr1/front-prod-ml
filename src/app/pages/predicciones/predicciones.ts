@@ -1,15 +1,14 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, ElementRef, HostListener, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { forkJoin, of } from 'rxjs';
+import { forkJoin } from 'rxjs';
 import { CustomAlertComponent } from '../../components/custom-alert/custom-alert';
 import { Shell } from '../../layouts/shell/shell';
-import { PeriodoEvaluacion } from '../../models/periodo-evaluacion';
+import { CorteSeguimiento, EvaluacionPendienteFecha, PreparacionCorte } from '../../models/corte-seguimiento';
 import { PeriodoAcademico } from '../../models/periodo-academico';
 import { Seccion } from '../../models/seccion';
-import { Tutoria } from '../../models/tutoria';
 import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
-import { PeriodoEvaluacionService } from '../../services/academico/periodo-evaluacion.service';
+import { CorteSeguimientoService } from '../../services/academico/corte-seguimiento.service';
 import { SeccionService } from '../../services/academico/seccion.service';
 import {
   AlertaSeguimiento,
@@ -18,7 +17,6 @@ import {
 } from '../../services/alerta/alerta-seguimiento.service';
 import { AuthService } from '../../services/auth/auth.service';
 import { AsignacionAcademicaService } from '../../services/asignaciones/asignacion-academica.service';
-import { TutoriaService } from '../../services/asignaciones/tutoria.service';
 import {
   PrediccionRiesgo,
   PrediccionService,
@@ -46,14 +44,14 @@ interface PrediccionVista extends PrediccionRiesgo {
   styleUrl: './predicciones.scss'
 })
 export class Predicciones {
+  private vistaRequestId = 0;
   private readonly elementRef = inject(ElementRef<HTMLElement>);
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   private readonly periodoAcademicoService = inject(PeriodoAcademicoService);
-  private readonly periodoEvaluacionService = inject(PeriodoEvaluacionService);
+  private readonly corteSeguimientoService = inject(CorteSeguimientoService);
   private readonly seccionService = inject(SeccionService);
   private readonly asignacionAcademicaService = inject(AsignacionAcademicaService);
-  private readonly tutoriaService = inject(TutoriaService);
   private readonly prediccionService = inject(PrediccionService);
   private readonly alertaSeguimientoService = inject(AlertaSeguimientoService);
   readonly vistaActiva = signal<VistaPrediccion>('global');
@@ -65,9 +63,11 @@ export class Predicciones {
   readonly alertaRecalculoAbierta = signal(false);
   readonly mensajeRecalculo = signal('');
 
-  readonly periodosEvaluacion = signal<PeriodoEvaluacion[]>([]);
+  readonly periodosEvaluacion = signal<CorteSeguimiento[]>([]);
+  readonly evaluacionesPendientesFecha = signal<EvaluacionPendienteFecha[]>([]);
+  readonly preparacionCorte = signal<PreparacionCorte | null>(null);
+  readonly periodoAcademicoActual = signal<PeriodoAcademico | null>(null);
   readonly secciones = signal<Seccion[]>([]);
-  readonly tutoriasFiltro = signal<Tutoria[]>([]);
   readonly cursoIdsVisibles = signal<ReadonlySet<number> | null>(null);
   readonly periodoEvaluacionSeleccionadoId = signal<number | null>(null);
   readonly seccionSeleccionadaId = signal<number | null>(null);
@@ -83,12 +83,7 @@ export class Predicciones {
   readonly prediccionesCurso = signal<PrediccionVista[]>([]);
 
   readonly puedeRecalcular = computed(() => {
-    const usuario = this.authService.obtenerUsuario();
-    return Boolean(
-      this.authService.tieneGestionAdministrativa() ||
-      usuario?.roles.includes('DOCENTE_TUTOR') ||
-      usuario?.esTutor
-    );
+    return this.authService.tieneGestionAdministrativa();
   });
 
   constructor() {
@@ -97,34 +92,25 @@ export class Predicciones {
 
   readonly periodoEvaluacionSeleccionado = computed(
     () =>
-      this.periodosEvaluacionDisponibles().find(
-        (periodo) => periodo.id === this.periodoEvaluacionSeleccionadoId()
-      ) ?? null
+      this.periodosEvaluacionDisponibles().find((corte) => corte.id === this.periodoEvaluacionSeleccionadoId()) ?? null
   );
 
   readonly seccionSeleccionada = computed(
     () => this.secciones().find((seccion) => seccion.id === this.seccionSeleccionadaId()) ?? null
   );
 
-  readonly tutoriaSeleccionada = computed(
-    () =>
-      this.tutoriasFiltro().find((tutoria) => tutoria.seccionId === this.seccionSeleccionadaId()) ??
-      null
-  );
-
   readonly periodosEvaluacionDisponibles = computed(() => {
-    const tutoria = this.tutoriaSeleccionada();
     const seccion = this.seccionSeleccionada();
     const periodos = this.periodosEvaluacion();
-    const periodoAcademicoId = tutoria?.periodoAcademicoId ?? seccion?.periodoAcademicoId;
+    const periodoAcademicoId = seccion?.periodoAcademicoId;
 
     if (!periodoAcademicoId) {
       return periodos;
     }
 
     return periodos
-      .filter((periodo) => periodo.periodoAcademicoId === periodoAcademicoId)
-      .sort((a, b) => a.numero - b.numero);
+      .filter((corte) => corte.periodoAcademicoId === periodoAcademicoId)
+      .sort((a, b) => a.semana - b.semana);
   });
 
   readonly datasetActivo = computed(() =>
@@ -564,7 +550,9 @@ export class Predicciones {
     const periodoEvaluacionId = this.periodoEvaluacionSeleccionadoId();
     const seccionId = this.seccionSeleccionadaId();
 
-    if (!periodoEvaluacionId || !seccionId || this.recalculando()) {
+    const preparacion = this.preparacionCorte();
+    if (!periodoEvaluacionId || !seccionId || this.recalculando() || this.evaluacionesPendientesFecha().length
+        || !preparacion?.corteDisponible || !preparacion.alumnosConDatos) {
       return;
     }
 
@@ -583,8 +571,13 @@ export class Predicciones {
       },
       error: (error) => {
         this.recalculando.set(false);
-        this.error.set(formatearMensajeError(error, 'No se pudieron recalcular las predicciones.'));
-        this.alertaConexionAbierta.set(true);
+        const mensaje = formatearMensajeError(error, 'No se pudieron recalcular las predicciones.');
+        if (mensaje.toLowerCase().includes('fecha')) {
+          this.error.set(mensaje);
+        } else {
+          this.error.set(mensaje);
+          this.alertaConexionAbierta.set(true);
+        }
       }
     });
   }
@@ -616,7 +609,7 @@ export class Predicciones {
   verFichaAlumno(alumnoId: number): void {
     void this.router.navigate(['/alumno', alumnoId], {
       queryParams: {
-        periodoEvaluacionId: this.periodoEvaluacionSeleccionadoId(),
+        corteSeguimientoId: this.periodoEvaluacionSeleccionadoId(),
         seccionId: this.seccionSeleccionadaId(),
         vista: this.vistaActiva()
       }
@@ -629,95 +622,28 @@ export class Predicciones {
     this.alertaConexionAbierta.set(false);
 
     forkJoin({
-      periodosEvaluacion: this.periodoEvaluacionService.listar(),
       secciones: this.seccionService.listar(),
       periodosAcademicos: this.periodoAcademicoService.listar()
     }).subscribe({
-      next: ({ periodosEvaluacion, secciones, periodosAcademicos }) => {
-        const periodoAcademicoActual = this.resolverPeriodoAcademicoActual(periodosAcademicos);
-        const periodosActivos = [...periodosEvaluacion]
-          .filter(
-            (periodo) =>
-              periodo.estado !== 'INACTIVO' &&
-              periodo.periodoAcademicoId === periodoAcademicoActual?.id
-          )
-          .sort((a, b) => {
-            const anio = (b.anioAcademico ?? 0) - (a.anioAcademico ?? 0);
-            return anio !== 0 ? anio : a.numero - b.numero;
-          });
-
-        const seccionesActivas = [...secciones]
-          .filter(
-            (seccion) =>
-              seccion.estado !== 'INACTIVO' &&
-              seccion.periodoAcademicoId === periodoAcademicoActual?.id
-          )
-          .sort((a, b) =>
-            `${a.nivelNombre ?? ''}${a.gradoNombre ?? ''}${a.nombre}`.localeCompare(
-              `${b.nivelNombre ?? ''}${b.gradoNombre ?? ''}${b.nombre}`
-            )
-          );
-
-        const usuario = this.authService.obtenerUsuario();
-        const esAdmin = this.authService.tieneGestionAdministrativa();
-        const esDocente = usuario?.roles.includes('DOCENTE') ?? false;
-        const esTutor = Boolean(usuario?.esTutor || usuario?.roles.includes('DOCENTE_TUTOR'));
-        const docenteId = usuario?.docenteId;
-
-        if (esAdmin) {
-          this.cursoIdsVisibles.set(null);
-          this.tutoriasFiltro.set([]);
-          this.configurarFiltros(periodosActivos, seccionesActivas);
+      next: ({ secciones, periodosAcademicos }) => {
+        const periodoAcademico = this.resolverPeriodoAcademicoActual(periodosAcademicos);
+        this.periodoAcademicoActual.set(periodoAcademico);
+        if (!periodoAcademico) {
+          this.configurarFiltros([], []);
           return;
         }
-
-        if (docenteId && (esDocente || esTutor)) {
-          if (!periodoAcademicoActual) {
-            this.configurarFiltros(periodosActivos, []);
-            return;
+        const seccionesActivas = secciones.filter((seccion) => seccion.estado !== 'INACTIVO'
+          && seccion.periodoAcademicoId === periodoAcademico.id)
+          .sort((a, b) => `${a.nivelNombre ?? ''}${a.gradoNombre ?? ''}${a.nombre}`
+            .localeCompare(`${b.nivelNombre ?? ''}${b.gradoNombre ?? ''}${b.nombre}`));
+        this.corteSeguimientoService.listar(periodoAcademico.id).subscribe({
+          next: (cortes) => this.aplicarFiltrosPorRol(cortes, seccionesActivas, periodoAcademico.id),
+          error: () => {
+            this.cargandoFiltros.set(false);
+            this.error.set('No se pudieron cargar los cortes semanales del período.');
+            this.alertaConexionAbierta.set(true);
           }
-
-          forkJoin({
-            asignacionesPorPeriodo: esDocente
-              ? this.asignacionAcademicaService.listarAsignaciones(docenteId, periodoAcademicoActual.id)
-              : of([]),
-            tutoriasPorPeriodo: esTutor
-              ? this.tutoriaService.listarPorDocente(docenteId, periodoAcademicoActual.id)
-              : of([])
-          }).subscribe({
-            next: ({ asignacionesPorPeriodo, tutoriasPorPeriodo }) => {
-              const asignacionesActivas = asignacionesPorPeriodo
-                .filter((asignacion) => (asignacion.estado ?? 'ACTIVO') === 'ACTIVO');
-              const tutoriasActivas = tutoriasPorPeriodo
-                .filter((tutoria) => (tutoria.estado ?? 'ACTIVO') === 'ACTIVO');
-              const seccionesPermitidas = new Set([
-                ...asignacionesActivas.map((asignacion) => asignacion.seccionId),
-                ...tutoriasActivas.map((tutoria) => tutoria.seccionId)
-              ]);
-
-              this.tutoriasFiltro.set(tutoriasActivas);
-              this.cursoIdsVisibles.set(
-                esDocente && !esTutor
-                  ? new Set(asignacionesActivas.map((asignacion) => asignacion.cursoId))
-                  : null
-              );
-              this.configurarFiltros(
-                periodosActivos,
-                seccionesActivas.filter((seccion) => seccionesPermitidas.has(seccion.id))
-              );
-            },
-            error: () => {
-              this.tutoriasFiltro.set([]);
-              this.cursoIdsVisibles.set(new Set());
-              this.configurarFiltros(periodosActivos, []);
-            }
-          });
-          return;
-        }
-
-        this.tutoriasFiltro.set([]);
-        this.cursoIdsVisibles.set(new Set());
-        this.configurarFiltros(periodosActivos, []);
+        });
       },
       error: () => {
         this.cargandoFiltros.set(false);
@@ -727,14 +653,46 @@ export class Predicciones {
     });
   }
 
+  private aplicarFiltrosPorRol(cortes: CorteSeguimiento[], secciones: Seccion[], periodoAcademicoId: number): void {
+    this.periodosEvaluacion.set(cortes);
+    const usuario = this.authService.obtenerUsuario();
+    if (this.authService.tieneGestionAdministrativa()) {
+      this.cursoIdsVisibles.set(null);
+      this.configurarFiltros(cortes, secciones);
+      return;
+    }
+    const docenteId = usuario?.docenteId;
+    if (docenteId && usuario?.roles.includes('DOCENTE')) {
+      this.asignacionAcademicaService.listarAsignaciones(docenteId, periodoAcademicoId).subscribe({
+        next: (asignaciones) => {
+          const activas = asignaciones.filter((asignacion) => (asignacion.estado ?? 'ACTIVO') === 'ACTIVO');
+          const seccionesPermitidas = new Set(activas.map((asignacion) => asignacion.seccionId));
+          this.cursoIdsVisibles.set(new Set(activas.map((asignacion) => asignacion.cursoId)));
+          this.configurarFiltros(cortes, secciones.filter((seccion) => seccionesPermitidas.has(seccion.id)));
+        },
+        error: () => {
+          this.cursoIdsVisibles.set(new Set());
+          this.configurarFiltros(cortes, []);
+        }
+      });
+      return;
+    }
+    this.cursoIdsVisibles.set(new Set());
+    this.configurarFiltros(cortes, []);
+  }
+
   private cargarVista(): void {
+    const requestId = ++this.vistaRequestId;
     const periodoEvaluacionId = this.periodoEvaluacionSeleccionadoId();
     const seccionId = this.seccionSeleccionadaId();
 
     if (!periodoEvaluacionId || !seccionId) {
+      this.preparacionCorte.set(null);
       return;
     }
 
+      this.preparacionCorte.set(null);
+      this.evaluacionesPendientesFecha.set([]);
       this.cargandoVista.set(true);
       this.error.set(null);
       this.alertaConexionAbierta.set(false);
@@ -743,10 +701,15 @@ export class Predicciones {
       resumen: this.prediccionService.obtenerResumen(periodoEvaluacionId, seccionId),
       globales: this.prediccionService.listarGlobales(periodoEvaluacionId, seccionId),
       cursos: this.prediccionService.listarCursos(periodoEvaluacionId, seccionId),
-      alertas: this.alertaSeguimientoService.listarAlertas(periodoEvaluacionId, seccionId),
-      recomendaciones: this.alertaSeguimientoService.listarRecomendaciones(periodoEvaluacionId, seccionId)
+      alertas: this.alertaSeguimientoService.listarAlertasPorCorte(periodoEvaluacionId, seccionId),
+      recomendaciones: this.alertaSeguimientoService.listarRecomendacionesPorCorte(periodoEvaluacionId, seccionId),
+      pendientes: this.corteSeguimientoService.evaluacionesPendientes(periodoEvaluacionId, seccionId),
+      preparacion: this.corteSeguimientoService.preparacion(periodoEvaluacionId, seccionId)
     }).subscribe({
-      next: ({ resumen, globales, cursos, alertas, recomendaciones }) => {
+      next: ({ resumen, globales, cursos, alertas, recomendaciones, pendientes, preparacion }) => {
+        if (requestId !== this.vistaRequestId) return;
+        this.evaluacionesPendientesFecha.set(pendientes);
+        this.preparacionCorte.set(preparacion);
         this.resumenApi.set(resumen);
         this.prediccionesGlobales.set(
           globales.map((item) => this.mapearPrediccion(item, alertas, recomendaciones))
@@ -766,11 +729,42 @@ export class Predicciones {
         this.animarPanel();
       },
       error: (error) => {
+        if (requestId !== this.vistaRequestId) return;
         this.cargandoVista.set(false);
         this.error.set(formatearMensajeError(error, 'No se pudieron cargar las predicciones.'));
-        this.alertaConexionAbierta.set(true);
+        if (!this.error()?.toLowerCase().includes('corte')) this.alertaConexionAbierta.set(true);
       }
     });
+  }
+
+  abrirFechaEvaluacion(evaluacion: EvaluacionPendienteFecha): void {
+    void this.router.navigate(['/mis-asignaciones', evaluacion.asignacionId, 'notas'], {
+      queryParams: { periodoEvaluacionId: evaluacion.periodoEvaluacionId, evaluacionId: evaluacion.evaluacionId }
+    });
+  }
+
+  abrirConfiguracionCortes(): void {
+    void this.router.navigate(['/gestion-estudiantil']);
+  }
+
+  abrirRegistroNotas(): void {
+    void this.router.navigate(['/mis-asignaciones']);
+  }
+
+  abrirRegistroAsistencia(): void {
+    void this.router.navigate(['/asistencias']);
+  }
+
+  abrirHorarios(): void {
+    void this.router.navigate(['/horarios']);
+  }
+
+  abrirMatriculas(): void {
+    const periodoId = this.periodoAcademicoActual()?.id;
+    const seccionId = this.seccionSeleccionadaId();
+    if (periodoId && seccionId) {
+      void this.router.navigate(['/gestion-estudiantil/periodo', periodoId, 'seccion', seccionId]);
+    }
   }
 
   private asegurarSeleccion(): void {
@@ -825,7 +819,7 @@ export class Predicciones {
         recomendacion?.descripcion ??
         (item.cursoId != null
           ? 'Aplicar seguimiento focalizado por curso y revisar evaluaciones recientes.'
-          : 'Mantener monitoreo tutorial y seguimiento académico general.'),
+          : 'Mantener el seguimiento académico general y revisar la evolución del siguiente corte.'),
       tendencia: nivel === 'ALTO' ? 'Crítico' : 'Controlado'
     };
   }
@@ -1088,7 +1082,7 @@ export class Predicciones {
     return 'low';
   }
 
-  private configurarFiltros(periodos: PeriodoEvaluacion[], secciones: Seccion[]): void {
+  private configurarFiltros(periodos: CorteSeguimiento[], secciones: Seccion[]): void {
     this.periodosEvaluacion.set(periodos);
     this.secciones.set(secciones);
     this.seccionSeleccionadaId.set(secciones[0]?.id ?? null);
@@ -1100,57 +1094,27 @@ export class Predicciones {
     }
   }
 
-  private mapearSeccionesDesdeTutorias(
-    tutorias: Tutoria[],
-    seccionesBase: Seccion[]
-  ): Seccion[] {
-    const basePorId = new Map(seccionesBase.map((seccion) => [seccion.id, seccion]));
-    const resultado = new Map<string, Seccion>();
-
-    for (const tutoria of tutorias) {
-      const base = basePorId.get(tutoria.seccionId);
-      const seccion: Seccion = base
-        ? {
-            ...base,
-            nombre: base.nombre || tutoria.seccion,
-            gradoNombre: tutoria.grado || base.gradoNombre,
-            nivelNombre: tutoria.nivel || base.nivelNombre,
-            periodoAcademicoId: tutoria.periodoAcademicoId ?? base.periodoAcademicoId,
-            periodoAcademicoNombre: tutoria.periodoAcademico || base.periodoAcademicoNombre,
-            anioAcademico: tutoria.anioAcademico ?? base.anioAcademico
-          }
-        : {
-            id: tutoria.seccionId,
-            nombre: tutoria.seccion,
-            capacidad: null,
-            estado: tutoria.estado ?? 'ACTIVO',
-            gradoId: null,
-            gradoNombre: tutoria.grado,
-            nivelId: null,
-            nivelNombre: tutoria.nivel,
-            periodoAcademicoId: tutoria.periodoAcademicoId,
-            periodoAcademicoNombre: tutoria.periodoAcademico,
-            anioAcademico: tutoria.anioAcademico
-          };
-
-      resultado.set(`${seccion.id}-${seccion.periodoAcademicoId ?? 0}`, seccion);
-    }
-
-    return [...resultado.values()].sort((a, b) =>
-      `${a.anioAcademico ?? 0}-${a.nivelNombre ?? ''}-${a.gradoNombre ?? ''}-${a.nombre}`.localeCompare(
-        `${b.anioAcademico ?? 0}-${b.nivelNombre ?? ''}-${b.gradoNombre ?? ''}-${b.nombre}`
-      )
-    );
-  }
-
   private ajustarPeriodoSegunSeccion(): void {
     const periodoActual = this.periodoEvaluacionSeleccionadoId();
     const disponibles = this.periodosEvaluacionDisponibles();
     const existe = disponibles.some((periodo) => periodo.id === periodoActual);
 
     if (!existe) {
-      this.periodoEvaluacionSeleccionadoId.set(disponibles[0]?.id ?? null);
+      this.periodoEvaluacionSeleccionadoId.set(this.seleccionarCortePorFecha(disponibles)?.id ?? null);
     }
+  }
+
+  private seleccionarCortePorFecha(periodos: CorteSeguimiento[]): CorteSeguimiento | null {
+    if (!periodos.length) return null;
+    const hoy = this.fechaLocalHoy();
+    return periodos.find((corte) => corte.fechaCorte === hoy)
+      ?? [...periodos].filter((corte) => corte.fechaCorte < hoy).at(-1)
+      ?? periodos[0];
+  }
+
+  private fechaLocalHoy(): string {
+    const hoy = new Date();
+    return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
   }
 
   private resolverPeriodoAcademicoActual(periodos: PeriodoAcademico[]): PeriodoAcademico | null {

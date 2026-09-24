@@ -31,6 +31,10 @@ export class EvaluacionService {
     return this.http.post<Evaluacion>(`${this.api}/evaluaciones`, payload);
   }
 
+  actualizarFecha(evaluacionId: number, fechaEvaluacion: string): Observable<Evaluacion> {
+    return this.http.patch<Evaluacion>(`${this.api}/evaluaciones/${evaluacionId}/fecha`, { fechaEvaluacion });
+  }
+
   listarNotas(evaluacionId: number): Observable<DetalleNotaEvaluacion[]> {
     return this.http.get<DetalleNotaEvaluacion[]>(`${this.api}/evaluaciones/${evaluacionId}/notas`);
   }

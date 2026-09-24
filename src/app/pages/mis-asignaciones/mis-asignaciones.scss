@@ -23,13 +23,9 @@
 
 .sections-layout {
   display: grid;
-  grid-template-rows: minmax(0, 2.4fr) minmax(0, 2fr);
+  grid-template-rows: minmax(0, 1fr);
   gap: 20px;
   min-height: 0;
-}
-
-.sections-layout.without-tutorias {
-  grid-template-rows: minmax(0, 1fr);
 }
 
 .page-slide-in {

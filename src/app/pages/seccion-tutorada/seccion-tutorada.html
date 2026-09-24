@@ -1,275 +1,629 @@
 <app-shell>
-  <section class="grades-page" [class.skeleton-mode]="mostrarSkeleton()">
-    <div
-      class="grades-toolbar card"
-      [class.grades-slide-in]="animacionEntradaActiva()"
-      [class.grades-slide-in-top]="animacionEntradaActiva()">
-      <a class="back-link-button" [routerLink]="['/mis-asignaciones']">
-        <i class="fa-solid fa-arrow-left"></i>
-        <span>Volver</span>
-      </a>
-
-      <div class="grades-toolbar-main">
-        <h2>Mis secciones</h2>
-        <p>{{ tutoriasDisponibles().length }} secciones activas</p>
-      </div>
-
-      <div class="grades-toolbar-actions">
-        @if (!mostrarSkeleton() && tutoriasDisponibles().length > 1) {
-        <div class="tutoria-dropdown">
-          <span class="section-picker-label">Cambiar de sección:</span>
-          <button class="summary-pill section-picker" type="button" (click)="toggleSelectorTutoria()">
-            <i class="fa-solid fa-layer-group"></i>
-            <strong>Sección {{ tutoria()?.seccion || '-' }}</strong>
-            <i class="fa-solid fa-chevron-down"></i>
-          </button>
-
-          @if (mostrarSelectorTutoria()) {
-          <div class="tutoria-dropdown-menu">
-            @for (item of tutoriasDisponibles(); track item.id) {
-            <button
-              type="button"
-              class="tutoria-option-card"
-              [class.active]="tutoriaIdActiva() === item.id"
-              (click)="seleccionarTutoria(item)"
-            >
-              <div class="tutoria-option-head">
-                <span class="tutoria-option-title">Sección {{ item.seccion }}</span>
-                <span class="tutoria-option-badge">{{ item.nivel }}</span>
-              </div>
-
-              <strong class="tutoria-option-strong">{{ item.grado }} - Sección {{ item.seccion }}</strong>
-              <small>{{ item.periodoAcademico }} - {{ item.docenteNombreCompleto }}</small>
-
-              <div class="tutoria-option-footer">
-                <span><i class="fa-solid fa-users"></i> Seguimiento tutorial</span>
-                <span class="tutoria-option-link">
-                  <i class="fa-solid fa-arrow-right"></i>
-                  <span>{{ tutoriaIdActiva() === item.id ? 'Activa' : 'Abrir' }}</span>
-                </span>
-              </div>
-            </button>
+  <section class="tutorada-page" [class.skeleton-mode]="mostrarSkeleton()">
+    <!-- Cabecera Institucional Superior -->
+    <header class="card-head">
+      <div class="head-title-wrap">
+        <div class="head-icon">
+          <i class="fa-solid fa-users-rectangle"></i>
+        </div>
+        <div>
+          <div class="head-title-line">
+            <h2>Mi sección tutorada</h2>
+            @if (tutoria(); as tut) {
+              <span class="head-badge">{{ tut.grado }} "{{ tut.seccion }}" - {{ tut.nivel }}</span>
             }
           </div>
-          }
+          <p class="head-subtitle">Seguimiento tutorial 360°, sábana consolidada de notas y control de asistencia</p>
         </div>
+      </div>
+
+      <div class="head-controls">
+        @if (!mostrarSkeleton() && tutoriasDisponibles().length > 1) {
+          <div class="tutoria-dropdown">
+            <button class="section-picker-btn" type="button" (click)="toggleSelectorTutoria()">
+              <i class="fa-solid fa-layer-group"></i>
+              <span>Sección {{ tutoria()?.seccion || '-' }}</span>
+              <i class="fa-solid fa-chevron-down"></i>
+            </button>
+
+            @if (mostrarSelectorTutoria()) {
+              <div class="tutoria-dropdown-menu">
+                @for (item of tutoriasDisponibles(); track item.id) {
+                  <button
+                    type="button"
+                    class="tutoria-option-card"
+                    [class.active]="tutoriaIdActiva() === item.id"
+                    (click)="seleccionarTutoria(item)"
+                  >
+                    <div class="tutoria-option-head">
+                      <strong>{{ item.grado }} "{{ item.seccion }}"</strong>
+                      <span class="tutoria-badge">{{ item.nivel }}</span>
+                    </div>
+                    <small>{{ item.docenteNombreCompleto }}</small>
+                  </button>
+                }
+              </div>
+            }
+          </div>
         }
 
-        <span class="summary-pill prom">
-          Promedio General de la sección: &nbsp; {{ resumenVista().promedioSeccion === null ? '--' : resumenVista().promedioSeccion }}
+        <span class="period-informative-chip">
+          <i class="fa-regular fa-calendar-check"></i>
+          <span>Período {{ tutoria()?.periodoAcademico || '2026' }}</span>
         </span>
       </div>
-    </div>
-
-    @if (mostrarSkeleton()) {
-    <section class="skeleton-wrapper">
-      <section
-        class="tutorias-selector card skeleton-tutorias"
-        [class.grades-slide-in]="animacionEntradaActiva()"
-        [class.grades-slide-in-middle]="animacionEntradaActiva()">
-        <div class="tutorias-surface">
-          <div class="tutorias-grid">
-            @for (item of [1,2,3]; track item) {
-            <div class="flow-card skeleton-card">
-              <div class="flow-card-top">
-                <span class="skeleton skeleton-sm"></span>
-                <span class="skeleton skeleton-badge"></span>
-              </div>
-
-              <span class="skeleton skeleton-title"></span>
-              <span class="skeleton skeleton-text"></span>
-
-              <div class="flow-card-footer">
-                <span class="skeleton skeleton-text short"></span>
-                <span class="skeleton skeleton-sm"></span>
-              </div>
-            </div>
-            }
-          </div>
-        </div>
-      </section>
-
-      <section
-        class="panel-card notes-card skeleton-panel"
-        [class.grades-slide-in]="animacionEntradaActiva()"
-        [class.grades-slide-in-bottom]="animacionEntradaActiva()">
-        <div class="panel-head panel-head-row notes-card-head">
-          <div class="period-switcher">
-            <span class="skeleton skeleton-nav"></span>
-            <div class="calendar-current">
-              <span class="skeleton skeleton-period-title"></span>
-              <span class="skeleton skeleton-period-date"></span>
-            </div>
-            <span class="skeleton skeleton-nav"></span>
-          </div>
-        </div>
-
-        <div class="table-scroll grades-table">
-          <table class="app-table">
-            <thead>
-              <tr>
-                <th><span class="skeleton skeleton-th"></span></th>
-                <th><span class="skeleton skeleton-th"></span></th>
-                <th><span class="skeleton skeleton-th"></span></th>
-                <th><span class="skeleton skeleton-th"></span></th>
-                <th><span class="skeleton skeleton-th"></span></th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (row of [1,2,3,4,5,6]; track row) {
-              <tr>
-                <td><span class="skeleton skeleton-name"></span></td>
-                <td><span class="skeleton skeleton-pill"></span></td>
-                <td><span class="skeleton skeleton-grade"></span></td>
-                <td><span class="skeleton skeleton-grade"></span></td>
-                <td><span class="skeleton skeleton-pill"></span></td>
-              </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </section>
-    }
+    </header>
 
     @if (error() && mostrarError()) {
-    <app-custom-alert
-      [open]="true"
-      type="error"
-      title="No se pudo cargar la información"
-      [message]="error() || 'Ocurrió un problema inesperado'"
-      confirmText="Reintentar"
-      cancelText="Cerrar"
-      (confirm)="reintentarCarga()"
-      (cancel)="cerrarError()"
-      (dismiss)="cerrarError()"
-    >
-    </app-custom-alert>
+      <app-custom-alert
+        [open]="true"
+        type="error"
+        title="No se pudo cargar la información"
+        [message]="error() || 'Ocurrió un problema inesperado'"
+        confirmText="Reintentar"
+        cancelText="Cerrar"
+        (confirm)="reintentarCarga()"
+        (cancel)="cerrarError()"
+        (dismiss)="cerrarError()"
+      >
+      </app-custom-alert>
     }
 
-    @if (!mostrarSkeleton() && tutoria()) {
-    <section
-      class="panel-card notes-card"
-      [class.grades-slide-in]="animacionEntradaActiva()"
-      [class.grades-slide-in-bottom]="animacionEntradaActiva()"
-      [class.slide-left]="animacionCambio() === 'left'"
-      [class.slide-right]="animacionCambio() === 'right'">
-      <div class="panel-head panel-head-row notes-card-head">
-        @if (periodosEvaluacionTutoria().length) {
-        <div class="period-switcher">
-          <button
-            class="calendar-nav"
-            type="button"
-            [disabled]="indicePeriodoEvaluacionSeleccionado() <= 0"
-            (click)="irPeriodoEvaluacionAnterior()"
-          >
-            <i class="fa-solid fa-chevron-left"></i>
-          </button>
+    <!-- Vista Esqueleto (Skeleton) -->
+    @if (mostrarSkeleton()) {
+      <div class="skeleton-wrapper">
+        <div class="kpi-grid">
+          @for (item of [1, 2, 3, 4]; track item) {
+            <div class="kpi-card skeleton-card">
+              <span class="skeleton skeleton-icon"></span>
+              <div class="skeleton-content">
+                <span class="skeleton skeleton-title"></span>
+                <span class="skeleton skeleton-text"></span>
+              </div>
+            </div>
+          }
+        </div>
+        <div class="table-skeleton-wrap">
+          <div class="skeleton skeleton-bar"></div>
+          <div class="skeleton skeleton-table-body"></div>
+        </div>
+      </div>
+    }
 
-          <div class="calendar-current">
-            <strong>{{ periodoEvaluacionSeleccionado()?.nombre || 'Sin período' }}</strong>
-            <small>
-              {{ periodoEvaluacionSeleccionado()?.fechaInicio || '--' }}
-              -
-              {{ periodoEvaluacionSeleccionado()?.fechaFin || '--' }}
-            </small>
+    <!-- Vista Principal Activa -->
+    @if (!mostrarSkeleton() && tutoria()) {
+      <div class="tutorada-body"
+           [class.slide-left]="animacionCambio() === 'left'"
+           [class.slide-right]="animacionCambio() === 'right'">
+
+        <!-- Franja de KPIs del Aula -->
+        <section class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap icon-blue">
+              <i class="fa-solid fa-user-graduate"></i>
+            </div>
+            <div class="kpi-info">
+              <span class="kpi-label">Matriculados</span>
+              <strong class="kpi-val">{{ kpisAula().totalAlumnos }}</strong>
+              <small class="kpi-sub">Estudiantes en nómina</small>
+            </div>
           </div>
 
-          <button
-            class="calendar-nav"
-            type="button"
-            [disabled]="indicePeriodoEvaluacionSeleccionado() < 0 || indicePeriodoEvaluacionSeleccionado() >= periodosEvaluacionTutoria().length - 1"
-            (click)="irPeriodoEvaluacionSiguiente()"
-          >
-            <i class="fa-solid fa-chevron-right"></i>
-          </button>
-        </div>
-        }
-      </div>
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap" [class.icon-emerald]="(kpisAula().promedioAula ?? 0) >= 14"
+                                      [class.icon-amber]="(kpisAula().promedioAula ?? 0) >= 11 && (kpisAula().promedioAula ?? 0) < 14"
+                                      [class.icon-rose]="(kpisAula().promedioAula ?? 0) < 11">
+              <i class="fa-solid fa-chart-simple"></i>
+            </div>
+            <div class="kpi-info">
+              <span class="kpi-label">Promedio de Aula</span>
+              <strong class="kpi-val">{{ formatearPromedio(kpisAula().promedioAula) }}</strong>
+              <small class="kpi-sub">Consolidado general</small>
+            </div>
+          </div>
 
-      @if (!periodosEvaluacionTutoria().length) {
-      <div class="table-state">
-        <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-        <span>No hay períodos de evaluación registrados para esta sección tutorada.</span>
-      </div>
-      } @else if (!resumenAcademico()?.cursos?.length && !cargandoTabla()) {
-      <div class="table-state">
-        <span class="table-state-icon"><i class="fa-solid fa-book-open"></i></span>
-        <span>No hay cursos asignados a esta sección en el período académico actual.</span>
-      </div>
-      } @else {
-      <div class="grades-table-shell" [class.is-loading]="cargandoTabla()">
-        @if (cargandoTabla()) {
-        <div class="table-loading-overlay">
-          <span class="table-state-icon"><i class="fa-solid fa-rotate"></i></span>
-          <span>Actualizando el consolidado de la sección seleccionada...</span>
-        </div>
-        }
-      <div class="table-scroll grades-table">
-        <table class="app-table">
-          <thead>
-            <tr>
-              <th>Alumno</th>
-              <th>Acción</th>
-              <th>Asistencia</th>
-              @for (curso of resumenAcademico()!.cursos; track curso.asignacionId) {
-              <th [title]="curso.docenteNombreCompleto">{{ curso.curso }}</th>
-              }
-              <th>Promedio</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (fila of resumenAcademico()!.alumnos; track fila.matriculaId) {
-            <tr>
-              <td>{{ fila.alumnoNombreCompleto }}</td>
-              <td>
-                <button type="button" class="table-link-button" (click)="verFichaAlumno(fila.alumnoId)">
-                  <i class="fa-solid fa-eye"></i>
-                  Ver ficha
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap" [class.icon-emerald]="(kpisAula().asistenciaAula ?? 0) >= 85"
+                                      [class.icon-amber]="(kpisAula().asistenciaAula ?? 0) >= 75 && (kpisAula().asistenciaAula ?? 0) < 85"
+                                      [class.icon-rose]="(kpisAula().asistenciaAula ?? 0) < 75">
+              <i class="fa-solid fa-clipboard-user"></i>
+            </div>
+            <div class="kpi-info">
+              <span class="kpi-label">Asistencia Media</span>
+              <strong class="kpi-val">{{ kpisAula().asistenciaAula !== null ? kpisAula().asistenciaAula + '%' : '--' }}</strong>
+              <small class="kpi-sub">Presencia acumulada</small>
+            </div>
+          </div>
+
+          <div class="kpi-card" [class.card-alert]="kpisAula().alumnosEnRiesgo > 0">
+            <div class="kpi-icon-wrap" [class.icon-rose]="kpisAula().alumnosEnRiesgo > 0" [class.icon-gray]="kpisAula().alumnosEnRiesgo === 0">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div class="kpi-info">
+              <span class="kpi-label">Atención Prioritaria</span>
+              <strong class="kpi-val text-alert">{{ kpisAula().alumnosEnRiesgo }}</strong>
+              <small class="kpi-sub">{{ kpisAula().alumnosEnRiesgo > 0 ? 'En riesgo académico/asist.' : 'Sin alertas críticas' }}</small>
+            </div>
+          </div>
+        </section>
+
+        <!-- Barra de Controles, Selector de Bimestre y Filtros -->
+        <section class="tutorada-toolbar">
+          <!-- Selector de Períodos de Evaluación (Bimestres) -->
+          <div class="bimestre-selector">
+            <button
+              class="nav-arrow"
+              type="button"
+              title="Período anterior"
+              [disabled]="indicePeriodoEvaluacionSeleccionado() <= 0"
+              (click)="irPeriodoEvaluacionAnterior()"
+            >
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+
+            <div class="bimestre-pills">
+              @for (periodo of periodosEvaluacionTutoria(); track periodo.id) {
+                <button
+                  type="button"
+                  class="bimestre-pill"
+                  [class.active]="periodoEvaluacionSeleccionadoId() === periodo.id"
+                  (click)="seleccionarPeriodoEvaluacion(periodo.id)"
+                >
+                  <span>{{ periodo.nombre }}</span>
                 </button>
-              </td>
-              <td>
-                <div class="attendance-pill">
-                  <strong>{{ obtenerAsistenciaTexto(fila.clasesAsistidas, fila.clasesProgramadas) }}</strong>
-                  <small>{{ obtenerAsistenciaPorcentaje(fila.porcentajeAsistencia) }}</small>
-                </div>
-              </td>
-              @for (curso of fila.cursos; track curso.asignacionId) {
-              <td>
-                <div class="grade-pill" [class.empty]="curso.promedio === null">
-                  <div class="notes-grid" [class.empty]="!curso.notas.length">
-                    @for (nota of obtenerNotasEtiquetadas(curso); track nota.etiqueta + nota.valor + $index) {
-                    <div class="note-line">
-                      <span>{{ nota.etiqueta }}:</span>
-                      <strong>{{ nota.valor }}</strong>
-                    </div>
-                    } @empty {
-                    <small>Sin notas</small>
+              }
+            </div>
+
+            <button
+              class="nav-arrow"
+              type="button"
+              title="Período siguiente"
+              [disabled]="indicePeriodoEvaluacionSeleccionado() < 0 || indicePeriodoEvaluacionSeleccionado() >= periodosEvaluacionTutoria().length - 1"
+              (click)="irPeriodoEvaluacionSiguiente()"
+            >
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+
+          <!-- Buscador de Estudiante -->
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input
+              type="text"
+              class="search-input"
+              placeholder="Buscar por apellido, nombre o código..."
+              [ngModel]="busqueda()"
+              (input)="onBusquedaChange($event)"
+            />
+            @if (busqueda()) {
+              <button class="clear-btn" type="button" (click)="limpiarBusqueda()">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            }
+          </div>
+
+          <!-- Filtros de Estado y Toggle de Modo de Vista -->
+          <div class="toolbar-actions">
+            <!-- Filtro rápido de riesgo -->
+            <div class="filter-chips">
+              <button
+                type="button"
+                class="filter-chip"
+                [class.active]="filtroRiesgo() === 'todos'"
+                (click)="setFiltroRiesgo('todos')"
+              >
+                Todos ({{ kpisAula().totalAlumnos }})
+              </button>
+              <button
+                type="button"
+                class="filter-chip alert-chip"
+                [class.active]="filtroRiesgo() === 'riesgo'"
+                (click)="setFiltroRiesgo('riesgo')"
+              >
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                En riesgo ({{ kpisAula().alumnosEnRiesgo }})
+              </button>
+              <button
+                type="button"
+                class="filter-chip"
+                [class.active]="filtroRiesgo() === 'desaprobados'"
+                (click)="setFiltroRiesgo('desaprobados')"
+              >
+                Desaprobados
+              </button>
+              <button
+                type="button"
+                class="filter-chip"
+                [class.active]="filtroRiesgo() === 'asistencia'"
+                (click)="setFiltroRiesgo('asistencia')"
+              >
+                Baja asistencia
+              </button>
+            </div>
+
+            <!-- Selector de Vista: Sábana vs Fichas -->
+            <div class="view-toggle">
+              <button
+                type="button"
+                class="toggle-btn"
+                [class.active]="modoVista() === 'matriz'"
+                (click)="setModoVista('matriz')"
+                title="Sábana consolidada de notas"
+              >
+                <i class="fa-solid fa-table-cells"></i>
+                <span>Matriz</span>
+              </button>
+              <button
+                type="button"
+                class="toggle-btn"
+                [class.active]="modoVista() === 'fichas'"
+                (click)="setModoVista('fichas')"
+                title="Fichas de estudiantes"
+              >
+                <i class="fa-solid fa-id-card"></i>
+                <span>Fichas</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Loading overlay en cambio de bimestre -->
+        @if (cargandoTabla()) {
+          <div class="table-loading-bar">
+            <span class="loading-spinner"><i class="fa-solid fa-rotate fa-spin"></i></span>
+            <span>Actualizando calificaciones del período...</span>
+          </div>
+        }
+
+        <!-- CONTENIDO: Modo 1 - SÁBANA / MATRIZ CONSOLIDADA DE NOTAS -->
+        @if (modoVista() === 'matriz') {
+          <div class="matrix-wrapper">
+            @if (!resumenAcademico()?.cursos?.length) {
+              <div class="empty-state">
+                <i class="fa-solid fa-book-open"></i>
+                <p>No se encontraron cursos registrados para esta sección en el período actual.</p>
+              </div>
+            } @else if (alumnosFiltrados().length === 0) {
+              <div class="empty-state">
+                <i class="fa-solid fa-user-slash"></i>
+                <p>No se encontraron estudiantes que coincidan con los filtros aplicados.</p>
+                <button type="button" class="btn-reset" (click)="limpiarBusqueda(); setFiltroRiesgo('todos')">
+                  Limpiar filtros
+                </button>
+              </div>
+            } @else {
+              <div class="matrix-table-container">
+                <table class="matrix-table">
+                  <thead>
+                    <tr>
+                      <th class="col-num">#</th>
+                      <th class="col-student">Estudiante</th>
+                      <th class="col-attendance" title="Porcentaje y clases asistidas">Asistencia</th>
+                      @for (curso of resumenAcademico()!.cursos; track curso.asignacionId) {
+                        <th class="col-course" [title]="'Docente: ' + curso.docenteNombreCompleto">
+                          <span class="course-header-name">{{ curso.curso }}</span>
+                          <span class="course-header-docente">{{ curso.docenteNombreCompleto }}</span>
+                        </th>
+                      }
+                      <th class="col-gpa">Promedio</th>
+                      <th class="col-actions">Expediente</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (alumno of alumnosFiltrados(); track alumno.matriculaId; let i = $index) {
+                      <tr [class.row-alert]="esAlumnoEnRiesgo(alumno)">
+                        <td class="col-num">{{ i + 1 }}</td>
+                        <td class="col-student">
+                          <div class="student-meta" (click)="abrirExpediente(alumno)">
+                            <div class="student-avatar" [class.avatar-alert]="esAlumnoEnRiesgo(alumno)">
+                              {{ obtenerIniciales(alumno.alumnoNombreCompleto) }}
+                            </div>
+                            <div class="student-info">
+                              <span class="student-name">{{ alumno.alumnoNombreCompleto }}</span>
+                              <span class="student-code">{{ alumno.codigoAlumno }}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td class="col-attendance">
+                          <div class="attendance-cell">
+                            <span class="attendance-pct"
+                                  [class.text-emerald]="(alumno.porcentajeAsistencia ?? 0) >= 85"
+                                  [class.text-amber]="(alumno.porcentajeAsistencia ?? 0) >= 75 && (alumno.porcentajeAsistencia ?? 0) < 85"
+                                  [class.text-rose]="(alumno.porcentajeAsistencia ?? 0) < 75">
+                              {{ obtenerAsistenciaPorcentaje(alumno.porcentajeAsistencia) }}
+                            </span>
+                            <small class="attendance-fraction">{{ obtenerAsistenciaTexto(alumno.clasesAsistidas, alumno.clasesProgramadas) }}</small>
+                          </div>
+                        </td>
+                        @for (cursoHeader of resumenAcademico()!.cursos; track cursoHeader.asignacionId) {
+                          @let cursoAlumno = obtenerNotaCurso(alumno, cursoHeader.asignacionId);
+                          <td class="col-course">
+                            <div
+                              class="grade-pill-cell"
+                              [class.grade-high]="obtenerColorNota(cursoAlumno?.promedio ?? null) === 'aprobado'"
+                              [class.grade-mid]="obtenerColorNota(cursoAlumno?.promedio ?? null) === 'regular'"
+                              [class.grade-low]="obtenerColorNota(cursoAlumno?.promedio ?? null) === 'desaprobado'"
+                              [class.grade-none]="obtenerColorNota(cursoAlumno?.promedio ?? null) === 'vacio'"
+                              [title]="cursoAlumno?.detalleNotas?.length ? 'Evaluaciones registradas' : 'Sin notas registradas'"
+                            >
+                              <strong class="grade-score">{{ formatearPromedio(cursoAlumno?.promedio ?? null) }}</strong>
+                              @if (cursoAlumno?.evaluacionesRegistradas) {
+                                <span class="grade-eval-count">{{ cursoAlumno?.evaluacionesRegistradas }} ev.</span>
+                              }
+                            </div>
+                          </td>
+                        }
+                        <td class="col-gpa">
+                          <span
+                            class="gpa-badge"
+                            [class.badge-emerald]="obtenerColorNota(alumno.promedioGeneral) === 'aprobado'"
+                            [class.badge-amber]="obtenerColorNota(alumno.promedioGeneral) === 'regular'"
+                            [class.badge-rose]="obtenerColorNota(alumno.promedioGeneral) === 'desaprobado'"
+                            [class.badge-gray]="obtenerColorNota(alumno.promedioGeneral) === 'vacio'"
+                          >
+                            {{ formatearPromedio(alumno.promedioGeneral) }}
+                          </span>
+                        </td>
+                        <td class="col-actions">
+                          <button
+                            type="button"
+                            class="btn-expediente"
+                            title="Ver expediente 360°"
+                            (click)="abrirExpediente(alumno)"
+                          >
+                            <i class="fa-solid fa-address-book"></i>
+                            <span>Expediente</span>
+                          </button>
+                        </td>
+                      </tr>
                     }
+                  </tbody>
+                  <tfoot>
+                    <tr class="footer-summary-row">
+                      <td colspan="3" class="footer-label">
+                        <i class="fa-solid fa-calculator"></i>
+                        <span>Promedio del Aula por Curso:</span>
+                      </td>
+                      @for (curso of resumenAcademico()!.cursos; track curso.asignacionId) {
+                        @let avg = promediosPorCurso().get(curso.asignacionId);
+                        <td class="col-course footer-avg">
+                          <span class="footer-score-pill"
+                                [class.grade-high]="obtenerColorNota(avg ?? null) === 'aprobado'"
+                                [class.grade-mid]="obtenerColorNota(avg ?? null) === 'regular'"
+                                [class.grade-low]="obtenerColorNota(avg ?? null) === 'desaprobado'">
+                            {{ formatearPromedio(avg ?? null) }}
+                          </span>
+                        </td>
+                      }
+                      <td class="col-gpa footer-avg-total">
+                        <strong>{{ formatearPromedio(kpisAula().promedioAula) }}</strong>
+                      </td>
+                      <td></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- CONTENIDO: Modo 2 - FICHAS INDIVIDUALES DE ESTUDIANTES -->
+        @if (modoVista() === 'fichas') {
+          <div class="cards-view-wrapper">
+            @if (alumnosFiltrados().length === 0) {
+              <div class="empty-state">
+                <i class="fa-solid fa-user-slash"></i>
+                <p>No se encontraron estudiantes que coincidan con los filtros aplicados.</p>
+                <button type="button" class="btn-reset" (click)="limpiarBusqueda(); setFiltroRiesgo('todos')">
+                  Limpiar filtros
+                </button>
+              </div>
+            } @else {
+              <div class="student-cards-grid">
+                @for (alumno of alumnosFiltrados(); track alumno.matriculaId) {
+                  @let desaprobados = obtenerCursosDesaprobados(alumno);
+                  <article class="student-card" [class.card-in-risk]="esAlumnoEnRiesgo(alumno)">
+                    <div class="card-top">
+                      <div class="card-avatar" [class.avatar-alert]="esAlumnoEnRiesgo(alumno)">
+                        {{ obtenerIniciales(alumno.alumnoNombreCompleto) }}
+                      </div>
+                      <div class="card-student-head">
+                        <h4 class="card-student-name">{{ alumno.alumnoNombreCompleto }}</h4>
+                        <span class="card-student-code">{{ alumno.codigoAlumno }}</span>
+                      </div>
+                      <div class="card-gpa-wrap">
+                        <span class="card-gpa-label">Promedio</span>
+                        <strong class="card-gpa-score"
+                                [class.text-emerald]="obtenerColorNota(alumno.promedioGeneral) === 'aprobado'"
+                                [class.text-amber]="obtenerColorNota(alumno.promedioGeneral) === 'regular'"
+                                [class.text-rose]="obtenerColorNota(alumno.promedioGeneral) === 'desaprobado'">
+                          {{ formatearPromedio(alumno.promedioGeneral) }}
+                        </strong>
+                      </div>
+                    </div>
+
+                    <!-- Progreso de Asistencia -->
+                    <div class="attendance-progress-block">
+                      <div class="progress-labels">
+                        <span><i class="fa-solid fa-clock"></i> Asistencia</span>
+                        <strong>{{ obtenerAsistenciaPorcentaje(alumno.porcentajeAsistencia) }} ({{ obtenerAsistenciaTexto(alumno.clasesAsistidas, alumno.clasesProgramadas) }})</strong>
+                      </div>
+                      <div class="progress-bar-track">
+                        <div class="progress-bar-fill"
+                             [style.width.%]="alumno.porcentajeAsistencia || 0"
+                             [class.fill-emerald]="(alumno.porcentajeAsistencia ?? 0) >= 85"
+                             [class.fill-amber]="(alumno.porcentajeAsistencia ?? 0) >= 75 && (alumno.porcentajeAsistencia ?? 0) < 85"
+                             [class.fill-rose]="(alumno.porcentajeAsistencia ?? 0) < 75">
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Estado de Cursos -->
+                    <div class="courses-summary-block">
+                      @if (desaprobados.length > 0) {
+                        <div class="alert-courses-box">
+                          <span class="alert-box-title">
+                            <i class="fa-solid fa-circle-exclamation"></i>
+                            {{ desaprobados.length }} curso{{ desaprobados.length > 1 ? 's' : '' }} desaprobado{{ desaprobados.length > 1 ? 's' : '' }}:
+                          </span>
+                          <div class="alert-courses-tags">
+                            @for (curso of desaprobados; track curso.asignacionId) {
+                              <span class="failed-tag">
+                                {{ curso.curso }}: <strong>{{ formatearPromedio(curso.promedio) }}</strong>
+                              </span>
+                            }
+                          </div>
+                        </div>
+                      } @else {
+                        <div class="success-courses-box">
+                          <i class="fa-solid fa-circle-check"></i>
+                          <span>Sin cursos desaprobados en este período</span>
+                        </div>
+                      }
+                    </div>
+
+                    <!-- Acciones de Ficha -->
+                    <div class="card-footer-actions">
+                      <button
+                        type="button"
+                        class="btn-card-expediente"
+                        (click)="abrirExpediente(alumno)"
+                      >
+                        <i class="fa-solid fa-address-book"></i>
+                        <span>Expediente 360°</span>
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-card-history"
+                        title="Ver ficha institucional completa"
+                        (click)="verFichaCompletaAlumno(alumno.alumnoId)"
+                      >
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                      </button>
+                    </div>
+                  </article>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    <!-- MODAL / DRAWER: EXPEDIENTE 360° DEL ESTUDIANTE -->
+    @if (alumnoSeleccionado(); as alumno) {
+      <div class="expediente-backdrop" (click)="cerrarExpediente()">
+        <div class="expediente-modal" (click)="$event.stopPropagation()">
+          <!-- Cabecera del Expediente -->
+          <header class="expediente-head">
+            <div class="expediente-student-meta">
+              <div class="expediente-avatar">
+                {{ obtenerIniciales(alumno.alumnoNombreCompleto) }}
+              </div>
+              <div>
+                <h3>{{ alumno.alumnoNombreCompleto }}</h3>
+                <div class="expediente-sub">
+                  <span class="code-badge"><i class="fa-solid fa-id-card"></i> {{ alumno.codigoAlumno }}</span>
+                  <span class="period-badge">{{ periodoEvaluacionSeleccionado()?.nombre || 'Período actual' }}</span>
+                  @if (esAlumnoEnRiesgo(alumno)) {
+                    <span class="risk-badge"><i class="fa-solid fa-triangle-exclamation"></i> En riesgo académico</span>
+                  }
+                </div>
+              </div>
+            </div>
+            <button type="button" class="btn-close-modal" (click)="cerrarExpediente()" title="Cerrar">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </header>
+
+          <!-- KPIs rápidos del estudiante -->
+          <div class="expediente-kpis">
+            <div class="exp-kpi">
+              <span class="exp-kpi-lbl">Promedio General</span>
+              <strong class="exp-kpi-val"
+                      [class.text-emerald]="obtenerColorNota(alumno.promedioGeneral) === 'aprobado'"
+                      [class.text-amber]="obtenerColorNota(alumno.promedioGeneral) === 'regular'"
+                      [class.text-rose]="obtenerColorNota(alumno.promedioGeneral) === 'desaprobado'">
+                {{ formatearPromedio(alumno.promedioGeneral) }}
+              </strong>
+            </div>
+
+            <div class="exp-kpi">
+              <span class="exp-kpi-lbl">Asistencia</span>
+              <strong class="exp-kpi-val">{{ obtenerAsistenciaPorcentaje(alumno.porcentajeAsistencia) }}</strong>
+              <small>{{ alumno.clasesAsistidas }} de {{ alumno.clasesProgramadas }} clases</small>
+            </div>
+
+            <div class="exp-kpi">
+              <span class="exp-kpi-lbl">Cursos Evaluados</span>
+              <strong class="exp-kpi-val">{{ alumno.cursos.length }}</strong>
+              <small>{{ contarCursosDesaprobados(alumno) }} desaprobados</small>
+            </div>
+          </div>
+
+          <!-- Desglose por curso con docentes y detalle de notas -->
+          <div class="expediente-body">
+            <h4 class="section-title">
+              <i class="fa-solid fa-graduation-cap"></i>
+              Desglose de calificaciones por curso
+            </h4>
+
+            <div class="course-breakdown-list">
+              @for (curso of alumno.cursos; track curso.asignacionId) {
+                <div class="course-detail-card" [class.course-failed]="curso.promedio !== null && curso.promedio < 11">
+                  <div class="course-detail-header">
+                    <div>
+                      <strong class="course-title">{{ curso.curso }}</strong>
+                      <span class="course-docente">
+                        <i class="fa-solid fa-chalkboard-user"></i>
+                        {{ curso.docenteNombreCompleto }}
+                      </span>
+                    </div>
+                    <div class="course-score-badge"
+                         [class.badge-emerald]="obtenerColorNota(curso.promedio) === 'aprobado'"
+                         [class.badge-amber]="obtenerColorNota(curso.promedio) === 'regular'"
+                         [class.badge-rose]="obtenerColorNota(curso.promedio) === 'desaprobado'"
+                         [class.badge-gray]="obtenerColorNota(curso.promedio) === 'vacio'">
+                      <small>Promedio</small>
+                      <strong>{{ formatearPromedio(curso.promedio) }}</strong>
+                    </div>
+                  </div>
+
+                  <!-- Evaluaciones individuales -->
+                  <div class="evaluations-strip">
+                    <span class="eval-strip-title">Evaluaciones:</span>
+                    <div class="eval-pills">
+                      @for (ev of obtenerNotasEtiquetadas(curso); track ev.etiqueta + ev.valor) {
+                        <span class="eval-pill">
+                          <span class="eval-tag">{{ ev.etiqueta }}:</span>
+                          <strong class="eval-num">{{ ev.valor }}</strong>
+                        </span>
+                      } @empty {
+                        <small class="no-evals">Aún no registra evaluaciones en este período</small>
+                      }
+                    </div>
                   </div>
                 </div>
-              </td>
               }
-              <td>
-                <span class="summary-pill table-pill">{{ formatearPromedio(fila.promedioGeneral) }}</span>
-              </td>
-            </tr>
-            } @empty {
-            <tr>
-              <td [attr.colspan]="(resumenAcademico()?.cursos?.length || 0) + 5">
-                <div class="table-state">
-                  <span class="table-state-icon"><i class="fa-solid fa-users"></i></span>
-                  <span>No hay alumnos matriculados en esta sección.</span>
-                </div>
-              </td>
-            </tr>
-            }
-          </tbody>
-        </table>
+            </div>
+          </div>
+
+          <!-- Footer del Expediente con enlace a Ficha Institucional -->
+          <footer class="expediente-foot">
+            <button
+              type="button"
+              class="btn-institutional-link"
+              (click)="verFichaCompletaAlumno(alumno.alumnoId)"
+            >
+              <i class="fa-solid fa-arrow-up-right-from-square"></i>
+              <span>Ver ficha institucional e historial longitudinal</span>
+            </button>
+            <button type="button" class="btn-done" (click)="cerrarExpediente()">
+              Cerrar expediente
+            </button>
+          </footer>
+        </div>
       </div>
-      </div>
-      }
-    </section>
     }
   </section>
 </app-shell>

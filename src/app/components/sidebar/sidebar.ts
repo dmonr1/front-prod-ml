@@ -1,7 +1,6 @@
 import { Component, HostListener, inject, input, OnInit, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { catchError, of } from 'rxjs';
-import { BrandMark } from '../brand-mark/brand-mark';
 import { AuthService } from '../../services/auth/auth.service';
 import { DocenteService } from '../../services/academico/docente.service';
 import { Docente } from '../../models/docente';
@@ -24,7 +23,7 @@ export interface SidebarItem {
 
 @Component({
   selector: 'app-sidebar',
-  imports: [RouterLink, RouterLinkActive, BrandMark],
+  imports: [RouterLink, RouterLinkActive],
   templateUrl: './sidebar.html',
   styleUrl: './sidebar.scss'
 })
@@ -33,12 +32,13 @@ export class Sidebar implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly docenteService = inject(DocenteService);
   readonly themeService = inject(ThemeService);
+  private static docenteCache: Docente | null = null;
   private readonly storageKey = 'academic-analytics-sidebar-open';
 
   readonly collapsed = signal(localStorage.getItem('academic-analytics-sidebar') === 'collapsed');
   readonly expandedSections = signal(this.obtenerSeccionesIniciales());
   readonly userFlyoutOpen = signal(false);
-  readonly docenteVinculado = signal<Docente | null>(null);
+  readonly docenteVinculado = signal<Docente | null>(Sidebar.docenteCache);
   readonly items = input<SidebarItem[]>([]);
   readonly userName = input('Usuario del sistema');
   readonly roleLabel = input('Acceso institucional');
@@ -152,22 +152,9 @@ export class Sidebar implements OnInit {
   }
 
   private obtenerSeccionesIniciales(): string[] {
-    const guardada = localStorage.getItem(this.storageKey);
-    if (guardada !== null) {
-      try {
-        const parsed = JSON.parse(guardada);
-        if (Array.isArray(parsed)) {
-          return parsed.filter((value): value is string => typeof value === 'string');
-        }
-      } catch {
-        if (guardada.trim()) {
-          return [guardada];
-        }
-      }
-    }
+    const secciones = new Set<string>();
 
     const ruta = this.router.url;
-
     if (
       ruta.startsWith('/configuracion-academica') ||
       ruta.startsWith('/periodos-academicos') ||
@@ -178,32 +165,57 @@ export class Sidebar implements OnInit {
       ruta.startsWith('/matriculas-periodo') ||
       ruta.startsWith('/docentes-accesos') ||
       ruta.startsWith('/asignaciones-tutorias') ||
-      ruta.startsWith('/asignaciones-docente')
+      ruta.startsWith('/asignaciones-docente') ||
+      ruta.startsWith('/horarios')
     ) {
-      return ['configuracion-academica'];
+      secciones.add('configuracion-academica');
+    }
+
+    if (
+      ruta.startsWith('/alumno') ||
+      ruta.startsWith('/predicciones') ||
+      ruta.startsWith('/hallazgos')
+    ) {
+      secciones.add('seguimiento');
     }
 
     if (
       ruta.startsWith('/mis-asignaciones/tutorias') ||
       ruta.startsWith('/seccion-tutorada') ||
-      ruta.startsWith('/alumno') ||
-      ruta.startsWith('/predicciones') ||
-      ruta.startsWith('/hallazgos')
+      ruta.startsWith('/mis-asignaciones') ||
+      ruta.startsWith('/asistencias') ||
+      ruta.startsWith('/mi-horario')
     ) {
-      return ['seguimiento'];
+      secciones.add('academico');
     }
 
-    if (ruta.startsWith('/mis-asignaciones') || ruta.startsWith('/asistencias')) {
-      return ['academico'];
+    const guardada = localStorage.getItem(this.storageKey);
+    if (guardada !== null) {
+      try {
+        const parsed = JSON.parse(guardada);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((val) => {
+            if (typeof val === 'string') secciones.add(val);
+          });
+        }
+      } catch {
+        if (guardada.trim()) {
+          secciones.add(guardada);
+        }
+      }
     }
 
-    return [];
+    return Array.from(secciones);
   }
 
   private cargarDocenteVinculado(): void {
     const usuario = this.authService.obtenerUsuario();
     if (!usuario || (!usuario.docenteId && !usuario.usuarioId)) {
       this.docenteVinculado.set(null);
+      return;
+    }
+
+    if (Sidebar.docenteCache) {
       return;
     }
 
@@ -216,6 +228,7 @@ export class Sidebar implements OnInit {
           docentes.find((item) => item.usuarioId !== null && item.usuarioId === usuario.usuarioId) ??
           null;
 
+        Sidebar.docenteCache = docente;
         this.docenteVinculado.set(docente);
       });
   }

@@ -1,0 +1,166 @@
+<app-shell>
+  <app-custom-alert [open]="alertState().open" [type]="alertState().type" [title]="alertState().title"
+    [message]="alertState().message" [confirmText]="alertState().confirmText" [cancelText]="alertState().cancelText"
+    [autoCloseMs]="alertState().autoCloseMs" (confirm)="cerrarAlerta()" (cancel)="cerrarAlerta()" (dismiss)="cerrarAlerta()" />
+
+  <section class="assignment-card my-schedule-page">
+    <header class="card-head">
+      <div class="head-title-wrap">
+        <div class="head-icon">
+          <i class="fa-regular fa-calendar-days"></i>
+        </div>
+        <div>
+          <div class="head-title-line">
+            <h2>Mi horario</h2>
+            @if (horarios().length) {
+              <span class="head-badge">{{ horarios().length }} clases semanales</span>
+            }
+          </div>
+          <p class="head-subtitle">Consulta tus sesiones de clase y accede al registro de asistencias o notas</p>
+        </div>
+      </div>
+
+      <div class="schedule-controls">
+        <span class="periodo-badge-chip">
+          <i class="fa-solid fa-calendar-check"></i>
+          Período {{ periodoSeleccionado()?.nombre || '2026' }}
+        </span>
+        @if (periodoEvaluacionSeleccionado()) {
+          <span class="periodo-eval-badge-chip">
+            <i class="fa-solid fa-bookmark"></i>
+            {{ periodoEvaluacionSeleccionado()?.nombre }}
+          </span>
+        }
+      </div>
+    </header>
+
+    @if (cargando()) {
+      <div class="schedule-state">
+        <i class="fa-solid fa-spinner fa-spin"></i>
+        <strong>Cargando horario</strong>
+        <span>Sincronizando tus asignaciones y bloques de clase...</span>
+      </div>
+    } @else {
+      <section class="calendar-panel" [class.period-changing]="animandoCambioPeriodo()" aria-label="Horario semanal de clases">
+        <!-- Control de fecha sobre los días (Navegación restringida al año del período) -->
+        <div class="calendar-toolbar">
+          <div class="calendar-nav-cluster">
+            <div class="nav-buttons-group">
+              <button type="button" class="nav-arrow-btn" [disabled]="!puedeRetrocederSemana()" (click)="semanaAnterior()" title="Semana anterior" aria-label="Semana anterior">
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+              <button type="button" class="nav-arrow-btn" [disabled]="!puedeAvanzarSemana()" (click)="semanaSiguiente()" title="Semana siguiente" aria-label="Semana siguiente">
+                <i class="fa-solid fa-chevron-right"></i>
+              </button>
+            </div>
+
+            <div class="calendar-title-wrap">
+              <h3 class="date-range-text">{{ textoRangoSemana() }}</h3>
+              <span class="week-badge">Semana {{ numeroSemana() }}</span>
+            </div>
+
+            <button type="button" class="btn-today" [class.is-current]="esSemanaActual()" (click)="irASemanaActual()" title="Ir a la semana actual">
+              Hoy
+            </button>
+          </div>
+
+          <div class="calendar-toolbar-actions">
+            <div class="view-toggle-group">
+              <button type="button" class="view-toggle-btn" [class.active]="!mostrarFinDeSemana()" (click)="mostrarFinDeSemana.set(false)">
+                5 días
+              </button>
+              <button type="button" class="view-toggle-btn" [class.active]="mostrarFinDeSemana()" (click)="mostrarFinDeSemana.set(true)">
+                7 días
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Grid del calendario con horas grandes, fechas debajo de los días y tarjetas con atajos -->
+        <div class="calendar-scroll">
+          <div class="calendar-grid" [class.seven-days]="mostrarFinDeSemana()" [style.--hour-count]="rango().horasCount">
+            <!-- Esquina superior izquierda pegajosa -->
+            <div class="calendar-corner"></div>
+
+            <!-- Cabeceras de los días con la fecha debajo del nombre -->
+            @for (dia of columnasDias(); track dia.value; let i = $index) {
+              <div class="day-heading" [class.is-today]="dia.esHoy" [style.grid-column]="obtenerColumnaDia(i)">
+                <span class="day-name">{{ dia.short }}</span>
+                <span class="day-number">{{ dia.numero }}</span>
+              </div>
+            }
+
+            <!-- Eje de tiempo a la izquierda con horas legibles y destacadas -->
+            <div class="time-axis" [style.grid-row]="'2 / span ' + rango().horasCount">
+              @for (marca of rango().marcas; track marca; let first = $first; let last = $last) {
+                <span class="time-label" [class.first-hour-label]="first" [class.time-end-label]="last" [style.top.px]="posicionMarca(marca)">
+                  {{ formatearHora(marca) }}
+                </span>
+              }
+              @if (semanaContieneHoy() && estaEnRangoHorario()) {
+                <div class="axis-time-marker" [style.top.px]="posicionAhora()" title="Hora actual">
+                  <span class="axis-marker-dot"></span>
+                </div>
+              }
+            </div>
+
+            <!-- Carriles de cada día con tarjetas altas y atajos para Asistencias y Notas -->
+            @for (dia of columnasDias(); track dia.value; let i = $index) {
+              <div class="day-lane" [class.is-today]="dia.esHoy" [style.grid-column]="obtenerColumnaDia(i)" [style.grid-row]="'2 / span ' + rango().horasCount">
+                <!-- Indicador de hora actual si el día es hoy -->
+                @if (dia.esHoy && estaEnRangoHorario()) {
+                  <div class="now-indicator" [style.top.px]="posicionAhora()" title="Hora actual">
+                    <span class="now-dot"></span>
+                    <span class="now-line"></span>
+                  </div>
+                }
+
+                @for (clase of dia.clases; track clase.id) {
+                  <div [class]="'class-block ' + tonoClase(clase)"
+                    [style.top.px]="posicionClase(clase)"
+                    [style.height.px]="altoClase(clase)">
+                    <div class="class-header-text">
+                      <strong class="class-title" [title]="clase.curso">{{ clase.curso }}</strong>
+                      <span class="class-details">{{ clase.grado }} · Sec. {{ clase.seccion }}</span>
+                    </div>
+
+                    <div class="class-time-row">
+                      <small class="class-time">
+                        <i class="fa-regular fa-clock"></i>
+                        {{ limpiarHora(clase.horaInicio) }} – {{ limpiarHora(clase.horaFin) }}
+                      </small>
+                    </div>
+
+                    <!-- Atajos para ingresar asistencia o notas directamente -->
+                    <div class="class-block-actions">
+                      <button type="button" class="btn-card-action action-asistencia"
+                        (click)="abrirAsistencia(clase, dia.fechaStr)"
+                        title="Registrar asistencia para esta clase">
+                        <i class="fa-solid fa-user-check"></i>
+                        <span>Asistencia</span>
+                      </button>
+                      <button type="button" class="btn-card-action action-notas"
+                        (click)="abrirNotas(clase)"
+                        title="Cargar notas de este curso">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        <span>Notas</span>
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+          @if (!horarios().length) {
+            <div class="schedule-empty">
+              <div class="empty-icon"><i class="fa-regular fa-calendar-xmark"></i></div>
+              <h4>No tienes clases programadas</h4>
+              <p>No se encontraron clases para el período académico activo.</p>
+            </div>
+          }
+        </div>
+      </section>
+    }
+  </section>
+</app-shell>

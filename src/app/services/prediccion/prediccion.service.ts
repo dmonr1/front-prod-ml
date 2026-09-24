@@ -19,6 +19,9 @@ export interface PrediccionRiesgo {
   periodoEvaluacionId: number | null;
   numeroPeriodoEvaluacion: number | null;
   nombrePeriodoEvaluacion: string | null;
+  corteSeguimientoId?: number | null;
+  semanaCorte?: number | null;
+  fechaCorte?: string | null;
   puntajeRiesgo: number;
   nivelRiesgo: string;
   modeloVersion: string | null;
@@ -27,7 +30,10 @@ export interface PrediccionRiesgo {
 }
 
 export interface ResumenPrediccion {
-  periodoEvaluacionId: number;
+  periodoEvaluacionId?: number | null;
+  corteSeguimientoId?: number | null;
+  semanaCorte?: number | null;
+  fechaCorte?: string | null;
   seccionId: number;
   nivel: string | null;
   grado: string | null;
@@ -41,7 +47,9 @@ export interface ResumenPrediccion {
 
 export interface RecalculoPrediccionesRespuesta {
   mensaje: string;
-  periodoEvaluacionId: number;
+  periodoEvaluacionId?: number | null;
+  corteSeguimientoId?: number | null;
+  semanaCorte?: number | null;
   seccionId: number;
   matriculasProcesadas: number;
   modeloVersion: string;
@@ -52,15 +60,15 @@ export class PrediccionService {
   private readonly http = inject(HttpClient);
   private readonly api = `${environment.apiUrl}/predicciones`;
 
-  listarGlobales(periodoEvaluacionId: number, seccionId: number): Observable<PrediccionRiesgo[]> {
+  listarGlobales(corteSeguimientoId: number, seccionId: number): Observable<PrediccionRiesgo[]> {
     return this.http.get<PrediccionRiesgo[]>(`${this.api}/globales`, {
-      params: { periodoEvaluacionId, seccionId }
+      params: { corteSeguimientoId, seccionId }
     });
   }
 
-  listarCursos(periodoEvaluacionId: number, seccionId: number): Observable<PrediccionRiesgo[]> {
+  listarCursos(corteSeguimientoId: number, seccionId: number): Observable<PrediccionRiesgo[]> {
     return this.http.get<PrediccionRiesgo[]>(`${this.api}/cursos`, {
-      params: { periodoEvaluacionId, seccionId }
+      params: { corteSeguimientoId, seccionId }
     });
   }
 
@@ -68,15 +76,15 @@ export class PrediccionService {
     return this.http.get<PrediccionRiesgo[]>(`${this.api}/alumno/${alumnoId}`);
   }
 
-  obtenerResumen(periodoEvaluacionId: number, seccionId: number): Observable<ResumenPrediccion> {
+  obtenerResumen(corteSeguimientoId: number, seccionId: number): Observable<ResumenPrediccion> {
     return this.http.get<ResumenPrediccion>(`${this.api}/resumen`, {
-      params: { periodoEvaluacionId, seccionId }
+      params: { corteSeguimientoId, seccionId }
     });
   }
 
-  recalcular(periodoEvaluacionId: number, seccionId: number): Observable<RecalculoPrediccionesRespuesta> {
+  recalcular(corteSeguimientoId: number, seccionId: number): Observable<RecalculoPrediccionesRespuesta> {
     return this.http.post<RecalculoPrediccionesRespuesta>(`${this.api}/recalcular`, null, {
-      params: { periodoEvaluacionId, seccionId }
+      params: { corteSeguimientoId, seccionId }
     });
   }
 }

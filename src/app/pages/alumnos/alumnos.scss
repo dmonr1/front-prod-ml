@@ -928,6 +928,45 @@ select {
   font-size: 13px;
 }
 
+.cut-draft-head {
+  padding: 22px 0 0;
+}
+
+.cut-draft-hint {
+  margin: 8px 0 12px;
+  color: #6b7a99;
+  font-size: 13px;
+}
+
+.cut-draft-list {
+  display: grid;
+  gap: 8px;
+}
+
+.cut-draft-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 180px) minmax(180px, 1fr) 40px;
+  align-items: end;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--color-surface-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.cut-draft-row label {
+  display: grid;
+  gap: 6px;
+  color: #52657c;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.cut-draft-row input {
+  min-width: 0;
+  min-height: 42px;
+}
+
 .bimester-number {
   display: inline-grid;
   place-items: center;
@@ -1077,6 +1116,14 @@ select {
   .evaluation-draft-row {
     grid-template-columns: 1fr;
     flex-direction: column;
+  }
+
+  .cut-draft-row {
+    grid-template-columns: minmax(0, 1fr) 40px;
+  }
+
+  .cut-draft-row label:first-child {
+    grid-column: 1 / -1;
   }
 
   .form-actions-spacer {

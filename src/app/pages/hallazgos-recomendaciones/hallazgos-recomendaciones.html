@@ -12,15 +12,15 @@
         <div class="panel-head">
           <span class="eyebrow">Data mining aplicado</span>
           <h2>Hallazgos y recomendaciones</h2>
-          <p>Resumen analítico de patrones detectados y acciones sugeridas para la sección.</p>
+          <p>Patrones y acciones sugeridas para la sección según el corte seleccionado.</p>
         </div>
 
         <div class="filters-corner">
           <div class="tutoria-dropdown filter-dropdown">
-            <span class="section-picker-label">Período:</span>
+            <span class="section-picker-label">Corte de evaluación:</span>
             <button class="summary-pill section-picker" type="button" (click)="toggleSelectorPeriodo()">
               <i class="fa-solid fa-calendar-days"></i>
-              <strong>{{ periodoSeleccionado()?.nombre || 'Elegir período' }}</strong>
+              <strong>{{ periodoSeleccionado() ? 'Corte N.º ' + periodoSeleccionado()?.numero : 'Elegir corte' }}</strong>
               <i class="fa-solid fa-chevron-down"></i>
             </button>
 
@@ -36,11 +36,11 @@
                   <span class="tutoria-option-title">{{ periodo.nombre }}</span>
                   <span class="tutoria-option-badge">{{ periodo.anioAcademico }}</span>
                 </div>
-                <strong class="tutoria-option-strong">Período {{ periodo.numero }}</strong>
+                <strong class="tutoria-option-strong">Corte N.º {{ periodo.numero }}</strong>
                 <small>{{ periodo.fechaInicio }} - {{ periodo.fechaFin }}</small>
 
                 <div class="tutoria-option-footer">
-                  <span><i class="fa-solid fa-calendar-check"></i> Cambio de período</span>
+                  <span><i class="fa-solid fa-calendar-check"></i> Corte de evaluación</span>
                   <span class="tutoria-option-link">
                     <i class="fa-solid fa-arrow-right"></i>
                     <span>{{ periodo.id === periodoEvaluacionSeleccionadoId() ? 'Activo' : 'Abrir' }}</span>
@@ -212,7 +212,7 @@
               @if (!hallazgos().length) {
               <div class="state-card empty-state">
                 <span class="state-title">Sin hallazgos generados</span>
-                <p>Aún no hay patrones registrados para la sección y período seleccionados.</p>
+                <p>Aún no hay patrones registrados para la sección y corte seleccionados.</p>
               </div>
               } @else {
               <div class="item-list">
@@ -371,4 +371,3 @@
     </div>
   </section>
 </app-shell>
-

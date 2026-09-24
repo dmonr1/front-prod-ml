@@ -200,6 +200,113 @@
   flex-shrink: 0;
 }
 
+.pending-date-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--color-risk-medium-bg);
+  color: var(--color-risk-medium-text);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.grade-evaluation-date {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 5px;
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.grade-date-edit {
+  margin-inline: auto;
+  padding: 4px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.grade-date-edit:hover,
+.grade-date-edit:focus-visible {
+  color: var(--color-brand-primary);
+  background: var(--color-surface-secondary);
+}
+
+.evaluation-planning-section {
+  display: grid;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--color-surface-secondary);
+}
+
+.planning-progress,
+.planning-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-semantic-warning);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.planning-status:not(.is-pending) {
+  color: var(--color-semantic-low);
+}
+
+.evaluation-chooser,
+.evaluation-planning-date {
+  display: grid;
+  gap: 6px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.evaluation-planning-date b {
+  color: var(--color-semantic-danger);
+}
+
+.evaluation-chooser select,
+.evaluation-planning-date input {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+  background: var(--color-surface-primary);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 13px;
+}
+
+.evaluation-chooser select:focus,
+.evaluation-planning-date input:focus {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 1px;
+}
+
+.evaluation-single-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.planning-empty {
+  padding: 18px;
+}
+
 .notes-config-summary {
   display: grid;
   gap: 6px;
@@ -319,10 +426,42 @@
   box-shadow: var(--shadow-xl);
 }
 
+.notes-config-modal.is-date-mode {
+  width: min(520px, 100%);
+}
+
 .notes-config-modal-footer {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+}
+
+.evaluation-config-tabs {
+  display: flex;
+  gap: 6px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.evaluation-config-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.evaluation-config-tabs button.is-active {
+  background: var(--color-surface-secondary);
+  color: var(--color-brand-primary);
 }
 
 .notes-config-warning {
@@ -585,8 +724,113 @@
 .grades-table {
   min-height: 0;
   height: 100%;
-  overflow-y: auto;
-  overflow-x: auto;
+  min-width: 0;
+  overflow: auto;
+}
+
+.grades-overview-table {
+  width: max-content;
+  min-width: 100%;
+}
+
+.grades-overview-table .student-column,
+.grades-overview-table .student-cell {
+  position: sticky;
+  left: 0;
+  width: 220px;
+  min-width: 220px;
+  max-width: 220px;
+  padding: 10px 14px;
+  text-align: left;
+  box-shadow: inset -1px 0 0 var(--color-border-subtle);
+}
+
+.grades-overview-table .student-column {
+  z-index: 5;
+  background: var(--color-surface-secondary);
+}
+
+.grades-overview-table .student-cell {
+  z-index: 2;
+  background: var(--color-surface-primary);
+  font-weight: 700;
+}
+
+.grades-overview-table .grades-weeks-row th {
+  top: 0;
+  height: 42px;
+  padding: 5px 8px;
+  color: var(--color-text-primary);
+  background: var(--color-surface-secondary);
+  box-sizing: border-box;
+}
+
+.grades-overview-table .grades-weeks-row th:not(.student-column) {
+  border-left: 1px solid var(--color-border-subtle);
+}
+
+.grades-weeks-row strong,
+.grades-weeks-row small {
+  display: block;
+  white-space: nowrap;
+}
+
+.grades-weeks-row small {
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.grades-overview-table .grades-evaluations-row th {
+  top: 42px;
+  z-index: 3;
+  height: 64px;
+  padding: 6px;
+  background: #f7fbff;
+  box-sizing: border-box;
+}
+
+.grades-overview-table .grades-evaluations-row th,
+.grades-overview-table tbody td {
+  width: 112px;
+  min-width: 112px;
+  max-width: 112px;
+}
+
+.grades-overview-table .grades-evaluations-row th > span {
+  display: block;
+  font-weight: 800;
+}
+
+.grades-overview-table .empty-week-header,
+.grades-overview-table .pending-evaluation,
+.grade-unavailable {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.grades-overview-table tbody td {
+  height: 48px;
+  padding: 5px 8px;
+}
+
+.grades-overview-table .grade-input {
+  width: 68px;
+  margin: 0 auto;
+}
+
+.grades-week-empty {
+  padding: 12px !important;
+  color: var(--color-text-secondary);
+  text-align: left !important;
+}
+
+.grades-no-evaluations {
+  margin: 0;
+  padding: 9px 12px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
 }
 
 .app-table {
@@ -665,6 +909,20 @@
   width: 180px;
   min-width: 180px;
   max-width: 180px;
+}
+
+.grades-overview-table thead .student-column,
+.grades-overview-table tbody .student-cell {
+  width: 220px;
+  min-width: 220px;
+  max-width: 220px;
+}
+
+.grades-overview-table thead .grades-evaluations-row th,
+.grades-overview-table tbody td:not(.grades-week-empty) {
+  width: 112px;
+  min-width: 112px;
+  max-width: 112px;
 }
 
 @media (max-width: 960px) {
@@ -757,5 +1015,10 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+@media (max-width: 700px) {
+  .evaluation-single-footer {
+    flex-wrap: wrap;
   }
 }

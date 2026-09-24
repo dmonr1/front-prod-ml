@@ -1,5 +1,5 @@
 import { Component, ElementRef, HostListener, computed, inject, signal } from '@angular/core';
-import { forkJoin, of } from 'rxjs';
+import { forkJoin } from 'rxjs';
 import { CustomAlertComponent } from '../../components/custom-alert/custom-alert';
 import { Shell } from '../../layouts/shell/shell';
 import { UsuarioSesion } from '../../models/auth';
@@ -19,7 +19,6 @@ import { PeriodoEvaluacionService } from '../../services/academico/periodo-evalu
 import { SeccionService } from '../../services/academico/seccion.service';
 import { AuthService } from '../../services/auth/auth.service';
 import { AsignacionAcademicaService } from '../../services/asignaciones/asignacion-academica.service';
-import { TutoriaService } from '../../services/asignaciones/tutoria.service';
 
 @Component({
   selector: 'app-reportes',
@@ -34,7 +33,6 @@ export class HallazgosRecomendaciones {
   private readonly periodoEvaluacionService = inject(PeriodoEvaluacionService);
   private readonly seccionService = inject(SeccionService);
   private readonly asignacionAcademicaService = inject(AsignacionAcademicaService);
-  private readonly tutoriaService = inject(TutoriaService);
   private readonly hallazgoService = inject(HallazgoDataMiningService);
   private readonly alertaSeguimientoService = inject(AlertaSeguimientoService);
   private readonly currentYear = new Date().getFullYear();
@@ -61,7 +59,7 @@ export class HallazgosRecomendaciones {
       matriculaId: 0,
       alumnoId: 0,
       codigoAlumno: 'SECCION',
-      alumnoNombreCompleto: 'Recomendación para la sección tutorada',
+      alumnoNombreCompleto: 'Recomendación para la sección seleccionada',
       cursoId: hallazgo.cursoId,
       curso: hallazgo.curso,
       titulo: this.tituloRecomendacionHallazgo(hallazgo),
@@ -286,36 +284,26 @@ export class HallazgosRecomendaciones {
         }
 
         const esDocente = usuario?.roles.includes('DOCENTE') ?? false;
-        const esTutor = Boolean(usuario?.esTutor || usuario?.roles.includes('DOCENTE_TUTOR'));
+        if (!esDocente) {
+          this.cursoIdsVisibles.set(new Set());
+          this.periodosEvaluacion.set(periodosActivos);
+          this.secciones.set([]);
+          this.seccionSeleccionadaId.set(null);
+          this.cargandoFiltros.set(false);
+          return;
+        }
 
-        forkJoin({
-          asignaciones: esDocente
-            ? this.asignacionAcademicaService.listarAsignaciones(docenteId, periodoReferencia.id)
-            : of([]),
-          tutorias: esTutor
-            ? this.tutoriaService.listarPorDocente(docenteId, periodoReferencia.id)
-            : of([])
-        }).subscribe({
-          next: ({ asignaciones, tutorias }) => {
+        this.asignacionAcademicaService.listarAsignaciones(docenteId, periodoReferencia.id).subscribe({
+          next: (asignaciones) => {
             const asignacionesActivas = asignaciones.filter(
               (asignacion) => (asignacion.estado ?? 'ACTIVO') === 'ACTIVO'
             );
-            const tutoriasActivas = tutorias.filter(
-              (tutoria) => (tutoria.estado ?? 'ACTIVO') === 'ACTIVO'
-            );
-            const seccionesPermitidas = new Set([
-              ...asignacionesActivas.map((asignacion) => asignacion.seccionId),
-              ...tutoriasActivas.map((tutoria) => tutoria.seccionId)
-            ]);
+            const seccionesPermitidas = new Set(asignacionesActivas.map((asignacion) => asignacion.seccionId));
             const seccionesVisibles = seccionesActivas.filter((seccion) =>
               seccionesPermitidas.has(seccion.id)
             );
 
-            this.cursoIdsVisibles.set(
-              esDocente && !esTutor
-                ? new Set(asignacionesActivas.map((asignacion) => asignacion.cursoId))
-                : null
-            );
+            this.cursoIdsVisibles.set(new Set(asignacionesActivas.map((asignacion) => asignacion.cursoId)));
             this.periodosEvaluacion.set(periodosActivos);
             this.secciones.set(seccionesVisibles);
             this.seccionSeleccionadaId.set(this.obtenerSeccionInicial(seccionesVisibles)?.id ?? null);
@@ -387,8 +375,21 @@ export class HallazgosRecomendaciones {
     const existe = disponibles.some((periodo) => periodo.id === periodoActual);
 
     if (!existe) {
-      this.periodoEvaluacionSeleccionadoId.set(disponibles[0]?.id ?? null);
+      this.periodoEvaluacionSeleccionadoId.set(this.seleccionarCortePorFecha(disponibles)?.id ?? null);
     }
+  }
+
+  private seleccionarCortePorFecha(periodos: PeriodoEvaluacion[]): PeriodoEvaluacion | null {
+    if (!periodos.length) return null;
+    const hoy = this.fechaLocalHoy();
+    return periodos.find((periodo) => hoy >= periodo.fechaInicio && hoy <= periodo.fechaFin)
+      ?? [...periodos].filter((periodo) => periodo.fechaFin < hoy).at(-1)
+      ?? periodos[0];
+  }
+
+  private fechaLocalHoy(): string {
+    const hoy = new Date();
+    return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
   }
 
   private obtenerSeccionInicial(secciones: Seccion[]): Seccion | null {
@@ -437,7 +438,7 @@ export class HallazgosRecomendaciones {
       case 'CURSO_CRITICO':
         return 'Coordinar refuerzo académico y revisar evaluaciones recientes del curso con mayor criticidad.';
       case 'ASISTENCIA_CRITICA':
-        return 'Revisar inasistencias, contactar a las familias y establecer monitoreo tutorial del período.';
+        return 'Revisar inasistencias, contactar a las familias y mantener seguimiento durante el corte.';
       case 'FACTOR_PREDOMINANTE':
         return 'Priorizar acciones según el factor de riesgo detectado con mayor frecuencia en la sección.';
       case 'MULTIPLES_ALERTAS':

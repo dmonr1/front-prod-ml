@@ -6,14 +6,17 @@
           <div class="panel-head">
             <span class="eyebrow">Seguimiento estudiantil</span>
             <h2>Seguimiento de riesgo</h2>
+            @if (periodoAcademicoActual()) {
+              <span class="academic-period-label">{{ periodoAcademicoActual()?.nombre }}</span>
+            }
           </div>
 
           <div class="filters-corner">
             <div class="tutoria-dropdown filter-dropdown">
-              <span class="section-picker-label">Período:</span>
+              <span class="section-picker-label">Corte semanal:</span>
               <button class="summary-pill section-picker" type="button" (click)="toggleSelectorPeriodo()">
                 <i class="fa-solid fa-calendar-days"></i>
-                <strong>{{ periodoEvaluacionSeleccionado()?.nombre || 'Elegir período' }}</strong>
+                <strong>{{ periodoEvaluacionSeleccionado() ? 'Semana ' + periodoEvaluacionSeleccionado()?.semana : 'Elegir corte' }}</strong>
                 <i class="fa-solid fa-chevron-down"></i>
               </button>
 
@@ -26,14 +29,14 @@
                   [class.active]="periodo.id === periodoEvaluacionSeleccionadoId()"
                   (click)="onPeriodoEvaluacionChange('' + periodo.id)">
                   <div class="tutoria-option-head">
-                    <span class="tutoria-option-title">{{ periodo.nombre }}</span>
-                    <span class="tutoria-option-badge">{{ periodo.anioAcademico }}</span>
+                    <span class="tutoria-option-title">Corte semanal</span>
+                    <span class="tutoria-option-badge">Semana {{ periodo.semana }}</span>
                   </div>
-                  <strong class="tutoria-option-strong">Período {{ periodo.numero }}</strong>
-                  <small>{{ periodo.fechaInicio }} - {{ periodo.fechaFin }}</small>
+                  <strong class="tutoria-option-strong">Semana {{ periodo.semana }}</strong>
+                  <small>Fecha de corte: {{ periodo.fechaCorte }}</small>
 
                   <div class="tutoria-option-footer">
-                    <span><i class="fa-solid fa-calendar-check"></i> Cambio de período</span>
+                    <span><i class="fa-solid fa-calendar-check"></i> Seguimiento temprano</span>
                     <span class="tutoria-option-link">
                       <i class="fa-solid fa-arrow-right"></i>
                       <span>{{ periodo.id === periodoEvaluacionSeleccionadoId() ? 'Activo' : 'Abrir' }}</span>
@@ -85,7 +88,7 @@
               <button
                 type="button"
                 class="recalculate-button"
-                [disabled]="recalculando() || !periodoEvaluacionSeleccionadoId() || !seccionSeleccionadaId()"
+                [disabled]="recalculando() || !periodoEvaluacionSeleccionadoId() || !seccionSeleccionadaId() || evaluacionesPendientesFecha().length > 0 || !preparacionCorte()?.corteDisponible || !preparacionCorte()?.alumnosConDatos"
                 (click)="recalcularPredicciones()">
                 <i [class]="recalculando() ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-arrows-rotate'"></i>
                 <span>{{ recalculando() ? 'Actualizando...' : 'Actualizar riesgo' }}</span>
@@ -107,6 +110,106 @@
           </div>
         </div>
       </div>
+
+      @if (preparacionCorte(); as preparacion) {
+        <section class="cut-readiness" aria-label="Datos disponibles para el corte">
+          <div class="cut-readiness-heading">
+            <div>
+              <strong>Semana {{ periodoEvaluacionSeleccionado()?.semana }} · {{ preparacion.periodoEvaluacion || 'Sin período de evaluación asignado' }}</strong>
+              <span>Datos hasta el {{ preparacion.fechaCorte }}</span>
+              @if (!preparacion.periodoEvaluacion && puedeRecalcular()) {
+                <button type="button" class="cut-readiness-link" (click)="abrirConfiguracionCortes()">Revisar fechas del período <i class="fa-solid fa-arrow-right"></i></button>
+              }
+            </div>
+            @if (!preparacion.corteDisponible) {
+              <span class="cut-readiness-status">El corte aún no llega a su fecha</span>
+            } @else if (preparacion.evaluacionesSinFecha) {
+              <span class="cut-readiness-status">Faltan fechas para actualizar</span>
+            } @else if (!preparacion.alumnosConDatos) {
+              <span class="cut-readiness-status">Faltan notas o asistencia</span>
+            } @else {
+              <span class="cut-readiness-status is-ready">Fecha de corte habilitada</span>
+            }
+          </div>
+          <div class="cut-readiness-items">
+            <div class="cut-readiness-item">
+              <span>Alumnos con datos</span>
+              <strong>{{ preparacion.alumnosConDatos }}/{{ preparacion.alumnosMatriculados }}</strong>
+              @if (preparacion.alumnosMatriculados > preparacion.alumnosConDatos) {
+                <small>Faltan {{ preparacion.alumnosMatriculados - preparacion.alumnosConDatos }} con notas o asistencia</small>
+              }
+              @if (!preparacion.alumnosMatriculados && puedeRecalcular()) {
+                <button type="button" (click)="abrirMatriculas()">Revisar matrículas <i class="fa-solid fa-arrow-right"></i></button>
+              }
+            </div>
+            <div class="cut-readiness-item">
+              <span>Evaluaciones fechadas al corte</span>
+              <strong>{{ preparacion.evaluacionesAlCorte }}</strong>
+              @if (preparacion.evaluacionesSinFecha) {
+                <small>{{ preparacion.evaluacionesSinFecha }} sin fecha</small>
+              } @else if (!preparacion.evaluacionesAlCorte) {
+                <small>No hay evaluaciones para este corte</small>
+              }
+              @if (!preparacion.evaluacionesAlCorte && !preparacion.evaluacionesSinFecha && puedeRecalcular()) {
+                <button type="button" (click)="abrirConfiguracionCortes()">Configurar evaluaciones <i class="fa-solid fa-arrow-right"></i></button>
+              }
+            </div>
+            <div class="cut-readiness-item">
+              <span>Notas registradas</span>
+              <strong>{{ preparacion.notasRegistradas }}/{{ preparacion.notasEsperadas }}</strong>
+              @if (preparacion.notasEsperadas > preparacion.notasRegistradas) {
+                <small>Faltan {{ preparacion.notasEsperadas - preparacion.notasRegistradas }} notas</small>
+              }
+              @if (preparacion.notasEsperadas > preparacion.notasRegistradas) {
+                <button type="button" (click)="abrirRegistroNotas()">Ir a notas <i class="fa-solid fa-arrow-right"></i></button>
+              }
+            </div>
+            <div class="cut-readiness-item">
+              <span>Asistencia registrada</span>
+              <strong>{{ preparacion.alumnosConAsistencia }}/{{ preparacion.alumnosMatriculados }} alumnos</strong>
+              <small>{{ preparacion.asistenciasRegistradas }} registros hasta el corte</small>
+              @if (preparacion.bloquesSemanales && preparacion.alumnosConAsistencia < preparacion.alumnosMatriculados) {
+                <button type="button" (click)="abrirRegistroAsistencia()">Ir a asistencia <i class="fa-solid fa-arrow-right"></i></button>
+              } @else if (!preparacion.bloquesSemanales && puedeRecalcular()) {
+                <button type="button" (click)="abrirHorarios()">Configurar horario <i class="fa-solid fa-arrow-right"></i></button>
+              }
+            </div>
+          </div>
+        </section>
+      }
+
+      @if (evaluacionesPendientesFecha().length) {
+        <aside class="evaluation-date-warning" role="alert">
+          <div class="evaluation-date-warning-icon"><i class="fa-solid fa-calendar-exclamation"></i></div>
+          <div class="evaluation-date-warning-content">
+            <strong>Faltan fechas de evaluación</strong>
+            <p>Completa {{ evaluacionesPendientesFecha().length }} fecha(s) para habilitar la predicción de este corte. Cada evaluación necesita una fecha para excluir correctamente los datos posteriores.</p>
+            <div class="evaluation-date-pending-list">
+              @for (evaluacion of evaluacionesPendientesFecha(); track evaluacion.evaluacionId) {
+                <div class="evaluation-date-pending-item">
+                  <span><b>{{ evaluacion.curso }}</b> · {{ evaluacion.periodoEvaluacion }} · {{ evaluacion.tipoEvaluacion }} {{ evaluacion.numeroEvaluacion }}</span>
+                  <button type="button" class="action-button secondary" (click)="abrirFechaEvaluacion(evaluacion)">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Registrar fecha
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+        </aside>
+      }
+
+      @if (!cargandoFiltros() && !periodosEvaluacion().length && puedeRecalcular()) {
+        <aside class="evaluation-date-warning" role="status">
+          <div class="evaluation-date-warning-icon"><i class="fa-solid fa-calendar-plus"></i></div>
+          <div class="evaluation-date-warning-content">
+            <strong>No hay cortes semanales configurados</strong>
+            <p>Configura semanas de seguimiento en el período académico para generar predicciones tempranas.</p>
+            <button type="button" class="action-button secondary" (click)="abrirConfiguracionCortes()">
+              <i class="fa-solid fa-sliders"></i> Configurar cortes
+            </button>
+          </div>
+        </aside>
+      }
 
       @if (cargandoFiltros() || cargandoVista() || error()) {
         <div class="content-grid skeleton-dashboard">
@@ -359,7 +462,7 @@
             @if (vistaActiva() === 'global') {
             <div class="mini-card-head">
               <h3>Detalle del riesgo global</h3>
-              <span>{{ periodoEvaluacionSeleccionado()?.nombre || 'Período actual' }}</span>
+              <span>{{ periodoEvaluacionSeleccionado() ? 'Semana ' + periodoEvaluacionSeleccionado()?.semana : 'Corte semanal' }}</span>
             </div>
 
             <div class="attendance-panel">
@@ -410,7 +513,7 @@
     <app-custom-alert
       [open]="alertaConexionAbierta()"
       type="error"
-      title="No se puede conectar con el servidor"
+      title="No se pudo cargar el seguimiento"
       [message]="error() || 'Intenta nuevamente en unos segundos.'"
       confirmText="Volver a intentar"
       cancelText="Cerrar"

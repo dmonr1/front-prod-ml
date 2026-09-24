@@ -1,5 +1,6 @@
 import { Component, ElementRef, HostListener, OnInit, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { PeriodoEvaluacion } from '../../models/periodo-evaluacion';
 import { Tutoria } from '../../models/tutoria';
@@ -9,16 +10,20 @@ import { PeriodoEvaluacionService } from '../../services/academico/periodo-evalu
 import { AuthService } from '../../services/auth/auth.service';
 import { CustomAlertComponent } from '../../components/custom-alert/custom-alert';
 import {
+  AlumnoTutoriaResumen,
   CursoAlumnoTutoriaResumen,
   TutoriaResumenAcademico,
   TutoriaService
 } from '../../services/asignaciones/tutoria.service';
 import { formatearMensajeError } from '../../utils/error-formatter';
 
+export type ModoVistaTutoria = 'matriz' | 'fichas';
+export type FiltroRiesgoTutoria = 'todos' | 'riesgo' | 'desaprobados' | 'asistencia';
+
 @Component({
   selector: 'app-seccion-tutorada',
   standalone: true,
-  imports: [Shell, RouterLink, CustomAlertComponent],
+  imports: [Shell, FormsModule, CustomAlertComponent],
   templateUrl: './seccion-tutorada.html',
   styleUrl: './seccion-tutorada.scss'
 })
@@ -48,26 +53,14 @@ export class SeccionTutorada implements OnInit {
   readonly animacionEntradaActiva = signal(true);
   private direccionAnimacionPendiente: 'left' | 'right' | null = null;
 
+  // Modos de visualización y filtros 360°
+  readonly modoVista = signal<ModoVistaTutoria>('matriz');
+  readonly busqueda = signal<string>('');
+  readonly filtroRiesgo = signal<FiltroRiesgoTutoria>('todos');
+  readonly alumnoSeleccionado = signal<AlumnoTutoriaResumen | null>(null);
+
   readonly mostrarError = signal(true);
   readonly mostrarSkeleton = computed(() => this.cargando() || this.mantenerSkeletonPorError());
-
-  reintentarCarga(): void {
-    this.mostrarError.set(false);
-    this.error.set(null);
-    this.mantenerSkeletonPorError.set(false);
-  
-    const periodoId = this.periodoEvaluacionSeleccionadoId();
-  
-    if (periodoId) {
-      this.seleccionarPeriodoEvaluacion(periodoId);
-    } else {
-      this.cargarVista();
-    }
-  }
-  
-  cerrarError(): void {
-    this.mostrarError.set(false);
-  }
 
   readonly periodosEvaluacionTutoria = computed(() =>
     this.periodosEvaluacion()
@@ -88,28 +81,87 @@ export class SeccionTutorada implements OnInit {
       ) ?? null
   );
 
-  readonly resumenVista = computed(() => {
+  // KPIs institucionales del aula
+  readonly kpisAula = computed(() => {
     const resumen = this.resumenAcademico();
     const alumnos = resumen?.alumnos ?? [];
-    const promedios = alumnos
-      .map((fila) => fila.promedioGeneral)
-      .filter((promedio): promedio is number => promedio !== null);
+    const totalAlumnos = alumnos.length;
 
-    const promedioSeccion = promedios.length
-      ? Math.round((promedios.reduce((acc, item) => acc + item, 0) / promedios.length) * 100) / 100
+    const promedios = alumnos
+      .map((a) => a.promedioGeneral)
+      .filter((p): p is number => p !== null && !isNaN(p));
+
+    const promedioAula = promedios.length
+      ? Math.round((promedios.reduce((acc, p) => acc + p, 0) / promedios.length) * 100) / 100
       : null;
 
+    const asistencias = alumnos
+      .map((a) => a.porcentajeAsistencia)
+      .filter((pct): pct is number => pct !== null && !isNaN(pct));
+
+    const asistenciaAula = asistencias.length
+      ? Math.round((asistencias.reduce((acc, pct) => acc + pct, 0) / asistencias.length) * 10) / 10
+      : null;
+
+    const alumnosEnRiesgo = alumnos.filter((a) => this.esAlumnoEnRiesgo(a)).length;
+    const alumnosAprobados = alumnos.filter((a) => this.contarCursosDesaprobados(a) === 0 && (a.promedioGeneral ?? 0) >= 11).length;
+
     return {
-      alumnos: alumnos.length,
-      cursos: resumen?.cursos.length ?? 0,
-      promedioSeccion,
-      registros: alumnos.reduce(
-        (acc, fila) =>
-          acc +
-          fila.cursos.reduce((subtotal, curso) => subtotal + (curso.evaluacionesRegistradas || 0), 0),
-        0
-      )
+      totalAlumnos,
+      promedioAula,
+      asistenciaAula,
+      alumnosEnRiesgo,
+      alumnosAprobados,
+      totalCursos: resumen?.cursos?.length ?? 0
     };
+  });
+
+  // Lista de alumnos con búsqueda y filtros reactivos
+  readonly alumnosFiltrados = computed(() => {
+    const resumen = this.resumenAcademico();
+    if (!resumen) return [];
+
+    let lista = [...resumen.alumnos];
+    const query = this.busqueda().trim().toLowerCase();
+
+    if (query) {
+      lista = lista.filter((a) =>
+        a.alumnoNombreCompleto.toLowerCase().includes(query) ||
+        a.codigoAlumno.toLowerCase().includes(query)
+      );
+    }
+
+    const filtro = this.filtroRiesgo();
+    if (filtro === 'riesgo') {
+      lista = lista.filter((a) => this.esAlumnoEnRiesgo(a));
+    } else if (filtro === 'desaprobados') {
+      lista = lista.filter((a) => this.contarCursosDesaprobados(a) > 0);
+    } else if (filtro === 'asistencia') {
+      lista = lista.filter((a) => (a.porcentajeAsistencia ?? 100) < 80);
+    }
+
+    return lista;
+  });
+
+  // Promedio de cada curso a nivel de toda la sección tutorada
+  readonly promediosPorCurso = computed(() => {
+    const resumen = this.resumenAcademico();
+    if (!resumen || !resumen.cursos?.length) return new Map<number, number | null>();
+
+    const mapa = new Map<number, number | null>();
+    for (const curso of resumen.cursos) {
+      const notas = resumen.alumnos
+        .map((a) => a.cursos.find((c) => c.asignacionId === curso.asignacionId)?.promedio)
+        .filter((p): p is number => p !== null && p !== undefined && !isNaN(p));
+
+      if (notas.length) {
+        const avg = Math.round((notas.reduce((acc, val) => acc + val, 0) / notas.length) * 100) / 100;
+        mapa.set(curso.asignacionId, avg);
+      } else {
+        mapa.set(curso.asignacionId, null);
+      }
+    }
+    return mapa;
   });
 
   ngOnInit(): void {
@@ -160,7 +212,7 @@ export class SeccionTutorada implements OnInit {
               null;
 
             if (!tutoria) {
-              this.cargando.set(true);
+              this.cargando.set(false);
               this.error.set('No tienes una sección tutorada activa en el período actual.');
               this.mostrarError.set(true);
               return;
@@ -180,9 +232,7 @@ export class SeccionTutorada implements OnInit {
                 'No se pudo cargar el resumen académico de la sección tutorada.'
               )
             );
-
             this.resumenAcademico.set(null);
-
             this.mostrarError.set(true);
             this.cargando.set(false);
             this.cargandoTabla.set(false);
@@ -200,6 +250,23 @@ export class SeccionTutorada implements OnInit {
         this.mantenerSkeletonPorError.set(true);
       }
     });
+  }
+
+  reintentarCarga(): void {
+    this.mostrarError.set(false);
+    this.error.set(null);
+    this.mantenerSkeletonPorError.set(false);
+
+    const periodoId = this.periodoEvaluacionSeleccionadoId();
+    if (periodoId) {
+      this.seleccionarPeriodoEvaluacion(periodoId);
+    } else {
+      this.cargarVista();
+    }
+  }
+
+  cerrarError(): void {
+    this.mostrarError.set(false);
   }
 
   seleccionarPeriodoEvaluacion(
@@ -264,7 +331,6 @@ export class SeccionTutorada implements OnInit {
     if (this.tutoriasDisponibles().length <= 1) {
       return;
     }
-
     this.mostrarSelectorTutoria.update((valor) => !valor);
   }
 
@@ -277,37 +343,97 @@ export class SeccionTutorada implements OnInit {
     if (!this.mostrarSelectorTutoria()) {
       return;
     }
-
     const target = event.target as Node | null;
     if (target && this.elementRef.nativeElement.contains(target)) {
       return;
     }
-
     this.cerrarSelectorTutoria();
   }
 
   irPeriodoEvaluacionAnterior(): void {
     const periodos = this.periodosEvaluacionTutoria();
     const indice = this.indicePeriodoEvaluacionSeleccionado();
-    if (indice <= 0) {
-      return;
-    }
-
+    if (indice <= 0) return;
     this.seleccionarPeriodoEvaluacion(periodos[indice - 1].id, false, 'left');
   }
 
   irPeriodoEvaluacionSiguiente(): void {
     const periodos = this.periodosEvaluacionTutoria();
     const indice = this.indicePeriodoEvaluacionSeleccionado();
-    if (indice < 0 || indice >= periodos.length - 1) {
-      return;
-    }
-
+    if (indice < 0 || indice >= periodos.length - 1) return;
     this.seleccionarPeriodoEvaluacion(periodos[indice + 1].id, false, 'right');
   }
 
+  // Métodos de control visual y filtros
+  setModoVista(modo: ModoVistaTutoria): void {
+    this.modoVista.set(modo);
+  }
+
+  setFiltroRiesgo(filtro: FiltroRiesgoTutoria): void {
+    this.filtroRiesgo.set(filtro);
+  }
+
+  onBusquedaChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.busqueda.set(input.value);
+  }
+
+  limpiarBusqueda(): void {
+    this.busqueda.set('');
+  }
+
+  abrirExpediente(alumno: AlumnoTutoriaResumen): void {
+    this.alumnoSeleccionado.set(alumno);
+  }
+
+  cerrarExpediente(): void {
+    this.alumnoSeleccionado.set(null);
+  }
+
+  verFichaCompletaAlumno(alumnoId: number): void {
+    void this.router.navigate(['/alumno', alumnoId], {
+      queryParams: {
+        periodoEvaluacionId: this.periodoEvaluacionSeleccionadoId(),
+        seccionId: this.tutoria()?.seccionId ?? null,
+        vista: 'global'
+      }
+    });
+  }
+
+  // Helpers de evaluación y cálculo
+  esAlumnoEnRiesgo(alumno: AlumnoTutoriaResumen): boolean {
+    const desaprobados = this.contarCursosDesaprobados(alumno);
+    const asistencia = alumno.porcentajeAsistencia;
+    const promedio = alumno.promedioGeneral;
+
+    return (
+      desaprobados >= 2 ||
+      (asistencia !== null && asistencia < 75) ||
+      (promedio !== null && promedio < 11)
+    );
+  }
+
+  contarCursosDesaprobados(alumno: AlumnoTutoriaResumen): number {
+    return alumno.cursos.filter((c) => c.promedio !== null && c.promedio < 11).length;
+  }
+
+  obtenerCursosDesaprobados(alumno: AlumnoTutoriaResumen): CursoAlumnoTutoriaResumen[] {
+    return alumno.cursos.filter((c) => c.promedio !== null && c.promedio < 11);
+  }
+
+  obtenerNotaCurso(alumno: AlumnoTutoriaResumen, asignacionId: number): CursoAlumnoTutoriaResumen | undefined {
+    return alumno.cursos.find((c) => c.asignacionId === asignacionId);
+  }
+
+  obtenerColorNota(promedio: number | null): 'aprobado' | 'regular' | 'desaprobado' | 'vacio' {
+    if (promedio === null || isNaN(promedio)) return 'vacio';
+    if (promedio >= 14) return 'aprobado';
+    if (promedio >= 11) return 'regular';
+    return 'desaprobado';
+  }
+
   formatearPromedio(promedio: number | null): string {
-    return promedio === null ? 'Sin notas' : promedio.toFixed(2);
+    return promedio === null || isNaN(promedio) ? '--' : promedio.toFixed(2);
   }
 
   obtenerNotasEtiquetadas(curso: CursoAlumnoTutoriaResumen): Array<{ etiqueta: string; valor: string }> {
@@ -325,10 +451,7 @@ export class SeccionTutorada implements OnInit {
   }
 
   obtenerAsistenciaTexto(clasesAsistidas: number, clasesProgramadas: number): string {
-    if (!clasesProgramadas) {
-      return 'Sin registro';
-    }
-
+    if (!clasesProgramadas) return '0/0';
     return `${clasesAsistidas}/${clasesProgramadas}`;
   }
 
@@ -336,14 +459,11 @@ export class SeccionTutorada implements OnInit {
     return porcentaje === null ? '--' : `${porcentaje.toFixed(0)}%`;
   }
 
-  verFichaAlumno(alumnoId: number): void {
-    void this.router.navigate(['/alumno', alumnoId], {
-      queryParams: {
-        periodoEvaluacionId: this.periodoEvaluacionSeleccionadoId(),
-        seccionId: this.tutoria()?.seccionId ?? null,
-        vista: 'global'
-      }
-    });
+  obtenerIniciales(nombre: string): string {
+    if (!nombre) return 'AL';
+    const partes = nombre.trim().split(/\s+/);
+    if (partes.length === 1) return partes[0].substring(0, 2).toUpperCase();
+    return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
   }
 
   private cargarPrimerPeriodoDisponible(

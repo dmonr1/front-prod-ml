@@ -1,0 +1,423 @@
+<app-shell>
+  <section class="attendance-page">
+    <app-custom-alert [open]="alertState().open" [type]="alertState().type" [title]="alertState().title"
+      [message]="alertState().message" confirmText="Entendido" (confirm)="cerrarAlerta()"
+      (cancel)="cerrarAlerta()" (dismiss)="cerrarAlerta()" />
+
+    <!-- 1. Encabezado unificado de página (mismo card container institucional) -->
+    <header class="card-head">
+      <div class="head-title-wrap">
+        <div class="head-icon">
+          <i class="fa-solid fa-user-check"></i>
+        </div>
+        <div>
+          <div class="head-title-line">
+            <h2>{{ vista() === 'agenda' ? 'Asistencias' : 'Registro de Asistencia' }}</h2>
+            <span class="head-badge">Gestión Académica</span>
+          </div>
+          <p class="head-subtitle">
+            {{ vista() === 'agenda'
+              ? 'Control y registro de asistencia por sesión programada, período evaluativo y año escolar.'
+              : 'Nómina de estudiantes para la sesión seleccionada.' }}
+          </p>
+        </div>
+      </div>
+
+      <div class="head-controls">
+        @if (periodoAcademico(); as per) {
+          <span class="period-informative-chip">
+            <i class="fa-solid fa-calendar-check"></i> Período {{ per.nombre }} · {{ per.anio }}
+          </span>
+        }
+      </div>
+    </header>
+
+    <!-- 2. Cuerpo principal con scroll interno y ajuste al 100% de ancho -->
+    <div class="attendance-body">
+      @if (cargando() && vista() === 'agenda') {
+        <div class="loading-state">
+          <i class="fa-solid fa-spinner fa-spin"></i>
+          <span>Cargando programación de asistencias...</span>
+        </div>
+      } @else if (vista() === 'agenda') {
+        <div class="agenda-layout">
+          <!-- Barra de controles y filtros superiores -->
+          <div class="agenda-toolbar-strip">
+            <!-- Pestañas de modo (Semana / Período / Año) -->
+            <div class="mode-tabs" role="tablist">
+              <button
+                type="button"
+                class="mode-btn"
+                [class.active]="modoVista() === 'semana'"
+                (click)="cambiarModoVista('semana')"
+              >
+                <i class="fa-regular fa-calendar-week"></i> Semana actual
+              </button>
+              <button
+                type="button"
+                class="mode-btn"
+                [class.active]="modoVista() === 'periodo'"
+                (click)="cambiarModoVista('periodo')"
+              >
+                <i class="fa-regular fa-calendar-days"></i> Por período
+              </button>
+              <button
+                type="button"
+                class="mode-btn"
+                [class.active]="modoVista() === 'anio'"
+                (click)="cambiarModoVista('anio')"
+              >
+                <i class="fa-regular fa-calendar"></i> Todo el año
+              </button>
+            </div>
+
+            <!-- Filtros desplegables y navegación de semana -->
+            <div class="toolbar-filters">
+              @if (modoVista() === 'periodo') {
+                <div class="filter-item">
+                  <span class="filter-label"><i class="fa-solid fa-bookmark"></i> Período:</span>
+                  <select
+                    class="clean-select"
+                    [ngModel]="periodoEvaluacionFiltroId()"
+                    (ngModelChange)="actualizarPeriodoFiltro($event)"
+                  >
+                    @for (evalItem of periodosEvaluacion(); track evalItem.id) {
+                      <option [value]="evalItem.id">
+                        {{ evalItem.nombre }} ({{ formatoFechaCorta(evalItem.fechaInicio) }} - {{ formatoFechaCorta(evalItem.fechaFin) }})
+                      </option>
+                    }
+                  </select>
+                </div>
+              }
+
+              <div class="filter-item">
+                <span class="filter-label"><i class="fa-solid fa-book-open"></i> Curso:</span>
+                <select
+                  class="clean-select"
+                  [ngModel]="asignacionFiltroId()"
+                  (ngModelChange)="actualizarAsignacionFiltro($event)"
+                >
+                  <option [value]="null">Todos los cursos</option>
+                  @for (asig of asignaciones(); track asig.id) {
+                    <option [value]="asig.id">{{ asig.curso }} · Sec. {{ asig.seccion }}</option>
+                  }
+                </select>
+              </div>
+
+              @if (modoVista() === 'semana') {
+                <div class="week-stepper">
+                  <button
+                    type="button"
+                    class="stepper-arrow"
+                    aria-label="Semana anterior"
+                    [disabled]="!puedeAnterior()"
+                    (click)="semanaAnterior()"
+                  >
+                    <i class="fa-solid fa-chevron-left"></i>
+                  </button>
+                  <span class="stepper-label">{{ etiquetaSemana() }}</span>
+                  <button
+                    type="button"
+                    class="stepper-arrow"
+                    aria-label="Semana siguiente"
+                    [disabled]="!puedeSiguiente()"
+                    (click)="semanaSiguiente()"
+                  >
+                    <i class="fa-solid fa-chevron-right"></i>
+                  </button>
+                  <button type="button" class="btn-today" (click)="irASemanaActual()">Hoy</button>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Barra de KPIs y buscador rápido -->
+          <div class="agenda-meta-strip">
+            <div class="kpi-pills">
+              <span class="kpi-pill kpi-pill-total"><i class="fa-solid fa-list-check"></i> {{ statsSesiones().total }} clases</span>
+              @if (statsSesiones().hoy > 0) {
+                <span class="kpi-pill kpi-pill-today"><i class="fa-solid fa-bolt"></i> {{ statsSesiones().hoy }} hoy</span>
+              }
+              <span class="kpi-pill kpi-pill-past"><i class="fa-regular fa-clock-rotate-left"></i> {{ statsSesiones().pasadas }} pasadas</span>
+              <span class="kpi-pill kpi-pill-future"><i class="fa-regular fa-calendar-plus"></i> {{ statsSesiones().futuras }} próximas</span>
+            </div>
+
+            <div class="search-wrap">
+              <i class="fa-solid fa-magnifying-glass search-icon"></i>
+              <input
+                type="text"
+                placeholder="Buscar por curso, día o fecha..."
+                [ngModel]="busquedaSesion()"
+                (ngModelChange)="busquedaSesion.set($event)"
+              />
+              @if (busquedaSesion()) {
+                <button type="button" class="clear-btn" (click)="limpiarBusquedaSesion()">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Contenedor scrollable de sesiones estirado a todo el ancho -->
+          <div class="sessions-scroll-view">
+            @if (!sesionesFiltradas().length) {
+              <div class="empty-state">
+                <i class="fa-regular fa-calendar-xmark"></i>
+                <h3>No hay sesiones programadas</h3>
+                <p>No se encontraron clases para el filtro o período seleccionado.</p>
+              </div>
+            } @else {
+              <div class="session-list">
+                @for (sesion of sesionesFiltradas(); track sesion.horario.id + '-' + sesion.fecha) {
+                  <div
+                    class="session-row-card"
+                    [class.is-today]="sesion.esHoy"
+                    [class.is-past]="sesion.esPasada && !sesion.esHoy"
+                  >
+                    <!-- Badge de Fecha tipo calendario -->
+                    <div class="date-badge">
+                      <span class="badge-day">{{ nombreDia(sesion.fecha).slice(0, 3).toUpperCase() }}</span>
+                      <span class="badge-num">{{ formatoDiaNumero(sesion.fecha) }}</span>
+                      <span class="badge-month">{{ formatoMesCorto(sesion.fecha) }}</span>
+                      @if (sesion.esHoy) {
+                        <span class="badge-today-tag">HOY</span>
+                      }
+                    </div>
+
+                    <!-- Datos principales de la sesión -->
+                    <div class="details-col">
+                      <div class="top-tags">
+                        <span class="tag-time">
+                          <i class="fa-regular fa-clock"></i> {{ sesion.horario.horaInicio.slice(0, 5) }} – {{ sesion.horario.horaFin.slice(0, 5) }}
+                        </span>
+                        @if (sesion.horario.bloque) {
+                          <span class="tag-block">{{ sesion.horario.bloque }}</span>
+                        }
+                        @if (sesion.periodo) {
+                          <span class="tag-period">{{ sesion.periodo.nombre }}</span>
+                        }
+                      </div>
+
+                      <h3 class="course-title">{{ sesion.horario.curso }}</h3>
+
+                      <div class="bottom-meta">
+                        <span class="meta-item"><i class="fa-solid fa-graduation-cap"></i> {{ sesion.horario.grado }}</span>
+                        <span class="meta-item"><i class="fa-solid fa-users"></i> Sección {{ sesion.horario.seccion }}</span>
+                        @if (sesion.horario.nivel) {
+                          <span class="meta-item"><i class="fa-solid fa-school"></i> {{ sesion.horario.nivel }}</span>
+                        }
+                      </div>
+                    </div>
+
+                    <!-- Botón de acción directo -->
+                    <div class="action-col">
+                      @if (sesion.periodo) {
+                        <button
+                          type="button"
+                          class="action-btn"
+                          (click)="abrirSesion(sesion.horario.asignacionId, sesion.fecha, sesion.horario.id)"
+                        >
+                          <i class="fa-solid fa-user-check"></i>
+                          <span>Registrar asistencia</span>
+                        </button>
+                      } @else {
+                        <span class="unconfigured-pill">
+                          <i class="fa-solid fa-triangle-exclamation"></i> Sin período evaluativo
+                        </span>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      } @else {
+        <!-- VISTA DE TOMA DE ASISTENCIA POR ALUMNOS -->
+        <div class="attendance-sheet-layout">
+          <!-- Encabezado con información de clase y KPIs -->
+          <div class="sheet-top-banner">
+            <div class="sheet-title-row">
+              <button type="button" class="btn-back" (click)="volverAgenda()" aria-label="Volver a clases">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span>Volver</span>
+              </button>
+              <div class="sheet-heading">
+                <h2>{{ asignacionSeleccionada()?.curso }}</h2>
+                <div class="sheet-chips">
+                  <span class="info-chip"><i class="fa-solid fa-users"></i> Sección {{ asignacionSeleccionada()?.seccion }}</span>
+                  <span class="info-chip"><i class="fa-regular fa-calendar"></i> {{ formatoFechaCapitalizada(fecha()) }}</span>
+                  @if (horarioSeleccionado(); as hor) {
+                    <span class="info-chip"><i class="fa-regular fa-clock"></i> {{ hor.horaInicio.slice(0, 5) }} – {{ hor.horaFin.slice(0, 5) }}</span>
+                  }
+                  @if (periodoSeleccionado(); as pe) {
+                    <span class="info-chip chip-highlight"><i class="fa-solid fa-bookmark"></i> {{ pe.nombre }}</span>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <!-- Resumen numérico KPI en tarjetas suaves sin bordes agresivos -->
+            <div class="kpi-strip">
+              <div class="kpi-box kpi-box-total">
+                <span class="kpi-val">{{ resumen().total }}</span>
+                <span class="kpi-lbl">Matriculados</span>
+              </div>
+              <div class="kpi-box kpi-box-presentes">
+                <span class="kpi-val">{{ resumen().presentes }}</span>
+                <span class="kpi-lbl">Presentes</span>
+              </div>
+              <div class="kpi-box kpi-box-tardanzas">
+                <span class="kpi-val">{{ resumen().tardanzas }}</span>
+                <span class="kpi-lbl">Tardanzas</span>
+              </div>
+              <div class="kpi-box kpi-box-ausentes">
+                <span class="kpi-val">{{ resumen().ausentes }}</span>
+                <span class="kpi-lbl">Ausentes</span>
+              </div>
+              <div class="kpi-box kpi-box-justificados">
+                <span class="kpi-val">{{ resumen().justificados }}</span>
+                <span class="kpi-lbl">Justificados</span>
+              </div>
+              <div class="kpi-box kpi-box-rate">
+                <span class="kpi-val">{{ resumen().porcentaje }}%</span>
+                <span class="kpi-lbl">Asistencia</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Barra de acciones rápidas y buscador de estudiantes -->
+          <div class="sheet-action-toolbar">
+            <div class="bulk-group">
+              <span class="bulk-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Marcar todos:</span>
+              <button type="button" class="btn-bulk btn-bulk-pres" (click)="marcarTodos('PRESENTE')">
+                <i class="fa-solid fa-check"></i> Presentes
+              </button>
+              <button type="button" class="btn-bulk btn-bulk-aus" (click)="marcarTodos('AUSENTE')">
+                <i class="fa-solid fa-xmark"></i> Ausentes
+              </button>
+              <button type="button" class="btn-bulk btn-bulk-reset" (click)="limpiarTodos()">
+                <i class="fa-solid fa-rotate-left"></i> Limpiar
+              </button>
+            </div>
+
+            <div class="search-wrap student-search">
+              <i class="fa-solid fa-magnifying-glass search-icon"></i>
+              <input
+                type="text"
+                placeholder="Buscar por nombre o código..."
+                [ngModel]="busquedaEstudiante()"
+                (ngModelChange)="busquedaEstudiante.set($event)"
+              />
+              @if (busquedaEstudiante()) {
+                <button type="button" class="clear-btn" (click)="limpiarBusquedaEstudiante()">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Tabla scrollable de estudiantes -->
+          <div class="table-scroll-wrap">
+            <table class="modern-table">
+              <thead>
+                <tr>
+                  <th class="col-num">#</th>
+                  <th class="col-student">Estudiante</th>
+                  <th class="col-status">Estado de Asistencia</th>
+                  <th class="col-obs">Observación</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (fila of filasFiltradas(); track fila.matricula.id; let i = $index) {
+                  <tr [class.row-incomplete]="!fila.estado">
+                    <td class="col-num">{{ i + 1 }}</td>
+                    <td class="col-student">
+                      <div class="student-profile">
+                        <div class="avatar" [attr.data-status]="fila.estado">
+                          {{ obtenerIniciales(fila.matricula.alumnoNombreCompleto) }}
+                        </div>
+                        <div class="student-meta">
+                          <span class="full-name">{{ fila.matricula.alumnoNombreCompleto }}</span>
+                          <span class="code"><i class="fa-regular fa-id-card"></i> {{ fila.matricula.codigoAlumno || 'Sin código' }}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="col-status">
+                      <div class="status-switches" role="radiogroup">
+                        @for (estado of estados; track estado.value) {
+                          <button
+                            type="button"
+                            class="switch-pill status-{{ estado.value.toLowerCase() }}"
+                            [class.active]="fila.estado === estado.value"
+                            (click)="cambiarEstado(fila.matricula.id, estado.value)"
+                          >
+                            <i [class]="estado.icon"></i>
+                            <span>{{ estado.label }}</span>
+                          </button>
+                        }
+                      </div>
+                    </td>
+                    <td class="col-obs">
+                      <input
+                        type="text"
+                        class="obs-field"
+                        maxlength="255"
+                        placeholder="Observación opcional..."
+                        [ngModel]="fila.observacion"
+                        (ngModelChange)="cambiarObservacion(fila.matricula.id, $event)"
+                      />
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="4" class="empty-cell">
+                      <i class="fa-solid fa-users-slash"></i>
+                      <span>No se encontraron estudiantes para esta búsqueda.</span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pie de página fijo de la toma de asistencia -->
+          <div class="sheet-bottom-bar">
+            <div class="completion-info">
+              @if (faltantesPorMarcar() > 0) {
+                <span class="status-alert alert-warn">
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                  Faltan <strong>{{ faltantesPorMarcar() }}</strong> estudiantes por registrar estado.
+                </span>
+              } @else {
+                <span class="status-alert alert-ok">
+                  <i class="fa-solid fa-circle-check"></i>
+                  Todos los estudiantes han sido marcados.
+                </span>
+              }
+            </div>
+            <div class="sheet-buttons">
+              <button type="button" class="btn-secondary" (click)="volverAgenda()">
+                Cancelar
+              </button>
+              <button
+                type="button"
+                class="btn-primary"
+                [disabled]="!puedeGuardar()"
+                (click)="guardar()"
+              >
+                @if (guardando()) {
+                  <i class="fa-solid fa-spinner fa-spin"></i>
+                  <span>Guardando...</span>
+                } @else {
+                  <i class="fa-solid fa-floppy-disk"></i>
+                  <span>Guardar asistencia</span>
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+</app-shell>

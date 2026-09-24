@@ -129,7 +129,20 @@ export const routes: Routes = [
       {
         path: 'asistencias',
         loadComponent: () =>
+          import('./pages/asistencia-sesion/asistencia-sesion').then((m) => m.AsistenciaSesionPage)
+      },
+      {
+        path: 'asistencias-periodo',
+        loadComponent: () =>
           import('./pages/carga-asistencias/carga-asistencias').then((m) => m.CargaAsistencias)
+      },
+      {
+        path: 'horarios',
+        loadComponent: () => import('./pages/horarios/horarios').then((m) => m.Horarios)
+      },
+      {
+        path: 'mi-horario',
+        loadComponent: () => import('./pages/mi-horario/mi-horario').then((m) => m.MiHorario)
       },
       {
         path: 'mis-asignaciones/tutorias/:tutoriaId',

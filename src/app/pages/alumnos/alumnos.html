@@ -152,7 +152,7 @@
                   [class.completed]="pasoModalPeriodo() > 2"
                   (click)="irAPasoModal(2)">
                   <span class="step-node-circle">2</span>
-                  <span class="step-node-label">Períodos</span>
+                  <span class="step-node-label">Calendario</span>
                 </button>
 
                 <button
@@ -280,6 +280,34 @@
                           </div>
                         </div>
                       </article>
+                    }
+                  </div>
+
+                  <div class="draft-head cut-draft-head">
+                    <strong>Cortes de seguimiento</strong>
+                    <button class="action-button tertiary" type="button" (click)="agregarCorteSeguimiento()">
+                      <i class="fa-solid fa-plus"></i> Agregar corte
+                    </button>
+                  </div>
+                  <p class="cut-draft-hint">Cada corte genera una predicción independiente con notas y asistencias registradas hasta su fecha.</p>
+                  <div class="cut-draft-list">
+                    @for (corte of cortesSeguimientoBorrador(); track $index; let i = $index) {
+                      <article class="cut-draft-row">
+                        <label>
+                          Semana
+                          <input type="number" min="1" [ngModel]="corte.semana"
+                            (ngModelChange)="actualizarCorte(i, 'semana', $event)" [name]="'corte-semana-' + i" />
+                        </label>
+                        <label>
+                          Fecha del corte
+                          <input type="date" [ngModel]="corte.fechaCorte"
+                            (ngModelChange)="actualizarCorte(i, 'fechaCorte', $event)" [name]="'corte-fecha-' + i" />
+                        </label>
+                        <button class="icon-button danger" type="button" title="Quitar corte"
+                          (click)="quitarCorteSeguimiento(i)"><i class="fa-solid fa-trash"></i></button>
+                      </article>
+                    } @empty {
+                      <div class="table-state">Agrega al menos un corte semanal para habilitar el seguimiento de riesgo.</div>
                     }
                   </div>
                 </section>

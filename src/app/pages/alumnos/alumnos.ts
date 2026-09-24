@@ -8,6 +8,7 @@ import { Curso } from '../../models/curso';
 import { CursoPeriodoAcademico } from '../../models/curso-periodo-academico';
 import { PeriodoEvaluacion } from '../../models/periodo-evaluacion';
 import { PeriodoAcademico } from '../../models/periodo-academico';
+import { CorteSeguimientoPayload } from '../../models/corte-seguimiento';
 import { TipoEvaluacion } from '../../models/tipo-evaluacion';
 import { CursoPeriodoAcademicoService } from '../../services/academico/curso-periodo-academico.service';
 import { CursoService } from '../../services/academico/curso.service';
@@ -53,6 +54,8 @@ interface AlertState {
 }
 
 type PasoRegistroPeriodo = 1 | 2 | 3 | 4;
+
+interface CorteSeguimientoBorrador extends CorteSeguimientoPayload {}
 
 interface NuevoTipoEvaluacionForm {
   nombre: string;
@@ -107,6 +110,7 @@ export class Alumnos {
   readonly pasoModalPeriodo = signal<PasoRegistroPeriodo>(1);
   readonly tipoPeriodoEvaluacion = signal<TipoPeriodoEvaluacion>('BIMESTRAL');
   readonly periodosEvaluacionBorrador = signal<PeriodoEvaluacionBorrador[]>([]);
+  readonly cortesSeguimientoBorrador = signal<CorteSeguimientoBorrador[]>([]);
   readonly configuracionesEvaluacionBorrador = signal<ConfiguracionEvaluacionDefaultBorrador[]>([]);
   readonly mostrandoNuevoTipoEvaluacion = signal(false);
   readonly guardandoNuevoTipoEvaluacion = signal(false);
@@ -224,6 +228,7 @@ export class Alumnos {
   abrirModalPeriodo(): void {
     this.editandoPeriodoId.set(null);
     this.regenerarPeriodosEvaluacionBorrador();
+    this.regenerarCortesSeguimientoBorrador();
     this.regenerarConfiguracionesEvaluacionBorrador();
     this.cursosSeleccionadosIds.set([]);
     this.filtroCursos.set('');
@@ -259,6 +264,11 @@ export class Alumnos {
               fechaFin: periodoEvaluacion.fechaFin
             }))
         );
+        this.cortesSeguimientoBorrador.set((detalle.cortesSeguimiento ?? []).map((corte) => ({
+          semana: corte.semana,
+          fechaCorte: corte.fechaCorte
+        })));
+        if (!this.cortesSeguimientoBorrador().length) this.regenerarCortesSeguimientoBorrador();
 
         const configuracionesMap = new Map(
           detalle.configuracionesEvaluacionDefault.map((configuracion) => [
@@ -337,6 +347,7 @@ export class Alumnos {
 
     if (campo === 'fechaInicio' || campo === 'fechaFin') {
       this.regenerarPeriodosEvaluacionBorrador();
+      if (campo === 'fechaInicio') this.regenerarCortesSeguimientoBorrador();
     }
   }
 
@@ -351,6 +362,7 @@ export class Alumnos {
       fechaFin: anio === anioAnterior ? actual.fechaFin : ''
     }));
     this.regenerarPeriodosEvaluacionBorrador();
+    this.regenerarCortesSeguimientoBorrador();
   }
 
   cambiarTipoPeriodoEvaluacion(tipo: TipoPeriodoEvaluacion): void {
@@ -363,6 +375,25 @@ export class Alumnos {
     this.periodosEvaluacionBorrador.update((actual) =>
       actual.map((periodo, i) => (i === index ? { ...periodo, [campo]: valor } : periodo))
     );
+  }
+
+  actualizarCorte(index: number, campo: 'semana' | 'fechaCorte', valor: number | string): void {
+    this.cortesSeguimientoBorrador.update((actual) => actual.map((corte, i) => i === index
+      ? { ...corte, [campo]: campo === 'semana' ? Number(valor) : String(valor) }
+      : corte));
+  }
+
+  agregarCorteSeguimiento(): void {
+    const cortes = this.cortesSeguimientoBorrador();
+    const semana = Math.max(0, ...cortes.map((corte) => Number(corte.semana) || 0)) + 1;
+    this.cortesSeguimientoBorrador.set([...cortes, {
+      semana,
+      fechaCorte: this.fechaFinSemana(semana)
+    }]);
+  }
+
+  quitarCorteSeguimiento(index: number): void {
+    this.cortesSeguimientoBorrador.update((actual) => actual.filter((_, i) => i !== index));
   }
 
   actualizarConfiguracionEvaluacionBorrador(
@@ -597,6 +628,28 @@ export class Alumnos {
     );
   }
 
+  private regenerarCortesSeguimientoBorrador(): void {
+    const { fechaInicio, fechaFin } = this.formPeriodo();
+    if (!fechaInicio || !fechaFin) {
+      this.cortesSeguimientoBorrador.set([]);
+      return;
+    }
+    const totalSemanas = Math.ceil((this.parseDate(fechaFin).getTime() - this.parseDate(fechaInicio).getTime() + 86400000) / (7 * 86400000));
+    this.cortesSeguimientoBorrador.set([5, 8].filter((semana) => semana <= totalSemanas).map((semana) => ({
+      semana,
+      fechaCorte: this.fechaFinSemana(semana)
+    })));
+  }
+
+  private fechaFinSemana(semana: number): string {
+    const { fechaInicio, fechaFin } = this.formPeriodo();
+    if (!fechaInicio || !fechaFin || !Number.isInteger(semana) || semana < 1) return '';
+    const date = this.parseDate(fechaInicio);
+    date.setUTCDate(date.getUTCDate() + semana * 7 - 1);
+    const fin = this.parseDate(fechaFin);
+    return this.formatDate(date.getTime() > fin.getTime() ? fin : date);
+  }
+
   private regenerarConfiguracionesEvaluacionBorrador(): void {
     const tipos = this.tiposEvaluacion();
     const actuales = new Map(
@@ -680,6 +733,7 @@ export class Alumnos {
     });
     this.tipoPeriodoEvaluacion.set('BIMESTRAL');
     this.regenerarPeriodosEvaluacionBorrador();
+    this.regenerarCortesSeguimientoBorrador();
     this.regenerarConfiguracionesEvaluacionBorrador();
     this.cursosSeleccionadosIds.set([]);
     this.filtroCursos.set('');
@@ -761,6 +815,7 @@ export class Alumnos {
       fechaFin: payload.fechaFin,
       tipoPeriodoEvaluacion: this.tipoPeriodoEvaluacion(),
       periodosEvaluacion,
+      cortesSeguimiento: this.cortesSeguimientoBorrador(),
       configuracionesEvaluacionDefault: configuracionesEvaluacion,
       cursosIds: this.cursosSeleccionadosIds(),
       copiarCursosPeriodoAnterior: false
@@ -867,6 +922,25 @@ export class Alumnos {
           'Períodos de evaluación no válidos',
           'Cada período de evaluación debe estar dentro del período académico y tener un rango de fechas válido.'
         );
+        return false;
+      }
+
+      const cortes = this.cortesSeguimientoBorrador();
+      const semanas = cortes.map((corte) => Number(corte.semana));
+      const fechaFinAcademica = this.parseDate(payload.fechaFin);
+      const cortesInvalidos = !cortes.length || cortes.some((corte) => {
+        const semana = Number(corte.semana);
+        if (!Number.isInteger(semana) || semana < 1 || !corte.fechaCorte) return true;
+        const inicioSemana = this.parseDate(payload.fechaInicio);
+        inicioSemana.setUTCDate(inicioSemana.getUTCDate() + (semana - 1) * 7);
+        const finSemana = new Date(inicioSemana);
+        finSemana.setUTCDate(finSemana.getUTCDate() + 6);
+        const fechaCorte = this.parseDate(corte.fechaCorte);
+        return inicioSemana > fechaFinAcademica || fechaCorte < inicioSemana || fechaCorte > finSemana || fechaCorte > fechaFinAcademica;
+      });
+      if (cortesInvalidos || new Set(semanas).size !== semanas.length) {
+        this.mostrarAlerta('warning', 'Cortes semanales no válidos',
+          'Configura al menos un corte, con semanas únicas y una fecha dentro de su semana y del período académico.');
         return false;
       }
     }

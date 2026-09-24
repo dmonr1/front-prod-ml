@@ -5,6 +5,7 @@ import { environment } from '../../../environments/environments';
 import { Curso } from '../../models/curso';
 import { PeriodoAcademico } from '../../models/periodo-academico';
 import { PeriodoEvaluacion } from '../../models/periodo-evaluacion';
+import { CorteSeguimiento, CorteSeguimientoPayload } from '../../models/corte-seguimiento';
 
 export interface PeriodoAcademicoPayload {
   nombre: string;
@@ -32,6 +33,7 @@ export interface PeriodoAcademicoConPeriodosPayload extends PeriodoAcademicoPayl
   configuracionesEvaluacionDefault: ConfiguracionEvaluacionDefaultPayload[];
   cursosIds?: number[];
   copiarCursosPeriodoAnterior?: boolean;
+  cortesSeguimiento: CorteSeguimientoPayload[];
 }
 
 export interface CursoPeriodoAcademicoResponse {
@@ -52,6 +54,7 @@ export interface PeriodoAcademicoConPeriodosResponse {
   periodosEvaluacion: PeriodoEvaluacion[];
   configuracionesEvaluacionDefault: ConfiguracionEvaluacionDefaultPayload[];
   cursosPeriodoAcademico: CursoPeriodoAcademicoResponse[];
+  cortesSeguimiento: CorteSeguimiento[];
 }
 
 @Injectable({ providedIn: 'root' })

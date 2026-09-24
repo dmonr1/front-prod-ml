@@ -1,12 +1,14 @@
 <aside class="sidebar" [class.collapsed]="collapsed()">
   <div class="sidebar-head">
     @if (collapsed()) {
-    <button class="brand-toggle" type="button" (click)="toggleCollapsed()" aria-label="Expandir menu">
-      <app-brand-mark [compact]="true" />
+    <button class="brand-toggle" type="button" (click)="toggleCollapsed()" aria-label="Expandir menú">
+      <span class="brand-letter">Ñ</span>
     </button>
     } @else {
-    <app-brand-mark [compact]="false" />
-    <button class="sidebar-toggle" type="button" (click)="toggleCollapsed()" aria-label="Colapsar menu">
+    <div class="brand-title-wrap">
+      <span class="brand-title">Ñawi</span>
+    </div>
+    <button class="sidebar-toggle" type="button" (click)="toggleCollapsed()" aria-label="Colapsar menú">
       <i class="fa-solid fa-angles-left"></i>
     </button>
     }
@@ -16,7 +18,7 @@
     @for (item of items(); track item.id) {
     @if (item.children?.length) {
     <section class="nav-section" [class.open]="isExpanded(item)">
-      <button class="nav-parent" type="button" [class.active]="isParentActive(item)"
+      <button class="nav-parent" type="button"
         [title]="collapsed() ? item.label : ''" (click)="toggleSection(item)">
         <span class="nav-icon"><i [class]="item.icon"></i></span>
         <span class="nav-label">{{ item.label }}</span>
@@ -28,7 +30,7 @@
         @for (child of item.children; track child.path) {
         <a class="nav-child" [routerLink]="child.path" [class.active]="isChildActive(child)"
           (click)="mantenerSeccionAbierta($event, item.id)">
-          <span class="nav-icon child-icon"><i [class]="child.icon"></i></span>
+          <span class="nav-icon"><i [class]="child.icon"></i></span>
           <span class="nav-label">{{ child.label }}</span>
         </a>
         }
@@ -36,7 +38,7 @@
       }
     </section>
     } @else {
-    <a [routerLink]="item.path ?? '/admin'" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
+    <a class="nav-single" [routerLink]="item.path ?? '/admin'" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
       [title]="collapsed() ? item.label : ''">
       <span class="nav-icon"><i [class]="item.icon"></i></span>
       <span class="nav-label">{{ item.label }}</span>
@@ -49,10 +51,9 @@
     <div class="user-flyout-wrap" [class.open]="userFlyoutOpen()">
       <button class="sidebar-action user-sidebar-card" type="button" [title]="collapsed() ? userName() : ''"
         (click)="toggleUserFlyout($event)">
-        <span class="nav-icon user-avatar-icon"><i class="fa-solid fa-circle-user"></i></span>
+        <span class="user-avatar-icon"><i class="fa-solid fa-circle-user"></i></span>
         <span class="nav-label user-summary">
-          <strong>{{ docenteVinculado() ? docenteVinculado()!.nombres + ' ' + docenteVinculado()!.apellidos : userName()
-            }}</strong>
+          <strong>{{ docenteVinculado() ? docenteVinculado()!.nombres + ' ' + docenteVinculado()!.apellidos : userName() }}</strong>
           <small>{{ docenteVinculado()?.especialidad || roleLabel() }}</small>
         </span>
         <i class="fa-solid fa-chevron-right user-enter-icon"></i>
@@ -62,8 +63,7 @@
         <div class="user-flyout-head">
           <span class="user-flyout-avatar"><i class="fa-solid fa-circle-user"></i></span>
           <div class="user-flyout-copy">
-            <strong>{{ docenteVinculado() ? docenteVinculado()!.nombres + ' ' + docenteVinculado()!.apellidos :
-              userName() }}</strong>
+            <strong>{{ docenteVinculado() ? docenteVinculado()!.nombres + ' ' + docenteVinculado()!.apellidos : userName() }}</strong>
             <small>{{ roleLabel() }}</small>
           </div>
         </div>
@@ -83,12 +83,12 @@
 
           <div class="user-flyout-actions">
             <button class="theme-flyout-btn" type="button" (click)="alternarTema()">
-              <i class="fa-solid" [class.fa-moon]="!themeService.isDark()" [class.fa-sun]="themeService.isDark()"></i>
-              <span>{{ themeService.isDark() ? 'Activar modo claro' : 'Activar modo oscuro' }}</span>
+              <i class="fa-solid" [class.fa-moon]="themeService.isDark()" [class.fa-sun]="!themeService.isDark()"></i>
+              <span>{{ themeService.isDark() ? 'Modo Oscuro (Activo)' : 'Modo Claro (Activo)' }}</span>
             </button>
             <button class="theme-flyout-btn" type="button" [class.is-active]="themeService.isColorblind()" (click)="alternarModoDaltonismo()">
               <i class="fa-solid fa-universal-access"></i>
-              <span>{{ themeService.isColorblind() ? 'Paleta estándar' : 'Modo daltonismo (accesible)' }}</span>
+              <span>{{ themeService.isColorblind() ? 'Paleta: Daltonismo' : 'Paleta: Estándar' }}</span>
             </button>
           </div>
         </div>
@@ -99,12 +99,13 @@
       <button
         class="theme-quick-btn"
         type="button"
-        [title]="themeService.isDark() ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
-        [attr.aria-label]="themeService.isDark() ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+        [class.is-active]="themeService.isDark()"
+        [title]="themeService.isDark() ? 'Modo Oscuro activo (clic para alternar)' : 'Modo Claro activo (clic para alternar)'"
+        [attr.aria-label]="themeService.isDark() ? 'Modo Oscuro activo' : 'Modo Claro activo'"
         (click)="alternarTema()">
-        <i class="fa-solid" [class.fa-moon]="!themeService.isDark()" [class.fa-sun]="themeService.isDark()"></i>
+        <i class="fa-solid" [class.fa-moon]="themeService.isDark()" [class.fa-sun]="!themeService.isDark()"></i>
         @if (!collapsed()) {
-          <span>{{ themeService.isDark() ? 'Claro' : 'Oscuro' }}</span>
+          <span>{{ themeService.isDark() ? 'Modo: Oscuro' : 'Modo: Claro' }}</span>
         }
       </button>
 
@@ -112,18 +113,18 @@
         class="theme-quick-btn"
         type="button"
         [class.is-active]="themeService.isColorblind()"
-        [title]="themeService.isColorblind() ? 'Desactivar modo daltonismo' : 'Activar paleta accesible para daltonismo'"
-        [attr.aria-label]="themeService.isColorblind() ? 'Desactivar modo daltonismo' : 'Activar paleta accesible para daltonismo'"
+        [title]="themeService.isColorblind() ? 'Paleta Daltonismo activa' : 'Paleta Estándar activa'"
+        [attr.aria-label]="themeService.isColorblind() ? 'Paleta Daltonismo activa' : 'Paleta Estándar activa'"
         (click)="alternarModoDaltonismo()">
         <i class="fa-solid fa-universal-access"></i>
         @if (!collapsed()) {
-          <span>{{ themeService.isColorblind() ? 'Daltonismo' : 'Accesible' }}</span>
+          <span>{{ themeService.isColorblind() ? 'Daltonismo' : 'Estándar' }}</span>
         }
       </button>
     </div>
 
     <button class="logout" type="button" [title]="collapsed() ? 'Cerrar sesión' : ''" (click)="cerrarSesion()">
-      <i class="fa-solid fa-right-from-bracket"></i>
+      <i class="fa-solid fa-arrow-right-from-bracket"></i>
       <span class="nav-label">Cerrar sesión</span>
     </button>
   </div>

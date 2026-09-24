@@ -43,12 +43,22 @@ export class AlertaSeguimientoService {
     });
   }
 
+  listarAlertasPorCorte(corteSeguimientoId: number, seccionId: number): Observable<AlertaSeguimiento[]> {
+    return this.http.get<AlertaSeguimiento[]>(this.api, { params: { corteSeguimientoId, seccionId } });
+  }
+
   listarRecomendaciones(
     periodoEvaluacionId: number,
     seccionId: number
   ): Observable<RecomendacionSeguimiento[]> {
     return this.http.get<RecomendacionSeguimiento[]>(`${this.api}/recomendaciones`, {
       params: { periodoEvaluacionId, seccionId }
+    });
+  }
+
+  listarRecomendacionesPorCorte(corteSeguimientoId: number, seccionId: number): Observable<RecomendacionSeguimiento[]> {
+    return this.http.get<RecomendacionSeguimiento[]>(`${this.api}/recomendaciones`, {
+      params: { corteSeguimientoId, seccionId }
     });
   }
 }
