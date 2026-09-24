@@ -41,13 +41,13 @@ export class Shell {
 
   private construirMenu(usuario: UsuarioSesion | null): SidebarItem[] {
     const roles = usuario?.roles ?? [];
-    const esAdmin = roles.includes('ADMIN');
+    const esAdmin = roles.includes('ADMIN') || roles.includes('DIRECTOR_ACADEMICO');
     const esDocente = roles.includes('DOCENTE');
     const esTutor = roles.includes('DOCENTE_TUTOR') || usuario?.esTutor;
     const dashboardPath = esAdmin ? '/admin' : '/docente';
 
     const items: SidebarItem[] = [
-      { id: 'inicio', label: 'Dashboard', path: dashboardPath, icon: 'fa-solid fa-house' }
+      { id: 'inicio', label: 'Panel principal', path: dashboardPath, icon: 'fa-solid fa-house' }
     ];
 
     if (esAdmin) {
@@ -56,10 +56,10 @@ export class Shell {
         label: 'Configuración académica',
         icon: 'fa-solid fa-sliders',
         children: [
-          { label: 'Gestión estudiantil', path: '/gestion-estudiantil', icon: 'fa-solid fa-user-graduate' },
-          { label: 'Cursos', path: '/cursos', icon: 'fa-solid fa-book-open-reader' },
+          { label: 'Estudiantes y matrículas', path: '/gestion-estudiantil', icon: 'fa-solid fa-user-graduate' },
+          { label: 'Catálogo de cursos', path: '/cursos', icon: 'fa-solid fa-book-open-reader' },
           { label: 'Docentes y accesos', path: '/docentes-accesos', icon: 'fa-solid fa-user-gear' },
-          { label: 'Asignaciones docentes', path: '/asignaciones-docente', icon: 'fa-solid fa-chalkboard-user' }
+          { label: 'Asignaciones y tutorías', path: '/asignaciones-docente', icon: 'fa-solid fa-chalkboard-user' }
         ]
       });
     }
@@ -70,8 +70,8 @@ export class Shell {
         label: 'Gestión académica',
         icon: 'fa-solid fa-graduation-cap',
         children: [
-          { label: 'Mis asignaciones', path: '/mis-asignaciones', icon: 'fa-solid fa-chalkboard-user' },
-          { label: 'Asistencias', path: '/asistencias', icon: 'fa-solid fa-user-check' }
+          { label: 'Mis cursos y notas', path: '/mis-asignaciones', icon: 'fa-solid fa-chalkboard-user' },
+          { label: 'Control de asistencia', path: '/asistencias', icon: 'fa-solid fa-user-check' }
         ]
       });
     }
@@ -83,19 +83,19 @@ export class Shell {
     ) {
       items.push({
         id: 'seguimiento',
-        label: 'Seguimiento',
+        label: 'Seguimiento y tutoría',
         icon: 'fa-solid fa-shield-heart',
         children: [
           ...(esTutor && this.tieneTutoriasActivas()
             ? [{
-                label: 'Sección tutorada',
+                label: 'Mi sección tutorada',
                 path: '/seccion-tutorada',
                 icon: 'fa-solid fa-users',
                 activePaths: ['/mis-asignaciones/tutorias']
               }]
             : []),
           {
-            label: 'Seguimiento de riesgo',
+            label: 'Predicción de riesgo',
             path: '/predicciones',
             icon: 'fa-solid fa-wave-square'
           },
@@ -179,6 +179,9 @@ export class Shell {
 
     if (usuario.roles.includes('ADMIN')) {
       etiquetas.push('Administrador');
+    }
+    if (usuario.roles.includes('DIRECTOR_ACADEMICO')) {
+      etiquetas.push('Director académico');
     }
     if (usuario.roles.includes('DOCENTE')) {
       etiquetas.push('Docente');

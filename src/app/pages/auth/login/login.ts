@@ -612,7 +612,7 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private obtenerRutaInicial(roles: string[]): string {
-    if (roles.includes('ADMIN')) {
+    if (roles.includes('ADMIN') || roles.includes('DIRECTOR_ACADEMICO')) {
       return '/admin';
     }
 
@@ -913,15 +913,19 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
     const password = this.recoveryForm.controls.nuevaPassword.value;
     return [
       { texto: 'Al menos 8 caracteres', cumplido: password.length >= 8 },
-      { texto: 'Una letra mayúscula', cumplido: /[A-Z]/.test(password) },
-      { texto: 'Una letra minúscula', cumplido: /[a-z]/.test(password) },
+      { texto: 'Una mayúscula', cumplido: /[A-Z]/.test(password) },
+      { texto: 'Una minúscula', cumplido: /[a-z]/.test(password) },
       { texto: 'Un número', cumplido: /\d/.test(password) },
-      { texto: 'Un símbolo', cumplido: /[^A-Za-z0-9]/.test(password) }
+      { texto: 'Un carácter especial', cumplido: /[^A-Za-z0-9]/.test(password) }
     ];
   }
 
   passwordRecuperacionSegura(): boolean {
     return this.requisitosPasswordRecuperacion().every((requisito) => requisito.cumplido);
+  }
+
+  mostrarRequisitosPasswordRecuperacion(): boolean {
+    return this.recoveryForm.controls.nuevaPassword.value.length > 0 && !this.passwordRecuperacionSegura();
   }
 
   private reiniciarRecuperacion(limpiarMensajes: boolean = true): void {

@@ -4,17 +4,17 @@ import { CustomAlertComponent, CustomAlertType } from '../../components/custom-a
 import { Shell } from '../../layouts/shell/shell';
 import { AsignacionDocente } from '../../models/asignacion';
 import { Curso } from '../../models/curso';
-import { CursoPeriodoAcademico } from '../../models/curso-periodo-academico';
 import { Docente } from '../../models/docente';
 import { PeriodoAcademico } from '../../models/periodo-academico';
 import { Seccion } from '../../models/seccion';
 import { Tutoria } from '../../models/tutoria';
-import { CursoPeriodoAcademicoService } from '../../services/academico/curso-periodo-academico.service';
+import { CursoService } from '../../services/academico/curso.service';
 import { DocenteService } from '../../services/academico/docente.service';
 import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
 import { SeccionService } from '../../services/academico/seccion.service';
 import { AsignacionAcademicaService } from '../../services/asignaciones/asignacion-academica.service';
 import { TutoriaService } from '../../services/asignaciones/tutoria.service';
+import { AuthService } from '../../services/auth/auth.service';
 import { formatearMensajeError } from '../../utils/error-formatter';
 
 interface AlertState {
@@ -35,11 +35,12 @@ interface AlertState {
 })
 export class AsignacionesTutorias {
   private readonly docenteService = inject(DocenteService);
-  private readonly cursoPeriodoAcademicoService = inject(CursoPeriodoAcademicoService);
+  private readonly cursoService = inject(CursoService);
   private readonly seccionService = inject(SeccionService);
   private readonly periodoAcademicoService = inject(PeriodoAcademicoService);
   private readonly asignacionAcademicaService = inject(AsignacionAcademicaService);
   private readonly tutoriaService = inject(TutoriaService);
+  private readonly authService = inject(AuthService);
 
   readonly currentYear = new Date().getFullYear();
   readonly vistaActiva = signal<'asignaciones' | 'tutorias'>('asignaciones');
@@ -49,7 +50,6 @@ export class AsignacionesTutorias {
   readonly errorDocentes = signal<string | null>(null);
 
   readonly cursos = signal<Curso[]>([]);
-  readonly cursosPeriodo = signal<CursoPeriodoAcademico[]>([]);
   readonly cargandoCursos = signal(true);
   readonly errorCursos = signal<string | null>(null);
 
@@ -125,7 +125,7 @@ export class AsignacionesTutorias {
     const query = this.cursoModalBusqueda().trim().toLowerCase();
 
     return this.cursos().filter((curso) => {
-      if (curso.nivelNombre !== nivel) {
+      if (curso.nivelNombre !== nivel || (curso.estado ?? 'ACTIVO') !== 'ACTIVO') {
         return false;
       }
 
@@ -178,7 +178,7 @@ export class AsignacionesTutorias {
 
   readonly esTutoriaEditable = computed(() => {
     const periodo = this.tutoriaPeriodo();
-    return periodo ? periodo.anio === this.currentYear : false;
+    return periodo ? periodo.anio >= this.currentYear || this.authService.esAdministrador() : false;
   });
 
   constructor() {
@@ -218,26 +218,14 @@ export class AsignacionesTutorias {
     this.cargandoCursos.set(true);
     this.errorCursos.set(null);
     this.cursos.set([]);
-    this.cursosPeriodo.set([]);
     this.asignacionCurso.set(null);
     this.cursoQuery.set('');
 
-    this.cursoPeriodoAcademicoService.listar(this.asignacionPeriodo()?.id ?? null).subscribe({
+    this.cursoService.listar().subscribe({
       next: (response) => {
-        this.cursosPeriodo.set(response);
         this.cursos.set(
           response
-            .filter((cursoPeriodo) => cursoPeriodo.estado !== 'INACTIVO')
-            .map((cursoPeriodo) => ({
-              id: cursoPeriodo.cursoId,
-              nivelId: cursoPeriodo.nivelId,
-              nivelNombre: cursoPeriodo.nivelNombre,
-              nombre: cursoPeriodo.cursoNombre,
-              descripcion: cursoPeriodo.cursoDescripcion,
-              portadaColor: null,
-              portadaIcono: null,
-              estado: cursoPeriodo.estado
-            }))
+            .filter((curso) => (curso.estado ?? 'ACTIVO') === 'ACTIVO')
             .sort(
               (a, b) =>
                 a.nivelNombre.localeCompare(b.nivelNombre) ||
@@ -247,7 +235,7 @@ export class AsignacionesTutorias {
         this.cargandoCursos.set(false);
       },
       error: () => {
-        this.errorCursos.set('No se pudieron cargar los cursos habilitados para este periodo.');
+        this.errorCursos.set('No se pudieron cargar los cursos activos del catálogo.');
         this.cargandoCursos.set(false);
         this.modalCargaPendiente.set('cursos');
         this.mostrarAlerta(
@@ -558,7 +546,7 @@ export class AsignacionesTutorias {
   }
 
   esPeriodoSeleccionable(periodo: PeriodoAcademico): boolean {
-    return periodo.anio === this.currentYear;
+    return periodo.anio >= this.currentYear || this.authService.esAdministrador();
   }
 
   limpiarAsignacion(): void {
@@ -577,11 +565,11 @@ export class AsignacionesTutorias {
     const secciones = this.asignacionSecciones();
     const periodo = this.asignacionPeriodo();
 
-    if (!periodo || periodo.anio !== this.currentYear) {
+    if (!periodo || (periodo.anio < this.currentYear && !this.authService.esAdministrador())) {
       this.mostrarAlerta(
         'warning',
         'Período histórico',
-        'Solo puedes registrar asignaciones en el período académico del año actual.'
+        'Solo puedes registrar asignaciones en períodos académicos vigentes o futuros.'
       );
       return;
     }
@@ -669,7 +657,7 @@ export class AsignacionesTutorias {
       this.mostrarAlerta(
         'warning',
         'Período histórico',
-        'Solo puedes registrar tutorías en el período académico del año actual.'
+        'Solo puedes registrar tutorías en períodos académicos vigentes o futuros.'
       );
       return;
     }

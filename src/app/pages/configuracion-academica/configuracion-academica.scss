@@ -11,10 +11,10 @@
 
 .page-head {
   padding: 22px;
-  border: 1px solid rgba(17, 32, 51, 0.08);
+  border: none;
   border-radius: 24px;
-  background: #ffffff;
-  box-shadow: 0 14px 35px rgba(15, 23, 42, 0.05);
+  background: var(--color-surface-primary);
+  box-shadow: var(--shadow-md);
 }
 
 .panel-head {
@@ -23,7 +23,7 @@
 }
 
 .panel-kicker {
-  color: #2f6edb;
+  color: var(--color-brand-primary);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -32,14 +32,14 @@
 
 .page-head h2 {
   margin: 4px 0;
-  color: #112033;
+  color: var(--color-text-primary);
   font-size: 22px;
   font-weight: 700;
 }
 
 .page-head p {
   margin: 0;
-  color: var(--muted);
+  color: var(--color-text-secondary);
   font-size: 14px;
   line-height: 1.55;
 }
@@ -55,44 +55,40 @@
   gap: 18px;
   min-height: 100%;
   padding: 22px;
-  border: 1px solid rgba(17, 32, 51, 0.08);
+  border: none;
   border-radius: 24px;
-  background: #ffffff;
-  box-shadow: 0 14px 35px rgba(15, 23, 42, 0.05);
+  background: var(--color-surface-primary);
+  box-shadow: var(--shadow-md);
   transition:
     transform 180ms ease,
-    box-shadow 180ms ease,
-    border-color 180ms ease;
+    box-shadow 180ms ease;
 }
 
 .setup-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--shadow-lg);
 }
 
 .setup-card.prioridad {
-  border-color: rgba(47, 110, 219, 0.18);
-  background: #fbfdff;
+  background: var(--color-surface-primary);
 }
 
 .setup-card.active-card {
-  border: 2px solid #2f6edb;
-  background: linear-gradient(180deg, #fbfdff 0%, #ffffff 100%);
   box-shadow:
-    0 0 0 3px rgba(47, 110, 219, 0.08),
-    0 18px 40px rgba(15, 23, 42, 0.08);
+    0 0 0 2px var(--color-brand-primary),
+    var(--shadow-lg);
 }
 
 .setup-card h3 {
   margin: 8px 0 6px;
-  color: #112033;
+  color: var(--color-text-primary);
   font-size: 18px;
   font-weight: 700;
 }
 
 .setup-card p {
   margin: 0;
-  color: var(--muted);
+  color: var(--color-text-secondary);
   font-size: 14px;
   line-height: 1.55;
 }
@@ -111,26 +107,28 @@
   height: 48px;
   border-radius: 18px;
   color: #fff;
-  background: #2159b6;
+  background: var(--color-brand-primary);
+  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.25);
 }
 
 .setup-state {
-  padding: 6px 10px;
+  padding: 6px 12px;
   border-radius: 999px;
-  color: #2f6edb;
-  background: #edf4ff;
+  color: var(--color-brand-primary);
+  background: var(--color-brand-subtle);
   font-size: 11px;
   font-weight: 700;
+  box-shadow: var(--shadow-sm);
 }
 
 .setup-state.pending {
-  color: #7a5a1e;
-  background: #fff4dd;
+  color: var(--color-risk-medium-text);
+  background: var(--color-risk-medium-bg);
 }
 
 .setup-state.operativo {
-  color: #1f6646;
-  background: #e8f7ee;
+  color: var(--color-risk-low-text);
+  background: var(--color-risk-low-bg);
 }
 
 .setup-card-foot {
@@ -141,7 +139,7 @@
 }
 
 .module-type {
-  color: var(--muted);
+  color: var(--color-text-secondary);
   font-size: 12px;
   font-weight: 600;
 }
@@ -150,24 +148,26 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 14px;
-  border: 1px solid #d4e4fb;
+  padding: 10px 16px;
+  border: none;
   border-radius: 12px;
-  color: #1d5fc4;
-  background: #eef5ff;
+  color: #ffffff;
+  background: var(--color-brand-primary);
   font-weight: 600;
   font-size: 14px;
   text-decoration: none;
+  box-shadow: var(--shadow-sm);
   transition:
     background 180ms ease,
-    color 180ms ease,
-    border-color 180ms ease;
+    transform 180ms ease,
+    box-shadow 180ms ease;
 }
 
 .module-link:hover {
-  background: #dfeeff;
-  color: #11448e;
-  border-color: #c1d8fa;
+  background: var(--color-brand-hover);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 @media (max-width: 860px) {

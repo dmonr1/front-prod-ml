@@ -13,6 +13,7 @@ import { TipoEvaluacion } from '../../models/tipo-evaluacion';
 import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
 import { ConfiguracionEvaluacionCursoService } from '../../services/evaluacion/configuracion-evaluacion-curso.service';
 import { TipoEvaluacionService } from '../../services/evaluacion/tipo-evaluacion.service';
+import { AuthService } from '../../services/auth/auth.service';
 import { formatearMensajeError } from '../../utils/error-formatter';
 
 interface ConfiguracionCursoEditable extends ConfiguracionEvaluacionCursoItem {
@@ -40,6 +41,7 @@ export class EvaluacionesCursoPeriodo {
   private readonly periodoAcademicoService = inject(PeriodoAcademicoService);
   private readonly tipoEvaluacionService = inject(TipoEvaluacionService);
   private readonly configuracionCursoService = inject(ConfiguracionEvaluacionCursoService);
+  private readonly authService = inject(AuthService);
 
   readonly periodoId = Number(this.route.snapshot.paramMap.get('periodoId'));
   readonly currentYear = new Date().getFullYear();
@@ -73,7 +75,7 @@ export class EvaluacionesCursoPeriodo {
 
   readonly esPeriodoEditable = computed(() => {
     const periodo = this.periodo();
-    return periodo ? periodo.anio === this.currentYear : false;
+    return periodo ? periodo.anio >= this.currentYear || this.authService.esAdministrador() : false;
   });
 
   readonly cursosFiltrados = computed(() => {

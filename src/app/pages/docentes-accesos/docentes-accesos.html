@@ -10,9 +10,7 @@
     <div class="catalog-head docentes-slide-in docentes-slide-in-top">
       <div class="section-head">
         <div class="panel-head">
-          <span class="panel-kicker">Gestión institucional</span>
           <h2>Docentes y accesos</h2>
-          <p>Registra y administra el acceso al sistema del personal docente e interno.</p>
         </div>
 
         <button class="action-button primary" type="button" [disabled]="!esAdmin()" (click)="abrirPanelRegistro()">
@@ -291,6 +289,17 @@
                   }
                 </span>
                 <span class="admin-toggle-text">Conceder acceso como administrador</span>
+              </label>
+
+              <label class="admin-toggle-row" [class.is-selected]="editEsDirectorAcademico()">
+                <input type="checkbox" [checked]="editEsDirectorAcademico()"
+                  (change)="editEsDirectorAcademico.set($any($event.target).checked)" />
+                <span class="admin-toggle-indicator">
+                  @if (editEsDirectorAcademico()) {
+                  <i class="fa-solid fa-check"></i>
+                  }
+                </span>
+                <span class="admin-toggle-text">Conceder acceso como director académico</span>
               </label>
             </div>
           </form>

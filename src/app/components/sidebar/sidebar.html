@@ -80,9 +80,48 @@
             <span>Especialidad</span>
             <strong>{{ docenteVinculado()?.especialidad || '' }}</strong>
           </div>
+
+          <div class="user-flyout-actions">
+            <button class="theme-flyout-btn" type="button" (click)="alternarTema()">
+              <i class="fa-solid" [class.fa-moon]="!themeService.isDark()" [class.fa-sun]="themeService.isDark()"></i>
+              <span>{{ themeService.isDark() ? 'Activar modo claro' : 'Activar modo oscuro' }}</span>
+            </button>
+            <button class="theme-flyout-btn" type="button" [class.is-active]="themeService.isColorblind()" (click)="alternarModoDaltonismo()">
+              <i class="fa-solid fa-universal-access"></i>
+              <span>{{ themeService.isColorblind() ? 'Paleta estándar' : 'Modo daltonismo (accesible)' }}</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
+
+    <div class="sidebar-theme-bar">
+      <button
+        class="theme-quick-btn"
+        type="button"
+        [title]="themeService.isDark() ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+        [attr.aria-label]="themeService.isDark() ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+        (click)="alternarTema()">
+        <i class="fa-solid" [class.fa-moon]="!themeService.isDark()" [class.fa-sun]="themeService.isDark()"></i>
+        @if (!collapsed()) {
+          <span>{{ themeService.isDark() ? 'Claro' : 'Oscuro' }}</span>
+        }
+      </button>
+
+      <button
+        class="theme-quick-btn"
+        type="button"
+        [class.is-active]="themeService.isColorblind()"
+        [title]="themeService.isColorblind() ? 'Desactivar modo daltonismo' : 'Activar paleta accesible para daltonismo'"
+        [attr.aria-label]="themeService.isColorblind() ? 'Desactivar modo daltonismo' : 'Activar paleta accesible para daltonismo'"
+        (click)="alternarModoDaltonismo()">
+        <i class="fa-solid fa-universal-access"></i>
+        @if (!collapsed()) {
+          <span>{{ themeService.isColorblind() ? 'Daltonismo' : 'Accesible' }}</span>
+        }
+      </button>
+    </div>
+
     <button class="logout" type="button" [title]="collapsed() ? 'Cerrar sesión' : ''" (click)="cerrarSesion()">
       <i class="fa-solid fa-right-from-bracket"></i>
       <span class="nav-label">Cerrar sesión</span>

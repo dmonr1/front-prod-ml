@@ -1,5 +1,5 @@
 @if (rendered()) {
-  <div class="custom-alert-backdrop" [class.is-closing]="closing()" (click)="onClose()">
+  <div class="custom-alert-backdrop" [class.is-closing]="closing()">
     <div class="custom-alert-card" [class.is-closing]="closing()" (click)="$event.stopPropagation()">
       <button class="custom-alert-close" type="button" aria-label="Cerrar alerta" (click)="onClose()">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

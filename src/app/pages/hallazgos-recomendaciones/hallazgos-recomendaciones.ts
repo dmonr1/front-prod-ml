@@ -261,7 +261,7 @@ export class HallazgosRecomendaciones {
           .sort((a, b) => (b.anioAcademico ?? 0) - (a.anioAcademico ?? 0) || a.numero - b.numero);
 
         const usuario = this.usuario();
-        const esAdmin = usuario?.roles.includes('ADMIN') ?? false;
+        const esAdmin = this.authService.tieneGestionAdministrativa();
 
         if (esAdmin) {
           this.cursoIdsVisibles.set(null);

@@ -1,33 +1,50 @@
-:root {
-  --bg: #f6f9ff;
-  --surface: #ffffff;
-  --surface-soft: #eef5ff;
-  --line: #dfe8f7;
-  --text: #172554;
-  --muted: #6b7a99;
-  --blue: #2f8bff;
-  --cyan: #32c7c9;
-  --violet: #8358ff;
-  --purple: #a855f7;
-  --red: #f0526b;
-  --amber: #f6b54b;
-  --green: #2fbf8f;
-  --shadow: 0 18px 45px rgba(44, 66, 124, 0.11);
-  font-family: "Poppins", "Segoe UI", Roboto, Arial, sans-serif;
-  color: var(--text);
-}
+@use './styles/tokens' as *;
 
 * {
   box-sizing: border-box;
+}
+
+// -----------------------------------------------------------------------------
+// Scrollbar Personalizado (Modo Claro y Modo Oscuro)
+// -----------------------------------------------------------------------------
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-scrollbar-thumb) var(--color-scrollbar-track);
+}
+
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-scrollbar-track);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar-thumb);
+  border-radius: 999px;
+  transition: background 160ms ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-scrollbar-thumb-hover);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 html,
 body {
   height: 100%;
   margin: 0;
-  background: var(--bg);
-  color: var(--text);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: "Poppins", "Segoe UI", Roboto, Arial, sans-serif;
   transition: background 220ms ease, color 220ms ease;
+  -webkit-font-smoothing: antialiased;
 }
 
 body,
@@ -36,6 +53,21 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+input::placeholder,
+textarea::placeholder,
+select::placeholder {
+  color: var(--color-text-muted) !important;
+  opacity: 1 !important;
+}
+
+body.dark-mode {
+  .identity-cell strong,
+  .panel-head h2,
+  .panel-head h3 {
+    color: var(--color-text-primary);
+  }
 }
 
 app-root {
@@ -48,6 +80,17 @@ a {
   text-decoration: none;
 }
 
+// -----------------------------------------------------------------------------
+// Accesibilidad WCAG 2.2: Indicador de foco visible y accesible
+// -----------------------------------------------------------------------------
+:focus-visible {
+  outline: 2px solid var(--color-focus-ring) !important;
+  outline-offset: 2px !important;
+}
+
+// -----------------------------------------------------------------------------
+// Componente de Tabla Estándar (.app-table)
+// -----------------------------------------------------------------------------
 .table-scroll {
   position: relative;
   min-height: 0;
@@ -62,9 +105,11 @@ a {
   border-collapse: separate;
   border-spacing: 0;
   text-align: center;
-  border-radius: 18px;
-  background: var(--surface);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 10px 24px rgba(15, 23, 42, 0.06);
+  border-radius: 20px;
+  background: var(--color-surface-primary);
+  border: none !important;
+  box-shadow: var(--shadow-md) !important;
+  overflow: hidden;
 }
 
 .app-table thead th {
@@ -72,10 +117,9 @@ a {
   top: 0;
   z-index: 2;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--line);
-  background: color-mix(in srgb, var(--surface) 80%, var(--bg));
-  box-shadow: inset 0 -1px 0 var(--line);
-  color: var(--muted);
+  border-bottom: 1px solid var(--color-border-default);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -84,99 +128,297 @@ a {
 
 .app-table tbody td {
   padding: 13px 16px;
-  border-bottom: 1px solid color-mix(in srgb, var(--line) 75%, transparent);
-  color: var(--text);
+  border-bottom: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
   font-size: 13px;
   font-weight: 400;
-  vertical-align: top;
+  vertical-align: middle;
 }
 
 .app-table tbody tr:nth-child(odd) {
-  background: var(--surface);
+  background: var(--color-surface-primary);
 }
 
 .app-table tbody tr:nth-child(even) {
-  background: color-mix(in srgb, var(--surface) 78%, var(--bg));
+  background: var(--color-bg-secondary);
 }
 
 .app-table tbody tr:hover {
-  background: color-mix(in srgb, var(--surface-soft) 70%, var(--surface));
+  background: var(--color-brand-subtle);
 }
 
+// -----------------------------------------------------------------------------
+// Estados de Tabla (Vacío, Error)
+// -----------------------------------------------------------------------------
 .table-state {
   display: grid;
   gap: 10px;
   justify-items: start;
-  padding: 18px;
+  padding: 24px;
   border-radius: 18px;
-  color: #4c6278;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-primary);
+  border: none !important;
+  box-shadow: var(--shadow-sm);
   font-size: 14px;
 }
 
 .table-state small {
-  color: #71859a;
+  color: var(--color-text-muted);
   font-size: 13px;
   line-height: 1.5;
 }
 
 .table-state.error {
-  border-color: #f0c6c6;
-  color: #9b3b3b;
-  background: #fff8f8;
+  color: var(--color-risk-high-text);
+  background: var(--color-risk-high-bg);
 }
 
 .table-state-icon {
   display: inline-grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
   border-radius: 12px;
-  color: #2159b6;
-  background: #eaf3ff;
-  font-size: 14px;
+  color: var(--color-brand-primary);
+  background: var(--color-brand-subtle);
+  font-size: 15px;
 }
 
 .table-state.error .table-state-icon {
-  color: #9b3b3b;
-  background: #ffe5e5;
+  color: var(--color-risk-high-text);
+  background: var(--color-risk-high-bg);
 }
 
+// -----------------------------------------------------------------------------
+// Semáforo Académico y Badges de Estado Unificados (Pill, sin bordes, con sombra)
+// -----------------------------------------------------------------------------
 .status-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   min-width: 86px;
-  padding: 6px 10px;
+  padding: 5px 12px;
   border-radius: 999px;
-  background: #eef5ff;
-  color: #1d5fc4;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border: none !important;
+  box-shadow: var(--shadow-sm);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  transition: all 160ms ease;
+
+  &.active,
+  &.active-1 {
+    background: var(--color-risk-low-bg) !important;
+    color: var(--color-risk-low-text) !important;
+  }
+
+  &.inactive {
+    background: var(--color-risk-high-bg) !important;
+    color: var(--color-risk-high-text) !important;
+  }
+
+  &.pending {
+    background: var(--color-risk-medium-bg) !important;
+    color: var(--color-risk-medium-text) !important;
+  }
 }
 
-.status-badge.active {
-  background: #e8fbf3;
-  color: #1f6646;
+.risk-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border: none !important;
+  box-shadow: var(--shadow-sm);
+  transition: all 160ms ease;
+
+  &.low {
+    background: var(--color-risk-low-bg) !important;
+    color: var(--color-risk-low-text) !important;
+  }
+
+  &.medium {
+    background: var(--color-risk-medium-bg) !important;
+    color: var(--color-risk-medium-text) !important;
+  }
+
+  &.high {
+    background: var(--color-risk-high-bg) !important;
+    color: var(--color-risk-high-text) !important;
+  }
 }
 
-.status-badge.inactive {
-  border-color: #f0d6d6;
-  background: #fff1f1;
-  color: #9b3b3b;
+// Chips y Pastillas de Métricas / Período Unificados
+.records-chip,
+.summary-pill,
+.period-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  border: none !important;
+  background: var(--color-bg-secondary) !important;
+  color: var(--color-brand-primary) !important;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
+  transition: all 160ms ease;
 }
 
-.status-badge.pending {
-  border-color: #f3e1b7;
-  background: #fff6df;
-  color: #8c6417;
+// -----------------------------------------------------------------------------
+// Componentes de Switch Estandarizados (.view-switch)
+// -----------------------------------------------------------------------------
+.view-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 5px;
+  border: none !important;
+  border-radius: 999px;
+  background: var(--color-bg-secondary) !important;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08);
+  gap: 6px;
+  isolation: isolate;
+
+  .view-switch-thumb {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    bottom: 5px;
+    border-radius: 999px;
+    background: var(--color-brand-primary) !important;
+    box-shadow: 0 3px 10px rgba(30, 58, 138, 0.3) !important;
+    transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+    z-index: 0;
+  }
+
+  .view-pill {
+    position: relative;
+    z-index: 1;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 180ms ease;
+
+    &.active {
+      color: #ffffff !important;
+      font-weight: 700;
+    }
+
+    &:not(.active):hover {
+      color: var(--color-text-primary);
+    }
+  }
 }
 
+// -----------------------------------------------------------------------------
+// Botones de Acción Estándar (.action-button, .row-action, .state-action)
+// -----------------------------------------------------------------------------
+.action-button,
+.row-action,
+.state-action,
+.table-link-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none !important;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: all 180ms ease;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &.primary,
+  &.row-action-edit,
+  &.state-action,
+  &.table-link-button {
+    background: var(--color-brand-primary) !important;
+    color: #ffffff !important;
+
+    &:hover:not(:disabled) {
+      background: var(--color-brand-hover) !important;
+    }
+
+    &:active:not(:disabled) {
+      background: var(--color-brand-active) !important;
+    }
+  }
+
+  &.secondary {
+    background: var(--color-surface-primary) !important;
+    color: var(--color-brand-primary) !important;
+    border: 1.5px solid var(--color-brand-primary) !important;
+
+    &:hover:not(:disabled) {
+      background: var(--color-brand-subtle) !important;
+    }
+  }
+
+  &.tertiary {
+    background: var(--color-bg-secondary) !important;
+    color: var(--color-text-secondary) !important;
+
+    &:hover:not(:disabled) {
+      background: var(--color-border-subtle) !important;
+      color: var(--color-text-primary) !important;
+    }
+  }
+
+  &:disabled {
+    background: var(--color-disabled-bg) !important;
+    color: var(--color-disabled-text) !important;
+    cursor: not-allowed;
+    opacity: 0.65;
+    box-shadow: none !important;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Estados de Carga (Skeleton)
+// -----------------------------------------------------------------------------
 .skeleton-line {
   display: block;
   height: 14px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #edf3fb 0%, #f8fbff 50%, #edf3fb 100%);
+  background: linear-gradient(
+    90deg,
+    var(--color-bg-secondary) 0%,
+    var(--color-surface-primary) 50%,
+    var(--color-bg-secondary) 100%
+  );
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.25s linear infinite;
 }
@@ -223,66 +465,156 @@ section.predictions-shell {
   }
 }
 
-
 @media (max-width: 900px) {
   .workspace {
     overflow-y: auto;
   }
 }
 
-body.dark-mode {
-  --bg: #0f1727;
-  --surface: #172033;
-  --surface-soft: #1d2942;
-  --line: #263552;
-  --text: #eef4ff;
-  --muted: #9badcc;
-  --blue: #63a4ff;
-  --cyan: #55d5d8;
-  --violet: #9d8bff;
-  --purple: #c67bff;
-  --red: #ff768b;
-  --amber: #ffc864;
-  --green: #46d9a3;
-  --shadow: 0 18px 45px rgba(0, 0, 0, 0.3);
+// -----------------------------------------------------------------------------
+// Contenedores y Tarjetas Principales (Sin bordes, elevadas con box-shadow)
+// -----------------------------------------------------------------------------
+.catalog-card,
+.dashboard-surface,
+.cards-section,
+.analysis-card,
+.dashboard-card,
+.assignment-card,
+.reports-card,
+.grades-page,
+.attendance-page,
+.panel-card,
+.mini-card,
+.list-card,
+.state-card,
+.profile-card,
+.management-card,
+.page-head,
+.setup-card,
+.quick-card,
+.modal-card,
+.notes-config-modal,
+.notes-card,
+.page-card,
+.prediction-table-scroll,
+.notes-config-table-wrap,
+.summary-card,
+.flow-card,
+.tutoria-option-card,
+.tutoria-card-option,
+.metric-card,
+.skeleton-card,
+.icon-modal-card,
+.course-preview-card,
+.table-panel,
+.selected-sections-card,
+.initial-password-card,
+.course-option,
+.evaluation-template-row,
+.evaluation-draft-row {
+  border: none !important;
+  box-shadow: var(--shadow-md) !important;
+  background: var(--color-surface-primary);
+}
 
+// -----------------------------------------------------------------------------
+// Soporte Global para Modo Oscuro Institucional
+// -----------------------------------------------------------------------------
+body.theme-dark,
+body.dark-mode {
   .workspace {
-    background: #292929 !important;
+    background: var(--color-bg-primary) !important;
+    color: var(--color-text-primary);
   }
 
-  .cards-section {
-    background: #393939 !important;
-    color: #ffffff;
-    box-shadow: 0 6px 16px rgb(0 0 0 / 78%);
+  .catalog-card,
+  .dashboard-surface,
+  .cards-section,
+  .analysis-card,
+  .dashboard-card,
+  .assignment-card,
+  .reports-card,
+  .grades-page,
+  .attendance-page,
+  .panel-card,
+  .mini-card,
+  .list-card,
+  .state-card,
+  .profile-card,
+  .management-card,
+  .page-head,
+  .setup-card,
+  .quick-card,
+  .modal-card,
+  .notes-config-modal,
+  .notes-card,
+  .page-card,
+  .prediction-table-scroll,
+  .notes-config-table-wrap,
+  .summary-card,
+  .flow-card,
+  .tutoria-option-card,
+  .tutoria-card-option,
+  .metric-card,
+  .skeleton-card,
+  .icon-modal-card,
+  .course-preview-card,
+  .table-panel,
+  .selected-sections-card,
+  .initial-password-card,
+  .course-option,
+  .evaluation-template-row,
+  .evaluation-draft-row {
+    background: var(--color-surface-primary) !important;
+    border: none !important;
+    color: var(--color-text-primary) !important;
+    box-shadow: var(--shadow-md) !important;
+  }
+
+  .card-head {
+    background: transparent !important;
+    border-bottom: 1px solid var(--color-border-subtle) !important;
+  }
+
+  .risk-donut-core {
+    background: var(--color-surface-primary) !important;
+    color: var(--color-text-primary) !important;
+
+    strong {
+      color: var(--color-text-primary) !important;
+    }
   }
 
   .panel-head h2,
-  .panel-head h3 {
-    color: #ffffff !important;
+  .panel-head h3,
+  .section-header h3,
+  .dashboard-copy h1,
+  .mini-card-head h3 {
+    color: var(--color-text-primary) !important;
   }
 
-  .cards-surface {
-    background: #292929 !important;
+  .eyebrow,
+  .section-kicker {
+    color: var(--color-brand-primary) !important;
   }
 
-  .sidebar {
-    position: sticky;
-    top: 0;
-    display: grid;
-    grid-template-rows: auto 1fr auto;
-    gap: 18px;
-    width: 280px;
-    height: 100vh;
-    min-height: 0;
-    padding: 18px 14px;
-    overflow: visible;
-    border-right: none;
-    background: #393939 !important;
-    box-shadow: var(--sidebar-shadow);
-    z-index: 20;
-    font-size: 15px;
-    transition: width 240ms cubic-bezier(0.22, 1, 0.36, 1), padding 240ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 180ms ease;
+  .drawer-panel,
+  .mini-modal-card {
+    background: var(--color-surface-primary) !important;
+    border: none !important;
+    box-shadow: var(--shadow-xl) !important;
+    color: var(--color-text-primary);
   }
 
+  input,
+  select,
+  textarea {
+    background: var(--color-bg-secondary);
+    border-color: var(--color-border-default);
+    color: var(--color-text-primary);
 
+    &:focus {
+      border-color: var(--color-brand-primary);
+    }
+  }
 }

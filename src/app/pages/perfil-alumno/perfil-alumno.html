@@ -51,6 +51,9 @@
                 <span class="risk-badge" [class.high]="item.nivelRiesgoNormalizado === 'ALTO'"
                   [class.medium]="item.nivelRiesgoNormalizado === 'MEDIO'"
                   [class.low]="item.nivelRiesgoNormalizado === 'BAJO'">
+                  <i class="fa-solid" [class.fa-triangle-exclamation]="item.nivelRiesgoNormalizado === 'ALTO'"
+                    [class.fa-circle-exclamation]="item.nivelRiesgoNormalizado === 'MEDIO'"
+                    [class.fa-circle-check]="item.nivelRiesgoNormalizado === 'BAJO'" aria-hidden="true"></i>
                   {{ item.nivelRiesgoNormalizado }}
                 </span>
               </button>
@@ -83,6 +86,9 @@
                   <span class="risk-badge tit" [class.high]="detalle.nivelRiesgoNormalizado === 'ALTO'"
                     [class.medium]="detalle.nivelRiesgoNormalizado === 'MEDIO'"
                     [class.low]="detalle.nivelRiesgoNormalizado === 'BAJO'">
+                    <i class="fa-solid" [class.fa-triangle-exclamation]="detalle.nivelRiesgoNormalizado === 'ALTO'"
+                      [class.fa-circle-exclamation]="detalle.nivelRiesgoNormalizado === 'MEDIO'"
+                      [class.fa-circle-check]="detalle.nivelRiesgoNormalizado === 'BAJO'" aria-hidden="true"></i>
                     {{ detalle.nivelRiesgoNormalizado }}
                   </span>
                 </div>

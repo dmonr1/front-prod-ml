@@ -1,0 +1,239 @@
+// =============================================================================
+// DESIGN TOKENS INSTITUCIONALES - SISTEMA DE ALERTA TEMPRANA ACADÉMICA
+// Basado en regla de composición 60 / 30 / 10 y WCAG 2.2 Nivel AA
+// =============================================================================
+
+:root {
+  // ---------------------------------------------------------------------------
+  // 60% DOMINANTE: Superficies, Canvas, Bordes y Textos
+  // ---------------------------------------------------------------------------
+  --color-bg-primary: #f8fafc;
+  --color-bg-secondary: #f1f5f9;
+  --color-surface-primary: #ffffff;
+  --color-surface-secondary: #f8fafc;
+  --color-surface-elevated: #ffffff;
+  --color-border-default: #cbd5e1;
+  --color-border-subtle: #e2e8f0;
+  --color-border-strong: #94a3b8;
+
+  // Tipografía y textos (Contraste verificado sobre superficies claras >= 4.5:1)
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted: #64748b;
+  --color-text-inverse: #ffffff;
+
+  // ---------------------------------------------------------------------------
+  // 30% SECUNDARIO: Identidad Institucional y Estructura (Perú Académico)
+  // ---------------------------------------------------------------------------
+  --color-brand-primary: #1e3a8a;
+  --color-brand-hover: #172554;
+  --color-brand-active: #1d4ed8;
+  --color-brand-accent: #2563eb;
+  --color-brand-subtle: #eff6ff;
+  --color-brand-deep: #0f172a;
+
+  // Sidebar institucional (30% estructural - siempre oscuro para autoridad institucional)
+  --color-sidebar-bg: #0f172a;
+  --color-sidebar-surface: #1e293b;
+  --color-sidebar-border: rgba(255, 255, 255, 0.1);
+  --color-sidebar-text: #f8fafc;
+  --color-sidebar-text-muted: #cbd5e1;
+  --color-sidebar-hover: rgba(255, 255, 255, 0.08);
+  --color-sidebar-active: #1e3a8a;
+  --color-sidebar-active-text: #ffffff;
+  --color-sidebar-shadow: 8px 0 32px rgba(15, 23, 42, 0.25);
+
+  // ---------------------------------------------------------------------------
+  // 10% ACENTOS SEMÁNTICOS Y SEMÁFORO ACADÉMICO (WCAG 2.2 AA)
+  // ---------------------------------------------------------------------------
+  // Riesgo Bajo / Éxito
+  --color-risk-low: #10b981;
+  --color-risk-low-bg: #ecfdf5;
+  --color-risk-low-border: #a7f3d0;
+  --color-risk-low-text: #047857;
+
+  // Riesgo Medio / Advertencia
+  --color-risk-medium: #f59e0b;
+  --color-risk-medium-bg: #fffbeb;
+  --color-risk-medium-border: #fde68a;
+  --color-risk-medium-text: #b45309;
+
+  // Riesgo Alto / Peligro Crítico
+  --color-risk-high: #ef4444;
+  --color-risk-high-bg: #fef2f2;
+  --color-risk-high-border: #fecaca;
+  --color-risk-high-text: #b91c1c;
+
+  // Informativo
+  --color-info: #0284c7;
+  --color-info-bg: #f0f9ff;
+  --color-info-border: #bae6fd;
+  --color-info-text: #0369a1;
+
+  // ---------------------------------------------------------------------------
+  // ESTADOS INTERACTIVOS Y ACCESIBILIDAD
+  // ---------------------------------------------------------------------------
+  --color-focus-ring: #2563eb;
+  --color-focus-shadow: 0 0 0 3px rgba(37, 99, 235, 0.28);
+  --color-disabled-bg: #f1f5f9;
+  --color-disabled-text: #94a3b8;
+  --color-disabled-border: #e2e8f0;
+
+  // Gráficos y analítica
+  --color-chart-line: #1e3a8a;
+  --color-chart-point: #1e3a8a;
+  --color-chart-grid: #e2e8f0;
+  --color-chart-axis: #cbd5e1;
+
+  // Sombras del sistema (puras sin bordes simulados)
+  --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 6px 20px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.08);
+  --shadow-xl: 0 20px 44px rgba(15, 23, 42, 0.12);
+
+  // Scrollbar personalizado (Modo claro)
+  --color-scrollbar-track: #f1f5f9;
+  --color-scrollbar-thumb: #cbd5e1;
+  --color-scrollbar-thumb-hover: #94a3b8;
+
+  // Alias semánticos y retrocompatibilidad
+  --color-semantic-low: var(--color-risk-low);
+  --color-semantic-warning: var(--color-risk-medium);
+  --color-semantic-danger: var(--color-risk-high);
+  --color-semantic-info: var(--color-info);
+
+  // Retrocompatibilidad con variables previas
+  --bg: var(--color-bg-primary);
+  --surface: var(--color-surface-primary);
+  --surface-soft: var(--color-bg-secondary);
+  --line: var(--color-border-default);
+  --text: var(--color-text-primary);
+  --muted: var(--color-text-muted);
+  --blue: var(--color-brand-primary);
+  --cyan: var(--color-info);
+  --violet: var(--color-brand-primary);
+  --purple: var(--color-brand-hover);
+  --red: var(--color-risk-high);
+  --amber: var(--color-risk-medium);
+  --green: var(--color-risk-low);
+  --shadow: var(--shadow-lg);
+}
+
+// -----------------------------------------------------------------------------
+// 3. MODO OSCURO NATIVO (Theme Dark - Negro y Gris Neutro, No Azul)
+// -----------------------------------------------------------------------------
+body.theme-dark,
+body.dark-mode {
+  --color-bg-primary: #0f1013;
+  --color-bg-secondary: #16171b;
+  --color-surface-primary: #1c1d22;
+  --color-surface-secondary: #22242a;
+  --color-surface-elevated: #282a32;
+  --color-border-default: #32353d;
+  --color-border-subtle: #24262d;
+  --color-border-strong: #454954;
+
+  --color-text-primary: #f3f4f6;
+  --color-text-secondary: #9ca3af;
+  --color-text-muted: #6b7280;
+  --color-text-inverse: #0f1013;
+
+  --color-brand-primary: #3b82f6;
+  --color-brand-hover: #60a5fa;
+  --color-brand-active: #2563eb;
+  --color-brand-accent: #60a5fa;
+  --color-brand-subtle: rgba(59, 130, 246, 0.16);
+  --color-brand-deep: #0b0c0e;
+
+  --color-sidebar-bg: #0b0c0e;
+  --color-sidebar-surface: #16171b;
+  --color-sidebar-border: rgba(255, 255, 255, 0.08);
+  --color-sidebar-text: #f3f4f6;
+  --color-sidebar-text-muted: #9ca3af;
+  --color-sidebar-hover: rgba(255, 255, 255, 0.07);
+  --color-sidebar-active: #2563eb;
+  --color-sidebar-active-text: #ffffff;
+  --color-sidebar-shadow: 8px 0 32px rgba(0, 0, 0, 0.7);
+
+  // Semáforo en Dark Mode
+  --color-risk-low: #34d399;
+  --color-risk-low-bg: rgba(16, 185, 129, 0.16);
+  --color-risk-low-border: rgba(52, 211, 153, 0.35);
+  --color-risk-low-text: #6ee7b7;
+
+  --color-risk-medium: #fbbf24;
+  --color-risk-medium-bg: rgba(245, 158, 11, 0.16);
+  --color-risk-medium-border: rgba(251, 191, 36, 0.35);
+  --color-risk-medium-text: #fde68a;
+
+  --color-risk-high: #f87171;
+  --color-risk-high-bg: rgba(239, 68, 68, 0.16);
+  --color-risk-high-border: rgba(248, 113, 113, 0.35);
+  --color-risk-high-text: #fecaca;
+
+  --color-info: #38bdf8;
+  --color-info-bg: rgba(2, 132, 199, 0.16);
+  --color-info-border: rgba(56, 189, 248, 0.35);
+  --color-info-text: #bae6fd;
+
+  --color-focus-ring: #60a5fa;
+  --color-focus-shadow: 0 0 0 3px rgba(96, 165, 250, 0.35);
+  --color-disabled-bg: #1c1d22;
+  --color-disabled-text: #6b7280;
+  --color-disabled-border: #24262d;
+
+  --color-chart-line: #60a5fa;
+  --color-chart-point: #60a5fa;
+  --color-chart-grid: #24262d;
+  --color-chart-axis: #454954;
+
+  // Sombras del sistema en modo oscuro (puras sin bordes simulados)
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 12px 34px rgba(0, 0, 0, 0.65);
+  --shadow-xl: 0 20px 48px rgba(0, 0, 0, 0.75);
+
+  // Scrollbar personalizado (Modo oscuro - negro y gris neutro)
+  --color-scrollbar-track: #121316;
+  --color-scrollbar-thumb: #353840;
+  --color-scrollbar-thumb-hover: #4e535e;
+}
+
+// -----------------------------------------------------------------------------
+// 4. MODO ACCESIBLE PARA DALTONISMO (Colorblind / High Accessibility)
+// -----------------------------------------------------------------------------
+body.theme-colorblind,
+body.colorblind-mode {
+  --color-risk-low: #0284c7;
+  --color-risk-low-bg: #e0f2fe;
+  --color-risk-low-border: #bae6fd;
+  --color-risk-low-text: #0369a1;
+
+  --color-risk-medium: #d97706;
+  --color-risk-medium-bg: #fef3c7;
+  --color-risk-medium-border: #fde68a;
+  --color-risk-medium-text: #92400e;
+
+  --color-risk-high: #ea580c;
+  --color-risk-high-bg: #ffedd5;
+  --color-risk-high-border: #fed7aa;
+  --color-risk-high-text: #9a3412;
+}
+
+body.theme-dark.theme-colorblind,
+body.dark-mode.colorblind-mode {
+  --color-risk-low: #38bdf8;
+  --color-risk-low-bg: rgba(2, 132, 199, 0.22);
+  --color-risk-low-border: rgba(56, 189, 248, 0.4);
+  --color-risk-low-text: #bae6fd;
+
+  --color-risk-medium: #fbbf24;
+  --color-risk-medium-bg: rgba(217, 119, 6, 0.22);
+  --color-risk-medium-border: rgba(251, 191, 36, 0.4);
+  --color-risk-medium-text: #fde68a;
+
+  --color-risk-high: #fb923c;
+  --color-risk-high-bg: rgba(234, 88, 12, 0.22);
+  --color-risk-high-border: rgba(251, 146, 60, 0.4);
+  --color-risk-high-text: #fed7aa;
+}

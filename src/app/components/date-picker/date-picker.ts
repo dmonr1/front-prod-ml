@@ -61,6 +61,21 @@ export class DatePickerComponent implements OnChanges {
     'Diciembre'
   ];
 
+  readonly shortMonthNames = [
+    'Ene',
+    'Feb',
+    'Mar',
+    'Abr',
+    'May',
+    'Jun',
+    'Jul',
+    'Ago',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dic'
+  ];
+
   readonly weekDays = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -196,15 +211,14 @@ export class DatePickerComponent implements OnChanges {
       return;
     }
 
-    this.playCalendarAnimation('slide-prev');
-
     if (this.visibleMonth === 0) {
       this.visibleMonth = 11;
       this.visibleYear -= 1;
-      return;
+    } else {
+      this.visibleMonth -= 1;
     }
 
-    this.visibleMonth -= 1;
+    this.playCalendarAnimation('slide-prev');
   }
 
   nextMonth(): void {
@@ -212,29 +226,30 @@ export class DatePickerComponent implements OnChanges {
       return;
     }
 
-    this.playCalendarAnimation('slide-next');
-
     if (this.visibleMonth === 11) {
       this.visibleMonth = 0;
       this.visibleYear += 1;
-      return;
+    } else {
+      this.visibleMonth += 1;
     }
 
-    this.visibleMonth += 1;
+    this.playCalendarAnimation('slide-next');
   }
 
   changeMonth(month: string): void {
     const nextMonth = Number(month);
-    this.playCalendarAnimation(nextMonth >= this.visibleMonth ? 'slide-next' : 'slide-prev');
-    this.visibleMonth = Number(month);
+    const direction = nextMonth >= this.visibleMonth ? 'slide-next' : 'slide-prev';
+    this.visibleMonth = nextMonth;
     this.monthMenuOpen = false;
+    this.playCalendarAnimation(direction);
   }
 
   changeYear(year: string): void {
     const nextYear = Number(year);
-    this.playCalendarAnimation(nextYear >= this.visibleYear ? 'slide-next' : 'slide-prev');
-    this.visibleYear = Number(year);
+    const direction = nextYear >= this.visibleYear ? 'slide-next' : 'slide-prev';
+    this.visibleYear = nextYear;
     this.yearMenuOpen = false;
+    this.playCalendarAnimation(direction);
   }
 
   toggleMonthMenu(event?: Event): void {
@@ -325,12 +340,12 @@ export class DatePickerComponent implements OnChanges {
 
     this.calendarAnimation = '';
 
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       this.calendarAnimation = direction;
       this.animationTimeoutId = setTimeout(() => {
         this.calendarAnimation = '';
         this.animationTimeoutId = null;
-      }, 220);
-    }, 0);
+      }, 290);
+    });
   }
 }

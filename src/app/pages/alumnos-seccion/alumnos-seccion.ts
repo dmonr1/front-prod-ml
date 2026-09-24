@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { CustomAlertComponent, CustomAlertType } from '../../components/custom-alert/custom-alert';
+import { DatePickerComponent } from '../../components/date-picker/date-picker';
 import { Shell } from '../../layouts/shell/shell';
 import { Grado } from '../../models/grado';
 import { Matricula } from '../../models/matricula';
@@ -15,6 +16,7 @@ import { MatriculaService } from '../../services/academico/matricula.service';
 import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
 import { SeccionService } from '../../services/academico/seccion.service';
 import { TipoDocumentoService } from '../../services/academico/tipo-documento.service';
+import { AuthService } from '../../services/auth/auth.service';
 import { formatearMensajeError } from '../../utils/error-formatter';
 
 interface AlertState {
@@ -29,7 +31,7 @@ interface AlertState {
 
 @Component({
   selector: 'app-alumnos-seccion',
-  imports: [Shell, FormsModule, RouterLink, CustomAlertComponent],
+  imports: [Shell, FormsModule, RouterLink, CustomAlertComponent, DatePickerComponent],
   templateUrl: './alumnos-seccion.html',
   styleUrl: './alumnos-seccion.scss'
 })
@@ -41,6 +43,7 @@ export class AlumnosSeccion {
   private readonly seccionService = inject(SeccionService);
   private readonly matriculaService = inject(MatriculaService);
   private readonly tipoDocumentoService = inject(TipoDocumentoService);
+  private readonly authService = inject(AuthService);
 
   readonly currentYear = new Date().getFullYear();
   readonly periodoId = Number(this.route.snapshot.paramMap.get('periodoId'));
@@ -50,6 +53,7 @@ export class AlumnosSeccion {
   readonly periodo = signal<PeriodoAcademico | null>(null);
   readonly grado = signal<Grado | null>(null);
   readonly seccion = signal<Seccion | null>(null);
+  readonly secciones = signal<Seccion[]>([]);
   readonly matriculas = signal<Matricula[]>([]);
   readonly tiposDocumento = signal<TipoDocumento[]>([]);
   readonly alertState = signal<AlertState>({
@@ -66,6 +70,10 @@ export class AlumnosSeccion {
   readonly cargandoMatriculas = signal(true);
   readonly guardandoAlumno = signal(false);
   readonly cargandoPeriodoAnterior = signal(false);
+  readonly cargandoAlumnosSeleccionados = signal(false);
+  readonly modalAlumnosAnterioresAbierto = signal(false);
+  readonly alumnosPeriodoAnterior = signal<Matricula[]>([]);
+  readonly alumnosAnterioresSeleccionados = signal<Set<number>>(new Set());
 
   readonly errorBase = signal<string | null>(null);
   readonly errorMatriculas = signal<string | null>(null);
@@ -85,7 +93,7 @@ export class AlumnosSeccion {
 
   readonly esPeriodoEditable = computed(() => {
     const periodo = this.periodo();
-    return periodo ? periodo.anio === this.currentYear : false;
+    return periodo ? periodo.anio >= this.currentYear || this.authService.esAdministrador() : false;
   });
 
   readonly tipoDocumentoAlumno = computed(() =>
@@ -108,6 +116,15 @@ export class AlumnosSeccion {
       .filter((periodo) => periodo.anio < actual.anio)
       .sort((a, b) => b.anio - a.anio)[0] ?? null;
   });
+
+  readonly todosLosAlumnosAnterioresSeleccionados = computed(() => {
+    const alumnos = this.alumnosPeriodoAnterior();
+    return alumnos.length > 0 && alumnos.every((alumno) => this.alumnosAnterioresSeleccionados().has(alumno.alumnoId));
+  });
+
+  readonly cantidadAlumnosAnterioresSeleccionados = computed(
+    () => this.alumnosAnterioresSeleccionados().size
+  );
 
   constructor() {
     this.cargarBase();
@@ -135,6 +152,7 @@ export class AlumnosSeccion {
           next: (grados) => {
             this.seccionService.listar().subscribe({
               next: (secciones) => {
+                this.secciones.set(secciones);
                 const seccion = secciones.find((item) => item.id === this.seccionId) ?? null;
                 this.seccion.set(seccion);
                 this.grado.set(grados.find((item) => item.id === seccion?.gradoId) ?? null);
@@ -177,6 +195,7 @@ export class AlumnosSeccion {
 
   cargarAlumnosPeriodoAnterior(): void {
     const periodoAnterior = this.periodoAnterior();
+    const seccionActual = this.seccion();
 
     if (!periodoAnterior) {
       this.mostrarAlerta(
@@ -187,9 +206,25 @@ export class AlumnosSeccion {
       return;
     }
 
+    const seccionAnterior = this.secciones().find(
+      (seccion) =>
+        seccion.periodoAcademicoId === periodoAnterior.id &&
+        seccion.gradoId === seccionActual?.gradoId &&
+        seccion.nombre.trim().toUpperCase() === seccionActual?.nombre.trim().toUpperCase()
+    );
+
+    if (!seccionAnterior) {
+      this.mostrarAlerta(
+        'warning',
+        'Sección anterior no encontrada',
+        'No existe una sección equivalente del mismo grado y nombre en el período anterior.'
+      );
+      return;
+    }
+
     this.cargandoPeriodoAnterior.set(true);
 
-    this.matriculaService.listar(periodoAnterior.id, this.seccionId).subscribe({
+    this.matriculaService.listar(periodoAnterior.id, seccionAnterior.id).subscribe({
       next: (matriculasAnteriores) => {
         if (!matriculasAnteriores.length) {
           this.cargandoPeriodoAnterior.set(false);
@@ -216,33 +251,10 @@ export class AlumnosSeccion {
           return;
         }
 
-        forkJoin(
-          pendientes.map((matricula) =>
-            this.matriculaService.crear({
-              alumnoId: matricula.alumnoId,
-              seccionId: this.seccionId,
-              periodoAcademicoId: this.periodoId
-            })
-          )
-        ).subscribe({
-          next: () => {
-            this.cargandoPeriodoAnterior.set(false);
-            this.mostrarAlerta(
-              'success',
-              'Alumnos cargados',
-              'Se cargaron los alumnos del período anterior en esta sección.'
-            );
-            this.cargarMatriculas();
-          },
-          error: (error) => {
-            this.cargandoPeriodoAnterior.set(false);
-            this.mostrarAlerta(
-              'error',
-              'No se pudieron cargar',
-              formatearMensajeError(error, 'No se pudieron cargar los alumnos del período anterior.')
-            );
-          }
-        });
+        this.alumnosPeriodoAnterior.set(pendientes);
+        this.alumnosAnterioresSeleccionados.set(new Set(pendientes.map((matricula) => matricula.alumnoId)));
+        this.cargandoPeriodoAnterior.set(false);
+        this.modalAlumnosAnterioresAbierto.set(true);
       },
       error: (error) => {
         this.cargandoPeriodoAnterior.set(false);
@@ -250,6 +262,80 @@ export class AlumnosSeccion {
           'error',
           'No se pudieron consultar',
           formatearMensajeError(error, 'No se pudieron consultar los alumnos del período anterior.')
+        );
+      }
+    });
+  }
+
+  alternarSeleccionAlumnoAnterior(alumnoId: number, seleccionado: boolean): void {
+    this.alumnosAnterioresSeleccionados.update((actual) => {
+      const siguiente = new Set(actual);
+      if (seleccionado) {
+        siguiente.add(alumnoId);
+      } else {
+        siguiente.delete(alumnoId);
+      }
+      return siguiente;
+    });
+  }
+
+  seleccionarTodosAlumnosAnteriores(seleccionar: boolean): void {
+    this.alumnosAnterioresSeleccionados.set(
+      seleccionar ? new Set(this.alumnosPeriodoAnterior().map((matricula) => matricula.alumnoId)) : new Set()
+    );
+  }
+
+  cerrarModalAlumnosAnteriores(): void {
+    if (this.cargandoAlumnosSeleccionados()) {
+      return;
+    }
+
+    this.modalAlumnosAnterioresAbierto.set(false);
+    this.alumnosPeriodoAnterior.set([]);
+    this.alumnosAnterioresSeleccionados.set(new Set());
+  }
+
+  cargarAlumnosSeleccionados(): void {
+    const seleccionados = this.alumnosPeriodoAnterior().filter((matricula) =>
+      this.alumnosAnterioresSeleccionados().has(matricula.alumnoId)
+    );
+
+    if (!seleccionados.length) {
+      this.mostrarAlerta(
+        'warning',
+        'Selecciona alumnos',
+        'Selecciona al menos un alumno para cargarlo en esta sección.'
+      );
+      return;
+    }
+
+    this.cargandoAlumnosSeleccionados.set(true);
+
+    forkJoin(
+      seleccionados.map((matricula) =>
+        this.matriculaService.crear({
+          alumnoId: matricula.alumnoId,
+          seccionId: this.seccionId,
+          periodoAcademicoId: this.periodoId
+        })
+      )
+    ).subscribe({
+      next: () => {
+        this.cargandoAlumnosSeleccionados.set(false);
+        this.cerrarModalAlumnosAnteriores();
+        this.mostrarAlerta(
+          'success',
+          'Alumnos cargados',
+          `Se cargaron ${seleccionados.length} alumno${seleccionados.length === 1 ? '' : 's'} en esta sección.`
+        );
+        this.cargarMatriculas();
+      },
+      error: (error) => {
+        this.cargandoAlumnosSeleccionados.set(false);
+        this.mostrarAlerta(
+          'error',
+          'No se pudieron cargar',
+          formatearMensajeError(error, 'No se pudieron cargar los alumnos seleccionados.')
         );
       }
     });
@@ -409,7 +495,7 @@ export class AlumnosSeccion {
 
   private validarDocumentoAlumno(numeroDocumento: string | null, tipoDocumento: TipoDocumento | null): string | null {
     if (!numeroDocumento) {
-      return null;
+      return 'El número de documento es obligatorio.';
     }
     if (!tipoDocumento) {
       return 'Selecciona un tipo de documento valido.';

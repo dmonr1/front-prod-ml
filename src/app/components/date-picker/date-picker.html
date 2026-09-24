@@ -28,14 +28,16 @@
             </button>
 
             @if (monthMenuOpen) {
-              <div class="toolbar-dropdown-menu">
-                @for (month of monthNames; track month; let i = $index) {
+              <div class="toolbar-dropdown-menu toolbar-dropdown-menu--months">
+                @for (shortName of shortMonthNames; track shortName; let i = $index) {
                   <button
-                    class="toolbar-dropdown-option"
+                    class="toolbar-dropdown-option toolbar-dropdown-option--month"
                     type="button"
                     [class.selected]="visibleMonth === i"
+                    [title]="monthNames[i]"
+                    [attr.aria-label]="monthNames[i]"
                     (click)="selectMonth(i)">
-                    {{ month }}
+                    {{ shortName }}
                   </button>
                 }
               </div>
@@ -75,20 +77,23 @@
         }
       </div>
 
-      <div class="calendar-body" [class.slide-next]="calendarAnimation === 'slide-next'" [class.slide-prev]="calendarAnimation === 'slide-prev'">
-        <div class="calendar-grid">
-        @for (cell of calendarCells; track $index) {
-          <button
-            class="day-cell"
-            type="button"
-            [disabled]="!cell.inMonth"
-            [class.empty]="!cell.inMonth"
-            [class.today]="cell.isToday"
-            [class.selected]="cell.isSelected"
-            (click)="selectDate(cell)">
-            {{ cell.day ?? '' }}
-          </button>
-        }
+      <div class="calendar-body">
+        <div
+          class="calendar-grid calendar-grid--days"
+          [class.slide-next]="calendarAnimation === 'slide-next'"
+          [class.slide-prev]="calendarAnimation === 'slide-prev'">
+          @for (cell of calendarCells; track (cell.value ?? $index)) {
+            <button
+              class="day-cell"
+              type="button"
+              [disabled]="!cell.inMonth"
+              [class.empty]="!cell.inMonth"
+              [class.today]="cell.isToday"
+              [class.selected]="cell.isSelected"
+              (click)="selectDate(cell)">
+              {{ cell.day ?? '' }}
+            </button>
+          }
         </div>
       </div>
     </div>

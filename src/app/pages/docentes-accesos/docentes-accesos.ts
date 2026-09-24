@@ -68,6 +68,7 @@ export class DocentesAccesos {
   readonly editUsername = signal('');
   readonly editCorreo = signal('');
   readonly editEsAdmin = signal(false);
+  readonly editEsDirectorAcademico = signal(false);
   readonly skeletonRows = Array.from({ length: 6 }, (_, index) => index);
   readonly form = signal<DocenteRegistroForm>({
     nombres: '',
@@ -88,7 +89,7 @@ export class DocentesAccesos {
     autoCloseMs: null
   });
 
-  readonly esAdmin = computed(() => this.authService.obtenerUsuario()?.roles?.includes('ADMIN') ?? false);
+  readonly esAdmin = computed(() => this.authService.tieneGestionAdministrativa());
   readonly mostrarSkeleton = computed(() => this.cargando() || !!this.error());
   readonly totalCuentasAdministrativas = computed(
     () => this.filas().filter((fila) => fila.esCuentaAdministrativa).length
@@ -200,6 +201,7 @@ export class DocentesAccesos {
     this.editUsername.set(fila.username ?? '');
     this.editCorreo.set(fila.correo ?? '');
     this.editEsAdmin.set(fila.roles.includes('ADMIN'));
+    this.editEsDirectorAcademico.set(fila.roles.includes('DIRECTOR_ACADEMICO'));
     this.cerrandoModalAcceso.set(false);
     this.mostrarModalAcceso.set(true);
   }
@@ -356,11 +358,13 @@ export class DocentesAccesos {
     const username = this.editUsername().trim();
     const correo = this.editCorreo().trim();
     const adminOriginal = usuario.roles.includes('ADMIN');
+    const directorOriginal = usuario.roles.includes('DIRECTOR_ACADEMICO');
 
     if (
       username === (usuario.username ?? '').trim() &&
       correo === (usuario.correo ?? '').trim() &&
-      this.editEsAdmin() === adminOriginal
+      this.editEsAdmin() === adminOriginal &&
+      this.editEsDirectorAcademico() === directorOriginal
     ) {
       this.mostrarAlerta(
         'info',
@@ -373,6 +377,9 @@ export class DocentesAccesos {
     const roles = new Set<string>();
     if (this.editEsAdmin()) {
       roles.add('ADMIN');
+    }
+    if (this.editEsDirectorAcademico()) {
+      roles.add('DIRECTOR_ACADEMICO');
     }
 
     if (!usuario.esCuentaAdministrativa) {

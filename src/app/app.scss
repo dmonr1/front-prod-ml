@@ -18,14 +18,15 @@
   display: grid;
   gap: 16px;
   padding: 28px;
-  border: 1px solid rgba(17, 32, 51, 0.08);
+  border: none;
   border-radius: 26px;
-  background: #ffffff;
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.16);
+  background: var(--color-surface-primary);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-xl);
 }
 
 .initial-password-kicker {
-  color: #1d5fc4;
+  color: var(--color-brand-primary);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -34,14 +35,14 @@
 
 .initial-password-card h2 {
   margin: 0;
-  color: #112033;
+  color: var(--color-text-primary);
   font-size: 26px;
   line-height: 1.2;
 }
 
 .initial-password-card p {
   margin: 0;
-  color: #5d6f86;
+  color: var(--color-text-secondary);
   font-size: 14px;
   line-height: 1.6;
 }
@@ -54,7 +55,7 @@
 .initial-password-form label {
   display: grid;
   gap: 8px;
-  color: #334155;
+  color: var(--color-text-primary);
   font-size: 14px;
   font-weight: 600;
 }
@@ -62,17 +63,59 @@
 .initial-password-form input {
   width: 100%;
   padding: 12px 14px;
-  border: 1px solid #d6e1ef;
+  border: 1px solid var(--color-border-subtle);
   border-radius: 14px;
-  background: #ffffff;
-  color: #112033;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
   font: inherit;
   outline: none;
 }
 
 .initial-password-form input:focus {
-  border-color: #2f6edb;
-  box-shadow: 0 0 0 4px rgba(47, 110, 219, 0.12);
+  border-color: var(--color-brand-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+.initial-password-requirements {
+  display: grid;
+  gap: 6px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.initial-password-requirements li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #8c3f4c;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.initial-password-requirement-icon {
+  display: grid;
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  place-items: center;
+  border-radius: 50%;
+  background: #d76473;
+  color: #ffffff;
+}
+
+.initial-password-requirement-icon svg {
+  width: 11px;
+  height: 11px;
+}
+
+.initial-password-requirements li.met {
+  color: #377b60;
+}
+
+.initial-password-requirements li.met .initial-password-requirement-icon {
+  background: #5bbf91;
 }
 
 .initial-password-error {

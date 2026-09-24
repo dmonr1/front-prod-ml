@@ -82,10 +82,10 @@ export class AlumnosPeriodo {
 
   readonly esPeriodoEditable = computed(() => {
     const periodo = this.periodo();
-    return periodo ? periodo.anio === this.currentYear : false;
+    return periodo ? periodo.anio >= this.currentYear || this.authService.esAdministrador() : false;
   });
 
-  readonly esAdmin = computed(() => this.authService.obtenerUsuario()?.roles?.includes('ADMIN') ?? false);
+  readonly esAdmin = computed(() => this.authService.tieneGestionAdministrativa());
 
   readonly gradosFiltrados = computed(() =>
     this.grados()
@@ -228,6 +228,8 @@ export class AlumnosPeriodo {
       return;
     }
 
+    this.formSeccionNombre.set(this.obtenerSiguienteNombreSeccion());
+    this.formSeccionCapacidad.set('');
     this.modalSeccionAbierto.set(true);
   }
 
@@ -237,7 +239,7 @@ export class AlumnosPeriodo {
 
   guardarSeccion(): void {
     const gradoId = this.gradoSeleccionadoId();
-    const nombre = this.formSeccionNombre().trim();
+    const nombre = this.formSeccionNombre().trim().toUpperCase();
     const capacidadTexto = String(this.formSeccionCapacidad() ?? '').trim();
 
     if (!gradoId) {
@@ -249,11 +251,26 @@ export class AlumnosPeriodo {
       return;
     }
 
-    if (!nombre) {
+    if (!/^[A-Z]$/.test(nombre)) {
       this.mostrarAlerta(
         'warning',
-        'Falta el nombre',
-        'Ingresa el nombre de la sección.'
+        'Nombre no válido',
+        'La sección debe identificarse con una sola letra entre A y Z.'
+      );
+      return;
+    }
+
+    const existeNombre = this.secciones().some(
+      (seccion) =>
+        seccion.gradoId === gradoId &&
+        seccion.nombre.trim().toUpperCase() === nombre
+    );
+
+    if (existeNombre) {
+      this.mostrarAlerta(
+        'warning',
+        'Sección ya registrada',
+        `La sección ${nombre} ya existe para este grado y período.`
       );
       return;
     }
@@ -289,6 +306,10 @@ export class AlumnosPeriodo {
           );
         }
       });
+  }
+
+  actualizarNombreSeccion(valor: string): void {
+    this.formSeccionNombre.set(valor.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 1));
   }
 
   cargarSeccionesPeriodoAnterior(): void {
@@ -465,5 +486,23 @@ export class AlumnosPeriodo {
       .sort((a, b) => a.orden - b.orden)[0];
 
     this.gradoSeleccionadoId.set(primerGrado?.id ?? null);
+  }
+
+  private obtenerSiguienteNombreSeccion(): string {
+    const gradoId = this.gradoSeleccionadoId();
+    const nombresExistentes = new Set(
+      this.secciones()
+        .filter((seccion) => seccion.gradoId === gradoId)
+        .map((seccion) => seccion.nombre.trim().toUpperCase())
+    );
+
+    for (let codigo = 65; codigo <= 90; codigo += 1) {
+      const letra = String.fromCharCode(codigo);
+      if (!nombresExistentes.has(letra)) {
+        return letra;
+      }
+    }
+
+    return '';
   }
 }

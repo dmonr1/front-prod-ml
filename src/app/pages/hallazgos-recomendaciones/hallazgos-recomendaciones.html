@@ -233,6 +233,9 @@
                       <span class="risk-badge" [class.high]="hallazgo.nivelRelevancia === 'ALTO'"
                         [class.medium]="hallazgo.nivelRelevancia === 'MEDIO'"
                         [class.low]="hallazgo.nivelRelevancia === 'BAJO'">
+                        <i class="fa-solid" [class.fa-triangle-exclamation]="hallazgo.nivelRelevancia === 'ALTO'"
+                          [class.fa-circle-exclamation]="hallazgo.nivelRelevancia === 'MEDIO'"
+                          [class.fa-circle-check]="hallazgo.nivelRelevancia === 'BAJO'" aria-hidden="true"></i>
                         {{ hallazgo.nivelRelevancia }}
                       </span>
                     </div>
@@ -341,6 +344,8 @@
 
                     <span class="priority-pill" [class.high]="obtenerEtiquetaPrioridad(recomendacion) === 'Prioritaria'"
                       [class.medium]="obtenerEtiquetaPrioridad(recomendacion) === 'Seguimiento'">
+                      <i class="fa-solid" [class.fa-triangle-exclamation]="obtenerEtiquetaPrioridad(recomendacion) === 'Prioritaria'"
+                        [class.fa-clock]="obtenerEtiquetaPrioridad(recomendacion) === 'Seguimiento'" aria-hidden="true"></i>
                       {{ obtenerEtiquetaPrioridad(recomendacion) }}
                     </span>
                   </div>

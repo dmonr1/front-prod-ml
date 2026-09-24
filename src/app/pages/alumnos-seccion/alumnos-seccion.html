@@ -173,15 +173,19 @@
                       (ngModelChange)="actualizarNumeroDocumentoAlumno($event)" name="numeroDocumento"
                       [attr.maxlength]="tipoDocumentoAlumno()?.longitud ?? 15"
                       [attr.inputmode]="tipoDocumentoAlumno()?.tipo === 'NUMERICO' ? 'numeric' : 'text'"
-                      placeholder="Opcional" />
+                      [attr.aria-required]="true" required placeholder="Ingresa el número" />
                   </label>
                 </div>
 
                 <div class="form-two-columns">
                   <label>
                     Fecha de nacimiento
-                    <input type="date" [ngModel]="formAlumno().fechaNacimiento"
-                      (ngModelChange)="actualizarCampoAlumno('fechaNacimiento', $event)" name="fechaNacimiento" />
+                    <app-date-picker
+                      [value]="formAlumno().fechaNacimiento || ''"
+                      [minYear]="1990"
+                      [maxYear]="currentYear"
+                      placeholder="dd/mm/aaaa"
+                      (valueChange)="actualizarCampoAlumno('fechaNacimiento', $event || null)" />
                   </label>
 
                   <label>
@@ -236,5 +240,63 @@
       </div>
       }
     </div>
+
+    @if (modalAlumnosAnterioresAbierto()) {
+    <div class="student-copy-backdrop" role="presentation">
+      <section class="student-copy-modal" role="dialog" aria-modal="true" aria-labelledby="copy-students-title">
+        <div class="student-copy-head">
+          <div class="panel-head">
+            <span class="panel-kicker">Período anterior</span>
+            <h3 id="copy-students-title">Seleccionar alumnos</h3>
+            <p>Elige los alumnos que deseas matricular en esta sección.</p>
+          </div>
+          <button class="student-copy-close" type="button" aria-label="Cerrar"
+            [disabled]="cargandoAlumnosSeleccionados()" (click)="cerrarModalAlumnosAnteriores()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="student-copy-list" role="group" aria-label="Alumnos del período anterior">
+          <label class="student-copy-row student-copy-row--head">
+            <span class="student-copy-control">
+              <input type="checkbox" [checked]="todosLosAlumnosAnterioresSeleccionados()"
+                (change)="seleccionarTodosAlumnosAnteriores($any($event.target).checked)" />
+              <span class="student-copy-check" aria-hidden="true"></span>
+            </span>
+            <span>Seleccionar todos</span>
+            <span>Código</span>
+            <span>Sección anterior</span>
+          </label>
+
+          @for (matricula of alumnosPeriodoAnterior(); track matricula.alumnoId) {
+          <label class="student-copy-row">
+            <span class="student-copy-control">
+              <input type="checkbox" [checked]="alumnosAnterioresSeleccionados().has(matricula.alumnoId)"
+                (change)="alternarSeleccionAlumnoAnterior(matricula.alumnoId, $any($event.target).checked)" />
+              <span class="student-copy-check" aria-hidden="true"></span>
+            </span>
+            <strong>{{ matricula.alumnoNombreCompleto }}</strong>
+            <span>{{ matricula.codigoAlumno }}</span>
+            <span>{{ matricula.grado }} · {{ matricula.seccion }}</span>
+          </label>
+          }
+        </div>
+
+        <div class="student-copy-actions">
+          <span>{{ cantidadAlumnosAnterioresSeleccionados() }} seleccionado{{ cantidadAlumnosAnterioresSeleccionados()
+            === 1 ? '' : 's' }}</span>
+          <div>
+            <button class="action-button secondary" type="button" [disabled]="cargandoAlumnosSeleccionados()"
+              (click)="cerrarModalAlumnosAnteriores()">Cancelar</button>
+            <button class="action-button primary" type="button"
+              [disabled]="!cantidadAlumnosAnterioresSeleccionados() || cargandoAlumnosSeleccionados()"
+              (click)="cargarAlumnosSeleccionados()">
+              {{ cargandoAlumnosSeleccionados() ? 'Cargando...' : 'Cargar seleccionados' }}
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+    }
   </section>
 </app-shell>

@@ -71,6 +71,15 @@ export class AuthService {
     return this.usuarioSesion();
   }
 
+  esAdministrador(): boolean {
+    return this.obtenerUsuario()?.roles.includes('ADMIN') ?? false;
+  }
+
+  tieneGestionAdministrativa(): boolean {
+    const roles = this.obtenerUsuario()?.roles ?? [];
+    return roles.includes('ADMIN') || roles.includes('DIRECTOR_ACADEMICO');
+  }
+
   cerrarSesion(): void {
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.sessionKey);

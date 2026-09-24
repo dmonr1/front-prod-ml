@@ -24,12 +24,31 @@ export class App {
   readonly guardandoPassword = signal(false);
   readonly errorPassword = signal('');
 
+  requisitosPasswordInicial(): Array<{ texto: string; cumplido: boolean }> {
+    const password = this.nuevaPassword();
+    return [
+      { texto: 'Al menos 8 caracteres', cumplido: password.length >= 8 },
+      { texto: 'Una mayúscula', cumplido: /[A-Z]/.test(password) },
+      { texto: 'Una minúscula', cumplido: /[a-z]/.test(password) },
+      { texto: 'Un número', cumplido: /\d/.test(password) },
+      { texto: 'Un carácter especial', cumplido: /[^A-Za-z0-9]/.test(password) }
+    ];
+  }
+
+  passwordInicialSegura(): boolean {
+    return this.requisitosPasswordInicial().every((requisito) => requisito.cumplido);
+  }
+
+  mostrarRequisitosPasswordInicial(): boolean {
+    return this.nuevaPassword().length > 0 && !this.passwordInicialSegura();
+  }
+
   cambiarPasswordInicial(): void {
     const nuevaPassword = this.nuevaPassword().trim();
     const confirmarPassword = this.confirmarPassword().trim();
 
-    if (nuevaPassword.length < 8) {
-      this.errorPassword.set('La nueva contraseña debe tener al menos 8 caracteres.');
+    if (!this.passwordInicialSegura()) {
+      this.errorPassword.set('Completa todos los requisitos de seguridad para continuar.');
       return;
     }
 

@@ -1,4 +1,4 @@
-import { Component, HostListener, computed, effect, input, output, signal } from '@angular/core';
+import { Component, computed, effect, input, output, signal } from '@angular/core';
 import { sanitizarMensajeAlerta } from '../../utils/error-formatter';
 
 export type CustomAlertType = 'success' | 'error' | 'warning' | 'info';
@@ -66,13 +66,6 @@ export class CustomAlertComponent {
       // Nota: El temporizador de auto-cierre fue eliminado deliberadamente
       // para que el pop-up nunca desaparezca solo; debe cerrarse mediante 'Entendido' o 'X'.
     });
-  }
-
-  @HostListener('document:keydown.escape')
-  handleEscape(): void {
-    if (this.open()) {
-      this.onClose();
-    }
   }
 
   iconClass(): string {

@@ -5,6 +5,7 @@ import { BrandMark } from '../brand-mark/brand-mark';
 import { AuthService } from '../../services/auth/auth.service';
 import { DocenteService } from '../../services/academico/docente.service';
 import { Docente } from '../../models/docente';
+import { ThemeService } from '../../services/ui/theme.service';
 
 export interface SidebarChildItem {
   label: string;
@@ -31,6 +32,7 @@ export class Sidebar implements OnInit {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   private readonly docenteService = inject(DocenteService);
+  readonly themeService = inject(ThemeService);
   private readonly storageKey = 'academic-analytics-sidebar-open';
 
   readonly collapsed = signal(localStorage.getItem('academic-analytics-sidebar') === 'collapsed');
@@ -63,6 +65,14 @@ export class Sidebar implements OnInit {
 
   cerrarUserFlyout(): void {
     this.userFlyoutOpen.set(false);
+  }
+
+  alternarTema(): void {
+    this.themeService.toggleTheme();
+  }
+
+  alternarModoDaltonismo(): void {
+    this.themeService.toggleColorblind();
   }
 
   toggleSection(item: SidebarItem): void {

@@ -5,6 +5,7 @@ import { forkJoin, of } from 'rxjs';
 import { CustomAlertComponent } from '../../components/custom-alert/custom-alert';
 import { Shell } from '../../layouts/shell/shell';
 import { PeriodoEvaluacion } from '../../models/periodo-evaluacion';
+import { PeriodoAcademico } from '../../models/periodo-academico';
 import { Seccion } from '../../models/seccion';
 import { Tutoria } from '../../models/tutoria';
 import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
@@ -84,7 +85,7 @@ export class Predicciones {
   readonly puedeRecalcular = computed(() => {
     const usuario = this.authService.obtenerUsuario();
     return Boolean(
-      usuario?.roles.includes('ADMIN') ||
+      this.authService.tieneGestionAdministrativa() ||
       usuario?.roles.includes('DOCENTE_TUTOR') ||
       usuario?.esTutor
     );
@@ -633,15 +634,24 @@ export class Predicciones {
       periodosAcademicos: this.periodoAcademicoService.listar()
     }).subscribe({
       next: ({ periodosEvaluacion, secciones, periodosAcademicos }) => {
+        const periodoAcademicoActual = this.resolverPeriodoAcademicoActual(periodosAcademicos);
         const periodosActivos = [...periodosEvaluacion]
-          .filter((periodo) => periodo.estado !== 'INACTIVO')
+          .filter(
+            (periodo) =>
+              periodo.estado !== 'INACTIVO' &&
+              periodo.periodoAcademicoId === periodoAcademicoActual?.id
+          )
           .sort((a, b) => {
             const anio = (b.anioAcademico ?? 0) - (a.anioAcademico ?? 0);
             return anio !== 0 ? anio : a.numero - b.numero;
           });
 
         const seccionesActivas = [...secciones]
-          .filter((seccion) => seccion.estado !== 'INACTIVO')
+          .filter(
+            (seccion) =>
+              seccion.estado !== 'INACTIVO' &&
+              seccion.periodoAcademicoId === periodoAcademicoActual?.id
+          )
           .sort((a, b) =>
             `${a.nivelNombre ?? ''}${a.gradoNombre ?? ''}${a.nombre}`.localeCompare(
               `${b.nivelNombre ?? ''}${b.gradoNombre ?? ''}${b.nombre}`
@@ -649,7 +659,7 @@ export class Predicciones {
           );
 
         const usuario = this.authService.obtenerUsuario();
-        const esAdmin = usuario?.roles.includes('ADMIN') ?? false;
+        const esAdmin = this.authService.tieneGestionAdministrativa();
         const esDocente = usuario?.roles.includes('DOCENTE') ?? false;
         const esTutor = Boolean(usuario?.esTutor || usuario?.roles.includes('DOCENTE_TUTOR'));
         const docenteId = usuario?.docenteId;
@@ -662,37 +672,23 @@ export class Predicciones {
         }
 
         if (docenteId && (esDocente || esTutor)) {
-          const periodosAcademicosActivos = [...periodosAcademicos]
-            .filter((periodo) => periodo.estado !== 'INACTIVO')
-            .sort((a, b) => b.anio - a.anio);
-
-          if (!periodosAcademicosActivos.length) {
+          if (!periodoAcademicoActual) {
             this.configurarFiltros(periodosActivos, []);
             return;
           }
 
           forkJoin({
             asignacionesPorPeriodo: esDocente
-              ? forkJoin(
-                  periodosAcademicosActivos.map((periodo) =>
-                    this.asignacionAcademicaService.listarAsignaciones(docenteId, periodo.id)
-                  )
-                )
+              ? this.asignacionAcademicaService.listarAsignaciones(docenteId, periodoAcademicoActual.id)
               : of([]),
             tutoriasPorPeriodo: esTutor
-              ? forkJoin(
-                  periodosAcademicosActivos.map((periodo) =>
-                    this.tutoriaService.listarPorDocente(docenteId, periodo.id)
-                  )
-                )
+              ? this.tutoriaService.listarPorDocente(docenteId, periodoAcademicoActual.id)
               : of([])
           }).subscribe({
             next: ({ asignacionesPorPeriodo, tutoriasPorPeriodo }) => {
               const asignacionesActivas = asignacionesPorPeriodo
-                .flat()
                 .filter((asignacion) => (asignacion.estado ?? 'ACTIVO') === 'ACTIVO');
               const tutoriasActivas = tutoriasPorPeriodo
-                .flat()
                 .filter((tutoria) => (tutoria.estado ?? 'ACTIVO') === 'ACTIVO');
               const seccionesPermitidas = new Set([
                 ...asignacionesActivas.map((asignacion) => asignacion.seccionId),
@@ -1155,6 +1151,20 @@ export class Predicciones {
     if (!existe) {
       this.periodoEvaluacionSeleccionadoId.set(disponibles[0]?.id ?? null);
     }
+  }
+
+  private resolverPeriodoAcademicoActual(periodos: PeriodoAcademico[]): PeriodoAcademico | null {
+    const activo = periodos.find((periodo) => (periodo.estado ?? '').toUpperCase() === 'ACTIVO');
+    if (activo) {
+      return activo;
+    }
+
+    const anioActual = new Date().getFullYear();
+    return (
+      periodos.find((periodo) => periodo.anio === anioActual) ??
+      [...periodos].sort((a, b) => b.anio - a.anio)[0] ??
+      null
+    );
   }
 
 }

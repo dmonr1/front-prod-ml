@@ -96,7 +96,7 @@ export class Cursos {
   readonly cursoPendienteEstado = signal<{ id: number; activo: boolean } | null>(null);
   private pendingAlertAction: AlertAction = 'none';
 
-  readonly esAdmin = computed(() => this.authService.obtenerUsuario()?.roles?.includes('ADMIN') ?? false);
+  readonly esAdmin = computed(() => this.authService.tieneGestionAdministrativa());
 
   readonly cursosFiltrados = computed(() => {
     const nivel = this.nivelTab();

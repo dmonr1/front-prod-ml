@@ -7,10 +7,11 @@
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
   min-height: 100%;
-  background: #ffffff;
+  background: var(--color-surface-primary);
   padding: 25px;
   border-radius: 28px;
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
+  border: none;
+  box-shadow: var(--shadow-md);
 }
 
 .grades-toolbar,
@@ -98,9 +99,9 @@
   gap: 6px;
   padding: 8px 10px;
   border-radius: 12px;
-  border: 2px solid #4e5de2;
-  background: #ffffff;
-  color: #4e5de2;
+  border: 1.5px solid var(--color-brand-primary);
+  background: var(--color-surface-primary);
+  color: var(--color-brand-primary);
   font-size: 12px;
   font-weight: 700;
   text-decoration: none;
@@ -127,12 +128,14 @@
   display: grid;
   gap: 5px;
   border-radius: 18px;
-  background: #fff;
+  border: none;
+  box-shadow: var(--shadow-md);
+  background: var(--color-surface-primary);
 }
 
 .panel-kicker,
 .eyebrow {
-  color: var(--blue);
+  color: var(--color-brand-primary);
   font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -156,10 +159,10 @@
 .module-form select,
 .app-table input {
   width: 100%;
-  border: 1px solid #4e5de2;
+  border: 1px solid var(--color-border-default);
   border-radius: 12px;
-  background: #ffffff;
-  color: var(--text);
+  background: var(--color-surface-primary);
+  color: var(--color-text-primary);
   outline: none;
 }
 
@@ -211,7 +214,7 @@
 
 .notes-config-copy strong,
 .notes-config-panel-head h3 {
-  color: #112033;
+  color: var(--color-text-primary);
   font-size: 15px;
 }
 
@@ -264,7 +267,7 @@
 }
 
 .notes-config-overview-row strong {
-  color: #112033;
+  color: var(--color-text-primary);
   font-size: 13px;
 }
 
@@ -309,10 +312,11 @@
   display: grid;
   gap: 16px;
   padding: 22px;
-  border: 1px solid #dfe7f3;
+  border: none;
   border-radius: 24px;
-  background: #ffffff;
-  box-shadow: 0 22px 48px rgba(15, 23, 42, 0.12);
+  background: var(--color-surface-primary);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-xl);
 }
 
 .notes-config-modal-footer {
@@ -337,10 +341,11 @@
 }
 
 .notes-config-table-wrap {
-  border: 1px solid #e4ebf5;
+  border: none;
   border-radius: 16px;
   overflow: hidden;
-  background: #fff;
+  background: var(--color-surface-primary);
+  box-shadow: var(--shadow-sm);
 }
 
 .notes-config-table {
@@ -352,12 +357,13 @@
 .notes-config-table td {
   padding: 12px 14px;
   vertical-align: middle;
-  border-bottom: 1px solid #edf2f8;
+  border-bottom: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
 }
 
 .notes-config-table thead th {
-  background: #f8fbff;
-  color: #5f6f8e;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -388,7 +394,7 @@
 }
 
 .config-row-copy strong {
-  color: #112033;
+  color: var(--color-text-primary);
   font-size: 14px;
 }
 
@@ -412,9 +418,10 @@
   width: 70px;
   min-height: 34px;
   padding: 6px 8px;
-  border: 1px solid #d4e4fb;
+  border: 1px solid var(--color-border-subtle);
   border-radius: 12px;
-  background: #fff;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
   text-align: center;
 }
 
@@ -436,14 +443,14 @@
 }
 
 .action-button.primary {
-  background: #4e5de2;
+  background: var(--color-brand-primary);
   color: #fff;
 }
 
 .action-button.tertiary {
-  border: 2px solid #4e5de2;
-  background: #ffffff;
-  color: #4e5de2;
+  border: 1.5px solid var(--color-brand-primary);
+  background: var(--color-surface-primary);
+  color: var(--color-brand-primary);
 }
 
 .action-button:hover,
@@ -488,18 +495,18 @@
   place-items: center;
   width: 40px;
   height: 40px;
-  border: 2px solid #4473be;
+  border: 1px solid var(--color-border-default);
   border-radius: 50%;
-  background: #ffffff;
-  color: #1d5fc4;
+  background: var(--color-surface-primary);
+  color: var(--color-brand-primary);
   cursor: pointer;
   transition: background 160ms ease, color 160ms ease, border-color 160ms ease, transform 160ms ease, opacity 160ms ease;
 }
 
 .calendar-nav:not(:disabled):hover {
-  color: #2159b6;
-  border-color: #2159b6;
-  background: #f7fbff;
+  color: var(--color-brand-hover);
+  border-color: var(--color-brand-primary);
+  background: var(--color-brand-subtle);
   transform: scale(0.92);
 }
 
@@ -526,7 +533,7 @@
 }
 
 .calendar-current strong {
-  color: #112033;
+  color: var(--color-text-primary);
   font-size: 22px;
   font-weight: 800;
 }
@@ -546,7 +553,7 @@
   color: #ffffff;
   font-size: 13px;
   font-weight: 550;
-  background: #4e5de2;
+  background: var(--color-brand-primary);
 }
 
 .grade-input {
@@ -612,10 +619,10 @@
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
-  border: 1px solid #d8e5f7;
+  border: 1px solid var(--color-border-subtle);
   border-radius: 12px;
-  background: #d0d3f5;
-  color: #112033;
+  background: var(--color-surface-secondary);
+  color: var(--color-text-primary);
 }
 
 .notes-legend-item strong {

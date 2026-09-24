@@ -64,12 +64,12 @@ export class DashboardDocente implements OnInit {
   readonly pendientes = signal<DashboardPending[]>([]);
 
   readonly accesos = [
-    { label: 'Mis asignaciones', path: '/mis-asignaciones', icon: 'fa-solid fa-book-bookmark' },
-    { label: 'Sección tutorada', path: '/seccion-tutorada', icon: 'fa-solid fa-users-viewfinder' },
-    { label: 'Asistencias', path: '/asistencias', icon: 'fa-solid fa-calendar-check' },
-    { label: 'Predicciones', path: '/predicciones', icon: 'fa-solid fa-chart-line' },
-    { label: 'Hallazgos', path: '/hallazgos', icon: 'fa-solid fa-magnifying-glass-chart' },
-    { label: 'Perfil alumno', path: '/predicciones', icon: 'fa-solid fa-id-badge' }
+    { label: 'Mis cursos y notas', path: '/mis-asignaciones', icon: 'fa-solid fa-book-bookmark' },
+    { label: 'Mi sección tutorada', path: '/seccion-tutorada', icon: 'fa-solid fa-users-viewfinder' },
+    { label: 'Control de asistencia', path: '/asistencias', icon: 'fa-solid fa-calendar-check' },
+    { label: 'Predicción de riesgo', path: '/predicciones', icon: 'fa-solid fa-chart-line' },
+    { label: 'Hallazgos y recomendaciones', path: '/hallazgos', icon: 'fa-solid fa-magnifying-glass-chart' },
+    { label: 'Perfil del estudiante', path: '/predicciones', icon: 'fa-solid fa-id-badge' }
   ] as const;
 
   ngOnInit(): void {

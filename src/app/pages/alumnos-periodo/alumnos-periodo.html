@@ -194,7 +194,7 @@
 
     @if (modalSeccionAbierto()) {
     <div class="modal-backdrop" (click)="cerrarModalSeccion()">
-      <div class="modal-card modal-card--compact" (click)="$event.stopPropagation()">
+      <div class="modal-card modal-card--compact modal-card--section" (click)="$event.stopPropagation()">
         <div class="modal-head">
           <div class="panel-head">
             <span class="panel-kicker">Nueva sección</span>
@@ -213,8 +213,9 @@
           <div class="form-two-columns">
             <label>
               Nombre de la sección
-              <input type="text" [ngModel]="formSeccionNombre()" (ngModelChange)="formSeccionNombre.set($event)"
-                name="nombreSeccion" placeholder="Ejemplo: A o ÚNICA" />
+              <input type="text" [ngModel]="formSeccionNombre()" (ngModelChange)="actualizarNombreSeccion($event)"
+                name="nombreSeccion" maxlength="1" autocomplete="off" placeholder="A" />
+              <small class="field-hint">Una letra en mayúscula, de A a Z.</small>
             </label>
 
             <label>

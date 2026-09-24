@@ -465,7 +465,6 @@
               <th>Curso</th>
               <th>Nivel</th>
               <th>Descripción</th>
-              <th>Estado</th>
             </tr>
           </thead>
           <tbody>
@@ -474,7 +473,6 @@
               <td><span class="skeleton-line medium"></span></td>
               <td><span class="skeleton-line short"></span></td>
               <td><span class="skeleton-line long"></span></td>
-              <td><span class="skeleton-line short"></span></td>
             </tr>
             }
           </tbody>
@@ -493,7 +491,6 @@
               <th>Curso</th>
               <th>Nivel</th>
               <th>Descripción</th>
-              <th>Estado</th>
             </tr>
           </thead>
           <tbody>
@@ -502,12 +499,6 @@
               <td>{{ curso.nombre }}</td>
               <td>{{ curso.nivelNombre }}</td>
               <td>{{ curso.descripcion || 'Sin descripción' }}</td>
-              <td>
-                <span class="status-badge" [class.active]="(curso.estado || 'ACTIVO') === 'ACTIVO'"
-                  [class.inactive]="(curso.estado || 'ACTIVO') === 'INACTIVO'">
-                  {{ curso.estado || 'ACTIVO' }}
-                </span>
-              </td>
             </tr>
             }
           </tbody>
