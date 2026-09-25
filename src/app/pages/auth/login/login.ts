@@ -5,6 +5,7 @@ import { Subscription } from 'rxjs';
 import { gsap } from 'gsap';
 import { CustomAlertComponent, CustomAlertType } from '../../../components/custom-alert/custom-alert';
 import { AuthService } from '../../../services/auth/auth.service';
+import { ThemeService } from '../../../services/ui/theme.service';
 import { formatearMensajeError } from '../../../utils/error-formatter';
 
 const REMEMBER_CREDENTIALS_KEY = 'auth_remembered_credentials';
@@ -33,8 +34,11 @@ interface LoginAlertState {
 export class Login implements OnInit, AfterViewInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
+  private readonly themeService = inject(ThemeService);
   private readonly router = inject(Router);
   private readonly host = inject(ElementRef<HTMLElement>);
+
+  readonly isDark = computed(() => this.themeService.isDark());
   private animationContext: gsap.Context | null = null;
   private previewIntervalId: ReturnType<typeof setInterval> | null = null;
   private titleIntervalId: ReturnType<typeof setInterval> | null = null;
@@ -482,6 +486,10 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
   campoInvalido(nombre: 'identificador' | 'password'): boolean {
     const control = this.form.controls[nombre];
     return control.invalid && control.touched;
+  }
+
+  toggleTema(): void {
+    this.themeService.toggleTheme();
   }
 
   toggleMostrarPassword(): void {

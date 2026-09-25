@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environments';
-import { AsistenciaSesion, RegistroAsistenciaSesionPayload } from '../../models/asistencia-sesion';
+import { AsistenciaSesion, EstadoAsistenciaSesionResumen, RegistroAsistenciaSesionPayload } from '../../models/asistencia-sesion';
 
 @Injectable({ providedIn: 'root' })
 export class AsistenciaSesionService {
@@ -20,5 +20,15 @@ export class AsistenciaSesionService {
 
   guardar(payload: RegistroAsistenciaSesionPayload): Observable<AsistenciaSesion[]> {
     return this.http.post<AsistenciaSesion[]>(this.api, payload);
+  }
+
+  editar(payload: RegistroAsistenciaSesionPayload & { motivoEdicion: string }): Observable<AsistenciaSesion[]> {
+    return this.http.put<AsistenciaSesion[]>(this.api, payload);
+  }
+
+  resumir(asignacionIds: number[], desde: string, hasta: string): Observable<EstadoAsistenciaSesionResumen[]> {
+    let params = new HttpParams().set('desde', desde).set('hasta', hasta);
+    for (const id of asignacionIds) params = params.append('asignacionIds', id);
+    return this.http.get<EstadoAsistenciaSesionResumen[]>(`${this.api}/resumen`, { params });
   }
 }

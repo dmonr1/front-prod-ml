@@ -1,0 +1,51 @@
+<app-shell>
+  <main class="alerts-page">
+    <header class="alerts-header">
+      <div>
+        <span class="eyebrow">GESTIÓN ACADÉMICA</span>
+        <h1>Centro de alertas</h1>
+        <p>Registros académicos pendientes de atención.</p>
+      </div>
+      <button class="refresh-button" type="button" aria-label="Actualizar alertas" title="Actualizar" (click)="cargar()">
+        <i class="fa-solid fa-rotate-right"></i>
+      </button>
+    </header>
+
+    <nav class="alert-filters" aria-label="Filtrar alertas">
+      <button type="button" [class.active]="filtro() === 'PENDIENTE'" (click)="cambiarFiltro('PENDIENTE')">Pendientes</button>
+      <button type="button" [class.active]="filtro() === 'ATENDIDA'" (click)="cambiarFiltro('ATENDIDA')">Atendidas</button>
+      <button type="button" [class.active]="filtro() === 'TODAS'" (click)="cambiarFiltro('TODAS')">Todas</button>
+      <span class="result-count">{{ alertas().length }} alertas</span>
+    </nav>
+
+    @if (cargando()) {
+      <div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><span>Cargando alertas...</span></div>
+    } @else if (error()) {
+      <div class="empty-state error-state"><i class="fa-solid fa-triangle-exclamation"></i><span>{{ error() }}</span></div>
+    } @else if (!alertas().length) {
+      <div class="empty-state"><i class="fa-regular fa-circle-check"></i><strong>Todo al día</strong><span>No hay alertas para este filtro.</span></div>
+    } @else {
+      <section class="alerts-list" aria-label="Alertas">
+        @for (alerta of alertas(); track alerta.id) {
+          <article class="alert-row" [class.attended]="alerta.estado === 'ATENDIDA'">
+            <span class="alert-icon" [class.attendance]="alerta.tipo === 'ASISTENCIA_PENDIENTE'">
+              <i class="fa-solid" [class.fa-user-check]="alerta.tipo === 'ASISTENCIA_PENDIENTE'" [class.fa-pen-to-square]="alerta.tipo === 'NOTAS_PENDIENTES'"></i>
+            </span>
+            <div class="alert-copy">
+              <div class="alert-title-line">
+                <h2>{{ alerta.titulo }}</h2>
+                <span class="status" [class.done]="alerta.estado === 'ATENDIDA'">{{ alerta.estado === 'ATENDIDA' ? 'ATENDIDA' : 'PENDIENTE' }}</span>
+              </div>
+              <p><strong>{{ alerta.curso }}</strong> · {{ alerta.grado }} · Sección {{ alerta.seccion }}</p>
+              <small>{{ alerta.docente }} · {{ fechaCorta(alerta.fechaReferencia) }} · {{ alerta.cantidadPendiente }} {{ alerta.tipo === 'ASISTENCIA_PENDIENTE' ? 'asistencias por registrar' : 'notas por registrar' }}</small>
+            </div>
+            <button class="open-button" type="button" (click)="abrir(alerta)" [disabled]="alerta.estado === 'ATENDIDA'">
+              {{ alerta.tipo === 'ASISTENCIA_PENDIENTE' ? 'Registrar asistencia' : 'Registrar notas' }}
+              <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </article>
+        }
+      </section>
+    }
+  </main>
+</app-shell>

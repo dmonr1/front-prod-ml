@@ -6,12 +6,40 @@
           <div class="panel-head">
             <span class="eyebrow">Seguimiento estudiantil</span>
             <h2>Seguimiento de riesgo</h2>
-            @if (periodoAcademicoActual()) {
-              <span class="academic-period-label">{{ periodoAcademicoActual()?.nombre }}</span>
-            }
+            <span class="academic-period-label"><i class="fa-solid fa-calendar-check"></i> Año académico · {{ nombrePeriodoAcademico() }}</span>
           </div>
 
           <div class="filters-corner">
+            <div class="tutoria-dropdown filter-dropdown">
+              <span class="section-picker-label">Período de evaluación:</span>
+              <button class="summary-pill section-picker" type="button" (click)="toggleSelectorPeriodoEvaluacion()">
+                <i class="fa-solid fa-calendar-check"></i>
+                <strong>{{ etiquetaPeriodoEvaluacion() }}</strong>
+                <i class="fa-solid fa-chevron-down"></i>
+              </button>
+
+              @if (mostrarSelectorPeriodoEvaluacion()) {
+                <div class="tutoria-dropdown-menu period-dropdown-menu">
+                  @for (periodo of periodosTerminoDisponibles(); track periodo.id) {
+                    <button type="button" class="tutoria-option-card"
+                      [class.active]="periodo.id === periodoEvaluacionSeleccionadoIdTermino()"
+                      (click)="onPeriodoEvaluacionTerminoChange('' + periodo.id)">
+                      <div class="tutoria-option-head">
+                        <span class="tutoria-option-title">{{ periodo.nombre }}</span>
+                        <span class="tutoria-option-badge">N.° {{ periodo.numero }}</span>
+                      </div>
+                      <strong class="tutoria-option-strong">{{ periodo.nombre }} · N.° {{ periodo.numero }}</strong>
+                      <small>{{ periodo.fechaInicio }} - {{ periodo.fechaFin }}</small>
+                      <div class="tutoria-option-footer">
+                        <span><i class="fa-solid fa-calendar-days"></i> Período de evaluación</span>
+                        <span class="tutoria-option-link"><i class="fa-solid fa-arrow-right"></i><span>Seleccionar</span></span>
+                      </div>
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+
             <div class="tutoria-dropdown filter-dropdown">
               <span class="section-picker-label">Corte semanal:</span>
               <button class="summary-pill section-picker" type="button" (click)="toggleSelectorPeriodo()">
@@ -84,6 +112,10 @@
               }
             </div>
             <div class="toolbar-top">
+              <button type="button" class="readiness-trigger" (click)="abrirEstadoCortes()" [disabled]="!seccionSeleccionadaId()">
+                <i class="fa-solid fa-list-check"></i>
+                <span>Estado de {{ etiquetaPeriodoEvaluacion() }}</span>
+              </button>
               @if (puedeRecalcular()) {
               <button
                 type="button"
@@ -110,93 +142,6 @@
           </div>
         </div>
       </div>
-
-      @if (preparacionCorte(); as preparacion) {
-        <section class="cut-readiness" aria-label="Datos disponibles para el corte">
-          <div class="cut-readiness-heading">
-            <div>
-              <strong>Semana {{ periodoEvaluacionSeleccionado()?.semana }} · {{ preparacion.periodoEvaluacion || 'Sin período de evaluación asignado' }}</strong>
-              <span>Datos hasta el {{ preparacion.fechaCorte }}</span>
-              @if (!preparacion.periodoEvaluacion && puedeRecalcular()) {
-                <button type="button" class="cut-readiness-link" (click)="abrirConfiguracionCortes()">Revisar fechas del período <i class="fa-solid fa-arrow-right"></i></button>
-              }
-            </div>
-            @if (!preparacion.corteDisponible) {
-              <span class="cut-readiness-status">El corte aún no llega a su fecha</span>
-            } @else if (preparacion.evaluacionesSinFecha) {
-              <span class="cut-readiness-status">Faltan fechas para actualizar</span>
-            } @else if (!preparacion.alumnosConDatos) {
-              <span class="cut-readiness-status">Faltan notas o asistencia</span>
-            } @else {
-              <span class="cut-readiness-status is-ready">Fecha de corte habilitada</span>
-            }
-          </div>
-          <div class="cut-readiness-items">
-            <div class="cut-readiness-item">
-              <span>Alumnos con datos</span>
-              <strong>{{ preparacion.alumnosConDatos }}/{{ preparacion.alumnosMatriculados }}</strong>
-              @if (preparacion.alumnosMatriculados > preparacion.alumnosConDatos) {
-                <small>Faltan {{ preparacion.alumnosMatriculados - preparacion.alumnosConDatos }} con notas o asistencia</small>
-              }
-              @if (!preparacion.alumnosMatriculados && puedeRecalcular()) {
-                <button type="button" (click)="abrirMatriculas()">Revisar matrículas <i class="fa-solid fa-arrow-right"></i></button>
-              }
-            </div>
-            <div class="cut-readiness-item">
-              <span>Evaluaciones fechadas al corte</span>
-              <strong>{{ preparacion.evaluacionesAlCorte }}</strong>
-              @if (preparacion.evaluacionesSinFecha) {
-                <small>{{ preparacion.evaluacionesSinFecha }} sin fecha</small>
-              } @else if (!preparacion.evaluacionesAlCorte) {
-                <small>No hay evaluaciones para este corte</small>
-              }
-              @if (!preparacion.evaluacionesAlCorte && !preparacion.evaluacionesSinFecha && puedeRecalcular()) {
-                <button type="button" (click)="abrirConfiguracionCortes()">Configurar evaluaciones <i class="fa-solid fa-arrow-right"></i></button>
-              }
-            </div>
-            <div class="cut-readiness-item">
-              <span>Notas registradas</span>
-              <strong>{{ preparacion.notasRegistradas }}/{{ preparacion.notasEsperadas }}</strong>
-              @if (preparacion.notasEsperadas > preparacion.notasRegistradas) {
-                <small>Faltan {{ preparacion.notasEsperadas - preparacion.notasRegistradas }} notas</small>
-              }
-              @if (preparacion.notasEsperadas > preparacion.notasRegistradas) {
-                <button type="button" (click)="abrirRegistroNotas()">Ir a notas <i class="fa-solid fa-arrow-right"></i></button>
-              }
-            </div>
-            <div class="cut-readiness-item">
-              <span>Asistencia registrada</span>
-              <strong>{{ preparacion.alumnosConAsistencia }}/{{ preparacion.alumnosMatriculados }} alumnos</strong>
-              <small>{{ preparacion.asistenciasRegistradas }} registros hasta el corte</small>
-              @if (preparacion.bloquesSemanales && preparacion.alumnosConAsistencia < preparacion.alumnosMatriculados) {
-                <button type="button" (click)="abrirRegistroAsistencia()">Ir a asistencia <i class="fa-solid fa-arrow-right"></i></button>
-              } @else if (!preparacion.bloquesSemanales && puedeRecalcular()) {
-                <button type="button" (click)="abrirHorarios()">Configurar horario <i class="fa-solid fa-arrow-right"></i></button>
-              }
-            </div>
-          </div>
-        </section>
-      }
-
-      @if (evaluacionesPendientesFecha().length) {
-        <aside class="evaluation-date-warning" role="alert">
-          <div class="evaluation-date-warning-icon"><i class="fa-solid fa-calendar-exclamation"></i></div>
-          <div class="evaluation-date-warning-content">
-            <strong>Faltan fechas de evaluación</strong>
-            <p>Completa {{ evaluacionesPendientesFecha().length }} fecha(s) para habilitar la predicción de este corte. Cada evaluación necesita una fecha para excluir correctamente los datos posteriores.</p>
-            <div class="evaluation-date-pending-list">
-              @for (evaluacion of evaluacionesPendientesFecha(); track evaluacion.evaluacionId) {
-                <div class="evaluation-date-pending-item">
-                  <span><b>{{ evaluacion.curso }}</b> · {{ evaluacion.periodoEvaluacion }} · {{ evaluacion.tipoEvaluacion }} {{ evaluacion.numeroEvaluacion }}</span>
-                  <button type="button" class="action-button secondary" (click)="abrirFechaEvaluacion(evaluacion)">
-                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Registrar fecha
-                  </button>
-                </div>
-              }
-            </div>
-          </div>
-        </aside>
-      }
 
       @if (!cargandoFiltros() && !periodosEvaluacion().length && puedeRecalcular()) {
         <aside class="evaluation-date-warning" role="status">
@@ -509,6 +454,112 @@
       </div>
       }
     </div>
+
+    @if (modalEstadoCortesAbierto()) {
+      <div class="readiness-backdrop" (click)="cerrarEstadoCortes()">
+        <section class="readiness-dialog" role="dialog" aria-modal="true" aria-labelledby="readiness-title" (click)="$event.stopPropagation()">
+          <button class="readiness-close" type="button" aria-label="Cerrar" (click)="cerrarEstadoCortes()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+          <div class="readiness-dialog-heading">
+            <span class="readiness-dialog-icon"><i class="fa-solid fa-list-check"></i></span>
+            <div>
+              <h2 id="readiness-title">Estado de cortes · {{ etiquetaPeriodoEvaluacion() }}</h2>
+              <p>{{ nombrePeriodoAcademico() }} · {{ etiquetaSeccion(seccionSeleccionada()) }}</p>
+            </div>
+          </div>
+
+          @if (cargandoEstadoCortes()) {
+            <div class="readiness-loading"><i class="fa-solid fa-spinner fa-spin"></i> Consultando datos del período…</div>
+          } @else if (!estadoCortes().length) {
+            <div class="readiness-empty">
+              <i class="fa-solid fa-calendar-xmark"></i>
+              <strong>No hay cortes semanales en {{ etiquetaPeriodoEvaluacion() }}</strong>
+              <span>Configura los cortes semanales dentro de las fechas de este período de evaluación.</span>
+              @if (puedeRecalcular()) {
+                <button type="button" class="readiness-action" (click)="abrirConfiguracionCortes()">Configurar período</button>
+              }
+            </div>
+          } @else {
+            @if (evaluacionesPendientesEstado().length) {
+              <details class="readiness-evaluations">
+                <summary><i class="fa-solid fa-calendar-exclamation"></i> {{ evaluacionesPendientesEstado().length }} evaluaciones de {{ etiquetaPeriodoEvaluacion() }} sin fecha</summary>
+                <div class="readiness-evaluation-list">
+                  @for (evaluacion of evaluacionesPendientesEstado(); track evaluacion.evaluacionId) {
+                    <div>
+                      <span>{{ evaluacion.curso }} · {{ evaluacion.tipoEvaluacion }} {{ evaluacion.numeroEvaluacion }}</span>
+                      <button type="button" class="readiness-link" (click)="abrirFechaEvaluacion(evaluacion)">Registrar fecha <i class="fa-solid fa-arrow-right"></i></button>
+                    </div>
+                  }
+                </div>
+              </details>
+            }
+            <div class="readiness-period-line">
+              <span><i class="fa-solid fa-calendar-days"></i> Cortes de {{ etiquetaPeriodoEvaluacion() }}</span>
+              <span>{{ estadoCortes().length }} semanas</span>
+            </div>
+            <div class="readiness-cut-list">
+              @for (item of estadoCortes(); track item.corte.id) {
+                <article class="readiness-cut" [class.is-ready]="corteListo(item)">
+                  <div class="readiness-cut-head">
+                    <div>
+                      <strong>Semana {{ item.corte.semana }}</strong>
+                      <span>Corte: {{ item.corte.fechaCorte }} · {{ item.preparacion?.periodoEvaluacion || 'Sin período de evaluación asociado' }}</span>
+                    </div>
+                    <span class="readiness-badge" [class.ready]="corteListo(item)">
+                      {{ etiquetaEstadoCorte(item) }}
+                    </span>
+                  </div>
+
+                  @if (item.preparacion; as prep) {
+                    <div class="readiness-metrics">
+                      <span><b>{{ prep.alumnosConDatos }}/{{ prep.alumnosMatriculados }}</b> alumnos con notas o asistencia</span>
+                      <span><b>{{ prep.notasRegistradas }}/{{ prep.notasEsperadas }}</b> notas registradas</span>
+                      <span><b>{{ prep.asistenciasRegistradas }}</b> registros de asistencia</span>
+                    </div>
+                  }
+
+                  @if (faltantesCorte(item).length) {
+                    <ul class="readiness-missing">
+                      @for (faltante of faltantesCorte(item); track faltante) {
+                        <li><i class="fa-solid fa-circle-exclamation"></i> {{ faltante }}</li>
+                      }
+                    </ul>
+                  } @else {
+                    <p class="readiness-complete"><i class="fa-solid fa-circle-check"></i> Los datos disponibles permiten calcular este corte.</p>
+                  }
+
+                  @if (item.preparacion; as prep) {
+                    <div class="readiness-actions">
+                      @if (!prep.alumnosMatriculados && puedeRecalcular()) {
+                        <button type="button" class="readiness-link" (click)="abrirMatriculas()">Revisar matrículas <i class="fa-solid fa-arrow-right"></i></button>
+                      }
+                      @if (prep.notasEsperadas > prep.notasRegistradas) {
+                        <button type="button" class="readiness-link" (click)="abrirRegistroNotas()">Completar notas <i class="fa-solid fa-arrow-right"></i></button>
+                      }
+                      @if (!prep.evaluacionesAlCorte && !prep.evaluacionesSinFecha) {
+                        <button type="button" class="readiness-link" (click)="abrirRegistroNotas()">Revisar evaluaciones <i class="fa-solid fa-arrow-right"></i></button>
+                      }
+                      @if (prep.evaluacionesSinFecha && !evaluacionesPendientesEstado().length) {
+                        <button type="button" class="readiness-link" (click)="abrirRegistroNotas()">Revisar fechas de evaluación <i class="fa-solid fa-arrow-right"></i></button>
+                      }
+                      @if (!prep.bloquesSemanales && puedeRecalcular()) {
+                        <button type="button" class="readiness-link" (click)="abrirHorarios()">Configurar horario <i class="fa-solid fa-arrow-right"></i></button>
+                      } @else if (prep.alumnosConAsistencia < prep.alumnosMatriculados) {
+                        <button type="button" class="readiness-link" (click)="abrirRegistroAsistencia()">Completar asistencia <i class="fa-solid fa-arrow-right"></i></button>
+                      }
+                    </div>
+                  }
+                </article>
+              }
+            </div>
+          }
+          <div class="readiness-dialog-footer">
+            <button type="button" class="readiness-action secondary" (click)="cerrarEstadoCortes()">Cerrar</button>
+          </div>
+        </section>
+      </div>
+    }
 
     <app-custom-alert
       [open]="alertaConexionAbierta()"

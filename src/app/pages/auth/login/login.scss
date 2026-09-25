@@ -1628,3 +1628,504 @@ input:focus {
     max-width: 380px;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Botón Conmutador de Modo Oscuro / Claro en el Login
+// ---------------------------------------------------------------------------
+.login-theme-toggle {
+  position: fixed;
+  top: 22px;
+  right: 24px;
+  z-index: 100;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  color: #1e3a8a;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  cursor: pointer;
+  transition: all 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  outline: none;
+
+  &:hover {
+    transform: scale(1.1) rotate(15deg);
+    background: #f8fafc;
+    border-color: #94a3b8;
+    box-shadow: 0 6px 24px rgba(15, 23, 42, 0.16);
+    color: #1d4ed8;
+  }
+
+  &:active {
+    transform: scale(0.94);
+  }
+
+  i {
+    transition: transform 300ms ease, color 260ms ease;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Soporte Integral de Modo Oscuro para la Pantalla de Login
+// ---------------------------------------------------------------------------
+:host-context(body.dark-mode),
+:host-context(body.theme-dark),
+.login-page.is-dark {
+  .login-theme-toggle {
+    background: #1e293b;
+    border: 1.5px solid #334155;
+    color: #fbbf24;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 12px rgba(251, 191, 36, 0.2);
+
+    &:hover {
+      background: #243046;
+      border-color: #f59e0b;
+      box-shadow: 0 6px 24px rgba(251, 191, 36, 0.35);
+      color: #fef08a;
+      transform: scale(1.1) rotate(-15deg);
+    }
+  }
+
+  &.login-page,
+  .login-page {
+    --login-primary: #3b82f6;
+    --login-primary-strong: #60a5fa;
+    --login-soft: #1e293b;
+    --login-line: #2e3545;
+    --login-text: #f3f4f6;
+    --login-muted: #94a3b8;
+    background: linear-gradient(135deg, #090a0d 0%, #111318 52%, #0d0f14 100%);
+  }
+
+  .login-intro-overlay {
+    background: radial-gradient(circle at 50% 46%, rgba(30, 42, 68, 0.72) 0%, rgba(17, 20, 28, 0.95) 45%, #0b0c0e 72%), #0b0c0e;
+  }
+
+  .login-intro-text {
+    color: #f3f4f6;
+  }
+
+  .login-copy {
+    color: #f3f4f6;
+  }
+
+  .login-title h1 {
+    color: #f3f4f6;
+  }
+
+  .login-shape--circle-pink {
+    opacity: 0.55;
+    filter: blur(20px);
+  }
+
+  .login-shape--circle-blue {
+    opacity: 0.55;
+    filter: blur(20px);
+  }
+
+  .login-shape--capsule-cream {
+    background: #2a251e;
+    opacity: 0.6;
+  }
+
+  .login-shape--quarter-peach {
+    background: #60252e;
+    opacity: 0.45;
+  }
+
+  .login-decor-card--top rect[fill="#FFFFFF"] {
+    fill: #1c1e24;
+  }
+
+  .login-decor-card--top rect[fill="#DCE8FF"] {
+    fill: #2e3545;
+  }
+
+  .login-decor-card--top rect[fill="#EEF4FF"] {
+    fill: #242732;
+  }
+
+  .login-decor-card--bottom circle[fill="#FFFFFF"] {
+    fill: #1c1e24;
+  }
+
+  .login-decor-card--bottom circle[fill="#F6F9FF"] {
+    fill: #181a20;
+    stroke: #2e3545;
+  }
+
+  .dashboard-preview {
+    background: rgba(22, 24, 30, 0.88);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+    color: #f3f4f6;
+  }
+
+  .preview-toolbar-copy strong {
+    color: #f3f4f6;
+  }
+
+  .preview-eyebrow {
+    color: #94a3b8;
+  }
+
+  .preview-chip-label {
+    color: #94a3b8;
+  }
+
+  .preview-chip {
+    background: #1c1e24;
+    border: 1px solid #2e323b;
+    color: #cbd5e1;
+
+    svg {
+      fill: #60a5fa;
+      color: #60a5fa;
+    }
+  }
+
+  .preview-switch {
+    background: #1c1e24;
+    border: 1px solid #2e323b;
+  }
+
+  .preview-switch-thumb {
+    background: #2563eb;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+  }
+
+  .preview-switch-pill {
+    color: #94a3b8;
+
+    &.is-active {
+      color: #ffffff;
+    }
+  }
+
+  // TODAS LAS TARJETAS DEL DASHBOARD PREVIEW EN MODO OSCURO
+  .preview-kpi,
+  .preview-chart-card,
+  .preview-table-card,
+  .preview-side-card {
+    background: #181a20;
+    border: 1px solid #282b34;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  }
+
+  .preview-kpi {
+    strong {
+      color: #f3f4f6;
+    }
+
+    small {
+      color: #cbd5e1;
+    }
+  }
+
+  .preview-kpi-icon {
+    background: rgba(37, 99, 235, 0.2);
+    color: #60a5fa;
+
+    &.is-amber {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+    }
+
+    &.is-rose {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+    }
+  }
+
+  // DONUT CHART CARD EN MODO OSCURO
+  .preview-donut-ring::after {
+    background: #181a20;
+  }
+
+  .preview-donut-core {
+    strong {
+      color: #f3f4f6;
+    }
+
+    span {
+      color: #94a3b8;
+    }
+  }
+
+  .preview-chart-card {
+    .preview-card-head strong {
+      color: #f3f4f6;
+    }
+  }
+
+  .preview-legend-row {
+    color: #cbd5e1;
+
+    strong {
+      color: #f3f4f6;
+    }
+  }
+
+  .preview-table-card-head strong,
+  .preview-card-head strong {
+    color: #f3f4f6;
+  }
+
+  .preview-table-card-head span,
+  .preview-card-head span {
+    color: #94a3b8;
+  }
+
+  .preview-table {
+    border-color: #282b34;
+  }
+
+  .preview-row-head {
+    background: #1c1e24;
+
+    span,
+    strong {
+      color: #cbd5e1;
+      font-weight: 700;
+    }
+  }
+
+  .preview-row {
+    border-bottom-color: #242730;
+
+    strong,
+    span {
+      color: #e2e8f0;
+    }
+  }
+
+  .risk-ring {
+    &.is-low {
+      color: #4ade80;
+    }
+
+    &.is-medium {
+      color: #fbbf24;
+    }
+
+    &.is-high {
+      color: #f87171;
+    }
+  }
+
+  .preview-name-skeleton,
+  .preview-line-skeleton,
+  .preview-value-skeleton {
+    background: linear-gradient(90deg, #242731 0%, #2f3340 48%, #242731 100%);
+  }
+
+  .preview-chart-box {
+    background: #181a20;
+    border: 1px solid #282b34;
+  }
+
+  .preview-chart-total strong {
+    color: #f3f4f6;
+  }
+
+  .preview-chart-total span {
+    color: #94a3b8;
+  }
+
+  .preview-side-list div {
+    background: #1c1e24;
+    border: 1px solid #262932;
+
+    span {
+      color: #cbd5e1;
+    }
+  }
+
+  .auth-card-shell {
+    background: #131418;
+    box-shadow: inset 18px 0 36px rgba(0, 0, 0, 0.45);
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .auth-card h2 {
+    color: #f3f4f6;
+  }
+
+  .auth-copy {
+    color: #94a3b8;
+  }
+
+  label {
+    color: #cbd5e1;
+  }
+
+  input {
+    background: #1c1e24;
+    border: 1px solid #2e323b;
+    color: #f3f4f6;
+
+    &::placeholder {
+      color: #64748b !important;
+    }
+
+    &:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.22);
+      background: #20232a;
+    }
+  }
+
+  .password-toggle {
+    color: #94a3b8;
+
+    &:hover {
+      color: #f3f4f6;
+    }
+  }
+
+  .remember-toggle {
+    color: #94a3b8;
+
+    &:hover {
+      color: #e2e8f0;
+    }
+  }
+
+  .remember-indicator {
+    border-color: #3b4252;
+    background: #1c1e24;
+  }
+
+  .remember-toggle input:checked + .remember-indicator {
+    border-color: #2563eb;
+    background: #2563eb;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.25);
+  }
+
+  .secondary-link {
+    color: #60a5fa;
+
+    &:hover {
+      color: #93c5fd;
+    }
+  }
+
+  .primary-button {
+    background: #2563eb;
+    color: #ffffff;
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3);
+
+    &:hover:not(:disabled) {
+      background: #1d4ed8;
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
+    }
+  }
+
+  .recovery-steps::before {
+    background: #282b34;
+  }
+
+  .recovery-step {
+    color: #64748b;
+  }
+
+  .recovery-step span {
+    border-color: #2e323b;
+    background: #1c1e24;
+    color: #94a3b8;
+  }
+
+  .recovery-step.available {
+    color: #94a3b8;
+  }
+
+  .recovery-step.current span,
+  .recovery-step.available:hover:not(:disabled) span {
+    border-color: #2563eb;
+    background: #2563eb;
+    color: #ffffff;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.25);
+  }
+
+  .recovery-step.completed span {
+    border-color: #2563eb;
+    background: #2563eb;
+    color: #ffffff;
+  }
+
+  .otp-input {
+    background: #1c1e24;
+    border-color: #2e323b;
+    color: #f3f4f6;
+
+    &:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.22);
+    }
+  }
+
+  .secondary-link--recover-top {
+    color: #94a3b8;
+
+    &:hover {
+      color: #f3f4f6;
+    }
+  }
+
+  .resend-button {
+    color: #60a5fa;
+
+    &:hover:not(:disabled) {
+      color: #93c5fd;
+    }
+  }
+
+  .resend-countdown {
+    color: #94a3b8;
+  }
+
+  .field-error {
+    color: #f87171;
+  }
+
+  .auth-floating--bottom rect[fill="#FFFFFF"] {
+    fill: #1c1e24;
+    stroke: #2e323b;
+  }
+
+  .auth-floating--bottom rect[fill="#DCE8FF"] {
+    fill: #2e3545;
+  }
+
+  .auth-floating--bottom circle[fill="#1E3A8A"] {
+    fill: #3b82f6;
+  }
+
+  .auth-orbit--one path {
+    stroke: rgba(99, 115, 235, 0.22);
+  }
+
+  .auth-orbit--two path {
+    stroke: rgba(245, 158, 11, 0.2);
+  }
+
+  .auth-orbit--three path {
+    stroke: rgba(59, 130, 246, 0.18);
+  }
+
+  @media (max-width: 1250px) {
+    &.login-page,
+    .login-page {
+      background: #0f1013;
+    }
+
+    .auth-card-shell {
+      background: #131418;
+    }
+  }
+}
+

@@ -17,6 +17,7 @@ interface CalendarCell {
   inMonth: boolean;
   isToday: boolean;
   isSelected: boolean;
+  isOutOfRange?: boolean;
 }
 
 @Component({
@@ -34,8 +35,10 @@ export class DatePickerComponent implements OnChanges {
   @Input() value = '';
   @Input() placeholder = 'dd/mm/aaaa';
   @Input() disabled = false;
-  @Input() minYear = 2020;
-  @Input() maxYear = 2030;
+  @Input() minYear?: number;
+  @Input() maxYear?: number;
+  @Input() minDate?: string;
+  @Input() maxDate?: string;
 
   @Output() valueChange = new EventEmitter<string>();
 
@@ -79,15 +82,43 @@ export class DatePickerComponent implements OnChanges {
   readonly weekDays = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['value'] || changes['minYear'] || changes['maxYear']) {
+    if (changes['value'] || changes['minYear'] || changes['maxYear'] || changes['minDate'] || changes['maxDate']) {
       this.sincronizarVista();
     }
   }
 
+  get effectiveMinYear(): number {
+    if (this.minYear !== undefined) {
+      return this.minYear;
+    }
+    if (this.minDate) {
+      const year = Number(this.minDate.slice(0, 4));
+      if (!Number.isNaN(year)) {
+        return year;
+      }
+    }
+    return 2020;
+  }
+
+  get effectiveMaxYear(): number {
+    if (this.maxYear !== undefined) {
+      return this.maxYear;
+    }
+    if (this.maxDate) {
+      const year = Number(this.maxDate.slice(0, 4));
+      if (!Number.isNaN(year)) {
+        return year;
+      }
+    }
+    return 2030;
+  }
+
   get years(): number[] {
+    const min = this.effectiveMinYear;
+    const max = this.effectiveMaxYear;
     return Array.from(
-      { length: this.maxYear - this.minYear + 1 },
-      (_, index) => this.minYear + index
+      { length: Math.max(1, max - min + 1) },
+      (_, index) => min + index
     );
   }
 
@@ -109,11 +140,51 @@ export class DatePickerComponent implements OnChanges {
   }
 
   get canGoPrevious(): boolean {
-    return !(this.visibleYear === this.minYear && this.visibleMonth === 0);
+    if (this.minDate) {
+      const [minY, minM] = this.minDate.split('-').map(Number);
+      if (this.visibleYear < minY || (this.visibleYear === minY && this.visibleMonth <= minM - 1)) {
+        return false;
+      }
+    }
+    return !(this.visibleYear <= this.effectiveMinYear && this.visibleMonth === 0);
   }
 
   get canGoNext(): boolean {
-    return !(this.visibleYear === this.maxYear && this.visibleMonth === 11);
+    if (this.maxDate) {
+      const [maxY, maxM] = this.maxDate.split('-').map(Number);
+      if (this.visibleYear > maxY || (this.visibleYear === maxY && this.visibleMonth >= maxM - 1)) {
+        return false;
+      }
+    }
+    return !(this.visibleYear >= this.effectiveMaxYear && this.visibleMonth === 11);
+  }
+
+  isMonthDisabled(monthIndex: number): boolean {
+    if (this.minDate) {
+      const [minY, minM] = this.minDate.split('-').map(Number);
+      if (this.visibleYear < minY || (this.visibleYear === minY && monthIndex < minM - 1)) {
+        return true;
+      }
+    }
+    if (this.maxDate) {
+      const [maxY, maxM] = this.maxDate.split('-').map(Number);
+      if (this.visibleYear > maxY || (this.visibleYear === maxY && monthIndex > maxM - 1)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  isYearDisabled(year: number): boolean {
+    if (this.minDate) {
+      const minY = Number(this.minDate.split('-')[0]);
+      if (year < minY) return true;
+    }
+    if (this.maxDate) {
+      const maxY = Number(this.maxDate.split('-')[0]);
+      if (year > maxY) return true;
+    }
+    return false;
   }
 
   get calendarCells(): CalendarCell[] {
@@ -130,18 +201,21 @@ export class DatePickerComponent implements OnChanges {
         value: null,
         inMonth: false,
         isToday: false,
-        isSelected: false
+        isSelected: false,
+        isOutOfRange: false
       });
     }
 
     for (let day = 1; day <= daysInMonth; day += 1) {
       const value = this.formatDate(this.visibleYear, this.visibleMonth, day);
+      const isOutOfRange = (!!this.minDate && value < this.minDate) || (!!this.maxDate && value > this.maxDate);
       cells.push({
         day,
         value,
         inMonth: true,
         isToday: value === today,
-        isSelected: value === this.value
+        isSelected: value === this.value,
+        isOutOfRange
       });
     }
 
@@ -151,7 +225,8 @@ export class DatePickerComponent implements OnChanges {
         value: null,
         inMonth: false,
         isToday: false,
-        isSelected: false
+        isSelected: false,
+        isOutOfRange: false
       });
     }
 
@@ -197,7 +272,7 @@ export class DatePickerComponent implements OnChanges {
   }
 
   selectDate(cell: CalendarCell): void {
-    if (!cell.value || this.disabled) {
+    if (!cell.value || this.disabled || cell.isOutOfRange) {
       return;
     }
 
@@ -297,6 +372,21 @@ export class DatePickerComponent implements OnChanges {
       return;
     }
 
+    const todayStr = this.toDateString(new Date());
+    let targetDateStr = todayStr;
+    if (this.minDate && targetDateStr < this.minDate) {
+      targetDateStr = this.minDate;
+    } else if (this.maxDate && targetDateStr > this.maxDate) {
+      targetDateStr = this.maxDate;
+    }
+
+    const targetParsed = this.parseValue(targetDateStr);
+    if (targetParsed) {
+      this.visibleYear = this.clampYear(targetParsed.year);
+      this.visibleMonth = targetParsed.month;
+      return;
+    }
+
     const now = new Date();
     this.visibleYear = this.clampYear(now.getFullYear());
     this.visibleMonth = now.getMonth();
@@ -320,7 +410,7 @@ export class DatePickerComponent implements OnChanges {
   }
 
   private clampYear(year: number): number {
-    return Math.min(this.maxYear, Math.max(this.minYear, year));
+    return Math.min(this.effectiveMaxYear, Math.max(this.effectiveMinYear, year));
   }
 
   private formatDate(year: number, month: number, day: number): string {

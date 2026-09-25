@@ -184,6 +184,13 @@
   background: var(--color-surface-secondary);
 }
 
+.toolbar-dropdown-option:disabled,
+.toolbar-dropdown-option--month:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .toolbar-dropdown-option--month {
   min-height: 38px;
   padding: 6px 4px;
@@ -196,7 +203,7 @@
   text-align: center;
   transition: all 140ms ease;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: var(--color-surface-primary);
     color: var(--color-brand-primary);
   }
@@ -222,15 +229,21 @@
   justify-content: center;
   width: 34px;
   height: 34px;
-  border: 1px solid var(--color-border-subtle);
+  border: none;
   border-radius: 10px;
-  background: var(--color-surface-primary);
+  background: var(--color-surface-secondary);
   color: var(--color-text-secondary);
   cursor: pointer;
+  transition: background-color 140ms ease, color 140ms ease;
+
+  &:hover:not(:disabled) {
+    background: var(--color-surface-hover, #e2e8f0);
+    color: var(--color-text-primary);
+  }
 }
 
 .nav-button:disabled {
-  opacity: 0.5;
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
@@ -303,7 +316,15 @@
 }
 
 .day-cell:disabled {
-  cursor: default;
+  opacity: 0.32;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.day-cell.out-of-range {
+  opacity: 0.25;
+  text-decoration: line-through;
+  text-decoration-color: var(--color-text-muted);
 }
 
 @keyframes date-picker-panel-in {

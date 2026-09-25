@@ -8,6 +8,34 @@
     <div class="brand-title-wrap">
       <span class="brand-title">Ñawi</span>
     </div>
+    }
+    <div class="notification-wrap" (click)="$event.stopPropagation()">
+      <button class="notification-toggle" type="button" (click)="toggleNotifications($event)"
+        [attr.aria-label]="notificationCount() ? notificationCount() + ' alertas académicas pendientes' : 'Alertas académicas'"
+        title="Alertas académicas">
+        <i class="fa-regular fa-bell"></i>
+        @if (notificationCount() > 0) { <span class="notification-badge">{{ notificationCount() > 99 ? '99+' : notificationCount() }}</span> }
+      </button>
+      @if (notificationsOpen()) {
+        <section class="notification-popover" aria-label="Alertas académicas pendientes">
+          <header><strong>Alertas académicas</strong><span>{{ notificationCount() }}</span></header>
+          @if (notifications().length) {
+            <div class="notification-items">
+              @for (alerta of notifications().slice(0, 5); track alerta.id) {
+                <button class="notification-item" type="button" (click)="abrirAlerta(alerta)">
+                  <i class="fa-solid" [class.fa-user-check]="alerta.tipo === 'ASISTENCIA_PENDIENTE'" [class.fa-pen-to-square]="alerta.tipo === 'NOTAS_PENDIENTES'"></i>
+                  <span><strong>{{ alerta.titulo }}</strong><small>{{ alerta.curso }} · {{ alerta.grado }} {{ alerta.seccion }} · {{ alerta.cantidadPendiente }} pendientes</small></span>
+                </button>
+              }
+            </div>
+          } @else {
+            <p class="notification-empty">No tienes pendientes académicos.</p>
+          }
+          <button class="notification-all" type="button" (click)="verCentroAlertas()">Abrir centro de alertas <i class="fa-solid fa-arrow-right"></i></button>
+        </section>
+      }
+    </div>
+    @if (!collapsed()) {
     <button class="sidebar-toggle" type="button" (click)="toggleCollapsed()" aria-label="Colapsar menú">
       <i class="fa-solid fa-angles-left"></i>
     </button>

@@ -19,6 +19,7 @@ import { formatearMensajeError } from '../../utils/error-formatter';
 
 export type ModoVistaTutoria = 'matriz' | 'fichas';
 export type FiltroRiesgoTutoria = 'todos' | 'riesgo' | 'desaprobados' | 'asistencia';
+export type OrdenTutoria = 'nombre' | 'promedio-asc' | 'promedio-desc' | 'asistencia-asc';
 
 @Component({
   selector: 'app-seccion-tutorada',
@@ -116,6 +117,8 @@ export class SeccionTutorada implements OnInit {
     };
   });
 
+  readonly orden = signal<OrdenTutoria>('nombre');
+
   // Lista de alumnos con búsqueda y filtros reactivos
   readonly alumnosFiltrados = computed(() => {
     const resumen = this.resumenAcademico();
@@ -138,6 +141,17 @@ export class SeccionTutorada implements OnInit {
       lista = lista.filter((a) => this.contarCursosDesaprobados(a) > 0);
     } else if (filtro === 'asistencia') {
       lista = lista.filter((a) => (a.porcentajeAsistencia ?? 100) < 80);
+    }
+
+    const criterioOrden = this.orden();
+    if (criterioOrden === 'promedio-asc') {
+      lista.sort((a, b) => (a.promedioGeneral ?? 99) - (b.promedioGeneral ?? 99));
+    } else if (criterioOrden === 'promedio-desc') {
+      lista.sort((a, b) => (b.promedioGeneral ?? -1) - (a.promedioGeneral ?? -1));
+    } else if (criterioOrden === 'asistencia-asc') {
+      lista.sort((a, b) => (a.porcentajeAsistencia ?? 100) - (b.porcentajeAsistencia ?? 100));
+    } else {
+      lista.sort((a, b) => a.alumnoNombreCompleto.localeCompare(b.alumnoNombreCompleto));
     }
 
     return lista;
@@ -364,13 +378,20 @@ export class SeccionTutorada implements OnInit {
     this.seleccionarPeriodoEvaluacion(periodos[indice + 1].id, false, 'right');
   }
 
-  // Métodos de control visual y filtros
   setModoVista(modo: ModoVistaTutoria): void {
     this.modoVista.set(modo);
   }
 
   setFiltroRiesgo(filtro: FiltroRiesgoTutoria): void {
     this.filtroRiesgo.set(filtro);
+  }
+
+  setOrden(orden: OrdenTutoria): void {
+    this.orden.set(orden);
+  }
+
+  obtenerInasistencias(clasesAsistidas: number, clasesProgramadas: number): number {
+    return Math.max(0, clasesProgramadas - clasesAsistidas);
   }
 
   onBusquedaChange(event: Event): void {

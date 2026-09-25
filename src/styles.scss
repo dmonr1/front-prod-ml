@@ -509,8 +509,8 @@ section.predictions-shell {
 .table-panel,
 .selected-sections-card,
 .initial-password-card,
-.course-option,
 .evaluation-template-row,
+.period-card,
 .evaluation-draft-row {
   border: none !important;
   box-shadow: var(--shadow-md) !important;
@@ -562,8 +562,8 @@ body.dark-mode {
   .table-panel,
   .selected-sections-card,
   .initial-password-card,
-  .course-option,
   .evaluation-template-row,
+  .period-card,
   .evaluation-draft-row {
     background: var(--color-surface-primary) !important;
     border: none !important;

@@ -205,4 +205,28 @@ describe('Login Component - Recordar Contraseña', () => {
       expect(component.form.controls.password.value).toBe('textoconespacios');
     });
   });
+
+  describe('Conmutador de Modo Oscuro / Claro en el Login', () => {
+    it('debe alternar el tema al llamar a toggleTema()', () => {
+      fixture = TestBed.createComponent(Login);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+
+      const estadoInicial = component.isDark();
+      component.toggleTema();
+      expect(component.isDark()).toBe(!estadoInicial);
+
+      component.toggleTema();
+      expect(component.isDark()).toBe(estadoInicial);
+    });
+
+    it('debe renderizar el boton de tema con la clase login-theme-toggle', () => {
+      fixture = TestBed.createComponent(Login);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+
+      const botonTema = fixture.nativeElement.querySelector('.login-theme-toggle');
+      expect(botonTema).toBeTruthy();
+    });
+  });
 });

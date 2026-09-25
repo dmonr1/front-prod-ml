@@ -1,36 +1,36 @@
 <app-shell>
-  <section class="attendance-page">
+  <section class="attendance-page" [class.is-detail-view]="vista() === 'lista'">
     <app-custom-alert [open]="alertState().open" [type]="alertState().type" [title]="alertState().title"
       [message]="alertState().message" confirmText="Entendido" (confirm)="cerrarAlerta()"
       (cancel)="cerrarAlerta()" (dismiss)="cerrarAlerta()" />
 
-    <!-- 1. Encabezado unificado de página (mismo card container institucional) -->
-    <header class="card-head">
-      <div class="head-title-wrap">
-        <div class="head-icon">
-          <i class="fa-solid fa-user-check"></i>
-        </div>
-        <div>
-          <div class="head-title-line">
-            <h2>{{ vista() === 'agenda' ? 'Asistencias' : 'Registro de Asistencia' }}</h2>
-            <span class="head-badge">Gestión Académica</span>
+    <!-- 1. Encabezado unificado de página (solo para la agenda de sesiones) -->
+    @if (vista() === 'agenda') {
+      <header class="card-head">
+        <div class="head-title-wrap">
+          <div class="head-icon">
+            <i class="fa-solid fa-user-check"></i>
           </div>
-          <p class="head-subtitle">
-            {{ vista() === 'agenda'
-              ? 'Control y registro de asistencia por sesión programada, período evaluativo y año escolar.'
-              : 'Nómina de estudiantes para la sesión seleccionada.' }}
-          </p>
+          <div>
+            <div class="head-title-line">
+              <h2>Asistencias</h2>
+              <span class="head-badge">Gestión Académica</span>
+            </div>
+            <p class="head-subtitle">
+              Control y registro de asistencia por sesión programada, período evaluativo y año escolar.
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div class="head-controls">
-        @if (periodoAcademico(); as per) {
-          <span class="period-informative-chip">
-            <i class="fa-solid fa-calendar-check"></i> Período {{ per.nombre }} · {{ per.anio }}
-          </span>
-        }
-      </div>
-    </header>
+        <div class="head-controls">
+          @if (periodoAcademico(); as per) {
+            <span class="period-informative-chip">
+              <i class="fa-solid fa-calendar-check"></i> Período {{ per.nombre }} · {{ per.anio }}
+            </span>
+          }
+        </div>
+      </header>
+    }
 
     <!-- 2. Cuerpo principal con scroll interno y ajuste al 100% de ancho -->
     <div class="attendance-body">
@@ -81,7 +81,7 @@
                     [ngModel]="periodoEvaluacionFiltroId()"
                     (ngModelChange)="actualizarPeriodoFiltro($event)"
                   >
-                    @for (evalItem of periodosEvaluacion(); track evalItem.id) {
+                    @for (evalItem of periodosEvaluacionDisponibles(); track evalItem.id) {
                       <option [value]="evalItem.id">
                         {{ evalItem.nombre }} ({{ formatoFechaCorta(evalItem.fechaInicio) }} - {{ formatoFechaCorta(evalItem.fechaFin) }})
                       </option>
@@ -99,7 +99,7 @@
                 >
                   <option [value]="null">Todos los cursos</option>
                   @for (asig of asignaciones(); track asig.id) {
-                    <option [value]="asig.id">{{ asig.curso }} · Sec. {{ asig.seccion }}</option>
+                    <option [value]="asig.id">{{ asig.curso }} · {{ asig.grado }} · Sec. {{ asig.seccion }}</option>
                   }
                 </select>
               </div>
@@ -188,9 +188,11 @@
                     <div class="details-col">
                       <div class="top-tags">
                         <span class="tag-time">
-                          <i class="fa-regular fa-clock"></i> {{ sesion.horario.horaInicio.slice(0, 5) }} – {{ sesion.horario.horaFin.slice(0, 5) }}
+                          <i class="fa-regular fa-clock"></i> {{ sesion.horario.horaInicio.slice(0, 5) }} – {{ sesion.horaFin.slice(0, 5) }}
                         </span>
-                        @if (sesion.horario.bloque) {
+                        @if (sesion.bloques > 1) {
+                          <span class="tag-block">Sesión continua · {{ sesion.bloques }} bloques</span>
+                        } @else if (sesion.horario.bloque) {
                           <span class="tag-block">{{ sesion.horario.bloque }}</span>
                         }
                         @if (sesion.periodo) {
@@ -209,21 +211,57 @@
                       </div>
                     </div>
 
-                    <!-- Botón de acción directo -->
+                    <span class="attendance-state-badge"
+                      [class.is-done]="claseEstadoSesion(sesion) === 'is-done'"
+                      [class.is-partial]="claseEstadoSesion(sesion) === 'is-partial'"
+                      [class.is-pending]="claseEstadoSesion(sesion) === 'is-pending'"
+                      [class.is-scheduled]="claseEstadoSesion(sesion) === 'is-scheduled'">
+                      <i [class]="tieneAsistencia(sesion) ? 'fa-solid fa-circle-check' : sesion.esPasada ? 'fa-solid fa-triangle-exclamation' : 'fa-regular fa-clock'"></i>
+                      {{ estadoSesion(sesion) }}
+                    </span>
+
                     <div class="action-col">
-                      @if (sesion.periodo) {
+                      @if (puedeRegistrarSesion(sesion)) {
                         <button
                           type="button"
                           class="action-btn"
                           (click)="abrirSesion(sesion.horario.asignacionId, sesion.fecha, sesion.horario.id)"
+                          title="Registrar asistencia para esta sesión"
                         >
                           <i class="fa-solid fa-user-check"></i>
-                          <span>Registrar asistencia</span>
+                          <span>Registrar</span>
                         </button>
+                      } @else if (tieneAsistencia(sesion) || sesion.esPasada) {
+                        <button
+                          type="button"
+                          class="action-btn action-btn-secondary"
+                          (click)="abrirSesion(sesion.horario.asignacionId, sesion.fecha, sesion.horario.id)"
+                          title="Revisar registro de asistencia"
+                        >
+                          <i class="fa-solid fa-eye"></i>
+                          <span>Revisar</span>
+                        </button>
+                        @if (puedeEditarHistorico()) {
+                          <button
+                            type="button"
+                            class="action-btn action-btn-edit"
+                            (click)="abrirSesion(sesion.horario.asignacionId, sesion.fecha, sesion.horario.id, true)"
+                            title="Corregir asistencia registrada"
+                          >
+                            <i class="fa-solid fa-pen-to-square"></i>
+                            <span>Corregir</span>
+                          </button>
+                        }
                       } @else {
-                        <span class="unconfigured-pill">
-                          <i class="fa-solid fa-triangle-exclamation"></i> Sin período evaluativo
-                        </span>
+                        <button
+                          type="button"
+                          class="action-btn is-disabled"
+                          disabled
+                          [title]="!sesion.periodo ? 'La fecha no tiene un período evaluativo configurado' : 'Disponible el día de la clase'"
+                        >
+                          <i class="fa-regular fa-clock"></i>
+                          <span>Programada</span>
+                        </button>
                       }
                     </div>
                   </div>
@@ -235,17 +273,23 @@
       } @else {
         <!-- VISTA DE TOMA DE ASISTENCIA POR ALUMNOS -->
         <div class="attendance-sheet-layout">
-          <!-- Encabezado con información de clase y KPIs -->
+          <!-- Encabezado Principal del Detalle de Sesión -->
           <div class="sheet-top-banner">
             <div class="sheet-title-row">
-              <button type="button" class="btn-back" (click)="volverAgenda()" aria-label="Volver a clases">
+              <button type="button" class="btn-back-nav" (click)="volverAgenda()" title="Volver a la programación de clases">
                 <i class="fa-solid fa-arrow-left"></i>
-                <span>Volver</span>
+                <span>Volver a Clases</span>
               </button>
+
               <div class="sheet-heading">
-                <h2>{{ asignacionSeleccionada()?.curso }}</h2>
+                <div class="sheet-course-title-line">
+                  <h2>{{ asignacionSeleccionada()?.curso }}</h2>
+                  <span class="sheet-section-pill">
+                    <i class="fa-solid fa-chalkboard-user"></i>
+                    {{ asignacionSeleccionada()?.grado }} · Sección "{{ asignacionSeleccionada()?.seccion }}"
+                  </span>
+                </div>
                 <div class="sheet-chips">
-                  <span class="info-chip"><i class="fa-solid fa-users"></i> Sección {{ asignacionSeleccionada()?.seccion }}</span>
                   <span class="info-chip"><i class="fa-regular fa-calendar"></i> {{ formatoFechaCapitalizada(fecha()) }}</span>
                   @if (horarioSeleccionado(); as hor) {
                     <span class="info-chip"><i class="fa-regular fa-clock"></i> {{ hor.horaInicio.slice(0, 5) }} – {{ hor.horaFin.slice(0, 5) }}</span>
@@ -255,32 +299,47 @@
                   }
                 </div>
               </div>
+
+              @if (soloLectura() && puedeEditarHistorico()) {
+                <button type="button" class="btn-edit-attendance" (click)="iniciarEdicionHistorica()">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                  <span>Editar Asistencia</span>
+                </button>
+              }
             </div>
 
-            <!-- Resumen numérico KPI en tarjetas suaves sin bordes agresivos -->
+            @if (edicionHistorica()) {
+              <div class="attendance-edit-reason">
+                <label for="motivoEdicion"><i class="fa-solid fa-pen-nib"></i> Motivo de la corrección:</label>
+                <input id="motivoEdicion" type="text" maxlength="500" [ngModel]="motivoEdicion()"
+                  (ngModelChange)="motivoEdicion.set($event)" placeholder="Describe por qué se corrige esta asistencia..." />
+              </div>
+            }
+
+            <!-- Resumen numérico KPI en tarjetas suaves sin bordes y con sombras sutiles -->
             <div class="kpi-strip">
               <div class="kpi-box kpi-box-total">
                 <span class="kpi-val">{{ resumen().total }}</span>
                 <span class="kpi-lbl">Matriculados</span>
               </div>
               <div class="kpi-box kpi-box-presentes">
-                <span class="kpi-val">{{ resumen().presentes }}</span>
+                <span class="kpi-val text-emerald">{{ resumen().presentes }}</span>
                 <span class="kpi-lbl">Presentes</span>
               </div>
               <div class="kpi-box kpi-box-tardanzas">
-                <span class="kpi-val">{{ resumen().tardanzas }}</span>
+                <span class="kpi-val text-amber">{{ resumen().tardanzas }}</span>
                 <span class="kpi-lbl">Tardanzas</span>
               </div>
               <div class="kpi-box kpi-box-ausentes">
-                <span class="kpi-val">{{ resumen().ausentes }}</span>
+                <span class="kpi-val text-rose">{{ resumen().ausentes }}</span>
                 <span class="kpi-lbl">Ausentes</span>
               </div>
               <div class="kpi-box kpi-box-justificados">
-                <span class="kpi-val">{{ resumen().justificados }}</span>
+                <span class="kpi-val text-blue">{{ resumen().justificados }}</span>
                 <span class="kpi-lbl">Justificados</span>
               </div>
               <div class="kpi-box kpi-box-rate">
-                <span class="kpi-val">{{ resumen().porcentaje }}%</span>
+                <span class="kpi-val text-brand">{{ resumen().porcentaje }}%</span>
                 <span class="kpi-lbl">Asistencia</span>
               </div>
             </div>
@@ -290,13 +349,13 @@
           <div class="sheet-action-toolbar">
             <div class="bulk-group">
               <span class="bulk-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Marcar todos:</span>
-              <button type="button" class="btn-bulk btn-bulk-pres" (click)="marcarTodos('PRESENTE')">
+              <button type="button" class="btn-bulk btn-bulk-pres" [disabled]="soloLectura()" (click)="marcarTodos('PRESENTE')">
                 <i class="fa-solid fa-check"></i> Presentes
               </button>
-              <button type="button" class="btn-bulk btn-bulk-aus" (click)="marcarTodos('AUSENTE')">
+              <button type="button" class="btn-bulk btn-bulk-aus" [disabled]="soloLectura()" (click)="marcarTodos('AUSENTE')">
                 <i class="fa-solid fa-xmark"></i> Ausentes
               </button>
-              <button type="button" class="btn-bulk btn-bulk-reset" (click)="limpiarTodos()">
+              <button type="button" class="btn-bulk btn-bulk-reset" [disabled]="soloLectura()" (click)="limpiarTodos()">
                 <i class="fa-solid fa-rotate-left"></i> Limpiar
               </button>
             </div>
@@ -310,7 +369,7 @@
                 (ngModelChange)="busquedaEstudiante.set($event)"
               />
               @if (busquedaEstudiante()) {
-                <button type="button" class="clear-btn" (click)="limpiarBusquedaEstudiante()">
+                <button type="button" class="clear-btn" (click)="limpiarBusquedaEstudiante()" title="Limpiar búsqueda">
                   <i class="fa-solid fa-xmark"></i>
                 </button>
               }
@@ -350,6 +409,7 @@
                             type="button"
                             class="switch-pill status-{{ estado.value.toLowerCase() }}"
                             [class.active]="fila.estado === estado.value"
+                            [disabled]="soloLectura()"
                             (click)="cambiarEstado(fila.matricula.id, estado.value)"
                           >
                             <i [class]="estado.icon"></i>
@@ -365,6 +425,7 @@
                         maxlength="255"
                         placeholder="Observación opcional..."
                         [ngModel]="fila.observacion"
+                        [readonly]="soloLectura()"
                         (ngModelChange)="cambiarObservacion(fila.matricula.id, $event)"
                       />
                     </td>
@@ -384,7 +445,11 @@
           <!-- Pie de página fijo de la toma de asistencia -->
           <div class="sheet-bottom-bar">
             <div class="completion-info">
-              @if (faltantesPorMarcar() > 0) {
+              @if (soloLectura()) {
+                <span class="status-alert alert-warn">
+                  <i class="fa-solid fa-lock"></i> Asistencia en modo de consulta.
+                </span>
+              } @else if (faltantesPorMarcar() > 0) {
                 <span class="status-alert alert-warn">
                   <i class="fa-solid fa-triangle-exclamation"></i>
                   Faltan <strong>{{ faltantesPorMarcar() }}</strong> estudiantes por registrar estado.
@@ -397,8 +462,8 @@
               }
             </div>
             <div class="sheet-buttons">
-              <button type="button" class="btn-secondary" (click)="volverAgenda()">
-                Cancelar
+              <button type="button" class="btn-secondary" (click)="edicionHistorica() ? edicionHistorica.set(false) : volverAgenda()">
+                {{ edicionHistorica() ? 'Cancelar edición' : 'Volver' }}
               </button>
               <button
                 type="button"
@@ -411,7 +476,7 @@
                   <span>Guardando...</span>
                 } @else {
                   <i class="fa-solid fa-floppy-disk"></i>
-                  <span>Guardar asistencia</span>
+                  <span>{{ edicionHistorica() ? 'Guardar corrección' : 'Guardar asistencia' }}</span>
                 }
               </button>
             </div>

@@ -5,7 +5,7 @@ import { forkJoin } from 'rxjs';
 import { CustomAlertComponent, CustomAlertType } from '../../components/custom-alert/custom-alert';
 import { Shell } from '../../layouts/shell/shell';
 import { AsignacionDocente } from '../../models/asignacion';
-import { AsistenciaSesion, EstadoAsistenciaSesion } from '../../models/asistencia-sesion';
+import { AsistenciaSesion, EstadoAsistenciaSesion, EstadoAsistenciaSesionResumen } from '../../models/asistencia-sesion';
 import { HorarioSemanal, DiaSemana } from '../../models/horario';
 import { Matricula } from '../../models/matricula';
 import { PeriodoAcademico } from '../../models/periodo-academico';
@@ -31,6 +31,8 @@ interface SesionProgramada {
   periodo: PeriodoEvaluacion | null;
   esHoy: boolean;
   esPasada: boolean;
+  horaFin: string;
+  bloques: number;
 }
 
 interface AlertState {
@@ -57,7 +59,7 @@ export class AsistenciaSesionPage implements OnInit {
   private readonly matriculasService = inject(MatriculaService);
   private readonly asistenciaService = inject(AsistenciaSesionService);
 
-  readonly dias: DiaSemana[] = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
+  readonly dias: DiaSemana[] = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES'];
   readonly nombresDias: Record<DiaSemana, string> = {
     LUNES: 'Lunes',
     MARTES: 'Martes',
@@ -85,6 +87,7 @@ export class AsistenciaSesionPage implements OnInit {
   readonly periodosEvaluacion = signal<PeriodoEvaluacion[]>([]);
   readonly asignaciones = signal<AsignacionDocente[]>([]);
   readonly horarios = signal<HorarioSemanal[]>([]);
+  readonly resumenAsistencia = signal<Map<string, EstadoAsistenciaSesionResumen>>(new Map());
 
   // Filtros de navegación
   readonly modoVista = signal<'semana' | 'periodo' | 'anio'>('semana');
@@ -98,6 +101,9 @@ export class AsistenciaSesionPage implements OnInit {
   readonly horarioSemanalId = signal<number | null>(null);
   readonly periodoId = signal<number | null>(null);
   readonly filas = signal<FilaAsistencia[]>([]);
+  readonly edicionHistorica = signal(false);
+  readonly motivoEdicion = signal('');
+  readonly asistenciaExistente = signal(false);
   readonly busquedaEstudiante = signal('');
 
   readonly asignacionSeleccionada = computed(() =>
@@ -110,6 +116,15 @@ export class AsistenciaSesionPage implements OnInit {
 
   readonly periodoSeleccionado = computed(() =>
     this.periodosEvaluacion().find((item) => item.id === this.periodoId()) ?? null
+  );
+
+  readonly puedeEditarHistorico = computed(() => {
+    const usuario = this.auth.obtenerUsuario();
+    return this.auth.tieneGestionAdministrativa() || (usuario?.roles.includes('DOCENTE_TUTOR') ?? false);
+  });
+
+  readonly soloLectura = computed(() =>
+    (!this.puedeRegistrarHoy() || this.asistenciaExistente()) && !this.edicionHistorica()
   );
 
   readonly etiquetaSemana = computed(() => {
@@ -127,6 +142,12 @@ export class AsistenciaSesionPage implements OnInit {
     const finSemana = this.sumarDias(this.semanaInicio(), 6);
     const finPeriodo = this.periodoAcademico()?.fechaFin ?? '';
     return finSemana < finPeriodo;
+  });
+
+  readonly periodosEvaluacionDisponibles = computed(() => {
+    const hoy = this.fechaLocalHoy();
+    const disponibles = this.periodosEvaluacion().filter((item) => item.fechaFin >= hoy);
+    return disponibles.length ? disponibles : this.periodosEvaluacion().slice(-1);
   });
 
   readonly sesiones = computed(() => {
@@ -160,9 +181,9 @@ export class AsistenciaSesionPage implements OnInit {
       fechaFinRange = periodo.fechaFin;
     }
 
-    const horariosFiltrados = asigId
+    const horariosFiltrados = (asigId
       ? this.horarios().filter((h) => h.asignacionId === asigId)
-      : this.horarios();
+      : this.horarios()).filter((h) => this.dias.includes(h.diaSemana));
 
     const sesiones: SesionProgramada[] = [];
     const cursor = this.parseFecha(fechaInicioRange);
@@ -173,8 +194,23 @@ export class AsistenciaSesionPage implements OnInit {
       const diaIndex = (cursor.getDay() + 6) % 7;
       const diaSemana = this.dias[diaIndex];
 
-      const horariosDelDia = horariosFiltrados.filter((h) => h.diaSemana === diaSemana);
-      for (const horario of horariosDelDia) {
+      if (!diaSemana) {
+        cursor.setDate(cursor.getDate() + 1);
+        continue;
+      }
+      const horariosDelDia = horariosFiltrados.filter((h) => h.diaSemana === diaSemana)
+        .sort((a, b) => a.horaInicio.localeCompare(b.horaInicio));
+      for (let i = 0; i < horariosDelDia.length; i++) {
+        const horario = horariosDelDia[i];
+        let horaFin = horario.horaFin;
+        let bloques = 1;
+        while (i + 1 < horariosDelDia.length
+          && horariosDelDia[i + 1].asignacionId === horario.asignacionId
+          && horariosDelDia[i + 1].horaInicio === horaFin) {
+          i++;
+          horaFin = horariosDelDia[i].horaFin;
+          bloques++;
+        }
         const periodoEval = this.periodosEvaluacion()
           .find((item) => item.periodoAcademicoId === periodo.id && fechaStr >= item.fechaInicio && fechaStr <= item.fechaFin) ?? null;
 
@@ -183,7 +219,9 @@ export class AsistenciaSesionPage implements OnInit {
           fecha: fechaStr,
           periodo: periodoEval,
           esHoy: fechaStr === hoyStr,
-          esPasada: fechaStr < hoyStr
+          esPasada: fechaStr < hoyStr,
+          horaFin,
+          bloques
         });
       }
 
@@ -263,12 +301,17 @@ export class AsistenciaSesionPage implements OnInit {
     this.filas().every((fila) => !!fila.estado) &&
     !this.guardando() &&
     !this.cargando() &&
-    !!this.periodoSeleccionado()
+    !!this.periodoSeleccionado() &&
+    (this.edicionHistorica()
+      ? this.puedeEditarHistorico() && this.motivoEdicion().trim().length >= 5
+      : this.puedeRegistrarHoy() && !this.asistenciaExistente())
   );
 
   ngOnInit(): void {
-    const docenteId = this.auth.obtenerUsuario()?.docenteId;
-    if (!docenteId) {
+    const usuario = this.auth.obtenerUsuario();
+    const docenteId = usuario?.docenteId;
+    const puedeVerTodas = this.auth.tieneGestionAdministrativa();
+    if (!docenteId && !puedeVerTodas) {
       this.mostrarAlerta('error', 'Acceso no disponible', 'Tu usuario no tiene un docente vinculado.');
       this.cargando.set(false);
       return;
@@ -291,12 +334,16 @@ export class AsistenciaSesionPage implements OnInit {
 
         this.periodos.set(periodos);
         this.periodoAcademico.set(periodo);
-        this.periodosEvaluacion.set(evaluaciones);
+        const evaluacionesDelPeriodo = evaluaciones
+          .filter((item) => item.periodoAcademicoId === periodo.id)
+          .sort((a, b) => a.fechaInicio.localeCompare(b.fechaInicio));
+        this.periodosEvaluacion.set(evaluacionesDelPeriodo);
 
         // Periodo de evaluación por defecto
         const hoy = this.fechaLocalHoy();
-        const evalActual = evaluaciones.find((e) => e.periodoAcademicoId === periodo.id && hoy >= e.fechaInicio && hoy <= e.fechaFin)
-          ?? evaluaciones.find((e) => e.periodoAcademicoId === periodo.id)
+        const evalActual = evaluacionesDelPeriodo.find((e) => hoy >= e.fechaInicio && hoy <= e.fechaFin)
+          ?? evaluacionesDelPeriodo.find((e) => e.fechaFin >= hoy)
+          ?? evaluacionesDelPeriodo.at(-1)
           ?? null;
         if (evalActual) {
           this.periodoEvaluacionFiltroId.set(evalActual.id);
@@ -305,24 +352,30 @@ export class AsistenciaSesionPage implements OnInit {
         this.semanaInicio.set(this.lunesDe(this.fechaDentroDelPeriodo(periodo.fechaInicio, periodo.fechaFin)));
 
         forkJoin({
-          asignaciones: this.asignacionesService.listarAsignaciones(docenteId, periodo.id),
-          horarios: this.horariosService.listarMios(periodo.id)
+          asignaciones: puedeVerTodas
+            ? this.asignacionesService.listarPorPeriodo(periodo.id)
+            : this.asignacionesService.listarAsignaciones(docenteId!, periodo.id),
+          horarios: puedeVerTodas
+            ? this.horariosService.listar(periodo.id)
+            : this.horariosService.listarMios(periodo.id)
         }).subscribe({
           next: ({ asignaciones, horarios }) => {
             const activas = asignaciones.filter((item) => (item.estado ?? 'ACTIVO') === 'ACTIVO');
             const ids = new Set(activas.map((item) => item.id));
             this.asignaciones.set(activas);
             this.horarios.set(horarios.filter((item) => ids.has(item.asignacionId)));
-            this.cargando.set(false);
-
-            const params = this.route.snapshot.queryParamMap;
-            const asignacionId = Number(params.get('asignacionId'));
-            const fecha = params.get('fecha') ?? '';
-            const horarioSemanalId = Number(params.get('horarioId')) || null;
-
-            if (asignacionId && fecha) {
-              this.abrirSesion(asignacionId, fecha, horarioSemanalId);
+            this.resumenAsistencia.set(new Map());
+            if (!activas.length) {
+              this.terminarCargaInicial();
+              return;
             }
+            this.asistenciaService.resumir(activas.map((item) => item.id), periodo.fechaInicio, periodo.fechaFin).subscribe({
+              next: (resumen) => {
+                this.resumenAsistencia.set(new Map(resumen.map((item) => [this.claveSesion(item.asignacionId, item.horarioSemanalId, item.fechaClase), item])));
+                this.terminarCargaInicial();
+              },
+              error: () => this.terminarCargaInicial()
+            });
           },
           error: (error) => this.mostrarError(error, 'No se pudieron cargar tus clases programadas.')
         });
@@ -353,7 +406,7 @@ export class AsistenciaSesionPage implements OnInit {
     this.semanaInicio.set(this.lunesDe(this.fechaDentroDelPeriodo(periodo.fechaInicio, periodo.fechaFin)));
   }
 
-  abrirSesion(asignacionId: number, fecha: string, horarioSemanalId: number | null = null): void {
+  abrirSesion(asignacionId: number, fecha: string, horarioSemanalId: number | null = null, editar = false): void {
     const asignacion = this.asignaciones().find((item) => item.id === asignacionId);
     const dia = (this.parseFecha(fecha).getDay() + 6) % 7;
 
@@ -388,36 +441,70 @@ export class AsistenciaSesionPage implements OnInit {
     this.horarioSemanalId.set(horarioSemanalId);
     this.fecha.set(fecha);
     this.periodoId.set(periodo.id);
+    this.edicionHistorica.set(editar && this.puedeEditarHistorico());
+    this.motivoEdicion.set('');
+    this.asistenciaExistente.set(false);
     this.vista.set('lista');
     this.busquedaEstudiante.set('');
     this.cargarLista();
+
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        asignacionId,
+        fecha,
+        horarioId: horarioSemanalId,
+        ...(editar ? { editar: 'true' } : { editar: null })
+      },
+      queryParamsHandling: 'merge'
+    });
   }
 
   volverAgenda(): void {
     this.vista.set('agenda');
     this.filas.set([]);
+    this.asignacionId.set(null);
+    this.horarioSemanalId.set(null);
+    this.fecha.set('');
+    this.periodoId.set(null);
+    this.edicionHistorica.set(false);
+    this.asistenciaExistente.set(false);
     this.cerrarAlerta();
     this.busquedaEstudiante.set('');
-    this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        asignacionId: null,
+        fecha: null,
+        horarioId: null,
+        editar: null
+      },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
   }
 
   cambiarEstado(matriculaId: number, estado: EstadoAsistenciaSesion): void {
+    if (this.soloLectura()) return;
     this.filas.update((filas) =>
       filas.map((fila) => fila.matricula.id === matriculaId ? { ...fila, estado } : fila)
     );
   }
 
   cambiarObservacion(matriculaId: number, observacion: string): void {
+    if (this.soloLectura()) return;
     this.filas.update((filas) =>
       filas.map((fila) => fila.matricula.id === matriculaId ? { ...fila, observacion } : fila)
     );
   }
 
   marcarTodos(estado: EstadoAsistenciaSesion): void {
+    if (this.soloLectura()) return;
     this.filas.update((filas) => filas.map((fila) => ({ ...fila, estado })));
   }
 
   limpiarTodos(): void {
+    if (this.soloLectura()) return;
     this.filas.update((filas) => filas.map((fila) => ({ ...fila, estado: '' as EstadoAsistenciaSesion })));
   }
 
@@ -455,6 +542,7 @@ export class AsistenciaSesionPage implements OnInit {
       registros: this.asistenciaService.listar(asignacion.id, periodo.id, fecha, this.horarioSemanalId())
     }).subscribe({
       next: ({ matriculas, registros }) => {
+        this.asistenciaExistente.set(registros.length > 0);
         const guardados = new Map<number, AsistenciaSesion>(registros.map((item) => [item.matriculaId, item]));
         this.filas.set(
           matriculas.map((matricula) => {
@@ -467,6 +555,15 @@ export class AsistenciaSesionPage implements OnInit {
           })
         );
         this.cargando.set(false);
+        if (this.soloLectura()) {
+          this.mostrarAlerta(
+            'info',
+            this.asistenciaExistente() ? 'Asistencia ya registrada' : 'Plazo de registro finalizado',
+            this.asistenciaExistente()
+              ? 'La asistencia está guardada y se muestra en modo de consulta.'
+              : 'Esta sesión ya pasó. Solo el tutor asignado, dirección académica o administración pueden registrar una corrección.'
+          );
+        }
       },
       error: (error) => this.mostrarError(error, 'No se pudo cargar la lista de asistencia.')
     });
@@ -481,7 +578,7 @@ export class AsistenciaSesionPage implements OnInit {
     this.guardando.set(true);
     this.cerrarAlerta();
 
-    this.asistenciaService.guardar({
+    const payload = {
       docenteCursoSeccionId: asignacion.id,
       horarioSemanalId: this.horarioSemanalId()!,
       periodoEvaluacionId: periodo.id,
@@ -491,8 +588,13 @@ export class AsistenciaSesionPage implements OnInit {
         estado: fila.estado as EstadoAsistenciaSesion,
         observacion: fila.observacion.trim() || null
       }))
-    }).subscribe({
+    };
+    const solicitud = this.edicionHistorica()
+      ? this.asistenciaService.editar({ ...payload, motivoEdicion: this.motivoEdicion().trim() })
+      : this.asistenciaService.guardar(payload);
+    solicitud.subscribe({
       next: (registros) => {
+        const fueEdicion = this.edicionHistorica();
         const guardados = new Map<number, AsistenciaSesion>(registros.map((item) => [item.matriculaId, item]));
         this.filas.update((filas) =>
           filas.map((fila) => {
@@ -500,14 +602,92 @@ export class AsistenciaSesionPage implements OnInit {
             return actualizado ? { ...fila, estado: actualizado.estado, observacion: actualizado.observacion ?? '' } : fila;
           })
         );
+        const horarioId = this.horarioSemanalId()!;
+        const fechaClase = this.fecha();
+        const resumenActualizado: EstadoAsistenciaSesionResumen = {
+          asignacionId: asignacion.id,
+          horarioSemanalId: horarioId,
+          fechaClase,
+          registradas: new Set(registros.map((item) => item.matriculaId)).size,
+          total: this.filas().length
+        };
+        this.resumenAsistencia.update((resumen) => {
+          const actualizado = new Map(resumen);
+          actualizado.set(this.claveSesion(asignacion.id, horarioId, fechaClase), resumenActualizado);
+          return actualizado;
+        });
         this.guardando.set(false);
-        this.mostrarAlerta('success', 'Asistencia registrada', `Se guardó la asistencia para el ${this.formatoFecha(this.fecha())}.`);
+        this.asistenciaExistente.set(true);
+        this.edicionHistorica.set(false);
+        this.motivoEdicion.set('');
+        const mensaje = `${fueEdicion ? 'Se corrigió' : 'Se registró'} la asistencia para el ${this.formatoFecha(fechaClase)}.`;
+        this.volverAgenda();
+        this.mostrarAlerta('success', fueEdicion ? 'Asistencia corregida' : 'Asistencia registrada', mensaje);
       },
       error: (error) => {
         this.guardando.set(false);
         this.mostrarError(error, 'No se pudo guardar la asistencia.');
       }
     });
+  }
+
+  iniciarEdicionHistorica(): void {
+    if (!this.puedeEditarHistorico()) return;
+    this.edicionHistorica.set(true);
+    this.cerrarAlerta();
+  }
+
+  esFechaPasada(): boolean {
+    return !!this.fecha() && this.fecha() < this.fechaLocalHoy();
+  }
+
+  puedeRegistrarHoy(): boolean {
+    return !!this.fecha() && this.fecha() === this.fechaLocalHoy();
+  }
+
+  resumenSesion(sesion: SesionProgramada): EstadoAsistenciaSesionResumen | null {
+    return this.resumenAsistencia().get(this.claveSesion(
+      sesion.horario.asignacionId, sesion.horario.id, sesion.fecha
+    )) ?? null;
+  }
+
+  tieneAsistencia(sesion: SesionProgramada): boolean {
+    return (this.resumenSesion(sesion)?.registradas ?? 0) > 0;
+  }
+
+  puedeRegistrarSesion(sesion: SesionProgramada): boolean {
+    return !!sesion.periodo && sesion.esHoy && !this.tieneAsistencia(sesion)
+      && (this.resumenSesion(sesion)?.total ?? 0) > 0;
+  }
+
+  estadoSesion(sesion: SesionProgramada): string {
+    const resumen = this.resumenSesion(sesion);
+    if (resumen && resumen.total > 0 && resumen.registradas >= resumen.total) {
+      return `Registrada · ${resumen.registradas}/${resumen.total}`;
+    }
+    if (resumen) return `Parcial · ${resumen.registradas}/${resumen.total}`;
+    return sesion.esPasada ? 'Pendiente' : sesion.esHoy ? 'Pendiente de registro' : 'Programada';
+  }
+
+  claseEstadoSesion(sesion: SesionProgramada): string {
+    const resumen = this.resumenSesion(sesion);
+    if (resumen && resumen.total > 0 && resumen.registradas >= resumen.total) return 'is-done';
+    if (resumen) return 'is-partial';
+    return sesion.esPasada ? 'is-pending' : 'is-scheduled';
+  }
+
+  private claveSesion(asignacionId: number, horarioId: number, fecha: string): string {
+    return `${asignacionId}:${horarioId}:${fecha}`;
+  }
+
+  private terminarCargaInicial(): void {
+    this.cargando.set(false);
+    const params = this.route.snapshot.queryParamMap;
+    const asignacionId = Number(params.get('asignacionId'));
+    const fecha = params.get('fecha') ?? '';
+    const horarioSemanalId = Number(params.get('horarioId')) || null;
+    const editar = params.get('editar') === 'true';
+    if (asignacionId && fecha) this.abrirSesion(asignacionId, fecha, horarioSemanalId, editar);
   }
 
   obtenerIniciales(nombre: string): string {
@@ -563,7 +743,7 @@ export class AsistenciaSesionPage implements OnInit {
   }
 
   cerrarAlerta(): void {
-    this.alertState.update((state) => ({ ...state, open: false }));
+    this.alertState.update((actual) => ({ ...actual, open: false }));
   }
 
   private mostrarAlerta(type: CustomAlertType, title: string, message: string): void {

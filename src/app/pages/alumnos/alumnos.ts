@@ -53,7 +53,7 @@ interface AlertState {
   autoCloseMs: number | null;
 }
 
-type PasoRegistroPeriodo = 1 | 2 | 3 | 4;
+type PasoRegistroPeriodo = 1 | 2 | 3 | 4 | 5;
 
 interface CorteSeguimientoBorrador extends CorteSeguimientoPayload {}
 
@@ -120,6 +120,7 @@ export class Alumnos {
   });
   readonly cursosSeleccionadosIds = signal<number[]>([]);
   readonly filtroCursos = signal('');
+  readonly filtroNivelCurso = signal<'TODOS' | 'PRIMARIA' | 'SECUNDARIA'>('TODOS');
   readonly formPeriodo = signal<PeriodoAcademicoPayload>({
     nombre: '',
     anio: this.currentYear,
@@ -232,6 +233,7 @@ export class Alumnos {
     this.regenerarConfiguracionesEvaluacionBorrador();
     this.cursosSeleccionadosIds.set([]);
     this.filtroCursos.set('');
+    this.filtroNivelCurso.set('TODOS');
     this.pasoModalPeriodo.set(1);
     this.modalPeriodoAbierto.set(true);
   }
@@ -264,9 +266,11 @@ export class Alumnos {
               fechaFin: periodoEvaluacion.fechaFin
             }))
         );
-        this.cortesSeguimientoBorrador.set((detalle.cortesSeguimiento ?? []).map((corte) => ({
-          semana: corte.semana,
-          fechaCorte: corte.fechaCorte
+        const semanasConfiguradas = [...new Set((detalle.cortesSeguimiento ?? []).map((corte) => corte.semana))]
+          .sort((a, b) => a - b);
+        this.cortesSeguimientoBorrador.set(semanasConfiguradas.map((semana) => ({
+          semana,
+          fechaCorte: this.fechaFinSemana(semana)
         })));
         if (!this.cortesSeguimientoBorrador().length) this.regenerarCortesSeguimientoBorrador();
 
@@ -291,6 +295,7 @@ export class Alumnos {
 
         this.cursosSeleccionadosIds.set(detalle.cursosPeriodoAcademico.map((cursoPeriodo) => cursoPeriodo.cursoId));
         this.filtroCursos.set('');
+        this.filtroNivelCurso.set('TODOS');
         this.cargandoDetallePeriodo.set(false);
       },
       error: () => {
@@ -324,7 +329,7 @@ export class Alumnos {
 
   siguientePasoModal(): void {
     const paso = this.pasoModalPeriodo();
-    if (paso < 4 && this.validarPasoModal(paso)) {
+    if (paso < 5 && this.validarPasoModal(paso)) {
       this.pasoModalPeriodo.set((paso + 1) as PasoRegistroPeriodo);
     }
   }
@@ -347,7 +352,8 @@ export class Alumnos {
 
     if (campo === 'fechaInicio' || campo === 'fechaFin') {
       this.regenerarPeriodosEvaluacionBorrador();
-      if (campo === 'fechaInicio') this.regenerarCortesSeguimientoBorrador();
+      if (this.cortesSeguimientoBorrador().length) this.actualizarFechasCortesBorrador();
+      else this.regenerarCortesSeguimientoBorrador();
     }
   }
 
@@ -369,18 +375,23 @@ export class Alumnos {
     this.tipoPeriodoEvaluacion.set(tipo);
     this.actualizarCampoPeriodo('tipoPeriodoEvaluacion', tipo);
     this.regenerarPeriodosEvaluacionBorrador();
+    if (this.cortesSeguimientoBorrador().length) this.actualizarFechasCortesBorrador();
+    else this.regenerarCortesSeguimientoBorrador();
   }
 
   actualizarFechaBorrador(index: number, campo: 'fechaInicio' | 'fechaFin', valor: string): void {
     this.periodosEvaluacionBorrador.update((actual) =>
       actual.map((periodo, i) => (i === index ? { ...periodo, [campo]: valor } : periodo))
     );
+    this.actualizarFechasCortesBorrador();
   }
 
   actualizarCorte(index: number, campo: 'semana' | 'fechaCorte', valor: number | string): void {
-    this.cortesSeguimientoBorrador.update((actual) => actual.map((corte, i) => i === index
-      ? { ...corte, [campo]: campo === 'semana' ? Number(valor) : String(valor) }
-      : corte));
+    this.cortesSeguimientoBorrador.update((actual) => actual.map((corte, i) => {
+      if (i !== index) return corte;
+      const semana = campo === 'semana' ? Number(valor) : corte.semana;
+      return { ...corte, semana, fechaCorte: this.fechaFinSemana(semana) };
+    }));
   }
 
   agregarCorteSeguimiento(): void {
@@ -522,17 +533,34 @@ export class Alumnos {
     this.filtroCursos.set(valor);
   }
 
+  cambiarFiltroNivel(nivel: 'TODOS' | 'PRIMARIA' | 'SECUNDARIA'): void {
+    this.filtroNivelCurso.set(nivel);
+  }
+
+  totalCursosPrimaria(): number {
+    return this.cursos().filter((c) => (c.nivelNombre || '').toUpperCase().includes('PRIMARIA')).length;
+  }
+
+  totalCursosSecundaria(): number {
+    return this.cursos().filter((c) => (c.nivelNombre || '').toUpperCase().includes('SECUNDARIA')).length;
+  }
+
   cursosFiltrados(): Curso[] {
     const filtro = this.filtroCursos().trim().toLowerCase();
-    if (!filtro) {
-      return this.cursos();
-    }
+    const nivel = this.filtroNivelCurso();
 
-    return this.cursos().filter((curso) =>
-      curso.nombre.toLowerCase().includes(filtro) ||
-      (curso.descripcion ?? '').toLowerCase().includes(filtro) ||
-      curso.nivelNombre.toLowerCase().includes(filtro)
-    );
+    return this.cursos().filter((curso) => {
+      const nivelUpper = (curso.nivelNombre || '').toUpperCase();
+      const coincideNivel = nivel === 'TODOS' || nivelUpper.includes(nivel);
+      if (!coincideNivel) return false;
+
+      if (!filtro) return true;
+      return (
+        curso.nombre.toLowerCase().includes(filtro) ||
+        (curso.descripcion ?? '').toLowerCase().includes(filtro) ||
+        curso.nivelNombre.toLowerCase().includes(filtro)
+      );
+    });
   }
 
   cursoSeleccionado(cursoId: number): boolean {
@@ -547,6 +575,11 @@ export class Alumnos {
     );
   }
 
+  seleccionarTodosLosCursos(): void {
+    const ids = this.cursos().map((curso) => curso.id);
+    this.cursosSeleccionadosIds.set(ids);
+  }
+
   seleccionarTodosCursosFiltrados(): void {
     const ids = this.cursosFiltrados().map((curso) => curso.id);
     this.cursosSeleccionadosIds.update((actual) => {
@@ -556,8 +589,29 @@ export class Alumnos {
     });
   }
 
+  seleccionarCursosPorNivel(nivel: 'PRIMARIA' | 'SECUNDARIA'): void {
+    const idsNivel = this.cursos()
+      .filter((curso) => (curso.nivelNombre || '').toUpperCase().includes(nivel))
+      .map((curso) => curso.id);
+    this.cursosSeleccionadosIds.update((actual) => {
+      const conjunto = new Set(actual);
+      idsNivel.forEach((id) => conjunto.add(id));
+      return [...conjunto];
+    });
+  }
+
   limpiarSeleccionCursos(): void {
     this.cursosSeleccionadosIds.set([]);
+  }
+
+  agregarCortePreset(semana: number): void {
+    const cortes = this.cortesSeguimientoBorrador();
+    if (cortes.some((c) => Number(c.semana) === semana)) {
+      return;
+    }
+    const nuevos = [...cortes, { semana, fechaCorte: this.fechaFinSemana(semana) }]
+      .sort((a, b) => Number(a.semana) - Number(b.semana));
+    this.cortesSeguimientoBorrador.set(nuevos);
   }
 
   copiarCursosPeriodoAnterior(): void {
@@ -626,28 +680,41 @@ export class Alumnos {
         fechaFin: rangos[index]?.fechaFin ?? ''
       }))
     );
+    if (this.cortesSeguimientoBorrador().length) this.actualizarFechasCortesBorrador();
   }
 
   private regenerarCortesSeguimientoBorrador(): void {
-    const { fechaInicio, fechaFin } = this.formPeriodo();
-    if (!fechaInicio || !fechaFin) {
+    const rangos = this.periodosEvaluacionBorrador();
+    if (!rangos.length || rangos.some((periodo) => !periodo.fechaInicio || !periodo.fechaFin)) {
       this.cortesSeguimientoBorrador.set([]);
       return;
     }
-    const totalSemanas = Math.ceil((this.parseDate(fechaFin).getTime() - this.parseDate(fechaInicio).getTime() + 86400000) / (7 * 86400000));
-    this.cortesSeguimientoBorrador.set([5, 8].filter((semana) => semana <= totalSemanas).map((semana) => ({
+    const semanasMaximas = Math.min(...rangos.map((periodo) =>
+      Math.floor((this.parseDate(periodo.fechaFin).getTime() - this.parseDate(periodo.fechaInicio).getTime() + 86400000) / (7 * 86400000))
+    ));
+    this.cortesSeguimientoBorrador.set([5, 8].filter((semana) => semana <= semanasMaximas).map((semana) => ({
       semana,
       fechaCorte: this.fechaFinSemana(semana)
     })));
   }
 
   private fechaFinSemana(semana: number): string {
-    const { fechaInicio, fechaFin } = this.formPeriodo();
+    const primerPeriodo = this.periodosEvaluacionBorrador()[0];
+    const { fechaInicio: inicioAcademico, fechaFin: finAcademico } = this.formPeriodo();
+    const fechaInicio = primerPeriodo?.fechaInicio || inicioAcademico;
+    const fechaFin = primerPeriodo?.fechaFin || finAcademico;
     if (!fechaInicio || !fechaFin || !Number.isInteger(semana) || semana < 1) return '';
     const date = this.parseDate(fechaInicio);
     date.setUTCDate(date.getUTCDate() + semana * 7 - 1);
     const fin = this.parseDate(fechaFin);
     return this.formatDate(date.getTime() > fin.getTime() ? fin : date);
+  }
+
+  private actualizarFechasCortesBorrador(): void {
+    this.cortesSeguimientoBorrador.update((cortes) => cortes.map((corte) => ({
+      ...corte,
+      fechaCorte: this.fechaFinSemana(Number(corte.semana))
+    })));
   }
 
   private regenerarConfiguracionesEvaluacionBorrador(): void {
@@ -737,6 +804,7 @@ export class Alumnos {
     this.regenerarConfiguracionesEvaluacionBorrador();
     this.cursosSeleccionadosIds.set([]);
     this.filtroCursos.set('');
+    this.filtroNivelCurso.set('TODOS');
     this.pasoModalPeriodo.set(1);
   }
 
@@ -924,28 +992,30 @@ export class Alumnos {
         );
         return false;
       }
+    }
 
+    if (paso === 3) {
       const cortes = this.cortesSeguimientoBorrador();
       const semanas = cortes.map((corte) => Number(corte.semana));
-      const fechaFinAcademica = this.parseDate(payload.fechaFin);
+      const periodos = this.periodosEvaluacionBorrador();
       const cortesInvalidos = !cortes.length || cortes.some((corte) => {
         const semana = Number(corte.semana);
-        if (!Number.isInteger(semana) || semana < 1 || !corte.fechaCorte) return true;
-        const inicioSemana = this.parseDate(payload.fechaInicio);
-        inicioSemana.setUTCDate(inicioSemana.getUTCDate() + (semana - 1) * 7);
-        const finSemana = new Date(inicioSemana);
-        finSemana.setUTCDate(finSemana.getUTCDate() + 6);
-        const fechaCorte = this.parseDate(corte.fechaCorte);
-        return inicioSemana > fechaFinAcademica || fechaCorte < inicioSemana || fechaCorte > finSemana || fechaCorte > fechaFinAcademica;
+        if (!Number.isInteger(semana) || semana < 1) return true;
+        return periodos.some((periodo) => {
+          if (!periodo.fechaInicio || !periodo.fechaFin) return true;
+          const finSemana = this.parseDate(periodo.fechaInicio);
+          finSemana.setUTCDate(finSemana.getUTCDate() + semana * 7 - 1);
+          return finSemana > this.parseDate(periodo.fechaFin);
+        });
       });
       if (cortesInvalidos || new Set(semanas).size !== semanas.length) {
         this.mostrarAlerta('warning', 'Cortes semanales no válidos',
-          'Configura al menos un corte, con semanas únicas y una fecha dentro de su semana y del período académico.');
+          'Configura semanas únicas que existan dentro de cada período de evaluación; el corte se repetirá en la misma semana de todos los períodos.');
         return false;
       }
     }
 
-    if (paso === 3 && !this.configuracionesEvaluacionBorrador().some(
+    if (paso === 4 && !this.configuracionesEvaluacionBorrador().some(
       (configuracion) => configuracion.seleccionado && Number(configuracion.cantidadEvaluaciones) > 0
     )) {
       this.mostrarAlerta(

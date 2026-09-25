@@ -233,15 +233,17 @@
               </select>
             </label>
             @if (evaluacionFechaSeleccionada(); as evaluacion) {
-              <label class="evaluation-planning-date">
+              <div class="evaluation-planning-date">
                 <span>Fecha de evaluación <b aria-hidden="true">*</b></span>
-                <input type="date" required [attr.aria-label]="'Fecha de ' + evaluacion.nombre"
+                <app-date-picker
                   [value]="evaluacion.fechaEvaluacion || ''"
-                  [min]="periodoEvaluacionSeleccionado()?.fechaInicio"
-                  [max]="periodoEvaluacionSeleccionado()?.fechaFin"
+                  [minDate]="periodoEvaluacionSeleccionado()?.fechaInicio"
+                  [maxDate]="periodoEvaluacionSeleccionado()?.fechaFin"
+                  [minYear]="obtenerAnio(periodoEvaluacionSeleccionado()?.fechaInicio)"
+                  [maxYear]="obtenerAnio(periodoEvaluacionSeleccionado()?.fechaFin)"
                   [disabled]="guardandoFechaEvaluacion() === evaluacion.id"
-                  (change)="actualizarFechaEvaluacion(evaluacion, $event)" />
-              </label>
+                  (valueChange)="actualizarFechaEvaluacion(evaluacion, $event)" />
+              </div>
               <div class="evaluation-single-footer">
                 <span class="planning-status" [class.is-pending]="!evaluacion.fechaEvaluacion">
                   <i class="fa-solid" [class.fa-circle-check]="evaluacion.fechaEvaluacion" [class.fa-circle-exclamation]="!evaluacion.fechaEvaluacion"></i>

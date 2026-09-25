@@ -70,31 +70,60 @@
               @for (periodo of periodos(); track periodo.id) {
                 <article class="period-card" (click)="abrirPeriodo(periodo.id)">
                   <div class="period-card-top">
-                    <span class="period-year">{{ periodo.anio }}</span>
+                    <div class="period-year-badge">
+                      <i class="fa-regular fa-calendar-check"></i>
+                      <span class="period-year">{{ periodo.anio }}</span>
+                    </div>
                     <div class="period-card-actions">
                       @if (periodo.anio === currentYear) {
-                        <button class="card-inline-button" type="button" (click)="editarPeriodo(periodo.id, $event)">
-                          Editar
+                        <button class="card-inline-button" type="button" (click)="editarPeriodo(periodo.id, $event)" title="Editar configuración del período">
+                          <i class="fa-solid fa-pen-to-square"></i>
+                          <span>Editar</span>
                         </button>
                       }
                     </div>
                   </div>
-                  <strong>{{ periodo.nombre }}</strong>
-                  <small>Fec. Inicio: {{ periodo.fechaInicio }} - Fec. Fin: {{ periodo.fechaFin }}</small>
-                  <small>{{ nombreEsquemaPeriodoEvaluacion(periodo.tipoPeriodoEvaluacion) }}</small>
+
+                  <strong class="period-card-title">{{ periodo.nombre }}</strong>
+
+                  <div class="period-meta-list">
+                    <div class="period-meta-row">
+                      <i class="fa-regular fa-calendar-days"></i>
+                      <span>{{ periodo.fechaInicio }} &nbsp;al&nbsp; {{ periodo.fechaFin }}</span>
+                    </div>
+                    <div class="period-meta-row">
+                      <i class="fa-solid fa-layer-group"></i>
+                      <span>Esquema {{ nombreEsquemaPeriodoEvaluacion(periodo.tipoPeriodoEvaluacion) }}</span>
+                    </div>
+                  </div>
+
                   <div class="period-card-footer">
-                    <span><i class="fa-solid fa-calendar-days"></i> {{ totalPeriodosEvaluacionPeriodo(periodo.id) }} periodos</span>
+                    <span class="period-count">
+                      <i class="fa-solid fa-calendar-days"></i>
+                      <span>{{ totalPeriodosEvaluacionPeriodo(periodo.id) }} periodos</span>
+                    </span>
                     <div class="period-card-badges">
                       <span
                         class="bimester-state"
-                        [class.complete]="totalPeriodosEvaluacionPeriodo(periodo.id) > 0">
-                        {{ totalPeriodosEvaluacionPeriodo(periodo.id) > 0 ? 'Configurado' : 'Sin periodos' }}
+                        [class.complete]="totalPeriodosEvaluacionPeriodo(periodo.id) > 0"
+                        [class.warning]="totalPeriodosEvaluacionPeriodo(periodo.id) === 0">
+                        @if (totalPeriodosEvaluacionPeriodo(periodo.id) > 0) {
+                          <i class="fa-solid fa-circle-check"></i>
+                        } @else {
+                          <i class="fa-solid fa-circle-exclamation"></i>
+                        }
+                        <span>{{ totalPeriodosEvaluacionPeriodo(periodo.id) > 0 ? 'Configurado' : 'Sin periodos' }}</span>
                       </span>
                       <span
                         class="bimester-state"
-                        [class.complete]="periodo.anio === currentYear"
+                        [class.editable]="periodo.anio === currentYear"
                         [class.historic]="periodo.anio !== currentYear">
-                        {{ periodo.anio === currentYear ? 'Editable' : 'Histórico' }}
+                        @if (periodo.anio === currentYear) {
+                          <i class="fa-solid fa-bolt"></i>
+                        } @else {
+                          <i class="fa-solid fa-clock-rotate-left"></i>
+                        }
+                        <span>{{ periodo.anio === currentYear ? 'Editable' : 'Histórico' }}</span>
                       </span>
                     </div>
                   </div>
@@ -129,51 +158,61 @@
               } @else {
                 <div class="stepper-shell">
                   <div class="stepper-head">
-                <div class="stepper-track">
-                  <div
-                    class="stepper-progress"
-                    [style.width.%]="((pasoModalPeriodo() - 1) / 3) * 100"></div>
-                </div>
+                    <div class="stepper-track">
+                      <div
+                        class="stepper-progress"
+                        [style.width.%]="((pasoModalPeriodo() - 1) / 4) * 100"></div>
+                    </div>
 
-                <button
-                  class="step-node"
-                  type="button"
-                  [class.active]="pasoModalPeriodo() === 1"
-                  [class.completed]="pasoModalPeriodo() > 1"
-                  (click)="irAPasoModal(1)">
-                  <span class="step-node-circle">1</span>
-                  <span class="step-node-label">Datos</span>
-                </button>
+                    <button
+                      class="step-node"
+                      type="button"
+                      [class.active]="pasoModalPeriodo() === 1"
+                      [class.completed]="pasoModalPeriodo() > 1"
+                      (click)="irAPasoModal(1)">
+                      <span class="step-node-circle">1</span>
+                      <span class="step-node-label">Datos</span>
+                    </button>
 
-                <button
-                  class="step-node"
-                  type="button"
-                  [class.active]="pasoModalPeriodo() === 2"
-                  [class.completed]="pasoModalPeriodo() > 2"
-                  (click)="irAPasoModal(2)">
-                  <span class="step-node-circle">2</span>
-                  <span class="step-node-label">Calendario</span>
-                </button>
+                    <button
+                      class="step-node"
+                      type="button"
+                      [class.active]="pasoModalPeriodo() === 2"
+                      [class.completed]="pasoModalPeriodo() > 2"
+                      (click)="irAPasoModal(2)">
+                      <span class="step-node-circle">2</span>
+                      <span class="step-node-label">Calendario</span>
+                    </button>
 
-                <button
-                  class="step-node"
-                  type="button"
-                  [class.active]="pasoModalPeriodo() === 3"
-                  [class.completed]="pasoModalPeriodo() > 3"
-                  (click)="irAPasoModal(3)">
-                  <span class="step-node-circle">3</span>
-                  <span class="step-node-label">Evaluaciones</span>
-                </button>
+                    <button
+                      class="step-node"
+                      type="button"
+                      [class.active]="pasoModalPeriodo() === 3"
+                      [class.completed]="pasoModalPeriodo() > 3"
+                      (click)="irAPasoModal(3)">
+                      <span class="step-node-circle">3</span>
+                      <span class="step-node-label">Cortes</span>
+                    </button>
 
-                <button
-                  class="step-node"
-                  type="button"
-                  [class.active]="pasoModalPeriodo() === 4"
-                  (click)="irAPasoModal(4)">
-                  <span class="step-node-circle">4</span>
-                  <span class="step-node-label">Cursos</span>
-                </button>
-              </div>
+                    <button
+                      class="step-node"
+                      type="button"
+                      [class.active]="pasoModalPeriodo() === 4"
+                      [class.completed]="pasoModalPeriodo() > 4"
+                      (click)="irAPasoModal(4)">
+                      <span class="step-node-circle">4</span>
+                      <span class="step-node-label">Evaluaciones</span>
+                    </button>
+
+                    <button
+                      class="step-node"
+                      type="button"
+                      [class.active]="pasoModalPeriodo() === 5"
+                      (click)="irAPasoModal(5)">
+                      <span class="step-node-circle">5</span>
+                      <span class="step-node-label">Cursos</span>
+                    </button>
+                  </div>
 
               @if (pasoModalPeriodo() === 1) {
                 <section class="step-panel">
@@ -246,74 +285,130 @@
               @if (pasoModalPeriodo() === 2) {
                 <section class="evaluation-draft step-panel">
                   <div class="draft-head">
-                    <strong>Períodos de evaluación</strong>
-                    <span>{{ periodosEvaluacionBorrador().length }} por crear</span>
+                    <div>
+                      <strong>Períodos de evaluación</strong>
+                      <p class="draft-head-sub">Fechas de inicio y fin para cada período según el esquema seleccionado.</p>
+                    </div>
+                    <span class="draft-counter-badge">{{ periodosEvaluacionBorrador().length }} períodos</span>
                   </div>
 
-                  <div class="evaluation-draft-list">
+                  <div class="evaluation-period-grid">
                     @for (periodoEvaluacion of periodosEvaluacionBorrador(); track periodoEvaluacion.numero; let i = $index) {
-                      <article class="evaluation-draft-row">
-                        <div class="draft-period-meta">
-                          <div class="draft-period-name">
-                            <span class="bimester-number">{{ periodoEvaluacion.numero }}</span>
-                            <strong>{{ periodoEvaluacion.nombre }}</strong>
-                          </div>
+                      <article class="evaluation-period-card">
+                        <div class="period-card-header">
+                          <span class="period-num-badge">{{ periodoEvaluacion.numero }}</span>
+                          <strong class="period-title">{{ periodoEvaluacion.nombre }}</strong>
                         </div>
 
-                        <div class="draft-period-dates">
-                          <div class="draft-date-field">
-                            <span>Inicio</span>
+                        <div class="period-card-dates-grid">
+                          <div class="period-date-group">
+                            <span class="period-date-tag"><i class="fa-regular fa-calendar-plus"></i> Inicio</span>
                             <app-date-picker
                               [value]="periodoEvaluacion.fechaInicio"
                               [minYear]="anioCalendario()"
                               [maxYear]="anioCalendario()"
+                              [minDate]="formPeriodo().fechaInicio"
+                              [maxDate]="formPeriodo().fechaFin"
                               (valueChange)="actualizarFechaBorrador(i, 'fechaInicio', $event)" />
                           </div>
 
-                          <div class="draft-date-field">
-                            <span>Fin</span>
+                          <div class="period-date-group">
+                            <span class="period-date-tag"><i class="fa-regular fa-calendar-check"></i> Fin</span>
                             <app-date-picker
                               [value]="periodoEvaluacion.fechaFin"
                               [minYear]="anioCalendario()"
                               [maxYear]="anioCalendario()"
+                              [minDate]="formPeriodo().fechaInicio"
+                              [maxDate]="formPeriodo().fechaFin"
                               (valueChange)="actualizarFechaBorrador(i, 'fechaFin', $event)" />
                           </div>
                         </div>
                       </article>
                     }
                   </div>
+                </section>
+              }
 
-                  <div class="draft-head cut-draft-head">
-                    <strong>Cortes de seguimiento</strong>
-                    <button class="action-button tertiary" type="button" (click)="agregarCorteSeguimiento()">
-                      <i class="fa-solid fa-plus"></i> Agregar corte
+              @if (pasoModalPeriodo() === 3) {
+                <section class="cuts-panel step-panel">
+                  <div class="draft-head">
+                    <div>
+                      <strong>Cortes de seguimiento preventivo</strong>
+                      <p class="draft-head-sub">Semanas de corte en las que se monitoreará el riesgo académico de los alumnos.</p>
+                    </div>
+                    <button class="action-button primary action-button--add-cut" type="button" (click)="agregarCorteSeguimiento()">
+                      <i class="fa-solid fa-plus"></i>
+                      <span>Agregar corte</span>
                     </button>
                   </div>
-                  <p class="cut-draft-hint">Cada corte genera una predicción independiente con notas y asistencias registradas hasta su fecha.</p>
-                  <div class="cut-draft-list">
+
+                  <div class="cut-info-banner">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    <span>Las semanas configuradas se calcularán desde el inicio de cada período de evaluación para monitorear el rendimiento oportunamente.</span>
+                  </div>
+
+                  <div class="cut-preset-bar">
+                    <span class="cut-preset-title"><i class="fa-solid fa-wand-magic-sparkles"></i> Sugerencias:</span>
+                    <button type="button" class="cut-preset-chip" (click)="agregarCortePreset(5)">
+                      <i class="fa-solid fa-plus"></i> Semana 5 (Mitad de período)
+                    </button>
+                    <button type="button" class="cut-preset-chip" (click)="agregarCortePreset(8)">
+                      <i class="fa-solid fa-plus"></i> Semana 8 (Cierre preliminar)
+                    </button>
+                  </div>
+
+                  <div class="cut-draft-grid">
                     @for (corte of cortesSeguimientoBorrador(); track $index; let i = $index) {
-                      <article class="cut-draft-row">
-                        <label>
-                          Semana
-                          <input type="number" min="1" [ngModel]="corte.semana"
-                            (ngModelChange)="actualizarCorte(i, 'semana', $event)" [name]="'corte-semana-' + i" />
-                        </label>
-                        <label>
-                          Fecha del corte
-                          <input type="date" [ngModel]="corte.fechaCorte"
-                            (ngModelChange)="actualizarCorte(i, 'fechaCorte', $event)" [name]="'corte-fecha-' + i" />
-                        </label>
-                        <button class="icon-button danger" type="button" title="Quitar corte"
-                          (click)="quitarCorteSeguimiento(i)"><i class="fa-solid fa-trash"></i></button>
+                      <article class="cut-item-card">
+                        <div class="cut-item-top">
+                          <div class="cut-item-badge">
+                            <span class="cut-badge-index">{{ i + 1 }}</span>
+                            <span class="cut-badge-title">Corte de riesgo</span>
+                          </div>
+                          <button
+                            class="cut-delete-button"
+                            type="button"
+                            title="Eliminar este corte"
+                            (click)="quitarCorteSeguimiento(i)">
+                            <i class="fa-solid fa-trash-can"></i>
+                          </button>
+                        </div>
+
+                        <div class="cut-item-body">
+                          <label class="cut-week-label">
+                            <span class="cut-label-text">Semana de evaluación</span>
+                            <div class="cut-week-input-wrapper">
+                              <i class="fa-regular fa-calendar-check"></i>
+                              <input
+                                type="number"
+                                min="1"
+                                max="20"
+                                [ngModel]="corte.semana"
+                                (ngModelChange)="actualizarCorte(i, 'semana', $event)"
+                                [name]="'corte-semana-' + i" />
+                              <span class="cut-week-suffix">Semana</span>
+                            </div>
+                          </label>
+                        </div>
+
+                        <div class="cut-item-footer">
+                          <span class="cut-repeat-pill">
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                            Aplica a cada período
+                          </span>
+                        </div>
                       </article>
                     } @empty {
-                      <div class="table-state">Agrega al menos un corte semanal para habilitar el seguimiento de riesgo.</div>
+                      <div class="table-state compact-state">
+                        <span class="table-state-icon"><i class="fa-solid fa-chart-line"></i></span>
+                        <span>Agrega al menos un corte semanal para habilitar las alertas tempranas y el semáforo de riesgo.</span>
+                      </div>
                     }
                   </div>
                 </section>
               }
 
-              @if (pasoModalPeriodo() === 3) {
+              @if (pasoModalPeriodo() === 4) {
                 <section class="evaluation-template step-panel">
                   <div class="draft-head">
                     <strong>Plantilla anual de evaluaciones</strong>
@@ -426,11 +521,14 @@
                 </section>
               }
 
-              @if (pasoModalPeriodo() === 4) {
+              @if (pasoModalPeriodo() === 5) {
                 <section class="courses-template step-panel">
                   <div class="draft-head">
-                    <strong>Cursos del período</strong>
-                    <span>{{ cursosSeleccionadosIds().length }} seleccionados</span>
+                    <div>
+                      <strong>Cursos del período</strong>
+                      <p class="draft-head-sub">Selecciona las materias que formarán parte de la currícula de este período académico.</p>
+                    </div>
+                    <span class="draft-counter-badge">{{ cursosSeleccionadosIds().length }} de {{ cursos().length }} seleccionados</span>
                   </div>
 
                   <div class="courses-toolbar">
@@ -441,26 +539,77 @@
                         [disabled]="copiandoCursosAnteriores()"
                         (click)="copiarCursosPeriodoAnterior()">
                         <i class="fa-solid fa-copy"></i>
-                        {{ copiandoCursosAnteriores() ? 'Copiando cursos...' : 'Copiar cursos del período anterior' }}
+                        {{ copiandoCursosAnteriores() ? 'Copiando cursos...' : 'Copiar del período anterior' }}
                       </button>
-                      <button class="action-button ghost" type="button" (click)="seleccionarTodosCursosFiltrados()">
-                        Seleccionar visibles
+
+                      <button class="action-button ghost action-button--iconic" type="button" (click)="seleccionarTodosLosCursos()">
+                        <i class="fa-solid fa-check-double"></i>
+                        <span>Seleccionar todos</span>
                       </button>
-                      <button class="action-button ghost" type="button" (click)="limpiarSeleccionCursos()">
-                        Limpiar selección
+
+                      <button class="action-button ghost action-button--iconic" type="button" (click)="seleccionarCursosPorNivel('PRIMARIA')">
+                        <i class="fa-solid fa-shapes"></i>
+                        <span>Solo Primaria</span>
+                      </button>
+
+                      <button class="action-button ghost action-button--iconic" type="button" (click)="seleccionarCursosPorNivel('SECUNDARIA')">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                        <span>Solo Secundaria</span>
+                      </button>
+
+                      <button class="action-button ghost action-button--iconic" type="button" (click)="limpiarSeleccionCursos()">
+                        <i class="fa-solid fa-rotate-left"></i>
+                        <span>Limpiar selección</span>
                       </button>
                     </div>
-                  </div>
 
-                  <label>
-                    Buscar curso
-                    <input
-                      type="text"
-                      [ngModel]="filtroCursos()"
-                      (ngModelChange)="actualizarFiltroCursos($event)"
-                      name="filtroCursosPeriodo"
-                      placeholder="Nombre, descripción o nivel" />
-                  </label>
+                    <div class="courses-filter-row">
+                      <div class="courses-search-wrap">
+                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                        <input
+                          type="text"
+                          class="courses-search-input"
+                          [ngModel]="filtroCursos()"
+                          (ngModelChange)="actualizarFiltroCursos($event)"
+                          name="filtroCursosPeriodo"
+                          placeholder="Buscar curso por nombre o descripción..." />
+                        @if (filtroCursos()) {
+                          <button type="button" class="search-clear-btn" (click)="actualizarFiltroCursos('')">
+                            <i class="fa-solid fa-xmark"></i>
+                          </button>
+                        }
+                      </div>
+
+                      <div class="level-filter-chips">
+                        <button
+                          type="button"
+                          class="level-chip"
+                          [class.active]="filtroNivelCurso() === 'TODOS'"
+                          (click)="cambiarFiltroNivel('TODOS')">
+                          <i class="fa-solid fa-border-all"></i>
+                          <span>Todos ({{ cursos().length }})</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          class="level-chip level-chip--primaria"
+                          [class.active]="filtroNivelCurso() === 'PRIMARIA'"
+                          (click)="cambiarFiltroNivel('PRIMARIA')">
+                          <i class="fa-solid fa-shapes"></i>
+                          <span>Primaria ({{ totalCursosPrimaria() }})</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          class="level-chip level-chip--secundaria"
+                          [class.active]="filtroNivelCurso() === 'SECUNDARIA'"
+                          (click)="cambiarFiltroNivel('SECUNDARIA')">
+                          <i class="fa-solid fa-graduation-cap"></i>
+                          <span>Secundaria ({{ totalCursosSecundaria() }})</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
 
                   @if (cargandoCursos()) {
                     <div class="courses-list">
@@ -479,7 +628,7 @@
                   } @else if (!cursosFiltrados().length) {
                     <div class="table-state">
                       <span class="table-state-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
-                      <span>No hay cursos que coincidan con la búsqueda.</span>
+                      <span>No hay cursos que coincidan con la búsqueda o nivel seleccionado.</span>
                     </div>
                   } @else {
                     <div class="courses-list">
@@ -489,11 +638,28 @@
                           type="button"
                           [class.selected]="cursoSeleccionado(curso.id)"
                           (click)="alternarCurso(curso.id)">
+                          <div class="course-option-check">
+                            @if (cursoSeleccionado(curso.id)) {
+                              <i class="fa-solid fa-circle-check"></i>
+                            } @else {
+                              <i class="fa-regular fa-circle"></i>
+                            }
+                          </div>
                           <div class="course-option-main">
                             <strong>{{ curso.nombre }}</strong>
                             <small>{{ curso.descripcion || 'Sin descripción adicional.' }}</small>
                           </div>
-                          <span class="course-option-level">{{ curso.nivelNombre }}</span>
+                          <span
+                            class="course-option-level"
+                            [class.secundaria]="(curso.nivelNombre || '').toUpperCase().includes('SECUNDARIA')"
+                            [class.primaria]="!(curso.nivelNombre || '').toUpperCase().includes('SECUNDARIA')">
+                            @if ((curso.nivelNombre || '').toUpperCase().includes('SECUNDARIA')) {
+                              <i class="fa-solid fa-graduation-cap"></i>
+                            } @else {
+                              <i class="fa-solid fa-shapes"></i>
+                            }
+                            <span>{{ curso.nivelNombre }}</span>
+                          </span>
                         </button>
                       }
                     </div>
@@ -519,7 +685,7 @@
                     Anterior
                   </button>
 
-                  @if (pasoModalPeriodo() < 4) {
+                  @if (pasoModalPeriodo() < 5) {
                     <button class="action-button primary" type="button" (click)="siguientePasoModal()">
                       Siguiente
                     </button>

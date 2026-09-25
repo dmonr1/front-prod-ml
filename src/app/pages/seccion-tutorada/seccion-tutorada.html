@@ -13,7 +13,7 @@
               <span class="head-badge">{{ tut.grado }} "{{ tut.seccion }}" - {{ tut.nivel }}</span>
             }
           </div>
-          <p class="head-subtitle">Seguimiento tutorial 360°, sábana consolidada de notas y control de asistencia</p>
+          <p class="head-subtitle">Panorama integral 360° · Rendimiento académico por cursos y control de asistencia</p>
         </div>
       </div>
 
@@ -69,24 +69,12 @@
       </app-custom-alert>
     }
 
-    <!-- Vista Esqueleto (Skeleton) -->
+    <!-- Vista Esqueleto (Skeleton) Compacto -->
     @if (mostrarSkeleton()) {
       <div class="skeleton-wrapper">
-        <div class="kpi-grid">
-          @for (item of [1, 2, 3, 4]; track item) {
-            <div class="kpi-card skeleton-card">
-              <span class="skeleton skeleton-icon"></span>
-              <div class="skeleton-content">
-                <span class="skeleton skeleton-title"></span>
-                <span class="skeleton skeleton-text"></span>
-              </div>
-            </div>
-          }
-        </div>
-        <div class="table-skeleton-wrap">
-          <div class="skeleton skeleton-bar"></div>
-          <div class="skeleton skeleton-table-body"></div>
-        </div>
+        <div class="skeleton-quick-bar skeleton"></div>
+        <div class="skeleton-toolbar skeleton"></div>
+        <div class="skeleton-table-body skeleton"></div>
       </div>
     }
 
@@ -96,60 +84,104 @@
            [class.slide-left]="animacionCambio() === 'left'"
            [class.slide-right]="animacionCambio() === 'right'">
 
-        <!-- Franja de KPIs del Aula -->
-        <section class="kpi-grid">
-          <div class="kpi-card">
-            <div class="kpi-icon-wrap icon-blue">
-              <i class="fa-solid fa-user-graduate"></i>
-            </div>
-            <div class="kpi-info">
-              <span class="kpi-label">Matriculados</span>
-              <strong class="kpi-val">{{ kpisAula().totalAlumnos }}</strong>
-              <small class="kpi-sub">Estudiantes en nómina</small>
+        <!-- Resumen Rápido Ejecutivo del Aula (Compacto: solo ocupa ~42px liberando espacio vertical) -->
+        <section class="tutor-summary-bar">
+          <div class="summary-metric">
+            <span class="metric-icon metric-blue"><i class="fa-solid fa-user-graduate"></i></span>
+            <div class="metric-body">
+              <span class="metric-lbl">Matriculados</span>
+              <strong class="metric-val">{{ kpisAula().totalAlumnos }}</strong>
             </div>
           </div>
 
-          <div class="kpi-card">
-            <div class="kpi-icon-wrap" [class.icon-emerald]="(kpisAula().promedioAula ?? 0) >= 14"
-                                      [class.icon-amber]="(kpisAula().promedioAula ?? 0) >= 11 && (kpisAula().promedioAula ?? 0) < 14"
-                                      [class.icon-rose]="(kpisAula().promedioAula ?? 0) < 11">
-              <i class="fa-solid fa-chart-simple"></i>
-            </div>
-            <div class="kpi-info">
-              <span class="kpi-label">Promedio de Aula</span>
-              <strong class="kpi-val">{{ formatearPromedio(kpisAula().promedioAula) }}</strong>
-              <small class="kpi-sub">Consolidado general</small>
+          <div class="summary-divider"></div>
+
+          <div class="summary-metric">
+            <span class="metric-icon"
+                  [class.metric-emerald]="(kpisAula().promedioAula ?? 0) >= 14"
+                  [class.metric-amber]="(kpisAula().promedioAula ?? 0) >= 11 && (kpisAula().promedioAula ?? 0) < 14"
+                  [class.metric-rose]="(kpisAula().promedioAula ?? 0) < 11">
+              <i class="fa-solid fa-chart-line"></i>
+            </span>
+            <div class="metric-body">
+              <span class="metric-lbl">Promedio Sección</span>
+              <strong class="metric-val"
+                      [class.text-emerald]="(kpisAula().promedioAula ?? 0) >= 14"
+                      [class.text-amber]="(kpisAula().promedioAula ?? 0) >= 11 && (kpisAula().promedioAula ?? 0) < 14"
+                      [class.text-rose]="(kpisAula().promedioAula ?? 0) < 11">
+                {{ formatearPromedio(kpisAula().promedioAula) }}
+              </strong>
             </div>
           </div>
 
-          <div class="kpi-card">
-            <div class="kpi-icon-wrap" [class.icon-emerald]="(kpisAula().asistenciaAula ?? 0) >= 85"
-                                      [class.icon-amber]="(kpisAula().asistenciaAula ?? 0) >= 75 && (kpisAula().asistenciaAula ?? 0) < 85"
-                                      [class.icon-rose]="(kpisAula().asistenciaAula ?? 0) < 75">
+          <div class="summary-divider"></div>
+
+          <div class="summary-metric">
+            <span class="metric-icon"
+                  [class.metric-emerald]="(kpisAula().asistenciaAula ?? 0) >= 85"
+                  [class.metric-amber]="(kpisAula().asistenciaAula ?? 0) >= 75 && (kpisAula().asistenciaAula ?? 0) < 85"
+                  [class.metric-rose]="(kpisAula().asistenciaAula ?? 0) < 75">
               <i class="fa-solid fa-clipboard-user"></i>
-            </div>
-            <div class="kpi-info">
-              <span class="kpi-label">Asistencia Media</span>
-              <strong class="kpi-val">{{ kpisAula().asistenciaAula !== null ? kpisAula().asistenciaAula + '%' : '--' }}</strong>
-              <small class="kpi-sub">Presencia acumulada</small>
+            </span>
+            <div class="metric-body">
+              <span class="metric-lbl">Asistencia Media</span>
+              <strong class="metric-val"
+                      [class.text-emerald]="(kpisAula().asistenciaAula ?? 0) >= 85"
+                      [class.text-amber]="(kpisAula().asistenciaAula ?? 0) >= 75 && (kpisAula().asistenciaAula ?? 0) < 85"
+                      [class.text-rose]="(kpisAula().asistenciaAula ?? 0) < 75">
+                {{ kpisAula().asistenciaAula !== null ? kpisAula().asistenciaAula + '%' : '--' }}
+              </strong>
             </div>
           </div>
 
-          <div class="kpi-card" [class.card-alert]="kpisAula().alumnosEnRiesgo > 0">
-            <div class="kpi-icon-wrap" [class.icon-rose]="kpisAula().alumnosEnRiesgo > 0" [class.icon-gray]="kpisAula().alumnosEnRiesgo === 0">
+          <div class="summary-divider"></div>
+
+          <button
+            type="button"
+            class="summary-metric summary-metric-alert"
+            [class.active-filter]="filtroRiesgo() === 'riesgo'"
+            [class.has-risk]="kpisAula().alumnosEnRiesgo > 0"
+            (click)="setFiltroRiesgo(filtroRiesgo() === 'riesgo' ? 'todos' : 'riesgo')"
+            title="Clic para filtrar alumnos en riesgo prioritario"
+          >
+            <span class="metric-icon" [class.metric-rose]="kpisAula().alumnosEnRiesgo > 0" [class.metric-gray]="kpisAula().alumnosEnRiesgo === 0">
               <i class="fa-solid fa-triangle-exclamation"></i>
+            </span>
+            <div class="metric-body">
+              <span class="metric-lbl">Atención / Riesgo</span>
+              <strong class="metric-val" [class.text-rose]="kpisAula().alumnosEnRiesgo > 0">
+                {{ kpisAula().alumnosEnRiesgo }}
+              </strong>
             </div>
-            <div class="kpi-info">
-              <span class="kpi-label">Atención Prioritaria</span>
-              <strong class="kpi-val text-alert">{{ kpisAula().alumnosEnRiesgo }}</strong>
-              <small class="kpi-sub">{{ kpisAula().alumnosEnRiesgo > 0 ? 'En riesgo académico/asist.' : 'Sin alertas críticas' }}</small>
+            @if (kpisAula().alumnosEnRiesgo > 0) {
+              <span class="metric-pill-alert">Filtrar</span>
+            }
+          </button>
+
+          <div class="summary-divider"></div>
+
+          <div class="summary-metric">
+            <span class="metric-icon metric-purple"><i class="fa-solid fa-book-bookmark"></i></span>
+            <div class="metric-body">
+              <span class="metric-lbl">Cursos Asignados</span>
+              <strong class="metric-val">{{ kpisAula().totalCursos }}</strong>
+            </div>
+          </div>
+
+          <div class="summary-divider"></div>
+
+          <div class="summary-metric">
+            <span class="metric-icon metric-emerald-soft"><i class="fa-solid fa-medal"></i></span>
+            <div class="metric-body">
+              <span class="metric-lbl">Al día 100%</span>
+              <strong class="metric-val text-emerald">{{ kpisAula().alumnosAprobados }}</strong>
             </div>
           </div>
         </section>
 
         <!-- Barra de Controles, Selector de Bimestre y Filtros -->
         <section class="tutorada-toolbar">
-          <!-- Selector de Períodos de Evaluación (Bimestres) -->
+          <!-- Selector de Bimestres -->
           <div class="bimestre-selector">
             <button
               class="nav-arrow"
@@ -191,20 +223,20 @@
             <input
               type="text"
               class="search-input"
-              placeholder="Buscar por apellido, nombre o código..."
+              placeholder="Buscar alumno por nombre, apellido o código..."
               [ngModel]="busqueda()"
               (input)="onBusquedaChange($event)"
             />
             @if (busqueda()) {
-              <button class="clear-btn" type="button" (click)="limpiarBusqueda()">
+              <button class="clear-btn" type="button" (click)="limpiarBusqueda()" title="Limpiar búsqueda">
                 <i class="fa-solid fa-xmark"></i>
               </button>
             }
           </div>
 
-          <!-- Filtros de Estado y Toggle de Modo de Vista -->
+          <!-- Filtros de Estado, Orden y Modo de Vista -->
           <div class="toolbar-actions">
-            <!-- Filtro rápido de riesgo -->
+            <!-- Chips de Filtro -->
             <div class="filter-chips">
               <button
                 type="button"
@@ -229,7 +261,7 @@
                 [class.active]="filtroRiesgo() === 'desaprobados'"
                 (click)="setFiltroRiesgo('desaprobados')"
               >
-                Desaprobados
+                Con desaprobados
               </button>
               <button
                 type="button"
@@ -241,24 +273,39 @@
               </button>
             </div>
 
-            <!-- Selector de Vista: Sábana vs Fichas -->
+            <!-- Selector de Ordenamiento -->
+            <div class="sort-selector-wrap" title="Ordenar lista de alumnos">
+              <i class="fa-solid fa-arrow-down-wide-short sort-icon"></i>
+              <select
+                class="sort-select"
+                [ngModel]="orden()"
+                (ngModelChange)="setOrden($event)"
+              >
+                <option value="nombre">Orden: Alfabético</option>
+                <option value="promedio-asc">Orden: Menor nota primero</option>
+                <option value="promedio-desc">Orden: Mayor nota primero</option>
+                <option value="asistencia-asc">Orden: Menor asistencia</option>
+              </select>
+            </div>
+
+            <!-- Selector de Modo de Vista -->
             <div class="view-toggle">
               <button
                 type="button"
                 class="toggle-btn"
                 [class.active]="modoVista() === 'matriz'"
                 (click)="setModoVista('matriz')"
-                title="Sábana consolidada de notas"
+                title="Sábana consolidada de notas y asistencia"
               >
                 <i class="fa-solid fa-table-cells"></i>
-                <span>Matriz</span>
+                <span>Sábana 360°</span>
               </button>
               <button
                 type="button"
                 class="toggle-btn"
                 [class.active]="modoVista() === 'fichas'"
                 (click)="setModoVista('fichas')"
-                title="Fichas de estudiantes"
+                title="Fichas individuales por estudiante"
               >
                 <i class="fa-solid fa-id-card"></i>
                 <span>Fichas</span>
@@ -267,15 +314,15 @@
           </div>
         </section>
 
-        <!-- Loading overlay en cambio de bimestre -->
+        <!-- Loading overlay en cambio de período -->
         @if (cargandoTabla()) {
           <div class="table-loading-bar">
             <span class="loading-spinner"><i class="fa-solid fa-rotate fa-spin"></i></span>
-            <span>Actualizando calificaciones del período...</span>
+            <span>Actualizando calificaciones y asistencias del período...</span>
           </div>
         }
 
-        <!-- CONTENIDO: Modo 1 - SÁBANA / MATRIZ CONSOLIDADA DE NOTAS -->
+        <!-- CONTENIDO: Modo 1 - SÁBANA / MATRIZ CONSOLIDADA DE NOTAS Y ASISTENCIA -->
         @if (modoVista() === 'matriz') {
           <div class="matrix-wrapper">
             @if (!resumenAcademico()?.cursos?.length) {
@@ -298,24 +345,28 @@
                     <tr>
                       <th class="col-num">#</th>
                       <th class="col-student">Estudiante</th>
-                      <th class="col-attendance" title="Porcentaje y clases asistidas">Asistencia</th>
+                      <th class="col-attendance" title="Asistencia global en todos los cursos">Asistencia</th>
                       @for (curso of resumenAcademico()!.cursos; track curso.asignacionId) {
                         <th class="col-course" [title]="'Docente: ' + curso.docenteNombreCompleto">
                           <span class="course-header-name">{{ curso.curso }}</span>
                           <span class="course-header-docente">{{ curso.docenteNombreCompleto }}</span>
                         </th>
                       }
-                      <th class="col-gpa">Promedio</th>
+                      <th class="col-status" title="Resumen de asignaturas desaprobadas">Estado</th>
+                      <th class="col-gpa" title="Promedio general consolidado">Promedio</th>
                       <th class="col-actions">Expediente</th>
                     </tr>
                   </thead>
                   <tbody>
                     @for (alumno of alumnosFiltrados(); track alumno.matriculaId; let i = $index) {
-                      <tr [class.row-alert]="esAlumnoEnRiesgo(alumno)">
+                      @let desaprobados = contarCursosDesaprobados(alumno);
+                      @let enRiesgo = esAlumnoEnRiesgo(alumno);
+                      @let inasistencias = obtenerInasistencias(alumno.clasesAsistidas, alumno.clasesProgramadas);
+                      <tr [class.row-alert]="enRiesgo">
                         <td class="col-num">{{ i + 1 }}</td>
                         <td class="col-student">
                           <div class="student-meta" (click)="abrirExpediente(alumno)">
-                            <div class="student-avatar" [class.avatar-alert]="esAlumnoEnRiesgo(alumno)">
+                            <div class="student-avatar" [class.avatar-alert]="enRiesgo">
                               {{ obtenerIniciales(alumno.alumnoNombreCompleto) }}
                             </div>
                             <div class="student-info">
@@ -326,13 +377,18 @@
                         </td>
                         <td class="col-attendance">
                           <div class="attendance-cell">
-                            <span class="attendance-pct"
-                                  [class.text-emerald]="(alumno.porcentajeAsistencia ?? 0) >= 85"
-                                  [class.text-amber]="(alumno.porcentajeAsistencia ?? 0) >= 75 && (alumno.porcentajeAsistencia ?? 0) < 85"
-                                  [class.text-rose]="(alumno.porcentajeAsistencia ?? 0) < 75">
+                            <span class="attendance-pct-pill"
+                                  [class.pct-emerald]="(alumno.porcentajeAsistencia ?? 0) >= 85"
+                                  [class.pct-amber]="(alumno.porcentajeAsistencia ?? 0) >= 75 && (alumno.porcentajeAsistencia ?? 0) < 85"
+                                  [class.pct-rose]="(alumno.porcentajeAsistencia ?? 0) < 75">
                               {{ obtenerAsistenciaPorcentaje(alumno.porcentajeAsistencia) }}
                             </span>
-                            <small class="attendance-fraction">{{ obtenerAsistenciaTexto(alumno.clasesAsistidas, alumno.clasesProgramadas) }}</small>
+                            <small class="attendance-fraction">
+                              {{ obtenerAsistenciaTexto(alumno.clasesAsistidas, alumno.clasesProgramadas) }}
+                              @if (inasistencias > 0) {
+                                · <span class="text-rose">{{ inasistencias }} falta{{ inasistencias > 1 ? 's' : '' }}</span>
+                              }
+                            </small>
                           </div>
                         </td>
                         @for (cursoHeader of resumenAcademico()!.cursos; track cursoHeader.asignacionId) {
@@ -353,6 +409,19 @@
                             </div>
                           </td>
                         }
+                        <td class="col-status">
+                          @if (desaprobados > 0) {
+                            <span class="status-chip-alert" title="{{ desaprobados }} curso(s) desaprobado(s)">
+                              <i class="fa-solid fa-triangle-exclamation"></i>
+                              <span>{{ desaprobados }} desapr.</span>
+                            </span>
+                          } @else {
+                            <span class="status-chip-clean" title="Sin cursos desaprobados">
+                              <i class="fa-solid fa-check"></i>
+                              <span>Al día</span>
+                            </span>
+                          }
+                        </td>
                         <td class="col-gpa">
                           <span
                             class="gpa-badge"
@@ -368,7 +437,7 @@
                           <button
                             type="button"
                             class="btn-expediente"
-                            title="Ver expediente 360°"
+                            title="Ver desglose 360°"
                             (click)="abrirExpediente(alumno)"
                           >
                             <i class="fa-solid fa-address-book"></i>
@@ -381,7 +450,7 @@
                   <tfoot>
                     <tr class="footer-summary-row">
                       <td colspan="3" class="footer-label">
-                        <i class="fa-solid fa-calculator"></i>
+                        <i class="fa-solid fa-chart-column"></i>
                         <span>Promedio del Aula por Curso:</span>
                       </td>
                       @for (curso of resumenAcademico()!.cursos; track curso.asignacionId) {
@@ -395,6 +464,9 @@
                           </span>
                         </td>
                       }
+                      <td class="footer-status-avg">
+                        <small>{{ kpisAula().alumnosEnRiesgo }} alertas</small>
+                      </td>
                       <td class="col-gpa footer-avg-total">
                         <strong>{{ formatearPromedio(kpisAula().promedioAula) }}</strong>
                       </td>
@@ -422,13 +494,14 @@
               <div class="student-cards-grid">
                 @for (alumno of alumnosFiltrados(); track alumno.matriculaId) {
                   @let desaprobados = obtenerCursosDesaprobados(alumno);
-                  <article class="student-card" [class.card-in-risk]="esAlumnoEnRiesgo(alumno)">
+                  @let enRiesgo = esAlumnoEnRiesgo(alumno);
+                  <article class="student-card" [class.card-in-risk]="enRiesgo">
                     <div class="card-top">
-                      <div class="card-avatar" [class.avatar-alert]="esAlumnoEnRiesgo(alumno)">
+                      <div class="card-avatar" [class.avatar-alert]="enRiesgo">
                         {{ obtenerIniciales(alumno.alumnoNombreCompleto) }}
                       </div>
                       <div class="card-student-head">
-                        <h4 class="card-student-name">{{ alumno.alumnoNombreCompleto }}</h4>
+                        <h4 class="card-student-name" (click)="abrirExpediente(alumno)">{{ alumno.alumnoNombreCompleto }}</h4>
                         <span class="card-student-code">{{ alumno.codigoAlumno }}</span>
                       </div>
                       <div class="card-gpa-wrap">
@@ -445,7 +518,7 @@
                     <!-- Progreso de Asistencia -->
                     <div class="attendance-progress-block">
                       <div class="progress-labels">
-                        <span><i class="fa-solid fa-clock"></i> Asistencia</span>
+                        <span><i class="fa-regular fa-calendar-check"></i> Asistencia</span>
                         <strong>{{ obtenerAsistenciaPorcentaje(alumno.porcentajeAsistencia) }} ({{ obtenerAsistenciaTexto(alumno.clasesAsistidas, alumno.clasesProgramadas) }})</strong>
                       </div>
                       <div class="progress-bar-track">
@@ -458,12 +531,12 @@
                       </div>
                     </div>
 
-                    <!-- Estado de Cursos -->
+                    <!-- Cursos Desaprobados o Estado OK -->
                     <div class="courses-summary-block">
                       @if (desaprobados.length > 0) {
                         <div class="alert-courses-box">
                           <span class="alert-box-title">
-                            <i class="fa-solid fa-circle-exclamation"></i>
+                            <i class="fa-solid fa-triangle-exclamation"></i>
                             {{ desaprobados.length }} curso{{ desaprobados.length > 1 ? 's' : '' }} desaprobado{{ desaprobados.length > 1 ? 's' : '' }}:
                           </span>
                           <div class="alert-courses-tags">
@@ -480,6 +553,24 @@
                           <span>Sin cursos desaprobados en este período</span>
                         </div>
                       }
+                    </div>
+
+                    <!-- Mini Panorama de todos los cursos en la tarjeta -->
+                    <div class="card-mini-courses">
+                      <span class="mini-courses-title">Rendimiento por curso:</span>
+                      <div class="mini-courses-grid">
+                        @for (curso of alumno.cursos; track curso.asignacionId) {
+                          <div class="mini-course-item"
+                               [class.mini-high]="obtenerColorNota(curso.promedio) === 'aprobado'"
+                               [class.mini-mid]="obtenerColorNota(curso.promedio) === 'regular'"
+                               [class.mini-low]="obtenerColorNota(curso.promedio) === 'desaprobado'"
+                               [class.mini-none]="obtenerColorNota(curso.promedio) === 'vacio'"
+                               [title]="curso.curso + ': ' + formatearPromedio(curso.promedio)">
+                            <span class="mini-c-name">{{ curso.curso }}</span>
+                            <strong class="mini-c-score">{{ formatearPromedio(curso.promedio) }}</strong>
+                          </div>
+                        }
+                      </div>
                     </div>
 
                     <!-- Acciones de Ficha -->
@@ -531,7 +622,7 @@
                 </div>
               </div>
             </div>
-            <button type="button" class="btn-close-modal" (click)="cerrarExpediente()" title="Cerrar">
+            <button type="button" class="btn-close-modal" (click)="cerrarExpediente()" title="Cerrar expediente">
               <i class="fa-solid fa-xmark"></i>
             </button>
           </header>

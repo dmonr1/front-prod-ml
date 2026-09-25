@@ -99,8 +99,8 @@
   gap: 6px;
   padding: 8px 10px;
   border-radius: 12px;
-  border: 1.5px solid var(--color-brand-primary);
-  background: var(--color-surface-primary);
+  border: none;
+  background: var(--color-surface-secondary);
   color: var(--color-brand-primary);
   font-size: 12px;
   font-weight: 700;
@@ -244,9 +244,11 @@
 
 .evaluation-planning-section {
   display: grid;
-  gap: 12px;
-  padding: 14px 16px;
+  gap: 16px;
+  padding: 18px 20px;
   background: var(--color-surface-secondary);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 18px;
 }
 
 .planning-progress,
@@ -277,23 +279,23 @@
   color: var(--color-semantic-danger);
 }
 
-.evaluation-chooser select,
-.evaluation-planning-date input {
+.evaluation-chooser select {
   width: 100%;
   min-height: 42px;
-  padding: 8px 10px;
-  border: 1px solid var(--color-border-default);
-  border-radius: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 12px;
   background: var(--color-surface-primary);
   color: var(--color-text-primary);
   font: inherit;
   font-size: 13px;
+  font-weight: 600;
 }
 
-.evaluation-chooser select:focus,
-.evaluation-planning-date input:focus {
-  outline: 2px solid var(--color-brand-primary);
-  outline-offset: 1px;
+.evaluation-chooser select:focus {
+  border-color: var(--color-brand-primary);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+  outline: none;
 }
 
 .evaluation-single-footer {
@@ -419,7 +421,7 @@
   display: grid;
   gap: 16px;
   padding: 22px;
-  border: none;
+  border: 1px solid var(--color-border-subtle);
   border-radius: 24px;
   background: var(--color-surface-primary);
   color: var(--color-text-primary);
@@ -428,6 +430,7 @@
 
 .notes-config-modal.is-date-mode {
   width: min(520px, 100%);
+  overflow: visible;
 }
 
 .notes-config-modal-footer {
@@ -587,8 +590,8 @@
 }
 
 .action-button.tertiary {
-  border: 1.5px solid var(--color-brand-primary);
-  background: var(--color-surface-primary);
+  border: none;
+  background: var(--color-surface-secondary);
   color: var(--color-brand-primary);
 }
 

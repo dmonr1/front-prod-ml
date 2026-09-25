@@ -1,13 +1,15 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, ElementRef, HostListener, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { catchError, forkJoin, of } from 'rxjs';
 import { CustomAlertComponent } from '../../components/custom-alert/custom-alert';
 import { Shell } from '../../layouts/shell/shell';
 import { CorteSeguimiento, EvaluacionPendienteFecha, PreparacionCorte } from '../../models/corte-seguimiento';
 import { PeriodoAcademico } from '../../models/periodo-academico';
+import { PeriodoEvaluacion } from '../../models/periodo-evaluacion';
 import { Seccion } from '../../models/seccion';
 import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
+import { PeriodoEvaluacionService } from '../../services/academico/periodo-evaluacion.service';
 import { CorteSeguimientoService } from '../../services/academico/corte-seguimiento.service';
 import { SeccionService } from '../../services/academico/seccion.service';
 import {
@@ -37,6 +39,11 @@ interface PrediccionVista extends PrediccionRiesgo {
   factorDominante: 'asistencia' | 'rendimiento' | 'mixto' | 'controlado';
 }
 
+interface EstadoPreparacionCorte {
+  corte: CorteSeguimiento;
+  preparacion: PreparacionCorte | null;
+}
+
 @Component({
   selector: 'app-predicciones',
   imports: [Shell, DecimalPipe, CustomAlertComponent],
@@ -45,10 +52,12 @@ interface PrediccionVista extends PrediccionRiesgo {
 })
 export class Predicciones {
   private vistaRequestId = 0;
+  private estadoInicialPresentado = false;
   private readonly elementRef = inject(ElementRef<HTMLElement>);
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   private readonly periodoAcademicoService = inject(PeriodoAcademicoService);
+  private readonly periodoEvaluacionService = inject(PeriodoEvaluacionService);
   private readonly corteSeguimientoService = inject(CorteSeguimientoService);
   private readonly seccionService = inject(SeccionService);
   private readonly asignacionAcademicaService = inject(AsignacionAcademicaService);
@@ -64,6 +73,7 @@ export class Predicciones {
   readonly mensajeRecalculo = signal('');
 
   readonly periodosEvaluacion = signal<CorteSeguimiento[]>([]);
+  readonly periodosAcademicosEvaluacion = signal<PeriodoEvaluacion[]>([]);
   readonly evaluacionesPendientesFecha = signal<EvaluacionPendienteFecha[]>([]);
   readonly preparacionCorte = signal<PreparacionCorte | null>(null);
   readonly periodoAcademicoActual = signal<PeriodoAcademico | null>(null);
@@ -76,7 +86,13 @@ export class Predicciones {
   readonly prediccionSeleccionadaId = signal<number | null>(null);
   readonly animationToken = signal(0);
   readonly mostrarSelectorPeriodo = signal(false);
+  readonly mostrarSelectorPeriodoEvaluacion = signal(false);
   readonly mostrarSelectorSeccion = signal(false);
+  readonly modalEstadoCortesAbierto = signal(false);
+  readonly cargandoEstadoCortes = signal(false);
+  readonly estadoCortes = signal<EstadoPreparacionCorte[]>([]);
+  readonly evaluacionesPendientesEstado = signal<EvaluacionPendienteFecha[]>([]);
+  readonly periodoEvaluacionSeleccionadoIdTermino = signal<number | null>(null);
 
   readonly resumenApi = signal<ResumenPrediccion | null>(null);
   readonly prediccionesGlobales = signal<PrediccionVista[]>([]);
@@ -95,6 +111,27 @@ export class Predicciones {
       this.periodosEvaluacionDisponibles().find((corte) => corte.id === this.periodoEvaluacionSeleccionadoId()) ?? null
   );
 
+  readonly periodoEvaluacionTerminoSeleccionado = computed(() =>
+    this.periodosAcademicosEvaluacion().find((periodo) => periodo.id === this.periodoEvaluacionSeleccionadoIdTermino()) ?? null
+  );
+
+  readonly etiquetaPeriodoEvaluacion = computed(() => {
+    const periodo = this.periodoEvaluacionTerminoSeleccionado();
+    return periodo ? `${periodo.nombre} · N.° ${periodo.numero}` : 'Período de evaluación';
+  });
+
+  readonly periodosTerminoDisponibles = computed(() => {
+    const periodoAcademicoId = this.seccionSeleccionada()?.periodoAcademicoId;
+    return this.periodosAcademicosEvaluacion()
+      .filter((periodo) => !periodoAcademicoId || periodo.periodoAcademicoId === periodoAcademicoId)
+      .sort((a, b) => a.numero - b.numero);
+  });
+
+  readonly nombrePeriodoAcademico = computed(() =>
+    String(this.seccionSeleccionada()?.anioAcademico ?? this.periodoAcademicoActual()?.anio ?? '') ||
+    'Período académico no disponible'
+  );
+
   readonly seccionSeleccionada = computed(
     () => this.secciones().find((seccion) => seccion.id === this.seccionSeleccionadaId()) ?? null
   );
@@ -103,14 +140,21 @@ export class Predicciones {
     const seccion = this.seccionSeleccionada();
     const periodos = this.periodosEvaluacion();
     const periodoAcademicoId = seccion?.periodoAcademicoId;
+    const periodoTermino = this.periodoEvaluacionTerminoSeleccionado();
 
     if (!periodoAcademicoId) {
       return periodos;
     }
 
-    return periodos
+    const cortesAcademicos = periodos
       .filter((corte) => corte.periodoAcademicoId === periodoAcademicoId)
       .sort((a, b) => a.semana - b.semana);
+
+    if (!periodoTermino) return cortesAcademicos;
+    return cortesAcademicos.filter((corte) =>
+      corte.fechaCorte >= periodoTermino.fechaInicio.slice(0, 10) &&
+      corte.fechaCorte <= periodoTermino.fechaFin.slice(0, 10)
+    );
   });
 
   readonly datasetActivo = computed(() =>
@@ -498,6 +542,7 @@ export class Predicciones {
     this.seccionSeleccionadaId.set(Number(value));
     this.cursoSeleccionadoId.set(null);
     this.mostrarSelectorSeccion.set(false);
+    this.ajustarPeriodoTerminoSegunSeccion();
     this.ajustarPeriodoSegunSeccion();
     this.cargarVista();
   }
@@ -506,24 +551,43 @@ export class Predicciones {
     this.mostrarSelectorPeriodo.update((valor) => !valor);
     if (this.mostrarSelectorPeriodo()) {
       this.mostrarSelectorSeccion.set(false);
+      this.mostrarSelectorPeriodoEvaluacion.set(false);
     }
+  }
+
+  toggleSelectorPeriodoEvaluacion(): void {
+    this.mostrarSelectorPeriodoEvaluacion.update((valor) => !valor);
+    if (this.mostrarSelectorPeriodoEvaluacion()) {
+      this.mostrarSelectorPeriodo.set(false);
+      this.mostrarSelectorSeccion.set(false);
+    }
+  }
+
+  onPeriodoEvaluacionTerminoChange(value: string): void {
+    this.periodoEvaluacionSeleccionadoIdTermino.set(Number(value));
+    this.mostrarSelectorPeriodoEvaluacion.set(false);
+    this.ajustarPeriodoSegunSeccion();
+    this.cargarVista();
+    this.abrirEstadoCortes();
   }
 
   toggleSelectorSeccion(): void {
     this.mostrarSelectorSeccion.update((valor) => !valor);
     if (this.mostrarSelectorSeccion()) {
       this.mostrarSelectorPeriodo.set(false);
+      this.mostrarSelectorPeriodoEvaluacion.set(false);
     }
   }
 
   cerrarSelectores(): void {
     this.mostrarSelectorPeriodo.set(false);
     this.mostrarSelectorSeccion.set(false);
+    this.mostrarSelectorPeriodoEvaluacion.set(false);
   }
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
-    if (!this.mostrarSelectorPeriodo() && !this.mostrarSelectorSeccion()) {
+    if (!this.mostrarSelectorPeriodo() && !this.mostrarSelectorSeccion() && !this.mostrarSelectorPeriodoEvaluacion()) {
       return;
     }
 
@@ -533,6 +597,12 @@ export class Predicciones {
     }
 
     this.cerrarSelectores();
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.cerrarSelectores();
+    this.cerrarEstadoCortes();
   }
 
   onCursoChange(value: string): void {
@@ -602,6 +672,77 @@ export class Predicciones {
     this.alertaRecalculoAbierta.set(false);
   }
 
+  abrirEstadoCortes(): void {
+    const seccionId = this.seccionSeleccionadaId();
+    const cortes = this.periodosEvaluacionDisponibles();
+    this.modalEstadoCortesAbierto.set(true);
+    this.estadoCortes.set([]);
+    this.evaluacionesPendientesEstado.set([]);
+
+    if (!seccionId || !cortes.length) {
+      this.cargandoEstadoCortes.set(false);
+      return;
+    }
+
+    this.cargandoEstadoCortes.set(true);
+    forkJoin({
+      preparaciones: forkJoin(cortes.map((corte) =>
+        this.corteSeguimientoService.preparacion(corte.id, seccionId).pipe(catchError(() => of(null)))
+      )),
+      pendientes: this.corteSeguimientoService.evaluacionesPendientes(cortes[0].id, seccionId)
+        .pipe(catchError(() => of([])))
+    }).subscribe({
+      next: ({ preparaciones, pendientes }) => {
+        this.estadoCortes.set(preparaciones.map((preparacion, index) => ({
+          corte: cortes[index],
+          preparacion
+        })));
+        const unicas = new Map(pendientes
+          .filter((item) => item.periodoEvaluacionId === this.periodoEvaluacionSeleccionadoIdTermino())
+          .map((item) => [item.evaluacionId, item]));
+        this.evaluacionesPendientesEstado.set([...unicas.values()]);
+        this.cargandoEstadoCortes.set(false);
+      },
+      error: () => this.cargandoEstadoCortes.set(false)
+    });
+  }
+
+  cerrarEstadoCortes(): void {
+    this.modalEstadoCortesAbierto.set(false);
+  }
+
+  corteListo(item: EstadoPreparacionCorte): boolean {
+    const prep = item.preparacion;
+    return Boolean(prep?.corteDisponible && prep.alumnosMatriculados > 0 && prep.alumnosConDatos > 0
+      && !prep.evaluacionesSinFecha && Boolean(prep.periodoEvaluacion));
+  }
+
+  etiquetaEstadoCorte(item: EstadoPreparacionCorte): string {
+    if (!this.corteListo(item)) return 'Pendiente';
+    return this.faltantesCorte(item).length ? 'Calculable · cobertura parcial' : 'Listo para calcular';
+  }
+
+  faltantesCorte(item: EstadoPreparacionCorte): string[] {
+    const prep = item.preparacion;
+    if (!prep) return ['No se pudo consultar la preparación de este corte.'];
+
+    const faltantes: string[] = [];
+    if (!prep.corteDisponible) faltantes.push('La fecha del corte todavía no llega.');
+    if (!prep.alumnosMatriculados) faltantes.push('No hay alumnos matriculados en la sección para este período.');
+    else if (!prep.alumnosConDatos) faltantes.push('Registra notas o asistencia para que el modelo tenga datos.');
+    const evaluacionesSinFecha = prep.evaluacionesSinFecha;
+    if (evaluacionesSinFecha) faltantes.push(`${evaluacionesSinFecha} evaluación(es) aún no tienen fecha.`);
+    if (!prep.periodoEvaluacion) faltantes.push('No se encontró un período de evaluación asociado a esta fecha de corte.');
+    if (prep.notasEsperadas > prep.notasRegistradas) {
+      faltantes.push(`Faltan ${prep.notasEsperadas - prep.notasRegistradas} notas por registrar.`);
+    }
+    if (!prep.bloquesSemanales) faltantes.push('No hay clases programadas en el horario.');
+    else if (prep.alumnosConAsistencia < prep.alumnosMatriculados) {
+      faltantes.push(`Asistencia incompleta: ${prep.alumnosConAsistencia} de ${prep.alumnosMatriculados} alumnos tienen registros.`);
+    }
+    return faltantes;
+  }
+
   seleccionarPrediccion(id: number): void {
     this.prediccionSeleccionadaId.set(id);
   }
@@ -623,11 +764,19 @@ export class Predicciones {
 
     forkJoin({
       secciones: this.seccionService.listar(),
-      periodosAcademicos: this.periodoAcademicoService.listar()
+      periodosAcademicos: this.periodoAcademicoService.listar(),
+      periodosEvaluacion: this.periodoEvaluacionService.listar()
     }).subscribe({
-      next: ({ secciones, periodosAcademicos }) => {
+      next: ({ secciones, periodosAcademicos, periodosEvaluacion }) => {
         const periodoAcademico = this.resolverPeriodoAcademicoActual(periodosAcademicos);
         this.periodoAcademicoActual.set(periodoAcademico);
+        const terminosDelPeriodo = periodosEvaluacion
+          .filter((periodo) => periodo.periodoAcademicoId === periodoAcademico?.id && periodo.estado !== 'INACTIVO')
+          .sort((a, b) => a.numero - b.numero);
+        this.periodosAcademicosEvaluacion.set(terminosDelPeriodo);
+        this.periodoEvaluacionSeleccionadoIdTermino.set(
+          this.resolverPeriodoEvaluacionVigente(terminosDelPeriodo)?.id ?? null
+        );
         if (!periodoAcademico) {
           this.configurarFiltros([], []);
           return;
@@ -1086,11 +1235,27 @@ export class Predicciones {
     this.periodosEvaluacion.set(periodos);
     this.secciones.set(secciones);
     this.seccionSeleccionadaId.set(secciones[0]?.id ?? null);
+    this.ajustarPeriodoTerminoSegunSeccion();
     this.ajustarPeriodoSegunSeccion();
     this.cargandoFiltros.set(false);
 
     if (this.periodoEvaluacionSeleccionadoId() && this.seccionSeleccionadaId()) {
       this.cargarVista();
+    }
+
+    if (!this.estadoInicialPresentado && this.seccionSeleccionadaId()) {
+      this.estadoInicialPresentado = true;
+      this.abrirEstadoCortes();
+    }
+  }
+
+  private ajustarPeriodoTerminoSegunSeccion(): void {
+    const disponibles = this.periodosTerminoDisponibles();
+    const seleccionado = this.periodoEvaluacionSeleccionadoIdTermino();
+    if (!disponibles.some((periodo) => periodo.id === seleccionado)) {
+      this.periodoEvaluacionSeleccionadoIdTermino.set(
+        this.resolverPeriodoEvaluacionVigente(disponibles)?.id ?? null
+      );
     }
   }
 
@@ -1129,6 +1294,20 @@ export class Predicciones {
       [...periodos].sort((a, b) => b.anio - a.anio)[0] ??
       null
     );
+  }
+
+  private resolverPeriodoEvaluacionVigente(periodos: PeriodoEvaluacion[]): PeriodoEvaluacion | null {
+    if (!periodos.length) return null;
+    const hoy = this.fechaLocalHoy();
+    const ordenados = [...periodos].sort((a, b) => a.numero - b.numero);
+    return ordenados.find((periodo) => {
+      const inicio = periodo.fechaInicio.slice(0, 10);
+      const fin = periodo.fechaFin.slice(0, 10);
+      return inicio <= hoy && hoy <= fin;
+    })
+      ?? ordenados.find((periodo) => (periodo.estado ?? '').toUpperCase() === 'ACTIVO')
+      ?? [...ordenados].filter((periodo) => periodo.fechaFin.slice(0, 10) < hoy).at(-1)
+      ?? ordenados[0];
   }
 
 }

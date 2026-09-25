@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { CustomAlertComponent, CustomAlertType } from '../../components/custom-alert/custom-alert';
+import { DatePickerComponent } from '../../components/date-picker/date-picker';
 import { Shell } from '../../layouts/shell/shell';
 import { AsignacionDocente } from '../../models/asignacion';
 import {
@@ -53,7 +54,7 @@ type PanelConfiguracionEvaluaciones = 'fechas' | 'estructura';
 
 @Component({
   selector: 'app-carga-notas',
-  imports: [Shell, RouterLink, FormsModule, CustomAlertComponent],
+  imports: [Shell, RouterLink, FormsModule, CustomAlertComponent, DatePickerComponent],
   templateUrl: './carga-notas.html',
   styleUrl: './carga-notas.scss'
 })
@@ -242,6 +243,12 @@ export class CargaNotas implements OnInit {
   formatoFechaCorta(fecha: string): string {
     const [year, month, day] = fecha.slice(0, 10).split('-').map(Number);
     return new Date(year, month - 1, day).toLocaleDateString('es-PE', { day: '2-digit', month: 'short' });
+  }
+
+  obtenerAnio(fecha?: string | null): number {
+    if (!fecha) return this.currentYear;
+    const anio = Number(fecha.slice(0, 4));
+    return Number.isNaN(anio) ? this.currentYear : anio;
   }
 
   rangoSemanaPlanificacion(inicio: string, fin: string): string {
@@ -475,12 +482,12 @@ export class CargaNotas implements OnInit {
     }
   }
 
-  actualizarFechaEvaluacion(evaluacion: Evaluacion, event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const fecha = input.value;
+  actualizarFechaEvaluacion(evaluacion: Evaluacion, fecha: string): void {
+    if (!fecha) {
+      return;
+    }
     const periodo = this.periodosEvaluacionPeriodo().find((item) => item.id === evaluacion.periodoEvaluacionId);
-    if (!fecha || !periodo || fecha < periodo.fechaInicio || fecha > periodo.fechaFin) {
-      input.value = evaluacion.fechaEvaluacion ?? '';
+    if (!periodo || fecha < periodo.fechaInicio || fecha > periodo.fechaFin) {
       this.mostrarAlerta('error', 'Fecha no válida', 'La fecha de evaluación debe estar dentro del período seleccionado.');
       return;
     }
@@ -493,7 +500,6 @@ export class CargaNotas implements OnInit {
       },
       error: (error) => {
         this.guardandoFechaEvaluacion.set(null);
-        input.value = evaluacion.fechaEvaluacion ?? '';
         this.mostrarAlerta('error', 'No se guardó la fecha', formatearMensajeError(error, 'No se pudo actualizar la fecha de evaluación.'));
       }
     });

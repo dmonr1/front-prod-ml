@@ -1,5 +1,5 @@
 import { Component, computed, inject, input, signal } from '@angular/core';
-import { forkJoin, of } from 'rxjs';
+import { catchError, forkJoin, of } from 'rxjs';
 import { Sidebar, SidebarChildItem, SidebarItem } from '../../components/sidebar/sidebar';
 import { PeriodoAcademico } from '../../models/periodo-academico';
 import { AuthService } from '../../services/auth/auth.service';
@@ -15,12 +15,6 @@ import { UsuarioSesion } from '../../models/auth';
   styleUrl: './shell.scss'
 })
 export class Shell {
-  private static readonly contextoCache = {
-    asignacionesActivas: true,
-    tutoriasActivas: true,
-    cargado: false
-  };
-
   private readonly authService = inject(AuthService);
   private readonly periodoAcademicoService = inject(PeriodoAcademicoService);
   private readonly asignacionAcademicaService = inject(AsignacionAcademicaService);
@@ -28,16 +22,8 @@ export class Shell {
 
   readonly items = input<SidebarItem[]>([]);
   readonly usuario = computed(() => this.authService.obtenerUsuario());
-  readonly tieneAsignacionesActivas = signal(
-    Shell.contextoCache.cargado
-      ? Shell.contextoCache.asignacionesActivas
-      : (this.authService.obtenerUsuario()?.roles.includes('DOCENTE') ?? false)
-  );
-  readonly tieneTutoriasActivas = signal(
-    Shell.contextoCache.cargado
-      ? Shell.contextoCache.tutoriasActivas
-      : (this.authService.obtenerUsuario()?.esTutor ?? false)
-  );
+  readonly tieneAsignacionesActivas = signal(false);
+  readonly tieneTutoriasActivas = signal(false);
   readonly menuItems = computed(() => {
     const customItems = this.items();
     if (customItems.length) {
@@ -57,12 +43,22 @@ export class Shell {
     const roles = usuario?.roles ?? [];
     const esAdmin = roles.includes('ADMIN') || roles.includes('DIRECTOR_ACADEMICO');
     const esDocente = roles.includes('DOCENTE');
-    const esTutor = roles.includes('DOCENTE_TUTOR') || usuario?.esTutor;
+    const tieneRolTutor = roles.includes('DOCENTE_TUTOR');
+    const esTutor = tieneRolTutor || usuario?.esTutor;
     const dashboardPath = esAdmin ? '/admin' : '/docente';
 
     const items: SidebarItem[] = [
       { id: 'inicio', label: 'Panel principal', path: dashboardPath, icon: 'fa-solid fa-house' }
     ];
+
+    if (esAdmin || esDocente || tieneRolTutor) {
+      items.push({
+        id: 'alertas-academicas',
+        label: 'Centro de alertas',
+        path: '/alertas-academicas',
+        icon: 'fa-regular fa-bell'
+      });
+    }
 
     if (esAdmin) {
       items.push({
@@ -81,19 +77,24 @@ export class Shell {
 
     const tieneAsig = this.tieneAsignacionesActivas();
     const tieneTut = this.tieneTutoriasActivas();
+    const puedeVerCursos = tieneAsig && (esAdmin || esDocente || tieneRolTutor);
+    const puedeVerHorario = tieneAsig && (esDocente || tieneRolTutor);
+    const puedeVerTutoria = tieneTut && (esAdmin || esDocente || esTutor);
 
-    if ((esDocente && tieneAsig) || (esTutor && tieneTut) || esAdmin) {
+    if (puedeVerCursos || puedeVerTutoria) {
       const hijosAcademicos: SidebarChildItem[] = [];
 
-      if ((esDocente && tieneAsig) || esAdmin) {
+      if (puedeVerCursos) {
+        if (puedeVerHorario) {
+          hijosAcademicos.push({ label: 'Mi horario', path: '/mi-horario', icon: 'fa-regular fa-calendar-days' });
+        }
         hijosAcademicos.push(
-          { label: 'Mi horario', path: '/mi-horario', icon: 'fa-regular fa-calendar-days' },
           { label: 'Mis cursos y notas', path: '/mis-asignaciones', icon: 'fa-solid fa-chalkboard-user' },
           { label: 'Asistencias', path: '/asistencias', icon: 'fa-solid fa-user-check' }
         );
       }
 
-      if ((esTutor && tieneTut) || esAdmin) {
+      if (puedeVerTutoria) {
         hijosAcademicos.push({
           label: 'Mi sección tutorada',
           path: '/seccion-tutorada',
@@ -138,13 +139,7 @@ export class Shell {
   private cargarContextoAcademico(): void {
     const usuario = this.authService.obtenerUsuario();
     const docenteId = usuario?.docenteId;
-    const roles = usuario?.roles ?? [];
-    const puedeTenerAsignaciones = Boolean(docenteId && roles.includes('DOCENTE'));
-    const puedeTenerTutorias = Boolean(
-      docenteId && (roles.includes('DOCENTE_TUTOR') || usuario?.esTutor)
-    );
-
-    if (!docenteId || (!puedeTenerAsignaciones && !puedeTenerTutorias)) {
+    if (!docenteId) {
       return;
     }
 
@@ -153,24 +148,19 @@ export class Shell {
         const periodoActual = this.resolverPeriodoActual(periodos);
 
         if (!periodoActual) {
+          this.limpiarContextoAcademico();
           return;
         }
 
         forkJoin({
-          asignaciones: puedeTenerAsignaciones
-            ? this.asignacionAcademicaService.listarAsignaciones(docenteId, periodoActual.id)
-            : of([]),
-          tutorias: puedeTenerTutorias
-            ? this.tutoriaService.listarPorDocente(docenteId, periodoActual.id)
-            : of([])
+          asignaciones: this.asignacionAcademicaService.listarAsignaciones(docenteId, periodoActual.id)
+            .pipe(catchError(() => of([]))),
+          tutorias: this.tutoriaService.listarPorDocente(docenteId, periodoActual.id)
+            .pipe(catchError(() => of([])))
         }).subscribe({
           next: ({ asignaciones, tutorias }) => {
             const tieneAsig = asignaciones.some((asignacion) => (asignacion.estado ?? 'ACTIVO') === 'ACTIVO');
             const tieneTut = tutorias.some((tutoria) => (tutoria.estado ?? 'ACTIVO') === 'ACTIVO');
-
-            Shell.contextoCache.asignacionesActivas = tieneAsig;
-            Shell.contextoCache.tutoriasActivas = tieneTut;
-            Shell.contextoCache.cargado = true;
 
             this.tieneAsignacionesActivas.set(tieneAsig);
             this.tieneTutoriasActivas.set(tieneTut);
@@ -183,19 +173,11 @@ export class Shell {
   }
 
   private resolverPeriodoActual(periodos: PeriodoAcademico[]): PeriodoAcademico | null {
-    const activo = periodos.find((periodo) => (periodo.estado ?? '').toUpperCase() === 'ACTIVO');
-    if (activo) {
-      return activo;
-    }
-
     const anioActual = new Date().getFullYear();
-    return periodos.find((periodo) => periodo.anio === anioActual) ?? null;
+    return periodos.find((periodo) => periodo.anio === anioActual && periodo.estado !== 'INACTIVO') ?? null;
   }
 
   private limpiarContextoAcademico(): void {
-    Shell.contextoCache.asignacionesActivas = false;
-    Shell.contextoCache.tutoriasActivas = false;
-    Shell.contextoCache.cargado = false;
     this.tieneAsignacionesActivas.set(false);
     this.tieneTutoriasActivas.set(false);
   }

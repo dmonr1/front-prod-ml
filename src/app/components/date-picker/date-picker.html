@@ -34,6 +34,7 @@
                     class="toolbar-dropdown-option toolbar-dropdown-option--month"
                     type="button"
                     [class.selected]="visibleMonth === i"
+                    [disabled]="isMonthDisabled(i)"
                     [title]="monthNames[i]"
                     [attr.aria-label]="monthNames[i]"
                     (click)="selectMonth(i)">
@@ -57,6 +58,7 @@
                     class="toolbar-dropdown-option"
                     type="button"
                     [class.selected]="visibleYear === year"
+                    [disabled]="isYearDisabled(year)"
                     (click)="selectYear(year)">
                     {{ year }}
                   </button>
@@ -86,10 +88,11 @@
             <button
               class="day-cell"
               type="button"
-              [disabled]="!cell.inMonth"
+              [disabled]="!cell.inMonth || cell.isOutOfRange"
               [class.empty]="!cell.inMonth"
               [class.today]="cell.isToday"
               [class.selected]="cell.isSelected"
+              [class.out-of-range]="cell.isOutOfRange"
               (click)="selectDate(cell)">
               {{ cell.day ?? '' }}
             </button>

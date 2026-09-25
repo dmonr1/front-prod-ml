@@ -10,6 +10,14 @@ export interface AsistenciaSesion {
   observacion: string | null;
 }
 
+export interface EstadoAsistenciaSesionResumen {
+  asignacionId: number;
+  horarioSemanalId: number;
+  fechaClase: string;
+  registradas: number;
+  total: number;
+}
+
 export interface AsistenciaSesionItemPayload {
   matriculaId: number;
   estado: EstadoAsistenciaSesion;

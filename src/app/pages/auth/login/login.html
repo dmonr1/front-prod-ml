@@ -1,4 +1,18 @@
-<main class="login-page">
+<main class="login-page" [class.is-dark]="isDark()">
+  <button
+    type="button"
+    class="login-theme-toggle"
+    (click)="toggleTema()"
+    [attr.aria-label]="isDark() ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+    [title]="isDark() ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+  >
+    @if (isDark()) {
+      <i class="fa-solid fa-sun" aria-hidden="true"></i>
+    } @else {
+      <i class="fa-solid fa-moon" aria-hidden="true"></i>
+    }
+  </button>
+
   <app-custom-alert [open]="alertState().open" [type]="alertState().type" [title]="alertState().title"
     [message]="alertState().message" [confirmText]="alertState().confirmText" [cancelText]="alertState().cancelText"
     [autoCloseMs]="alertState().autoCloseMs" (confirm)="cerrarAlerta()" (cancel)="cerrarAlerta()"

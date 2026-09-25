@@ -179,6 +179,10 @@ export const routes: Routes = [
           )
       },
       {
+        path: 'alertas-academicas',
+        loadComponent: () => import('./pages/alertas-academicas/alertas-academicas').then((m) => m.AlertasAcademicas)
+      },
+      {
         path: 'reportes',
         redirectTo: 'hallazgos',
         pathMatch: 'full'
