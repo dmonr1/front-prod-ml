@@ -59,7 +59,7 @@ describe('Shell sidebar permissions', () => {
   it('solo muestra las vistas docentes si existe una asignacion activa', () => {
     usuario = { ...usuario, docenteId: 2, roles: ['DOCENTE'], permisos: ['ROLE_DOCENTE'] };
     asignaciones = [{ estado: 'INACTIVO' }];
-    expect(rutas(TestBed.runInInjectionContext(() => new Shell()))).toEqual(['/docente']);
+    expect(rutas(TestBed.runInInjectionContext(() => new Shell()))).toEqual(['/docente', '/alertas-academicas']);
 
     asignaciones = [{ estado: 'ACTIVO' }];
     const rutasActivas = rutas(TestBed.runInInjectionContext(() => new Shell()));
@@ -96,12 +96,20 @@ describe('Shell sidebar permissions', () => {
     expect(rutasDocente).not.toContain('/seccion-tutorada');
   });
 
-  it('espera la comprobacion de asignaciones antes de mostrar accesos', () => {
-    usuario = { ...usuario, docenteId: 2, roles: ['DOCENTE'] };
+  it('reutiliza las asignaciones resueltas mientras refresca el contexto al navegar', () => {
+    usuario = { ...usuario, usuarioId: 20, docenteId: 2, roles: ['DOCENTE'] };
+    asignaciones = [{ estado: 'ACTIVO' }];
+    TestBed.runInInjectionContext(() => new Shell());
+
     const respuesta = new Subject<unknown[]>();
     const periodos = TestBed.inject(PeriodoAcademicoService);
     vi.spyOn(periodos, 'listar').mockReturnValue(respuesta as ReturnType<PeriodoAcademicoService['listar']>);
     const shell = TestBed.runInInjectionContext(() => new Shell());
-    expect(rutas(shell)).toEqual(['/docente']);
+
+    expect(rutas(shell)).toContain('/mis-asignaciones');
+    expect(rutas(shell)).toContain('/asistencias');
+
+    respuesta.next([{ id: 1, anio: new Date().getFullYear(), estado: 'ACTIVO' }]);
+    respuesta.complete();
   });
 });

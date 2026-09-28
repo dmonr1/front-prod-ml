@@ -2,47 +2,241 @@
   <section class="assignment-card schedule-page">
     <app-custom-alert [open]="alertState().open" [type]="alertState().type" [title]="alertState().title"
       [message]="alertState().message" [confirmText]="alertState().confirmText" [cancelText]="alertState().cancelText"
-      [autoCloseMs]="alertState().autoCloseMs" (confirm)="cerrarAlerta()" (cancel)="cerrarAlerta()" (dismiss)="cerrarAlerta()" />
-    <header class="card-head">
-      <div class="panel-head"><span class="panel-kicker">Configuración académica</span><h2>Horarios y programación</h2><p>Define bloques por nivel y organiza las clases asignadas para cada día.</p></div>
-      <div class="heading-controls">
-        <span class="period-informative-chip">
-          <i class="fa-solid fa-calendar-check"></i>
-          Período {{ periodoSeleccionado()?.nombre || '2026' }}
-        </span>
-      </div>
-    </header>
+      [autoCloseMs]="alertState().autoCloseMs" (confirm)="cerrarAlerta()" (cancel)="cerrarAlerta()"
+      (dismiss)="cerrarAlerta()" />
 
-    <nav class="view-switch schedule-switch" [class.second-active]="vista() === 'semanal'" aria-label="Vistas de programación">
-      <span class="view-switch-thumb" aria-hidden="true"></span>
-      <button class="view-pill" type="button" [class.active]="vista() === 'bloques'" (click)="vista.set('bloques')"><i class="fa-regular fa-clock"></i> Bloques por nivel</button>
-      <button class="view-pill" type="button" [class.active]="vista() === 'semanal'" (click)="vista.set('semanal')"><i class="fa-regular fa-calendar"></i> Programación anual</button>
-    </nav>
+    @if (vista() === 'semanal') {
+      <header class="card-head section-schedule-head">
+        <button class="action-button secondary section-back-button" type="button" (click)="volverASecciones()">
+          <i class="fa-solid fa-arrow-left"></i><span>Volver</span>
+        </button>
+        <div class="section-title-centered">
+          <span class="panel-kicker">Horario semanal</span>
+          <h2>{{ seccionSeleccionada()?.grado }} · Sección {{ seccionSeleccionada()?.seccion }}</h2>
+          <div class="section-title-badges"><span>{{ seccionSeleccionada()?.nivel }}</span><span>{{ horariosSeccion().length }} clases programadas</span></div>
+        </div>
+        <span class="period-informative-chip"><i class="fa-solid fa-calendar-check"></i>Período {{ periodoSeleccionado()?.nombre || '2026' }}</span>
+      </header>
+    } @else {
+      <header class="card-head">
+        <div class="panel-head"><h2>Horarios y programación</h2></div>
+        <div class="heading-controls">
+          <div class="level-toggle" role="group" aria-label="Filtrar por nivel">
+            <button type="button" [class.active]="categoriaNivel() === 'PRIMARIA'" (click)="cambiarCategoriaNivel('PRIMARIA')">Primaria</button>
+            <button type="button" [class.active]="categoriaNivel() === 'SECUNDARIA'" (click)="cambiarCategoriaNivel('SECUNDARIA')">Secundaria</button>
+          </div>
+          <button class="action-button secondary block-config-trigger" type="button" (click)="abrirModalBloque()">
+            <i class="fa-regular fa-clock"></i><span>Programar bloques</span>
+          </button>
+          <span class="period-informative-chip">
+            <i class="fa-solid fa-calendar-check"></i>Período {{ periodoSeleccionado()?.nombre || '2026' }}
+          </span>
+        </div>
+      </header>
+    }
 
-    @if (cargando()) { <div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i> Cargando configuración...</div> }
-    @else if (!niveles().length) { <div class="empty-state">Crea cursos y asignaciones activas para empezar a configurar horarios.</div> }
-    @else if (vista() === 'bloques') {
-      <section class="schedule-section">
-        <header class="section-heading"><div><h2>Bloques de clase</h2><p>Los horarios son configurables por período y nivel; los recreos no se agregan como clases.</p></div><label><span>Nivel</span><select [ngModel]="nivelId()" (ngModelChange)="cambiarNivel($event)">@for (nivel of niveles(); track nivel.id) { <option [ngValue]="nivel.id">{{ nivel.nombre }}</option> }</select></label></header>
-        @if (!bloques().length) {
-          <div class="template-callout"><span>No hay bloques configurados para este nivel.</span><button class="action-button secondary" type="button" [disabled]="guardando()" (click)="cargarPlantillaSanMarcos()"><i class="fa-solid fa-copy"></i> Usar plantilla de referencia San Marcos</button></div>
+    @if (cargando()) {
+      <div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i> Cargando configuración...</div>
+    } @else if (!niveles().length) {
+      <div class="empty-state">No hay cursos activos en el catálogo para configurar horarios.</div>
+    } @else if (vista() === 'secciones') {
+      <section class="section-overview">
+        <header class="section-heading">
+          <div><h2>Secciones de {{ categoriaNivel() === 'PRIMARIA' ? 'primaria' : 'secundaria' }}</h2>
+            <p>Elige una sección para consultar y programar sus clases semanales.</p></div>
+          <span class="section-count">{{ resumenSecciones().length }} secciones</span>
+        </header>
+        @if (resumenSecciones().length) {
+          <div class="section-card-grid">
+            @for (seccion of resumenSecciones(); track seccion.id) {
+              <article class="section-schedule-card">
+                <div class="section-card-heading">
+                  <div><span class="panel-kicker">{{ seccion.nivel }}</span><h3>{{ seccion.grado }} · Sección {{ seccion.seccion }}</h3></div>
+                  <span class="level-status" [class.status-complete]="seccion.pendientes === 0"
+                    [class.status-pending]="seccion.pendientes > 0">{{ seccion.pendientes ? 'PENDIENTE' : 'COMPLETO' }}</span>
+                </div>
+                <div class="section-card-stats">
+                  <span><strong>{{ seccion.programadas }}/{{ seccion.asignaciones }}</strong> cursos con horario</span>
+                  <span><strong>{{ seccion.pendientes }}</strong> por programar</span>
+                </div>
+                <div class="level-progress" role="progressbar" [attr.aria-valuenow]="seccion.programadas"
+                  [attr.aria-valuemin]="0" [attr.aria-valuemax]="seccion.asignaciones">
+                  <span [style.width.%]="seccion.asignaciones ? seccion.programadas / seccion.asignaciones * 100 : 0"></span>
+                </div>
+                <button class="level-open-button" type="button" (click)="abrirSeccion(seccion.id)">
+                  <span>Ver horario y programar</span><i class="fa-solid fa-arrow-right"></i>
+                </button>
+              </article>
+            }
+          </div>
+        } @else {
+          <div class="empty-state">No hay secciones con asignaciones docentes activas en este nivel y período.</div>
         }
-        <div class="table-wrap"><table class="app-table"><thead><tr><th>#</th><th>Nombre</th><th>Inicio</th><th>Fin</th><th>Acciones</th></tr></thead><tbody>
-          @for (bloque of bloques(); track bloque.id) {
-            <tr><td>{{ bloque.orden }}</td><td><input [(ngModel)]="bloque.nombre" aria-label="Nombre del bloque" maxlength="60" /></td><td><input type="time" [(ngModel)]="bloque.horaInicio" aria-label="Hora de inicio" /></td><td><input type="time" [(ngModel)]="bloque.horaFin" aria-label="Hora de fin" /></td><td class="row-actions"><button class="icon-button" type="button" title="Guardar cambios" aria-label="Guardar cambios" (click)="guardarEdicion(bloque)"><i class="fa-solid fa-floppy-disk"></i></button><button class="icon-button danger" type="button" title="Desactivar bloque" aria-label="Desactivar bloque" (click)="desactivarBloque(bloque)"><i class="fa-solid fa-ban"></i></button></td></tr>
-          } @empty { <tr><td colspan="5" class="table-empty">Aún no hay bloques definidos.</td></tr> }
-        </tbody></table></div>
-        <form class="add-block" (ngSubmit)="guardarBloque()"><h3>Agregar bloque</h3><label><span>Nombre</span><input name="nombre" required maxlength="60" placeholder="Ej. Bloque 1" [(ngModel)]="nuevoNombre" /></label><label><span>Hora de inicio</span><input name="inicio" type="time" required [(ngModel)]="nuevaHoraInicio" /></label><label><span>Hora de fin</span><input name="fin" type="time" required [(ngModel)]="nuevaHoraFin" /></label><button class="action-button primary" type="submit" [disabled]="guardando() || !nivelId()"><i class="fa-solid fa-plus"></i> Agregar</button></form>
       </section>
     } @else {
-      <section class="schedule-section">
-        <header class="section-heading"><div><h2>Programación anual</h2><p>La asignación de día y bloque se repite durante el período académico.</p></div></header>
-        <form class="add-block weekly-form" (ngSubmit)="guardarHorario()"><label class="wide"><span>Curso, docente y sección</span><select [ngModel]="asignacionId()" name="asignacion" (ngModelChange)="cambiarAsignacion($event)">@for (asignacion of asignaciones(); track asignacion.id) { <option [ngValue]="asignacion.id">{{ asignacion.docenteNombreCompleto }} · {{ asignacion.curso }} · {{ asignacion.grado }} {{ asignacion.seccion }}</option> }</select></label><label><span>Día</span><select [ngModel]="diaSemana()" name="dia" (ngModelChange)="diaSemana.set($event)">@for (dia of dias; track dia.value) { <option [ngValue]="dia.value">{{ dia.label }}</option> }</select></label><label><span>Bloque</span><select [ngModel]="bloqueHorarioId()" name="bloque" (ngModelChange)="cambiarBloque($event)">@for (bloque of bloquesAsignacion(); track bloque.id) { <option [ngValue]="bloque.id">{{ bloque.nombre }} · {{ bloque.horaInicio }}–{{ bloque.horaFin }}</option> }</select></label><button class="action-button primary" type="submit" [disabled]="guardando() || !asignacionId() || !bloqueHorarioId()"><i class="fa-solid fa-plus"></i> Programar clase</button></form>
-        <div class="table-wrap"><table class="app-table schedule-table"><thead><tr><th>Día</th><th>Hora</th><th>Curso</th><th>Bloque</th><th>Sección</th><th>Docente</th><th></th></tr></thead><tbody>
-          @for (item of horariosOrdenados(); track item.id) { <tr><td><strong>{{ etiquetaDia(item.diaSemana) }}</strong></td><td>{{ item.horaInicio }}–{{ item.horaFin }}</td><td>{{ item.curso }}</td><td>{{ item.bloque }}</td><td>{{ item.grado }} · {{ item.seccion }}</td><td>{{ item.docente }}</td><td><button class="icon-button danger" type="button" title="Retirar clase del horario" aria-label="Retirar clase del horario" (click)="quitarHorario(item)"><i class="fa-solid fa-trash-can"></i></button></td></tr> }
-          @empty { <tr><td colspan="7" class="table-empty">No hay clases programadas para este período.</td></tr> }
-        </tbody></table></div>
+      <section class="schedule-section section-week-view">
+        <div class="section-programming-layout">
+          <div class="section-timetable-scroll">
+            <div class="section-timetable">
+              <div class="timetable-head">
+                <span class="timetable-corner">Hora</span>
+                @for (dia of dias; track dia.value) { <strong>{{ dia.label }}</strong> }
+              </div>
+              <div class="timetable-body" [style.height.px]="rangoProgramacion().alto">
+                <div class="timetable-time-axis">
+                  @for (marca of rangoProgramacion().marcas; track marca; let first = $first; let last = $last) {
+                    <span [class.first-time-mark]="first" [class.last-time-mark]="last" [style.top.px]="posicionMarcaProgramacion(marca)">{{ formatearMinuto(marca) }}</span>
+                  }
+                </div>
+                @for (dia of dias; track dia.value) {
+                  <div class="timetable-day-lane" [style.height.px]="rangoProgramacion().alto">
+                    @for (marca of rangoProgramacion().marcas; track marca) { <span class="timetable-grid-mark" [style.top.px]="posicionMarcaProgramacion(marca)"></span> }
+                    @for (recreo of recreosNivel(); track recreo.id) {
+                      <article class="timetable-recess" [style.top.px]="posicionBloque(recreo)" [style.height.px]="altoBloque(recreo)">
+                        <strong>Recreo</strong><span>{{ formatearHora(recreo.horaInicio) }}–{{ formatearHora(recreo.horaFin) }}</span>
+                      </article>
+                    }
+                    @for (item of horariosPorDia(dia.value); track item.id) {
+                      <article class="timetable-class" [style.top.px]="posicionProgramacion(item)"
+                        [style.height.px]="altoProgramacion(item)">
+                        <div class="timetable-class-content">
+                          <strong>{{ item.curso }}</strong><small>{{ item.docente }}</small>
+                          <span>{{ formatearHora(item.horaInicio) }}–{{ formatearHora(item.horaFin) }} · {{ item.bloque }}</span>
+                        </div>
+                        <div class="timetable-class-actions">
+                          <button class="icon-button" type="button" title="Editar bloque" aria-label="Editar bloque" (click)="iniciarEdicionHorario(item)"><i class="fa-solid fa-pen"></i></button>
+                          <button class="icon-button danger" type="button" title="Retirar bloque" aria-label="Retirar bloque" (click)="quitarHorario(item)"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
+                      </article>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+
+          <aside class="programming-side-panel">
+            <header><span class="panel-kicker">{{ horarioEditandoId() ? 'Edición' : 'Nueva clase' }}</span>
+              <h3>{{ horarioEditandoId() ? 'Editar programación' : 'Programar bloque' }}</h3></header>
+            @if (asignacionesSeccion().length && bloquesAsignacion().length) {
+              <form class="side-program-form" (ngSubmit)="guardarHorario()">
+                <label><span>Curso y docente</span>
+                  <select [ngModel]="asignacionId()" name="asignacion" (ngModelChange)="cambiarAsignacion($event)">
+                    @for (asignacion of asignacionesSeccion(); track asignacion.id) {
+                      <option [ngValue]="asignacion.id">{{ asignacion.curso }} · {{ asignacion.docenteNombreCompleto }}</option>
+                    }
+                  </select>
+                </label>
+                <label><span>Día</span><select [ngModel]="diaSemana()" name="dia" (ngModelChange)="diaSemana.set($event)">
+                  @for (dia of dias; track dia.value) { <option [ngValue]="dia.value">{{ dia.label }}</option> }
+                </select></label>
+                <label><span>Bloque horario</span><select [ngModel]="bloqueHorarioId()" name="bloque" (ngModelChange)="cambiarBloque($event)">
+                  @for (bloque of bloquesAsignacion(); track bloque.id) { <option [ngValue]="bloque.id">{{ bloque.nombre }} · {{ formatearHora(bloque.horaInicio) }}–{{ formatearHora(bloque.horaFin) }}</option> }
+                </select></label>
+                <button class="action-button primary" type="submit" [disabled]="guardando() || !asignacionId() || !bloqueHorarioId()">
+                  <i [class]="horarioEditandoId() ? 'fa-solid fa-floppy-disk' : 'fa-solid fa-plus'"></i>
+                  {{ horarioEditandoId() ? 'Guardar cambios' : 'Programar clase' }}
+                </button>
+                @if (horarioEditandoId()) { <button class="action-button secondary" type="button" (click)="cancelarEdicionHorario()">Cancelar edición</button> }
+              </form>
+            } @else {
+              <p class="panel-empty">{{ asignacionesSeccion().length ? 'Configura bloques para este nivel antes de programar clases.' : 'No hay cursos asignados a esta sección.' }}</p>
+              @if (!bloquesAsignacion().length) { <button class="action-button secondary" type="button" (click)="abrirModalBloque()"><i class="fa-regular fa-clock"></i> Configurar bloques</button> }
+            }
+            @if (asignacionesPendientes().length) {
+              <div class="pending-assignment-list">
+                <h4>Cursos pendientes <span>{{ asignacionesPendientes().length }}</span></h4>
+                @for (asignacion of asignacionesPendientes(); track asignacion.id) {
+                  <button type="button" (click)="seleccionarAsignacionPendiente(asignacion.id)">
+                    <strong>{{ asignacion.curso }}</strong><small>{{ asignacion.docenteNombreCompleto }}</small>
+                  </button>
+                }
+              </div>
+            }
+          </aside>
+        </div>
       </section>
+    }
+
+    @if (modalBloqueAbierto()) {
+      <div class="block-modal-backdrop" (click)="$event.target === $event.currentTarget && cerrarModalBloque()">
+        <section class="block-modal block-manager-modal" role="dialog" aria-modal="true" aria-labelledby="block-modal-title">
+          <header class="block-modal-header">
+            <div class="block-manager-title"><h2 id="block-modal-title">Bloques de {{ nivelSeleccionado()?.nombre }}</h2>
+              <p>Define las horas disponibles para programar las clases del período.</p></div>
+            <div class="block-manager-actions">
+              <button class="action-button primary" type="button" [disabled]="guardando()" (click)="abrirSubmodalBloque()"><i class="fa-solid fa-plus"></i><span>Nuevo bloque</span></button>
+            <button class="icon-button" type="button" title="Cerrar" aria-label="Cerrar" [disabled]="guardando()" (click)="cerrarModalBloque()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+          </header>
+          <div class="block-manager-content">
+            @if (bloques().length) {
+              <div class="table-wrap"><table class="app-table block-manager-table"><thead><tr><th>#</th><th>Bloque</th><th>Inicio</th><th>Fin</th><th>Tipo</th><th>Acciones</th></tr></thead>
+                <tbody>@for (bloque of bloques(); track bloque.id) {
+                  <tr><td>{{ bloque.orden }}</td><td><input [(ngModel)]="bloque.nombre" aria-label="Nombre del bloque" maxlength="60" /></td>
+                    <td><select [ngModel]="bloque.horaInicio.slice(0, 5)" [name]="'inicio-' + bloque.id" aria-label="Rango del bloque"
+                      (ngModelChange)="cambiarInicioEdicion(bloque.id, $event)">
+                      @for (inicio of opcionesInicioEdicion(bloque); track inicio) { <option [value]="inicio">{{ inicio }}–{{ calcularFinHorario(inicio, bloque.nivelId, bloque.esRecreo) }}</option> }
+                    </select></td>
+                    <td><span class="block-end-time">{{ bloque.horaFin.slice(0, 5) }}</span></td>
+                    <td><div class="inline-recess">
+                      <button class="type-radio" type="button" role="checkbox" [attr.aria-checked]="bloque.esRecreo"
+                        [class.selected]="bloque.esRecreo" [attr.aria-label]="bloque.esRecreo ? 'Tipo: recreo' : 'Tipo: clase'"
+                        [title]="bloque.esRecreo ? 'Recreo' : 'Clase'" [disabled]="guardando()"
+                        (click)="alternarTipoBloque(bloque.id)"><i class="fa-solid fa-check" aria-hidden="true"></i></button>
+                      <span>{{ bloque.esRecreo ? 'Recreo' : 'Clase' }}</span>
+                    </div></td>
+                    <td class="row-actions"><button class="icon-button" type="button" title="Guardar bloque" aria-label="Guardar bloque" [disabled]="guardando() || !bloqueHorarioValido(bloque)" (click)="guardarEdicion(bloque)"><i class="fa-solid fa-floppy-disk"></i></button>
+                      <button class="icon-button danger" type="button" title="Desactivar bloque" aria-label="Desactivar bloque" (click)="desactivarBloque(bloque)"><i class="fa-solid fa-ban"></i></button></td></tr>
+                }</tbody>
+              </table></div>
+            } @else {
+              <div class="empty-state block-empty-state">Aún no hay bloques configurados para este nivel.</div>
+            }
+          </div>
+        </section>
+        @if (submodalBloqueAbierto()) {
+          <div class="block-create-backdrop" (click)="$event.target === $event.currentTarget && cerrarSubmodalBloque()">
+            <section class="block-modal block-create-modal" role="dialog" aria-modal="true" aria-labelledby="create-block-title">
+              <header class="block-modal-header">
+                <div><h2 id="create-block-title">Nuevo bloque</h2><p>Bloques de {{ nivelSeleccionado()?.nombre }}</p></div>
+                <button class="icon-button" type="button" title="Cerrar" aria-label="Cerrar" [disabled]="guardando()" (click)="cerrarSubmodalBloque()"><i class="fa-solid fa-xmark"></i></button>
+              </header>
+              <form class="block-modal-form" (ngSubmit)="guardarBloque()">
+                <label><span>Nombre</span><input name="nombre" required maxlength="60" [readonly]="nuevoEsRecreo()"
+                  [placeholder]="nuevoEsRecreo() ? 'Recreo' : 'Ej. Bloque 1'" [(ngModel)]="nuevoNombre" /></label>
+                <div class="block-time-fields">
+                  <label><span>Rango · {{ duracionBloqueNuevo() }} min</span>
+                    <select name="inicio" required [ngModel]="nuevaHoraInicio" (ngModelChange)="cambiarHoraInicioBloque($event)">
+                      @if (!nuevaHoraInicio) { <option value="" disabled>Sin horario disponible</option> }
+                      @for (inicio of opcionesInicioBloque(); track inicio) { <option [value]="inicio">{{ inicio }}–{{ calcularFinBloque(inicio) }}</option> }
+                    </select>
+                  </label>
+                </div>
+                @if (huecosDisponibles().length) {
+                  <div class="available-gaps">
+                    <span>Espacios libres</span>
+                    <div>@for (hueco of huecosDisponibles(); track hueco.inicio + '-' + hueco.fin) {
+                      <button type="button" class="gap-option" [class.active]="nuevaHoraInicio === hueco.inicio && nuevaHoraFin === hueco.fin" (click)="seleccionarHueco(hueco)">
+                        <i class="fa-regular fa-clock"></i>{{ hueco.inicio }}–{{ hueco.fin }}<small>{{ duracionHueco(hueco.minutos) }}</small>
+                      </button>
+                    }</div>
+                  </div>
+                }
+                <button class="recess-toggle" type="button" role="checkbox" [attr.aria-checked]="nuevoEsRecreo()"
+                  [class.selected]="nuevoEsRecreo()" (click)="alternarNuevoEsRecreo()">
+                  <span class="recess-toggle-indicator"><i class="fa-solid fa-check" aria-hidden="true"></i></span>
+                  <span>Es recreo</span>
+                </button>
+                <div class="block-modal-actions">
+                  <button class="action-button secondary" type="button" [disabled]="guardando()" (click)="cerrarSubmodalBloque()">Cancelar</button>
+                  <button class="action-button primary" type="submit" [disabled]="guardando() || !nivelId() || !validarRangoNuevoBloque()"><i class="fa-solid fa-plus"></i><span>Crear bloque</span></button>
+                </div>
+              </form>
+            </section>
+          </div>
+        }
+      </div>
     }
   </section>
 </app-shell>

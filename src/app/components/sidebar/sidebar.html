@@ -11,8 +11,12 @@
     }
     <div class="notification-wrap" (click)="$event.stopPropagation()">
       <button class="notification-toggle" type="button" (click)="toggleNotifications($event)"
+        (mouseenter)="mostrarTooltipColapsado($event, 'Centro de alertas')"
+        (mouseleave)="ocultarTooltipColapsado()"
+        (focus)="mostrarTooltipColapsado($event, 'Centro de alertas')"
+        (blur)="ocultarTooltipColapsado()"
         [attr.aria-label]="notificationCount() ? notificationCount() + ' alertas académicas pendientes' : 'Alertas académicas'"
-        title="Alertas académicas">
+        [title]="collapsed() ? '' : 'Alertas académicas'">
         <i class="fa-regular fa-bell"></i>
         @if (notificationCount() > 0) { <span class="notification-badge">{{ notificationCount() > 99 ? '99+' : notificationCount() }}</span> }
       </button>
@@ -47,7 +51,11 @@
     @if (item.children?.length) {
     <section class="nav-section" [class.open]="isExpanded(item)">
       <button class="nav-parent" type="button"
-        [title]="collapsed() ? item.label : ''" (click)="toggleSection(item)">
+        (mouseenter)="mostrarTooltipColapsado($event, item.label)"
+        (mouseleave)="ocultarTooltipColapsado()"
+        (focus)="mostrarTooltipColapsado($event, item.label)"
+        (blur)="ocultarTooltipColapsado()"
+        (click)="toggleSection(item)">
         <span class="nav-icon"><i [class]="item.icon"></i></span>
         <span class="nav-label">{{ item.label }}</span>
         <i class="fa-solid fa-chevron-down nav-chevron"></i>
@@ -57,6 +65,10 @@
       <div class="nav-children">
         @for (child of item.children; track child.path) {
         <a class="nav-child" [routerLink]="child.path" [class.active]="isChildActive(child)"
+          (mouseenter)="mostrarTooltipColapsado($event, child.label)"
+          (mouseleave)="ocultarTooltipColapsado()"
+          (focus)="mostrarTooltipColapsado($event, child.label)"
+          (blur)="ocultarTooltipColapsado()"
           (click)="mantenerSeccionAbierta($event, item.id)">
           <span class="nav-icon"><i [class]="child.icon"></i></span>
           <span class="nav-label">{{ child.label }}</span>
@@ -67,7 +79,10 @@
     </section>
     } @else {
     <a class="nav-single" [routerLink]="item.path ?? '/admin'" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
-      [title]="collapsed() ? item.label : ''">
+      (mouseenter)="mostrarTooltipColapsado($event, item.label)"
+      (mouseleave)="ocultarTooltipColapsado()"
+      (focus)="mostrarTooltipColapsado($event, item.label)"
+      (blur)="ocultarTooltipColapsado()">
       <span class="nav-icon"><i [class]="item.icon"></i></span>
       <span class="nav-label">{{ item.label }}</span>
     </a>
@@ -156,4 +171,10 @@
       <span class="nav-label">Cerrar sesión</span>
     </button>
   </div>
+
+  @if (collapsedTooltip(); as tooltip) {
+    <div class="collapsed-tooltip" [style.top.px]="tooltip.top" [style.left.px]="tooltip.left" role="tooltip">
+      {{ tooltip.label }}
+    </div>
+  }
 </aside>

@@ -13,6 +13,10 @@ export interface PeriodoAcademicoPayload {
   fechaInicio: string;
   fechaFin: string;
   tipoPeriodoEvaluacion: string;
+  duracionHoraPrimariaMinutos: number;
+  duracionRecreoPrimariaMinutos: number;
+  duracionHoraSecundariaMinutos: number;
+  duracionRecreoSecundariaMinutos: number;
 }
 
 export interface PeriodoEvaluacionInicialPayload {

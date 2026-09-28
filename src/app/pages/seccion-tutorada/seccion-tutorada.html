@@ -13,12 +13,12 @@
               <span class="head-badge">{{ tut.grado }} "{{ tut.seccion }}" - {{ tut.nivel }}</span>
             }
           </div>
-          <p class="head-subtitle">Panorama integral 360° · Rendimiento académico por cursos y control de asistencia</p>
+          <p class="head-subtitle">{{ tutoriaIdRuta ? 'Panorama de rendimiento académico y asistencia de la sección' : 'Consulta el horario, las notas y la asistencia de cada sección' }}</p>
         </div>
       </div>
 
       <div class="head-controls">
-        @if (!mostrarSkeleton() && tutoriasDisponibles().length > 1) {
+        @if (!mostrarSkeleton() && tutoriaIdRuta && tutoriasDisponibles().length > 1) {
           <div class="tutoria-dropdown">
             <button class="section-picker-btn" type="button" (click)="toggleSelectorTutoria()">
               <i class="fa-solid fa-layer-group"></i>
@@ -47,10 +47,10 @@
           </div>
         }
 
-        <span class="period-informative-chip">
+        @if (tutoriaIdRuta) { <span class="period-informative-chip">
           <i class="fa-regular fa-calendar-check"></i>
           <span>Período {{ tutoria()?.periodoAcademico || '2026' }}</span>
-        </span>
+        </span> }
       </div>
     </header>
 
@@ -76,6 +76,28 @@
         <div class="skeleton-toolbar skeleton"></div>
         <div class="skeleton-table-body skeleton"></div>
       </div>
+    }
+
+    @if (!mostrarSkeleton() && !tutoriaIdRuta && tutoriasDisponibles().length) {
+      <section class="tutoria-section-grid" aria-label="Secciones tutoradas">
+        @for (item of tutoriasDisponibles(); track item.id) {
+          <article class="tutoria-section-card">
+            <div class="tutoria-card-main">
+              <span class="tutoria-level-tag">{{ item.nivel }}</span>
+              <h3>{{ item.grado }} · Sección {{ item.seccion }}</h3>
+              <p>Período {{ item.periodoAcademico }}</p>
+            </div>
+            <div class="tutoria-card-actions">
+              <button type="button" class="section-action secondary" (click)="verHorarioTutoria(item)">
+                <i class="fa-regular fa-calendar-days"></i><span>Ver horario</span>
+              </button>
+              <button type="button" class="section-action primary" (click)="verSeguimientoTutoria(item)">
+                <i class="fa-solid fa-chart-line"></i><span>Notas y asistencia</span>
+              </button>
+            </div>
+          </article>
+        }
+      </section>
     }
 
     <!-- Vista Principal Activa -->

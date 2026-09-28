@@ -6,4 +6,8 @@ export interface PeriodoAcademico {
   fechaFin: string;
   tipoPeriodoEvaluacion: string | null;
   estado: string | null;
+  duracionHoraPrimariaMinutos: number;
+  duracionRecreoPrimariaMinutos: number;
+  duracionHoraSecundariaMinutos: number;
+  duracionRecreoSecundariaMinutos: number;
 }

@@ -9,6 +9,7 @@ export interface BloqueHorario {
   orden: number;
   horaInicio: string;
   horaFin: string;
+  esRecreo: boolean;
 }
 
 export interface HorarioSemanal {
@@ -38,6 +39,7 @@ export interface BloqueHorarioPayload {
   orden: number;
   horaInicio: string;
   horaFin: string;
+  esRecreo: boolean;
 }
 
 export interface HorarioSemanalPayload {

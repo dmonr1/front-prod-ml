@@ -222,7 +222,7 @@
                   </div>
 
                   <section class="modal-form-main">
-                    <div class="form-two-columns">
+                    <div class="period-base-fields">
                       <label>
                         Nombre
                         <input
@@ -232,7 +232,6 @@
                           name="nombrePeriodo"
                           placeholder="Ejemplo: Período 2026" />
                       </label>
-
                       <label>
                         Año
                         <input
@@ -245,9 +244,6 @@
                           step="1"
                           placeholder="2026" />
                       </label>
-                    </div>
-
-                    <div class="form-two-columns">
                       <label>
                         Fecha de inicio
                         <app-date-picker
@@ -266,6 +262,37 @@
                           (valueChange)="actualizarCampoPeriodo('fechaFin', $event)" />
                       </label>
                     </div>
+
+                    <section class="schedule-duration-settings" aria-labelledby="schedule-duration-title">
+                      <div class="schedule-duration-heading">
+                        <strong id="schedule-duration-title">Duración de clases y recreo</strong>
+                        <span>Se usará para crear rangos fijos en Horarios y programación.</span>
+                      </div>
+                      <div class="schedule-duration-grid">
+                        <fieldset class="schedule-duration-level">
+                          <legend>Primaria</legend>
+                          <label>Hora académica (minutos)
+                            <input type="number" min="30" max="180" step="5" [ngModel]="formPeriodo().duracionHoraPrimariaMinutos"
+                              (ngModelChange)="actualizarDuracionHorario('duracionHoraPrimariaMinutos', $event)" name="duracionHoraPrimaria" />
+                          </label>
+                          <label>Recreo (minutos)
+                            <input type="number" min="5" max="60" step="5" [ngModel]="formPeriodo().duracionRecreoPrimariaMinutos"
+                              (ngModelChange)="actualizarDuracionHorario('duracionRecreoPrimariaMinutos', $event)" name="duracionRecreoPrimaria" />
+                          </label>
+                        </fieldset>
+                        <fieldset class="schedule-duration-level">
+                          <legend>Secundaria</legend>
+                          <label>Hora académica (minutos)
+                            <input type="number" min="30" max="180" step="5" [ngModel]="formPeriodo().duracionHoraSecundariaMinutos"
+                              (ngModelChange)="actualizarDuracionHorario('duracionHoraSecundariaMinutos', $event)" name="duracionHoraSecundaria" />
+                          </label>
+                          <label>Recreo (minutos)
+                            <input type="number" min="5" max="60" step="5" [ngModel]="formPeriodo().duracionRecreoSecundariaMinutos"
+                              (ngModelChange)="actualizarDuracionHorario('duracionRecreoSecundariaMinutos', $event)" name="duracionRecreoSecundaria" />
+                          </label>
+                        </fieldset>
+                      </div>
+                    </section>
 
                     <label>
                       Esquema de evaluación

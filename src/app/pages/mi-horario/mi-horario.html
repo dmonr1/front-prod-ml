@@ -11,21 +11,24 @@
         </div>
         <div>
           <div class="head-title-line">
-            <h2>Mi horario</h2>
+            <h2>{{ seccionIdVista() ? 'Horario de la sección' : 'Mi horario' }}</h2>
             @if (horarios().length) {
               <span class="head-badge">{{ horarios().length }} clases semanales</span>
             }
           </div>
-          <p class="head-subtitle">Consulta tus sesiones de clase y accede al registro de asistencias o notas</p>
+          <p class="head-subtitle">{{ seccionIdVista() ? (etiquetaSeccionVista() || 'Consulta las clases programadas para esta sección') : 'Consulta tus sesiones de clase y accede al registro de asistencias o notas' }}</p>
         </div>
       </div>
 
       <div class="schedule-controls">
+        @if (seccionIdVista()) {
+          <button class="btn-back-sections" type="button" (click)="volverASeccionesTutoradas()"><i class="fa-solid fa-arrow-left"></i><span>Secciones</span></button>
+        }
         <span class="periodo-badge-chip">
           <i class="fa-solid fa-calendar-check"></i>
           Período {{ periodoSeleccionado()?.nombre || '2026' }}
         </span>
-        @if (periodoEvaluacionSeleccionado()) {
+        @if (!seccionIdVista() && periodoEvaluacionSeleccionado()) {
           <span class="periodo-eval-badge-chip">
             <i class="fa-solid fa-bookmark"></i>
             {{ periodoEvaluacionSeleccionado()?.nombre }}
@@ -65,14 +68,14 @@
           </div>
 
           <div class="calendar-toolbar-actions">
-            <div class="view-toggle-group">
+            @if (!seccionIdVista()) { <div class="view-toggle-group">
               <button type="button" class="view-toggle-btn" [class.active]="!mostrarFinDeSemana()" (click)="mostrarFinDeSemana.set(false)">
                 5 días
               </button>
               <button type="button" class="view-toggle-btn" [class.active]="mostrarFinDeSemana()" (click)="mostrarFinDeSemana.set(true)">
                 7 días
               </button>
-            </div>
+            </div> }
           </div>
         </div>
 
@@ -107,6 +110,9 @@
             <!-- Carriles de cada día con tarjetas altas y atajos para Asistencias y Notas -->
             @for (dia of columnasDias(); track dia.value; let i = $index) {
               <div class="day-lane" [class.is-today]="dia.esHoy" [style.grid-column]="obtenerColumnaDia(i)" [style.grid-row]="'2 / span ' + rango().horasCount">
+                @for (marca of rango().marcas; track marca) {
+                  <span class="period-grid-line" [style.top.px]="posicionMarca(marca)" aria-hidden="true"></span>
+                }
                 <!-- Indicador de hora actual si el día es hoy -->
                 @if (dia.esHoy && estaEnRangoHorario()) {
                   <div class="now-indicator" [style.top.px]="posicionAhora()" title="Hora actual">
@@ -129,10 +135,13 @@
                         <i class="fa-regular fa-clock"></i>
                         {{ limpiarHora(clase.horaInicio) }} – {{ limpiarHora(clase.horaFin) }}
                       </small>
+                      @if (clase.bloquesContinuos > 1) {
+                        <span class="continuous-session-tag">Sesión continua · {{ clase.bloquesContinuos }} bloques</span>
+                      }
                     </div>
 
                     <!-- Atajos para ingresar asistencia o notas directamente -->
-                    <div class="class-block-actions">
+                    @if (!seccionIdVista()) { <div class="class-block-actions">
                       <button type="button" class="btn-card-action action-asistencia"
                         (click)="abrirAsistencia(clase, dia.fechaStr)"
                         title="Registrar asistencia para esta clase">
@@ -145,11 +154,21 @@
                         <i class="fa-solid fa-pen-to-square"></i>
                         <span>Notas</span>
                       </button>
-                    </div>
+                    </div> }
                   </div>
                 }
               </div>
             }
+
+            <div class="recess-week-lane" [style.grid-column]="'2 / span 5'" [style.grid-row]="'2 / span ' + rango().horasCount" aria-label="Recreos de lunes a viernes">
+              @for (recreo of recreosVisibles(); track recreo.id) {
+                <div class="recess-week-band" [style.top.px]="posicionRecreo(recreo)" [style.height.px]="altoRecreo(recreo)"
+                  [title]="'Recreo · ' + limpiarHora(recreo.horaInicio) + '–' + limpiarHora(recreo.horaFin)">
+                  <strong>Recreo</strong>
+                  <small>{{ limpiarHora(recreo.horaInicio) }}–{{ limpiarHora(recreo.horaFin) }}</small>
+                </div>
+              }
+            </div>
           </div>
 
           @if (!horarios().length) {

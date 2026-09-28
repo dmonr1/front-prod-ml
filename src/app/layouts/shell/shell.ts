@@ -15,6 +15,11 @@ import { UsuarioSesion } from '../../models/auth';
   styleUrl: './shell.scss'
 })
 export class Shell {
+  private static readonly contextoAcademicoCache = new Map<string, {
+    tieneAsignacionesActivas: boolean;
+    tieneTutoriasActivas: boolean;
+  }>();
+
   private readonly authService = inject(AuthService);
   private readonly periodoAcademicoService = inject(PeriodoAcademicoService);
   private readonly asignacionAcademicaService = inject(AsignacionAcademicaService);
@@ -22,8 +27,12 @@ export class Shell {
 
   readonly items = input<SidebarItem[]>([]);
   readonly usuario = computed(() => this.authService.obtenerUsuario());
-  readonly tieneAsignacionesActivas = signal(false);
-  readonly tieneTutoriasActivas = signal(false);
+  readonly tieneAsignacionesActivas = signal(
+    this.leerContextoAcademicoCache()?.tieneAsignacionesActivas ?? false
+  );
+  readonly tieneTutoriasActivas = signal(
+    this.leerContextoAcademicoCache()?.tieneTutoriasActivas ?? false
+  );
   readonly menuItems = computed(() => {
     const customItems = this.items();
     if (customItems.length) {
@@ -164,11 +173,12 @@ export class Shell {
 
             this.tieneAsignacionesActivas.set(tieneAsig);
             this.tieneTutoriasActivas.set(tieneTut);
+            this.guardarContextoAcademicoCache(tieneAsig, tieneTut);
           },
-          error: () => this.limpiarContextoAcademico()
+          error: () => undefined
         });
       },
-      error: () => this.limpiarContextoAcademico()
+      error: () => undefined
     });
   }
 
@@ -180,6 +190,30 @@ export class Shell {
   private limpiarContextoAcademico(): void {
     this.tieneAsignacionesActivas.set(false);
     this.tieneTutoriasActivas.set(false);
+    this.guardarContextoAcademicoCache(false, false);
+  }
+
+  private leerContextoAcademicoCache(): {
+    tieneAsignacionesActivas: boolean;
+    tieneTutoriasActivas: boolean;
+  } | undefined {
+    const clave = this.claveContextoAcademico();
+    return clave ? Shell.contextoAcademicoCache.get(clave) : undefined;
+  }
+
+  private guardarContextoAcademicoCache(
+    tieneAsignacionesActivas: boolean,
+    tieneTutoriasActivas: boolean
+  ): void {
+    const clave = this.claveContextoAcademico();
+    if (clave) {
+      Shell.contextoAcademicoCache.set(clave, { tieneAsignacionesActivas, tieneTutoriasActivas });
+    }
+  }
+
+  private claveContextoAcademico(): string | null {
+    const usuarioId = this.usuario()?.usuarioId;
+    return usuarioId ? `${usuarioId}:${new Date().getFullYear()}` : null;
   }
 
   private obtenerEtiquetaRol(usuario: UsuarioSesion | null): string {

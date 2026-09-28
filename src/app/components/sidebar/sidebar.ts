@@ -42,6 +42,7 @@ export class Sidebar implements OnInit, OnDestroy {
   readonly expandedSections = signal(this.obtenerSeccionesIniciales());
   readonly userFlyoutOpen = signal(false);
   readonly notificationsOpen = signal(false);
+  readonly collapsedTooltip = signal<{ label: string; top: number; left: number } | null>(null);
   readonly notifications = signal<AlertaAcademica[]>([]);
   readonly notificationCount = signal(0);
   private notificationTimer: ReturnType<typeof setInterval> | null = null;
@@ -89,6 +90,7 @@ export class Sidebar implements OnInit, OnDestroy {
   }
 
   toggleCollapsed(): void {
+    this.collapsedTooltip.set(null);
     this.collapsed.update((value) => {
       const next = !value;
       localStorage.setItem('academic-analytics-sidebar', next ? 'collapsed' : 'expanded');
@@ -97,6 +99,24 @@ export class Sidebar implements OnInit, OnDestroy {
       }
       return next;
     });
+  }
+
+  mostrarTooltipColapsado(event: Event, label: string): void {
+    if (!this.collapsed()) return;
+
+    const element = event.currentTarget;
+    if (!(element instanceof HTMLElement)) return;
+
+    const rect = element.getBoundingClientRect();
+    this.collapsedTooltip.set({
+      label,
+      top: rect.top + rect.height / 2,
+      left: rect.right + 8
+    });
+  }
+
+  ocultarTooltipColapsado(): void {
+    this.collapsedTooltip.set(null);
   }
 
   toggleUserFlyout(event: MouseEvent): void {

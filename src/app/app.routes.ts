@@ -145,6 +145,10 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/mi-horario/mi-horario').then((m) => m.MiHorario)
       },
       {
+        path: 'horario-seccion/:seccionId',
+        loadComponent: () => import('./pages/mi-horario/mi-horario').then((m) => m.MiHorario)
+      },
+      {
         path: 'mis-asignaciones/tutorias/:tutoriaId',
         loadComponent: () =>
           import('./pages/seccion-tutorada/seccion-tutorada').then((m) => m.SeccionTutorada)

@@ -4,7 +4,7 @@
 
 // Contenedor principal de la página
 .my-schedule-page {
-  --hour-height: 112px;
+  --hour-height: 120px;
   --cal-grid-border: #e2e8f0;
   --cal-grid-subtle: #f1f5f9;
   --cal-axis-bg: #ffffff;
@@ -375,15 +375,17 @@
 
   // Día actual destacado (azul como en la referencia TUE 14)
   &.is-today {
+    background: color-mix(in srgb, var(--color-brand-accent, #2563eb) 9%, var(--cal-header-bg));
+
     .day-name {
       color: var(--color-brand-accent, #2563eb);
       font-weight: 800;
     }
 
     .day-number {
-      color: #ffffff;
-      background: var(--color-brand-accent, #2563eb);
-      box-shadow: 0 3px 10px rgba(37, 99, 235, 0.35);
+      color: var(--color-brand-accent, #2563eb);
+      background: transparent;
+      box-shadow: none;
     }
   }
 }
@@ -449,15 +451,34 @@
   z-index: 1;
   border-right: 1px solid var(--cal-grid-border);
   border-bottom: 1px solid var(--cal-grid-border);
-  // Línea sólida nítida en cada división de hora completa
-  background-image: linear-gradient(to bottom, var(--cal-grid-border) 1px, transparent 1px);
-  background-size: 100% var(--hour-height);
-  background-position: 0 0;
+  background-image: none;
 
   &.is-today {
     background-color: color-mix(in srgb, var(--color-brand-accent, #2563eb) 2.5%, transparent);
   }
 }
+
+.period-grid-line { position: absolute; z-index: 0; right: 0; left: 0; height: 1px; background: var(--cal-grid-border); pointer-events: none; }
+.recess-week-lane { position: relative; z-index: 0; min-width: 0; pointer-events: none; }
+.recess-week-band {
+  position: absolute;
+  right: 0;
+  left: 0;
+  z-index: 0;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 1px;
+  overflow: hidden;
+  padding: 2px 8px;
+  border-top: 1px solid color-mix(in srgb, #d97706 24%, var(--color-surface-primary));
+  border-bottom: 1px solid color-mix(in srgb, #d97706 24%, var(--color-surface-primary));
+  background: color-mix(in srgb, #f59e0b 14%, var(--color-surface-primary));
+  color: #92400e;
+  text-align: center;
+}
+.recess-week-band strong { font-size: 11px; font-weight: 800; line-height: 1.1; }
+.recess-week-band small { font-size: 10px; line-height: 1.1; font-variant-numeric: tabular-nums; }
 
 // Línea indicadora de hora actual ("Now" line como en la referencia)
 .now-indicator {
@@ -503,7 +524,6 @@
   overflow: hidden;
   padding: 8px 12px;
   border-radius: 12px;
-  border: 1px solid var(--class-border);
   background: var(--class-bg);
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
   font: inherit;
@@ -559,6 +579,8 @@
   .class-time-row {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 3px 8px;
   }
 
   .class-time {
@@ -576,6 +598,14 @@
     i {
       font-size: 10px;
     }
+  }
+
+  .continuous-session-tag {
+    color: var(--class-muted);
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: nowrap;
   }
 
   // Fila de atajos para registrar asistencia o notas directamente
@@ -820,11 +850,33 @@
   animation: schedule-enter 320ms ease both;
 }
 
+.btn-back-sections {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-back-sections:hover { background: color-mix(in srgb, var(--color-brand-primary) 10%, white); }
+
+.my-schedule-page:has(.btn-back-sections) .class-block { cursor: default; }
+
 @keyframes schedule-enter {
   from {
     opacity: 0.55;
     transform: translateY(6px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -872,6 +924,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .class-block,
   .period-changing .calendar-grid,
   .btn-today,

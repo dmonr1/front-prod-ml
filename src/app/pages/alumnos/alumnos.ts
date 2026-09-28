@@ -126,7 +126,11 @@ export class Alumnos {
     anio: this.currentYear,
     fechaInicio: '',
     fechaFin: '',
-    tipoPeriodoEvaluacion: 'BIMESTRAL'
+    tipoPeriodoEvaluacion: 'BIMESTRAL',
+    duracionHoraPrimariaMinutos: 50,
+    duracionRecreoPrimariaMinutos: 20,
+    duracionHoraSecundariaMinutos: 90,
+    duracionRecreoSecundariaMinutos: 20
   });
   readonly anioCalendario = computed(() => {
     const anio = Number(this.formPeriodo().anio);
@@ -228,6 +232,11 @@ export class Alumnos {
 
   abrirModalPeriodo(): void {
     this.editandoPeriodoId.set(null);
+    this.formPeriodo.set({
+      nombre: '', anio: this.currentYear, fechaInicio: '', fechaFin: '', tipoPeriodoEvaluacion: 'BIMESTRAL',
+      duracionHoraPrimariaMinutos: 50, duracionRecreoPrimariaMinutos: 20,
+      duracionHoraSecundariaMinutos: 90, duracionRecreoSecundariaMinutos: 20
+    });
     this.regenerarPeriodosEvaluacionBorrador();
     this.regenerarCortesSeguimientoBorrador();
     this.regenerarConfiguracionesEvaluacionBorrador();
@@ -253,7 +262,11 @@ export class Alumnos {
           anio: periodo.anio,
           fechaInicio: periodo.fechaInicio,
           fechaFin: periodo.fechaFin,
-          tipoPeriodoEvaluacion: (periodo.tipoPeriodoEvaluacion ?? 'BIMESTRAL') as TipoPeriodoEvaluacion
+          tipoPeriodoEvaluacion: (periodo.tipoPeriodoEvaluacion ?? 'BIMESTRAL') as TipoPeriodoEvaluacion,
+          duracionHoraPrimariaMinutos: periodo.duracionHoraPrimariaMinutos ?? 50,
+          duracionRecreoPrimariaMinutos: periodo.duracionRecreoPrimariaMinutos ?? 20,
+          duracionHoraSecundariaMinutos: periodo.duracionHoraSecundariaMinutos ?? 90,
+          duracionRecreoSecundariaMinutos: periodo.duracionRecreoSecundariaMinutos ?? 20
         });
         this.tipoPeriodoEvaluacion.set((periodo.tipoPeriodoEvaluacion ?? 'BIMESTRAL') as TipoPeriodoEvaluacion);
         this.periodosEvaluacionBorrador.set(
@@ -369,6 +382,13 @@ export class Alumnos {
     }));
     this.regenerarPeriodosEvaluacionBorrador();
     this.regenerarCortesSeguimientoBorrador();
+  }
+
+  actualizarDuracionHorario(
+    campo: 'duracionHoraPrimariaMinutos' | 'duracionRecreoPrimariaMinutos' | 'duracionHoraSecundariaMinutos' | 'duracionRecreoSecundariaMinutos',
+    valor: number | string
+  ): void {
+    this.actualizarCampoPeriodo(campo, Number(valor));
   }
 
   cambiarTipoPeriodoEvaluacion(tipo: TipoPeriodoEvaluacion): void {
@@ -796,7 +816,11 @@ export class Alumnos {
       anio: this.currentYear,
       fechaInicio: '',
       fechaFin: '',
-      tipoPeriodoEvaluacion: 'BIMESTRAL'
+      tipoPeriodoEvaluacion: 'BIMESTRAL',
+      duracionHoraPrimariaMinutos: 50,
+      duracionRecreoPrimariaMinutos: 20,
+      duracionHoraSecundariaMinutos: 90,
+      duracionRecreoSecundariaMinutos: 20
     });
     this.tipoPeriodoEvaluacion.set('BIMESTRAL');
     this.regenerarPeriodosEvaluacionBorrador();
@@ -882,6 +906,10 @@ export class Alumnos {
       fechaInicio: payload.fechaInicio,
       fechaFin: payload.fechaFin,
       tipoPeriodoEvaluacion: this.tipoPeriodoEvaluacion(),
+      duracionHoraPrimariaMinutos: payload.duracionHoraPrimariaMinutos,
+      duracionRecreoPrimariaMinutos: payload.duracionRecreoPrimariaMinutos,
+      duracionHoraSecundariaMinutos: payload.duracionHoraSecundariaMinutos,
+      duracionRecreoSecundariaMinutos: payload.duracionRecreoSecundariaMinutos,
       periodosEvaluacion,
       cortesSeguimiento: this.cortesSeguimientoBorrador(),
       configuracionesEvaluacionDefault: configuracionesEvaluacion,
@@ -960,6 +988,15 @@ export class Alumnos {
 
       if (fin.getTime() < inicio.getTime()) {
         this.mostrarAlerta('warning', 'Rango de fechas no válido', 'La fecha de fin debe ser posterior a la fecha de inicio.');
+        return false;
+      }
+
+      const duracionesValidas = [
+        [payload.duracionHoraPrimariaMinutos, 30, 180], [payload.duracionRecreoPrimariaMinutos, 5, 60],
+        [payload.duracionHoraSecundariaMinutos, 30, 180], [payload.duracionRecreoSecundariaMinutos, 5, 60]
+      ].every(([duracion, minimo, maximo]) => Number.isInteger(duracion) && duracion >= minimo && duracion <= maximo && duracion % 5 === 0);
+      if (!duracionesValidas) {
+        this.mostrarAlerta('warning', 'Duración no válida', 'Configura horas académicas y recreos en múltiplos de 5 minutos.');
         return false;
       }
     }

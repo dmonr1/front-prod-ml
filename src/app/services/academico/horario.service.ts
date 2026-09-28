@@ -13,6 +13,10 @@ export class HorarioService {
     return this.http.get<BloqueHorario[]>(`${this.api}/bloques`, { params: { periodoAcademicoId, nivelId } });
   }
 
+  listarRecreos(periodoAcademicoId: number): Observable<BloqueHorario[]> {
+    return this.http.get<BloqueHorario[]>(`${this.api}/bloques/recreos`, { params: { periodoAcademicoId } });
+  }
+
   crearBloque(payload: BloqueHorarioPayload): Observable<BloqueHorario> {
     return this.http.post<BloqueHorario>(`${this.api}/bloques`, payload);
   }
@@ -33,8 +37,18 @@ export class HorarioService {
     return this.http.get<HorarioSemanal[]>(`${this.api}/mios`, { params: { periodoAcademicoId } });
   }
 
+  listarPorSeccion(seccionId: number, periodoAcademicoId: number): Observable<HorarioSemanal[]> {
+    return this.http.get<HorarioSemanal[]>(`${this.api}/seccion/${seccionId}`, {
+      params: { periodoAcademicoId }
+    });
+  }
+
   crear(payload: HorarioSemanalPayload): Observable<HorarioSemanal> {
     return this.http.post<HorarioSemanal>(this.api, payload);
+  }
+
+  actualizar(id: number, payload: HorarioSemanalPayload): Observable<HorarioSemanal> {
+    return this.http.put<HorarioSemanal>(`${this.api}/${id}`, payload);
   }
 
   cambiarEstado(id: number, activo: boolean): Observable<void> {

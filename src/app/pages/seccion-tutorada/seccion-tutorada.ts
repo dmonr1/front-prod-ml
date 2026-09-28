@@ -220,22 +220,30 @@ export class SeccionTutorada implements OnInit {
         }).subscribe({
           next: ({ tutorias, periodosEvaluacion }) => {
             const tutoriasActivas = tutorias.filter((item) => (item.estado ?? 'ACTIVO') === 'ACTIVO');
-            const tutoria =
-              tutoriasActivas.find((item) => item.id === this.tutoriaIdRuta) ??
-              tutoriasActivas[0] ??
-              null;
+            this.tutoriasDisponibles.set(tutoriasActivas);
+            this.periodosEvaluacion.set(periodosEvaluacion);
 
+            if (!this.tutoriaIdRuta) {
+              this.cargando.set(false);
+              this.tutoria.set(null);
+              this.tutoriaIdActiva.set(null);
+              if (!tutoriasActivas.length) {
+                this.error.set('No tienes una sección tutorada activa en el período actual.');
+                this.mostrarError.set(true);
+              }
+              return;
+            }
+
+            const tutoria = tutoriasActivas.find((item) => item.id === this.tutoriaIdRuta) ?? null;
             if (!tutoria) {
               this.cargando.set(false);
-              this.error.set('No tienes una sección tutorada activa en el período actual.');
+              this.error.set('La sección solicitada no está asignada como tutoría activa en el período actual.');
               this.mostrarError.set(true);
               return;
             }
 
-            this.tutoriasDisponibles.set(tutoriasActivas);
             this.tutoria.set(tutoria);
             this.tutoriaIdActiva.set(tutoria.id);
-            this.periodosEvaluacion.set(periodosEvaluacion);
             this.mantenerSkeletonPorError.set(false);
             this.cargarPrimerPeriodoDisponible(true);
           },
@@ -339,6 +347,19 @@ export class SeccionTutorada implements OnInit {
     this.tutoriaIdActiva.set(tutoria.id);
     this.mostrarSelectorTutoria.set(false);
     this.cargarPrimerPeriodoDisponible(false, 'right');
+  }
+
+  verSeguimientoTutoria(tutoria: Tutoria): void {
+    this.router.navigate(['/mis-asignaciones/tutorias', tutoria.id]);
+  }
+
+  verHorarioTutoria(tutoria: Tutoria): void {
+    this.router.navigate(['/horario-seccion', tutoria.seccionId], {
+      queryParams: {
+        periodoAcademicoId: tutoria.periodoAcademicoId,
+        seccionLabel: `${tutoria.grado} · Sección ${tutoria.seccion} · ${tutoria.nivel}`
+      }
+    });
   }
 
   toggleSelectorTutoria(): void {

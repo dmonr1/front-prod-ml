@@ -1,11 +1,12 @@
 import { Component, OnInit, OnDestroy, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CustomAlertComponent, CustomAlertType } from '../../components/custom-alert/custom-alert';
 import { Shell } from '../../layouts/shell/shell';
 import { PeriodoAcademico } from '../../models/periodo-academico';
 import { PeriodoEvaluacion } from '../../models/periodo-evaluacion';
-import { DiaSemana, HorarioSemanal } from '../../models/horario';
+import { BloqueHorario, DiaSemana, HorarioSemanal } from '../../models/horario';
+import { forkJoin } from 'rxjs';
 import { HorarioService } from '../../services/academico/horario.service';
 import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
 import { PeriodoEvaluacionService } from '../../services/academico/periodo-evaluacion.service';
@@ -25,6 +26,11 @@ interface DiaInfo {
   value: DiaSemana;
   label: string;
   short: string;
+  clases?: ClaseHorarioVisual[];
+}
+
+interface ClaseHorarioVisual extends HorarioSemanal {
+  bloquesContinuos: number;
 }
 
 @Component({
@@ -38,15 +44,19 @@ export class MiHorario implements OnInit, OnDestroy {
   private readonly horarioService = inject(HorarioService);
   private readonly periodoEvaluacionService = inject(PeriodoEvaluacionService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   // Altura por cada hora en píxeles (brinda espacio amplio para atajos de Asistencia y Notas)
-  readonly HOUR_HEIGHT = 112;
+  readonly HOUR_HEIGHT = 120;
 
   readonly periodos = signal<PeriodoAcademico[]>([]);
   readonly periodoId = signal<number | null>(null);
+  readonly seccionIdVista = signal<number | null>(null);
+  readonly etiquetaSeccionVista = signal<string | null>(null);
   readonly periodosEvaluacion = signal<PeriodoEvaluacion[]>([]);
   readonly periodoEvaluacionId = signal<number | null>(null);
   readonly horarios = signal<HorarioSemanal[]>([]);
+  readonly recreos = signal<BloqueHorario[]>([]);
   readonly cargando = signal(true);
   readonly alertState = signal<AlertState>({
     open: false,
@@ -169,9 +179,9 @@ export class MiHorario implements OnInit, OnDestroy {
       fecha.setDate(lunes.getDate() + index);
       const fechaStr = this.fechaKey(fecha);
       const esHoy = fechaStr === hoyStr;
-      const clases = this.horarios()
+      const clases = this.agruparClasesContinuas(this.horarios()
         .filter((item) => item.diaSemana === diaDef.value)
-        .sort((a, b) => a.horaInicio.localeCompare(b.horaInicio));
+        .sort((a, b) => a.horaInicio.localeCompare(b.horaInicio)));
 
       return {
         ...diaDef,
@@ -203,15 +213,23 @@ export class MiHorario implements OnInit, OnDestroy {
 
   readonly rango = computed(() => {
     const items = this.horarios();
-    const tiempos = items.flatMap((item) => [this.minutos(item.horaInicio), this.minutos(item.horaFin)]);
+    const tiempos = [
+      ...items.flatMap((item) => [this.minutos(item.horaInicio), this.minutos(item.horaFin)]),
+      ...this.recreosVisibles().flatMap((item) => [this.minutos(item.horaInicio), this.minutos(item.horaFin)])
+    ];
     const horaMin = tiempos.length ? Math.floor(Math.min(...tiempos) / 60) : 8;
     const horaMax = tiempos.length ? Math.ceil(Math.max(...tiempos) / 60) : 18;
     const inicioHora = Math.min(8, horaMin);
     const finHora = Math.max(18, horaMax);
     const horasCount = finHora - inicioHora;
-    const marcas: number[] = [];
-    for (let h = inicioHora; h <= finHora; h++) {
-      marcas.push(h * 60);
+    const marcas = new Set<number>([inicioHora * 60, finHora * 60]);
+    for (const item of items) {
+      marcas.add(this.minutos(item.horaInicio));
+      marcas.add(this.minutos(item.horaFin));
+    }
+    for (const item of this.recreosVisibles()) {
+      marcas.add(this.minutos(item.horaInicio));
+      marcas.add(this.minutos(item.horaFin));
     }
     return {
       inicioHora,
@@ -219,11 +237,28 @@ export class MiHorario implements OnInit, OnDestroy {
       inicio: inicioHora * 60,
       fin: finHora * 60,
       horasCount,
-      marcas
+      marcas: [...marcas].sort((a, b) => a - b)
     };
   });
 
+  readonly recreosVisibles = computed(() => {
+    const niveles = new Set(this.horarios().map((horario) => horario.nivel.toLocaleUpperCase()));
+    const recreos = this.recreos().filter((recreo) => niveles.has(recreo.nivel.toLocaleUpperCase()));
+    const unicos = new Map<string, BloqueHorario>();
+    for (const recreo of recreos) {
+      const clave = `${recreo.horaInicio.slice(0, 5)}-${recreo.horaFin.slice(0, 5)}`;
+      if (!unicos.has(clave)) unicos.set(clave, recreo);
+    }
+    return [...unicos.values()].sort((a, b) => a.horaInicio.localeCompare(b.horaInicio));
+  });
+
   ngOnInit(): void {
+    const seccionId = Number(this.route.snapshot.paramMap.get('seccionId')) || null;
+    this.seccionIdVista.set(seccionId);
+    this.etiquetaSeccionVista.set(this.route.snapshot.queryParamMap.get('seccionLabel'));
+    const periodoSolicitadoId = Number(this.route.snapshot.queryParamMap.get('periodoAcademicoId')) || null;
+    if (seccionId) this.mostrarFinDeSemana.set(false);
+
     this.periodoEvaluacionService.listar().subscribe({
       next: (periodos) => {
         this.periodosEvaluacion.set(periodos);
@@ -235,7 +270,8 @@ export class MiHorario implements OnInit, OnDestroy {
     this.periodosService.listar().subscribe({
       next: (periodos) => {
         this.periodos.set(periodos);
-        const actual = periodos.find((item) => item.estado === 'ACTIVO')
+        const solicitado = periodos.find((item) => item.id === periodoSolicitadoId);
+        const actual = solicitado ?? periodos.find((item) => item.estado === 'ACTIVO')
           ?? periodos.find((item) => item.anio === new Date().getFullYear())
           ?? periodos[0];
         if (!actual) {
@@ -293,6 +329,7 @@ export class MiHorario implements OnInit, OnDestroy {
   }
 
   abrirAsistencia(clase: HorarioSemanal, fechaDia?: string): void {
+    if (this.seccionIdVista()) return;
     const academico = this.periodoSeleccionado();
     const evaluacion = this.periodoEvaluacionSeleccionado();
     const fechaInicio = evaluacion?.fechaInicio ?? academico?.fechaInicio;
@@ -314,7 +351,12 @@ export class MiHorario implements OnInit, OnDestroy {
   }
 
   abrirNotas(clase: HorarioSemanal): void {
+    if (this.seccionIdVista()) return;
     this.router.navigate([`/mis-asignaciones/${clase.asignacionId}/notas`]);
+  }
+
+  volverASeccionesTutoradas(): void {
+    this.router.navigate(['/seccion-tutorada']);
   }
 
   formatearHora(minutos: number): string {
@@ -335,44 +377,26 @@ export class MiHorario implements OnInit, OnDestroy {
   }
 
   posicionMarca(marca: number): number {
-    const hora = marca / 60;
-    return (hora - this.rango().inicioHora) * this.HOUR_HEIGHT;
+    return ((marca - this.rango().inicio) / 60) * this.HOUR_HEIGHT;
   }
 
   posicionClase(clase: HorarioSemanal): number {
-    const [h, m] = clase.horaInicio.split(':').map(Number);
-    // Si la clase comienza cerca del final de la hora (ej: 08:50, 10:50, 12:50),
-    // corresponde al bloque pedagógico de la siguiente hora (09:00, 11:00, 13:00)
-    let horaEfectiva: number;
-    if (m >= 40) {
-      horaEfectiva = h + 1;
-    } else if (m >= 15 && m <= 45) {
-      horaEfectiva = h + 0.5;
-    } else {
-      horaEfectiva = h;
-    }
-
-    const offsetHoras = horaEfectiva - this.rango().inicioHora;
-    return offsetHoras * this.HOUR_HEIGHT + 3;
+    const offsetMinutos = this.minutos(clase.horaInicio) - this.rango().inicio;
+    return (offsetMinutos / 60) * this.HOUR_HEIGHT + 3;
   }
 
-  altoClase(clase: HorarioSemanal): number {
-    const [hi, mi] = clase.horaInicio.split(':').map(Number);
-    const [hf, mf] = clase.horaFin.split(':').map(Number);
-    const duracionMin = (hf * 60 + mf) - (hi * 60 + mi);
+  altoClase(clase: ClaseHorarioVisual): number {
+    const duracionMinutos = this.minutos(clase.horaFin) - this.minutos(clase.horaInicio);
+    return Math.max(28, (duracionMinutos / 60) * this.HOUR_HEIGHT - 6);
+  }
 
-    let cantHoras: number;
-    if (duracionMin <= 60) {
-      cantHoras = 1;
-    } else if (duracionMin <= 95) {
-      cantHoras = 1.5;
-    } else if (duracionMin <= 125) {
-      cantHoras = 2;
-    } else {
-      cantHoras = Math.max(1, Math.round(duracionMin / 60));
-    }
+  posicionRecreo(recreo: BloqueHorario): number {
+    return ((this.minutos(recreo.horaInicio) - this.rango().inicio) / 60) * this.HOUR_HEIGHT + 2;
+  }
 
-    return cantHoras * this.HOUR_HEIGHT - 6;
+  altoRecreo(recreo: BloqueHorario): number {
+    const duracion = this.minutos(recreo.horaFin) - this.minutos(recreo.horaInicio);
+    return Math.max(20, (duracion / 60) * this.HOUR_HEIGHT - 4);
   }
 
   tonoClase(clase: HorarioSemanal): string {
@@ -385,16 +409,40 @@ export class MiHorario implements OnInit, OnDestroy {
 
   private cargar(id: number): void {
     this.cargando.set(true);
-    this.horarioService.listarMios(id).subscribe({
-      next: (items) => {
-        this.horarios.set(items);
-        if (items.some((item) => item.diaSemana === 'SABADO' || item.diaSemana === 'DOMINGO')) {
+    const solicitud = this.seccionIdVista()
+      ? this.horarioService.listarPorSeccion(this.seccionIdVista()!, id)
+      : this.horarioService.listarMios(id);
+    forkJoin({ horarios: solicitud, recreos: this.horarioService.listarRecreos(id) }).subscribe({
+      next: ({ horarios, recreos }) => {
+        this.horarios.set(horarios);
+        this.recreos.set(recreos);
+        if (horarios.some((item) => item.diaSemana === 'SABADO' || item.diaSemana === 'DOMINGO')) {
           this.mostrarFinDeSemana.set(true);
         }
         this.cargando.set(false);
       },
       error: (e) => this.mostrarError(e)
     });
+  }
+
+  private agruparClasesContinuas(clases: HorarioSemanal[]): ClaseHorarioVisual[] {
+    const agrupadas: ClaseHorarioVisual[] = [];
+
+    for (const clase of clases) {
+      const anterior = agrupadas[agrupadas.length - 1];
+      const mismaAsignacion = anterior && anterior.asignacionId === clase.asignacionId;
+      const sonContiguas = anterior && this.minutos(anterior.horaFin) === this.minutos(clase.horaInicio);
+
+      if (mismaAsignacion && sonContiguas) {
+        anterior.horaFin = clase.horaFin;
+        anterior.bloquesContinuos += 1;
+        continue;
+      }
+
+      agrupadas.push({ ...clase, bloquesContinuos: 1 });
+    }
+
+    return agrupadas;
   }
 
   private seleccionarPeriodoEvaluacion(): void {
