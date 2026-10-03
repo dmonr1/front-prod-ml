@@ -25,6 +25,9 @@ export interface Evaluacion {
   numeroEvaluacion: number;
   nombre: string;
   fechaEvaluacion: string | null;
+  creadoPor: string | null;
+  modificadoPor: string | null;
+  hayNotasEnCursoSeccion: boolean;
   curso: string;
   seccion: string;
   grado: string;

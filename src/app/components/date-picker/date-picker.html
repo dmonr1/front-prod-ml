@@ -1,19 +1,21 @@
-<div class="date-picker" [class.open]="abierto" [class.disabled]="disabled">
-  <button class="date-picker-trigger" type="button" (click)="toggle()" [disabled]="disabled">
-    <span class="date-picker-trigger-text" [class.placeholder]="!displayValue">
-      {{ displayValue || placeholder }}
-    </span>
-    <span class="date-picker-trigger-icons">
-      @if (value && !disabled) {
-        <span class="icon-button" (click)="clear($event)">
-          <i class="fa-solid fa-xmark"></i>
-        </span>
-      }
-      <i class="fa-regular fa-calendar"></i>
-    </span>
-  </button>
+<div class="date-picker" [class.open]="abierto || inline" [class.disabled]="disabled" [class.date-picker-inline]="inline">
+  @if (!inline) {
+    <button class="date-picker-trigger" type="button" (click)="toggle()" [disabled]="disabled">
+      <span class="date-picker-trigger-text" [class.placeholder]="!displayValue">
+        {{ displayValue || placeholder }}
+      </span>
+      <span class="date-picker-trigger-icons">
+        @if (value && !disabled) {
+          <span class="icon-button" (click)="clear($event)">
+            <i class="fa-solid fa-xmark"></i>
+          </span>
+        }
+        <i class="fa-regular fa-calendar"></i>
+      </span>
+    </button>
+  }
 
-  @if (abierto) {
+  @if (abierto || inline) {
     <div class="date-picker-panel">
       <div class="date-picker-toolbar">
         <button class="nav-button" type="button" (click)="previousMonth()" [disabled]="!canGoPrevious">

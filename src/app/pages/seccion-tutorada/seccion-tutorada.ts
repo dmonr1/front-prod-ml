@@ -1,5 +1,5 @@
 import { Component, ElementRef, HostListener, OnInit, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { PeriodoEvaluacion } from '../../models/periodo-evaluacion';
@@ -24,7 +24,7 @@ export type OrdenTutoria = 'nombre' | 'promedio-asc' | 'promedio-desc' | 'asiste
 @Component({
   selector: 'app-seccion-tutorada',
   standalone: true,
-  imports: [Shell, FormsModule, CustomAlertComponent],
+  imports: [Shell, FormsModule, CustomAlertComponent, RouterLink],
   templateUrl: './seccion-tutorada.html',
   styleUrl: './seccion-tutorada.scss'
 })
@@ -80,6 +80,10 @@ export class SeccionTutorada implements OnInit {
       this.periodosEvaluacionTutoria().find(
         (periodo) => periodo.id === this.periodoEvaluacionSeleccionadoId()
       ) ?? null
+  );
+
+  readonly totalColumnasMatriz = computed(
+    () => 6 + (this.resumenAcademico()?.cursos?.length || 0)
   );
 
   // KPIs institucionales del aula
@@ -304,6 +308,7 @@ export class SeccionTutorada implements OnInit {
 
     this.direccionAnimacionPendiente = direccion;
     this.periodoEvaluacionSeleccionadoId.set(periodoEvaluacionId);
+    this.persistirPeriodo(periodoEvaluacionId);
     this.error.set(null);
     this.cargando.set(cargaCompleta);
     this.cargandoTabla.set(!cargaCompleta);
@@ -433,9 +438,15 @@ export class SeccionTutorada implements OnInit {
   }
 
   verFichaCompletaAlumno(alumnoId: number): void {
+    const periodoId = this.periodoEvaluacionSeleccionadoId();
+    if (periodoId) {
+      this.persistirPeriodo(periodoId);
+    }
     void this.router.navigate(['/alumno', alumnoId], {
       queryParams: {
-        periodoEvaluacionId: this.periodoEvaluacionSeleccionadoId(),
+        from: 'seccion-tutorada',
+        tutoriaId: this.tutoria()?.id ?? null,
+        periodoEvaluacionId: periodoId,
         seccionId: this.tutoria()?.seccionId ?? null,
         vista: 'global'
       }
@@ -508,13 +519,37 @@ export class SeccionTutorada implements OnInit {
     return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
   }
 
+  private readonly STORAGE_KEY_PERIODO = 'tutoria_periodo_seleccionado';
+
+  private persistirPeriodo(periodoId: number): void {
+    try {
+      sessionStorage.setItem(this.STORAGE_KEY_PERIODO, String(periodoId));
+    } catch {
+      // Storage no disponible
+    }
+  }
+
+  private obtenerPeriodoPersistido(): number | null {
+    try {
+      const val = sessionStorage.getItem(this.STORAGE_KEY_PERIODO);
+      return val ? Number(val) : null;
+    } catch {
+      return null;
+    }
+  }
+
   private cargarPrimerPeriodoDisponible(
     cargaCompleta = false,
     direccion: 'left' | 'right' | null = null
   ): void {
-    const primerPeriodo = this.periodosEvaluacionTutoria()[0] ?? null;
-    if (primerPeriodo) {
-      this.seleccionarPeriodoEvaluacion(primerPeriodo.id, cargaCompleta, direccion);
+    const periodos = this.periodosEvaluacionTutoria();
+    const queryParamPeriodoId = Number(this.route.snapshot.queryParamMap.get('periodoEvaluacionId')) || null;
+    const sessionPeriodoId = this.obtenerPeriodoPersistido();
+    const periodoDeseadoId = queryParamPeriodoId || sessionPeriodoId;
+
+    const periodoEncontrado = periodos.find((p) => p.id === periodoDeseadoId) ?? periodos[0] ?? null;
+    if (periodoEncontrado) {
+      this.seleccionarPeriodoEvaluacion(periodoEncontrado.id, cargaCompleta, direccion);
     } else {
       this.periodoEvaluacionSeleccionadoId.set(null);
       this.resumenAcademico.set(null);

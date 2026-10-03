@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { concatMap, forkJoin, from, toArray } from 'rxjs';
 import { CustomAlertComponent, CustomAlertType } from '../../components/custom-alert/custom-alert';
@@ -6,10 +6,12 @@ import { Shell } from '../../layouts/shell/shell';
 import { AsignacionDocente } from '../../models/asignacion';
 import { Curso } from '../../models/curso';
 import { PeriodoAcademico } from '../../models/periodo-academico';
+import { Seccion } from '../../models/seccion';
 import { BloqueHorario, BloqueHorarioPayload, DiaSemana, HorarioSemanal } from '../../models/horario';
 import { CursoService } from '../../services/academico/curso.service';
 import { HorarioService } from '../../services/academico/horario.service';
 import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
+import { SeccionService } from '../../services/academico/seccion.service';
 import { AsignacionAcademicaService } from '../../services/asignaciones/asignacion-academica.service';
 import { formatearMensajeError } from '../../utils/error-formatter';
 
@@ -19,9 +21,11 @@ interface ResumenSeccion {
   seccion: string;
   grado: string;
   nivel: string;
+  nivelId: number | null;
   asignaciones: number;
   programadas: number;
   pendientes: number;
+  estado: 'SIN_ASIGNACIONES' | 'PENDIENTE' | 'COMPLETO';
 }
 interface HuecoHorario { inicio: string; fin: string; minutos: number; }
 interface AlertState { open: boolean; type: CustomAlertType; title: string; message: string; confirmText: string | null; cancelText: string | null; autoCloseMs: number | null; }
@@ -33,8 +37,10 @@ interface AlertState { open: boolean; type: CustomAlertType; title: string; mess
   styleUrl: './horarios.scss'
 })
 export class Horarios implements OnInit {
+  private readonly elementRef = inject(ElementRef);
   private readonly periodosService = inject(PeriodoAcademicoService);
   private readonly cursosService = inject(CursoService);
+  private readonly seccionesService = inject(SeccionService);
   private readonly asignacionesService = inject(AsignacionAcademicaService);
   private readonly horarioService = inject(HorarioService);
 
@@ -43,7 +49,7 @@ export class Horarios implements OnInit {
     { value: 'MIERCOLES', label: 'Miércoles' }, { value: 'JUEVES', label: 'Jueves' },
     { value: 'VIERNES', label: 'Viernes' }
   ];
-  readonly altoHora = 64;
+  readonly altoHora = signal<number>(105);
   readonly periodos = signal<PeriodoAcademico[]>([]);
   readonly periodoId = signal<number | null>(null);
   readonly periodoSeleccionado = computed(() => this.periodos().find((item) => item.id === this.periodoId()) ?? null);
@@ -51,6 +57,7 @@ export class Horarios implements OnInit {
   readonly nivelId = signal<number | null>(null);
   readonly nivelSeleccionado = computed(() => this.niveles().find((nivel) => nivel.id === this.nivelId()) ?? null);
   readonly asignaciones = signal<AsignacionDocente[]>([]);
+  readonly secciones = signal<Seccion[]>([]);
   readonly cursos = signal<Curso[]>([]);
   readonly bloques = signal<BloqueHorario[]>([]);
   readonly recreosNivel = computed(() => this.bloques().filter((bloque) => bloque.nivelId === this.nivelId() && bloque.esRecreo));
@@ -78,33 +85,35 @@ export class Horarios implements OnInit {
   });
   readonly rangoProgramacion = computed(() => {
     const bloques = this.bloques().filter((bloque) => bloque.nivelId === this.nivelId());
-    const inicio = Math.min(8 * 60, ...bloques.map((bloque) => this.minutos(bloque.horaInicio)));
-    const fin = Math.max(18 * 60, ...bloques.map((bloque) => this.minutos(bloque.horaFin)));
+    if (!bloques.length) return { inicio: 0, fin: 0, alto: 0, marcas: [] as number[] };
+    const inicio = Math.min(...bloques.map((bloque) => this.minutos(bloque.horaInicio)));
+    const fin = Math.max(...bloques.map((bloque) => this.minutos(bloque.horaFin)));
     const marcas = new Set<number>([inicio, fin]);
     for (const bloque of bloques) {
       marcas.add(this.minutos(bloque.horaInicio));
       marcas.add(this.minutos(bloque.horaFin));
     }
-    return { inicio, fin, alto: ((fin - inicio) / 60) * this.altoHora, marcas: [...marcas].sort((a, b) => a - b) };
+    return { inicio, fin, alto: ((fin - inicio) / 60) * this.altoHora(), marcas: [...marcas].sort((a, b) => a - b) };
   });
   readonly duracionBloqueNuevo = computed(() => {
     return this.duracionConfigurada(this.nivelId(), this.nuevoEsRecreo());
   });
+  readonly jornadaConfigurada = computed(() => this.limitesJornada(this.nivelId()));
   readonly opcionesInicioBloque = computed(() => {
     const duracion = this.duracionBloqueNuevo();
     const bloques = this.bloques().filter((item) => item.nivelId === this.nivelId());
-    const valores = new Set<number>([7 * 60]);
+    const { inicio: limiteInicio, fin: limiteFin } = this.jornadaConfigurada();
+    const valores = new Set<number>([limiteInicio]);
     bloques.forEach((bloque) => valores.add(this.minutos(bloque.horaFin)));
     return [...valores]
-      .filter((inicio) => inicio >= 7 * 60 && inicio + duracion <= 18 * 60
+      .filter((inicio) => inicio >= limiteInicio && inicio + duracion <= limiteFin
         && bloques.every((bloque) => inicio >= this.minutos(bloque.horaFin)
           || inicio + duracion <= this.minutos(bloque.horaInicio)))
       .sort((a, b) => a - b)
       .map((minuto) => this.formatearMinuto(minuto));
   });
   readonly huecosDisponibles = computed<HuecoHorario[]>(() => {
-    const limiteInicio = 7 * 60;
-    const limiteFin = 18 * 60;
+    const { inicio: limiteInicio, fin: limiteFin } = this.jornadaConfigurada();
     const bloques = this.bloques().filter((item) => item.nivelId === this.nivelId())
       .map((item) => ({ inicio: Math.max(limiteInicio, this.minutos(item.horaInicio)), fin: Math.min(limiteFin, this.minutos(item.horaFin)) }))
       .filter((item) => item.fin > item.inicio)
@@ -129,30 +138,34 @@ export class Horarios implements OnInit {
     nivel.nombre.toUpperCase().includes(this.categoriaNivel())
   ));
   readonly resumenSecciones = computed<ResumenSeccion[]>(() => {
-    const cursos = new Map(this.cursos().map((curso) => [curso.id, curso]));
-    const agrupadas = new Map<number, ResumenSeccion>();
-    for (const asignacion of this.asignaciones()) {
-      const curso = cursos.get(asignacion.cursoId);
-      if (!curso || !curso.nivelNombre.toUpperCase().includes(this.categoriaNivel())) continue;
-      const actual = agrupadas.get(asignacion.seccionId) ?? {
-        id: asignacion.seccionId,
-        seccion: asignacion.seccion,
-        grado: asignacion.grado,
-        nivel: curso.nivelNombre,
-        asignaciones: 0,
-        programadas: 0,
-        pendientes: 0
-      };
-      actual.asignaciones += 1;
-      agrupadas.set(asignacion.seccionId, actual);
-    }
     const asignacionesProgramadas = new Set(this.horarios().map((horario) => horario.asignacionId));
-    return [...agrupadas.values()].map((seccion) => {
-      const asignacionesSeccion = this.asignaciones().filter((item) => item.seccionId === seccion.id);
-      seccion.programadas = asignacionesSeccion.filter((item) => asignacionesProgramadas.has(item.id)).length;
-      seccion.pendientes = seccion.asignaciones - seccion.programadas;
-      return seccion;
-    }).sort((a, b) => a.grado.localeCompare(b.grado, 'es') || a.seccion.localeCompare(b.seccion, 'es'));
+    return this.secciones()
+      .filter((item) => (item.estado ?? 'ACTIVO') === 'ACTIVO')
+      .map((item) => {
+        const nivel = item.nivelNombre
+          ?? this.niveles().find((opcion) => opcion.id === item.nivelId)?.nombre
+          ?? '';
+        const nivelId = item.nivelId ?? this.niveles().find((opcion) => opcion.nombre === nivel)?.id ?? null;
+        const asignacionesSeccion = this.asignaciones().filter((asignacion) =>
+          asignacion.seccionId === item.id
+          && this.cursos().some((curso) => curso.id === asignacion.cursoId && curso.nivelId === nivelId)
+        );
+        const programadas = asignacionesSeccion.filter((asignacion) => asignacionesProgramadas.has(asignacion.id)).length;
+        const pendientes = asignacionesSeccion.length - programadas;
+        return {
+          id: item.id,
+          seccion: item.nombre,
+          grado: item.gradoNombre ?? '',
+          nivel,
+          nivelId,
+          asignaciones: asignacionesSeccion.length,
+          programadas,
+          pendientes,
+          estado: !asignacionesSeccion.length ? 'SIN_ASIGNACIONES' as const : pendientes ? 'PENDIENTE' as const : 'COMPLETO' as const
+        };
+      })
+      .filter((item) => item.nivel.toUpperCase().includes(this.categoriaNivel()))
+      .sort((a, b) => a.grado.localeCompare(b.grado, 'es') || a.seccion.localeCompare(b.seccion, 'es'));
   });
   readonly asignacionesNivel = computed(() => this.asignaciones().filter((asignacion) =>
     this.cursos().some((curso) => curso.id === asignacion.cursoId && curso.nivelId === this.nivelId())
@@ -248,16 +261,17 @@ export class Horarios implements OnInit {
   abrirSeccion(seccionId: number): void {
     const seccion = this.resumenSecciones().find((item) => item.id === seccionId);
     const asignacion = this.asignaciones().find((item) => item.seccionId === seccionId
-      && this.cursos().some((curso) => curso.id === item.cursoId && curso.nivelNombre.toUpperCase().includes(this.categoriaNivel())));
-    const curso = this.cursos().find((item) => item.id === asignacion?.cursoId);
-    if (!seccion || !asignacion || !curso) return;
-    this.nivelId.set(curso.nivelId);
+      && this.cursos().some((curso) => curso.id === item.cursoId && curso.nivelId === seccion?.nivelId));
+    const nivelId = seccion?.nivelId ?? this.nivelId();
+    if (!seccion || !nivelId) return;
+    this.nivelId.set(nivelId);
     this.seccionIdActual.set(seccionId);
-    this.asignacionId.set(asignacion.id);
+    this.asignacionId.set(asignacion?.id ?? null);
     this.bloqueHorarioId.set(null);
     this.horarioEditandoId.set(null);
     this.cargarBloques();
     this.vista.set('semanal');
+    setTimeout(() => this.ajustarAltoHorario(), 60);
   }
 
   volverASecciones(): void {
@@ -327,17 +341,26 @@ export class Horarios implements OnInit {
     return secundaria ? periodo?.duracionHoraSecundariaMinutos ?? 90 : periodo?.duracionHoraPrimariaMinutos ?? 50;
   }
 
+  limitesJornada(nivelId: number | null): { inicio: number; fin: number } {
+    const periodo = this.periodoSeleccionado();
+    const secundaria = this.niveles().find((nivel) => nivel.id === nivelId)?.nombre.toUpperCase().includes('SECUNDARIA') ?? false;
+    const inicio = secundaria ? periodo?.horaInicioJornadaSecundaria : periodo?.horaInicioJornadaPrimaria;
+    const fin = secundaria ? periodo?.horaFinJornadaSecundaria : periodo?.horaFinJornadaPrimaria;
+    return { inicio: this.minutos(inicio ?? '07:00'), fin: this.minutos(fin ?? '18:00') };
+  }
+
   calcularFinHorario(inicio: string, nivelId: number, esRecreo: boolean): string {
     return inicio ? this.formatearMinuto(this.minutos(inicio) + this.duracionConfigurada(nivelId, esRecreo)) : '';
   }
 
   opcionesInicioEdicion(bloque: BloqueHorario): string[] {
     const duracion = this.duracionConfigurada(bloque.nivelId, bloque.esRecreo);
+    const { inicio: limiteInicio, fin: limiteFin } = this.limitesJornada(bloque.nivelId);
     const otros = this.bloques().filter((item) => item.nivelId === bloque.nivelId && item.id !== bloque.id);
-    const valores = new Set<number>([7 * 60, this.minutos(bloque.horaInicio)]);
+    const valores = new Set<number>([limiteInicio, this.minutos(bloque.horaInicio)]);
     otros.forEach((item) => valores.add(this.minutos(item.horaFin)));
     return [...valores]
-      .filter((inicio) => inicio >= 7 * 60 && inicio + duracion <= 18 * 60
+      .filter((inicio) => inicio >= limiteInicio && inicio + duracion <= limiteFin
         && otros.every((item) => inicio >= this.minutos(item.horaFin)
           || inicio + duracion <= this.minutos(item.horaInicio)))
       .sort((a, b) => a - b)
@@ -351,9 +374,10 @@ export class Horarios implements OnInit {
   }
 
   bloqueHorarioValido(bloque: BloqueHorario): boolean {
+    const { fin: limiteFin } = this.limitesJornada(bloque.nivelId);
     return this.opcionesInicioEdicion(bloque).includes(bloque.horaInicio.slice(0, 5))
       && this.minutos(bloque.horaFin) - this.minutos(bloque.horaInicio) === this.duracionConfigurada(bloque.nivelId, bloque.esRecreo)
-      && this.minutos(bloque.horaFin) <= 18 * 60;
+      && this.minutos(bloque.horaFin) <= limiteFin;
   }
 
   seleccionarHueco(hueco: HuecoHorario): void {
@@ -372,11 +396,12 @@ export class Horarios implements OnInit {
   }
 
   validarRangoNuevoBloque(): boolean {
+    const { fin: limiteFin } = this.jornadaConfigurada();
     return Boolean(this.nuevaHoraInicio && this.nuevaHoraFin)
       && this.opcionesInicioBloque().includes(this.nuevaHoraInicio)
       && this.minutos(this.nuevaHoraInicio) < this.minutos(this.nuevaHoraFin)
       && this.minutos(this.nuevaHoraFin) - this.minutos(this.nuevaHoraInicio) === this.duracionBloqueNuevo()
-      && this.minutos(this.nuevaHoraFin) <= 18 * 60;
+      && this.minutos(this.nuevaHoraFin) <= limiteFin;
   }
 
   duracionHueco(minutos: number): string {
@@ -404,12 +429,24 @@ export class Horarios implements OnInit {
   guardarBloque(): void {
     const periodoAcademicoId = this.periodoId();
     const nivelId = this.nivelId();
-    if (!periodoAcademicoId || !nivelId || !this.nuevoNombre.trim() || !this.validarRangoNuevoBloque()) return;
+    if (!periodoAcademicoId || !nivelId) {
+      this.mostrarAlerta('warning', 'No se puede crear el bloque', 'Selecciona un período y un nivel antes de guardar.');
+      return;
+    }
+    if (!this.nuevoNombre.trim()) {
+      this.mostrarAlerta('warning', 'Falta el nombre', 'Escribe un nombre para el bloque antes de continuar.');
+      return;
+    }
+    if (!this.validarRangoNuevoBloque()) {
+      this.mostrarAlerta('warning', 'Rango no disponible', 'El horario seleccionado ya no es válido. Elige uno de los espacios libres disponibles.');
+      return;
+    }
     const orden = Math.max(0, ...this.bloques().map((item) => item.orden)) + 1;
     this.guardando.set(true);
     this.horarioService.crearBloque({ periodoAcademicoId, nivelId, nombre: this.nuevoNombre.trim(), orden, horaInicio: this.nuevaHoraInicio, horaFin: this.nuevaHoraFin, esRecreo: this.nuevoEsRecreo() })
       .subscribe({
-        next: () => {
+        next: (creado) => {
+          this.bloques.update((items) => [...items, creado].sort((a, b) => a.orden - b.orden));
           this.nuevoNombre = '';
           this.nuevaHoraInicio = '';
           this.nuevaHoraFin = '';
@@ -438,17 +475,6 @@ export class Horarios implements OnInit {
       },
       error: (e) => this.mostrarError(e, 'No se pudo actualizar el bloque.')
     });
-  }
-
-  alternarTipoBloque(bloqueId: number): void {
-    const actual = this.bloques().find((item) => item.id === bloqueId);
-    if (!actual) return;
-    const esRecreo = !actual.esRecreo;
-    const duracion = this.duracionConfigurada(actual.nivelId, esRecreo);
-    const horaInicio = this.minutos(actual.horaInicio);
-    this.bloques.update((items) => items.map((item) => item.id === bloqueId
-      ? { ...item, esRecreo, horaFin: this.formatearMinuto(horaInicio + duracion) }
-      : item));
   }
 
   desactivarBloque(bloque: BloqueHorario): void {
@@ -529,26 +555,101 @@ export class Horarios implements OnInit {
     return hora?.slice(0, 5) ?? '';
   }
 
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.ajustarAltoHorario();
+  }
+
+  ajustarAltoHorario(): void {
+    if (this.vista() !== 'semanal') return;
+    const scrollEl: HTMLElement | null = this.elementRef.nativeElement.querySelector('.section-timetable-scroll');
+    if (!scrollEl) return;
+    const clientHeight = scrollEl.clientHeight;
+    const headerHeight = 44;
+    const available = clientHeight - headerHeight;
+    const rango = this.rangoProgramacion();
+    const horas = (rango.fin - rango.inicio) / 60;
+    if (horas > 0 && available > 150) {
+      const ideal = Math.max(100, Math.floor(available / horas));
+      if (this.altoHora() !== ideal) {
+        this.altoHora.set(ideal);
+      }
+    }
+  }
+
+  porcentajeProgramacion(seccion: ResumenSeccion): number {
+    return seccion.asignaciones ? Math.round((seccion.programadas / seccion.asignaciones) * 100) : 0;
+  }
+
+  readonly mapaTonoCursos = computed(() => {
+    const mapa = new Map<number, number>();
+    const totalTonos = 16;
+
+    // 1. Obtener todos los cursos de la sección actual
+    const cursosSeccion = new Set<number>();
+    for (const a of this.asignacionesSeccion()) {
+      cursosSeccion.add(a.cursoId);
+    }
+    for (const h of this.horariosSeccion()) {
+      cursosSeccion.add(h.cursoId);
+    }
+
+    // Ordenar alfabéticamente para que cada curso siempre conserve su color
+    const seccionOrdenada = [...cursosSeccion].sort((a, b) => {
+      const nombreA = this.cursos().find((c) => c.id === a)?.nombre ?? '';
+      const nombreB = this.cursos().find((c) => c.id === b)?.nombre ?? '';
+      return nombreA.localeCompare(nombreB, 'es') || (a - b);
+    });
+
+    let toneIndex = 0;
+    seccionOrdenada.forEach((cursoId) => {
+      mapa.set(cursoId, (toneIndex % totalTonos) + 1);
+      toneIndex++;
+    });
+
+    // 2. Registrar los demás cursos del catálogo por consistencia
+    const otrosCursos = this.cursos()
+      .filter((c) => !mapa.has(c.id))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es') || (a.id - b.id));
+
+    otrosCursos.forEach((c) => {
+      mapa.set(c.id, (toneIndex % totalTonos) + 1);
+      toneIndex++;
+    });
+
+    return mapa;
+  });
+
+  tonoClase(item: HorarioSemanal): string {
+    const tono = this.mapaTonoCursos().get(item.cursoId);
+    return `tone-${tono ?? ((item.cursoId % 16) + 1)}`;
+  }
+
+  tonoCursoPorId(cursoId: number): string {
+    const tono = this.mapaTonoCursos().get(cursoId);
+    return `tone-${tono ?? ((cursoId % 16) + 1)}`;
+  }
+
   posicionProgramacion(item: HorarioSemanal): number {
-    return Math.max(0, ((this.minutos(item.horaInicio) - this.rangoProgramacion().inicio) / 60) * this.altoHora + 2);
+    return Math.max(0, ((this.minutos(item.horaInicio) - this.rangoProgramacion().inicio) / 60) * this.altoHora() + 2);
   }
 
   altoProgramacion(item: HorarioSemanal): number {
     const duracion = this.minutos(item.horaFin) - this.minutos(item.horaInicio);
-    return Math.max(42, (duracion / 60) * this.altoHora - 4);
+    return Math.max(48, (duracion / 60) * this.altoHora() - 4);
   }
 
   posicionBloque(bloque: BloqueHorario): number {
-    return Math.max(0, ((this.minutos(bloque.horaInicio) - this.rangoProgramacion().inicio) / 60) * this.altoHora + 2);
+    return Math.max(0, ((this.minutos(bloque.horaInicio) - this.rangoProgramacion().inicio) / 60) * this.altoHora() + 2);
   }
 
   altoBloque(bloque: BloqueHorario): number {
     const duracion = this.minutos(bloque.horaFin) - this.minutos(bloque.horaInicio);
-    return Math.max(24, (duracion / 60) * this.altoHora - 4);
+    return Math.max(26, (duracion / 60) * this.altoHora() - 4);
   }
 
   posicionMarcaProgramacion(minuto: number): number {
-    return ((minuto - this.rangoProgramacion().inicio) / 60) * this.altoHora;
+    return ((minuto - this.rangoProgramacion().inicio) / 60) * this.altoHora();
   }
 
   formatearMinuto(minuto: number): string {
@@ -557,10 +658,15 @@ export class Horarios implements OnInit {
 
   private cargarAsignaciones(periodoId: number): void {
     this.cargando.set(true);
-    forkJoin({ asignaciones: this.asignacionesService.listarPorPeriodo(periodoId), horarios: this.horarioService.listar(periodoId) }).subscribe({
-      next: ({ asignaciones, horarios }) => {
+    forkJoin({
+      asignaciones: this.asignacionesService.listarPorPeriodo(periodoId),
+      horarios: this.horarioService.listar(periodoId),
+      secciones: this.seccionesService.listar(periodoId)
+    }).subscribe({
+      next: ({ asignaciones, horarios, secciones }) => {
         const activas = asignaciones.filter((item) => (item.estado ?? 'ACTIVO') === 'ACTIVO');
         this.asignaciones.set(activas);
+        this.secciones.set(secciones);
         this.horarios.set(horarios);
         const niveles = new Map<number, string>();
         this.cursos()
@@ -568,6 +674,9 @@ export class Horarios implements OnInit {
           .forEach((curso) => {
             niveles.set(curso.nivelId, curso.nivelNombre);
         });
+        secciones
+          .filter((seccion) => (seccion.estado ?? 'ACTIVO') === 'ACTIVO' && seccion.nivelId && seccion.nivelNombre)
+          .forEach((seccion) => niveles.set(seccion.nivelId!, seccion.nivelNombre!));
         this.niveles.set([...niveles].map(([id, nombre]) => ({ id, nombre })));
         if (!this.niveles().some((nivel) => nivel.id === this.nivelId())) {
           const nivelInicial = this.niveles().find((nivel) => nivel.nombre.toUpperCase().includes(this.categoriaNivel()))

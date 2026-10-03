@@ -97,6 +97,10 @@ export class TutoriaService {
     });
   }
 
+  actualizar(tutoriaId: number, payload: TutoriaPayload): Observable<Tutoria> {
+    return this.http.put<Tutoria>(`${this.api}/${tutoriaId}`, payload);
+  }
+
   obtenerResumenAcademico(
     tutoriaId: number,
     periodoEvaluacionId: number

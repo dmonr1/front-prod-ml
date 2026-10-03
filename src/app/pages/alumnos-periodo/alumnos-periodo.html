@@ -14,22 +14,17 @@
 
     <div class="page-card page-slide-in">
       <div class="card-head">
-        <div class="card-head-inline">
-          <div class="panel-head">
-            <a class="back-link" routerLink="/gestion-estudiantil">
-              <i class="fa-solid fa-arrow-left"></i>
-              Volver a períodos
-            </a>
+        <div class="card-head-inline period-detail-head">
+          <a class="action-button secondary section-back-button back-link" routerLink="/gestion-estudiantil" title="Volver a períodos">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>Volver</span>
+          </a>
+          <div class="panel-head period-heading">
             <h2>{{ periodo()?.nombre || 'Período académico' }}</h2>
+            <p>Selecciona un grado para gestionar sus secciones y alumnos.</p>
           </div>
 
           <div class="head-actions">
-            @if (esPeriodoEditable()) {
-              <a class="action-button tertiary" [routerLink]="['/gestion-estudiantil/periodo', periodoId, 'evaluaciones-cursos']">
-                <i class="fa-solid fa-clipboard-list"></i>
-                Evaluaciones por curso
-              </a>
-            }
             @if (periodo()) {
               <span class="period-chip">{{ esPeriodoEditable() ? 'Período editable' : 'Solo consulta' }}</span>
             }
@@ -37,11 +32,11 @@
         </div>
       </div>
 
+      <div class="page-content-scroll">
       <section class="cards-section">
         <div class="section-head">
           <div class="panel-head">
             <h3>Grados</h3>
-            <p>Selecciona un grado para abrir sus secciones.</p>
           </div>
 
           <div class="level-tabs">
@@ -78,6 +73,14 @@
             <span>{{ errorGrados() }}</span>
           </div>
         </div>
+        } @else if (!gradosFiltrados().length) {
+        <div class="cards-surface state-surface">
+          <div class="empty-state-card">
+            <div class="empty-state-badge"><i class="fa-solid fa-graduation-cap"></i></div>
+            <strong class="empty-state-title">No hay grados disponibles</strong>
+            <p class="empty-state-desc">No se encontraron grados registrados para el nivel seleccionado en este período.</p>
+          </div>
+        </div>
         } @else {
         <div class="cards-surface">
           <div class="cards-grid">
@@ -103,14 +106,14 @@
       <section class="cards-section">
         <div class="section-head">
           <div class="panel-head">
-            <h3>Secciones</h3>
-            <p style="font-weight: 700; ">{{ gradoSeleccionado()!.nombre }}</p>
+            <h3>Secciones de {{ gradoSeleccionado()!.nombre }}</h3>
           </div>
 
           @if (esPeriodoEditable() && esAdmin()) {
           <div class="head-actions">
-            <button class="action-button tertiary" type="button" (click)="toggleMostrarSeccionesDeshabilitadas()">
-              <i class="fa-solid fa-eye"></i>
+            <button class="action-button tertiary section-visibility-button" type="button" (click)="toggleMostrarSeccionesDeshabilitadas()">
+              <i class="fa-solid" [class.fa-eye-slash]="mostrarSeccionesDeshabilitadas()"
+                [class.fa-eye]="!mostrarSeccionesDeshabilitadas()"></i>
               {{ mostrarSeccionesDeshabilitadas() ? 'Ocultar secciones inactivas' : 'Mostrar secciones inactivas' }}
             </button>
             <button class="action-button secondary" type="button"
@@ -147,17 +150,22 @@
         </div>
         } @else if (!seccionesDelGrado().length) {
         <div class="cards-surface state-surface">
-          <div class="table-state">
-            <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-            <span>Este grado todavía no tiene secciones registradas en este período.</span>
+          <div class="empty-state-card">
+            <div class="empty-state-badge"><i class="fa-solid fa-shapes"></i></div>
+            <strong class="empty-state-title">Sin secciones registradas</strong>
+            <p class="empty-state-desc">Este grado todavía no tiene secciones configuradas en este período.</p>
+            @if (esPeriodoEditable() && esAdmin()) {
+              <button class="empty-state-btn" type="button" (click)="abrirModalSeccion()">
+                <i class="fa-solid fa-plus"></i> Agregar primera sección
+              </button>
+            }
           </div>
         </div>
         } @else {
         <div class="cards-surface">
           <div class="cards-grid">
             @for (seccion of seccionesDelGrado(); track seccion.id) {
-            <article class="flow-card flow-card-clickable" tabindex="0" (click)="abrirSeccion(seccion.id)"
-              (keydown.enter)="abrirSeccion(seccion.id)" (keydown.space)="abrirSeccion(seccion.id); $event.preventDefault()">
+            <article class="flow-card section-flow-card">
               <div class="flow-card-top">
                 <span class="flow-title">Sección {{ seccion.nombre }}</span>
                 <div class="flow-card-actions">
@@ -170,7 +178,7 @@
                     [class.is-on]="(seccion.estado ?? 'ACTIVO') === 'ACTIVO'"
                     [class.is-loading]="actualizandoEstadoSeccionId() === seccion.id"
                     [disabled]="actualizandoEstadoSeccionId() === seccion.id"
-                    (click)="$event.stopPropagation(); toggleEstadoSeccion(seccion)">
+                    (click)="toggleEstadoSeccion(seccion)">
                     <span class="section-switch-track">
                       <span class="section-switch-thumb"></span>
                     </span>
@@ -183,6 +191,16 @@
                 {{ totalMatriculadosSeccion(seccion.id) }} matriculados - Capacidad
                 {{ seccion.capacidad ?? 'ND' }}
               </small>
+              <div class="section-card-links">
+                @if (esAdmin()) {
+                  <button class="section-card-link" type="button" (click)="abrirEvaluacionesSeccion(seccion.id)">
+                    <i class="fa-solid fa-calendar-check"></i> Configurar evaluaciones
+                  </button>
+                }
+                  <button class="section-card-link" type="button" (click)="abrirSeccion(seccion.id)">
+                  <i class="fa-solid fa-user-plus"></i> Registrar alumnos
+                </button>
+              </div>
             </article>
             }
           </div>
@@ -190,6 +208,7 @@
         }
       </section>
       }
+      </div>
     </div>
 
     @if (modalSeccionAbierto()) {

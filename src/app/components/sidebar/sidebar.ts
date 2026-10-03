@@ -39,6 +39,7 @@ export class Sidebar implements OnInit, OnDestroy {
   private readonly storageKey = 'academic-analytics-sidebar-open';
 
   readonly collapsed = signal(localStorage.getItem('academic-analytics-sidebar') === 'collapsed');
+  readonly transitionReady = signal(false);
   readonly expandedSections = signal(this.obtenerSeccionesIniciales());
   readonly userFlyoutOpen = signal(false);
   readonly notificationsOpen = signal(false);
@@ -46,6 +47,7 @@ export class Sidebar implements OnInit, OnDestroy {
   readonly notifications = signal<AlertaAcademica[]>([]);
   readonly notificationCount = signal(0);
   private notificationTimer: ReturnType<typeof setInterval> | null = null;
+  private transitionFrame: number | null = null;
   readonly docenteVinculado = signal<Docente | null>(
     Sidebar.docenteCache?.usuarioId === this.authService.obtenerUsuario()?.usuarioId
       ? Sidebar.docenteCache?.docente ?? null
@@ -56,6 +58,7 @@ export class Sidebar implements OnInit, OnDestroy {
   readonly roleLabel = input('Acceso institucional');
 
   ngOnInit(): void {
+    this.transitionFrame = requestAnimationFrame(() => this.transitionReady.set(true));
     this.cargarDocenteVinculado();
     this.cargarNotificaciones();
     this.notificationTimer = setInterval(() => this.cargarNotificaciones(), 60_000);
@@ -63,6 +66,7 @@ export class Sidebar implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.notificationTimer) clearInterval(this.notificationTimer);
+    if (this.transitionFrame !== null) cancelAnimationFrame(this.transitionFrame);
   }
 
   toggleNotifications(event: MouseEvent): void {

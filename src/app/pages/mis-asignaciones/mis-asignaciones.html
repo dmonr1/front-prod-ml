@@ -33,7 +33,7 @@
                 <div class="flow-card-body skeleton-body">
                   <div class="flow-card-top">
                     <span class="skeleton-line medium"></span>
-                    <span class="skeleton-icon"></span>
+                    <span class="skeleton-icon-pill"></span>
                   </div>
 
                   <div class="flow-meta-row">
@@ -43,8 +43,10 @@
                 </div>
 
                 <div class="flow-card-footer skeleton-footer">
-                  <span class="skeleton-line short"></span>
-                  <span class="skeleton-button"></span>
+                  <div class="flow-card-actions skeleton-actions">
+                    <span class="skeleton-button"></span>
+                    <span class="skeleton-button"></span>
+                  </div>
                 </div>
               </article>
               }
@@ -52,9 +54,10 @@
           </div>
           } @else if (!asignaciones().length) {
           <div class="cards-surface state-surface">
-            <div class="table-state">
-              <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-              <span>No tienes cursos o secciones asignadas para el período académico actual.</span>
+            <div class="empty-state-card">
+              <div class="empty-state-badge"><i class="fa-solid fa-chalkboard-user"></i></div>
+              <strong class="empty-state-title">No tienes cursos asignados</strong>
+              <p class="empty-state-desc">No tienes cursos o secciones asignadas para el período académico actual.</p>
             </div>
           </div>
           } @else {
@@ -71,10 +74,11 @@
                 </div>
 
                 <div class="flow-card-body">
-                  <div style="align-items: end;" class="flow-card-top">
+                  <div class="flow-card-top">
                     <span class="flow-title">{{ asignacion.curso }}</span>
-                    <span class="flow-title-icon">
+                    <span class="flow-title-icon" [title]="'Sección ' + asignacion.seccion">
                       <i [class]="iconoPortada(asignacion)"></i>
+                      <span>Sección {{ asignacion.seccion }}</span>
                     </span>
                   </div>
 
@@ -85,9 +89,16 @@
                 </div>
 
                 <div class="flow-card-footer">
-                  <span><i class="fa-solid fa-users"></i> Sección {{ asignacion.seccion }}</span>
                   <div class="flow-card-actions">
-                    <a class="flow-link-button" [routerLink]="['/mis-asignaciones', asignacion.id, 'notas']">
+                    <a class="flow-link-button btn-plan-eval"
+                      [routerLink]="['/gestion-estudiantil/periodo', asignacion.periodoAcademicoId, 'seccion', asignacion.seccionId, 'evaluaciones']"
+                      [queryParams]="{ cursoId: asignacion.cursoId, from: 'mis-asignaciones' }"
+                      title="Planificar evaluaciones de este curso">
+                      <i class="fa-regular fa-calendar-check"></i>
+                      <span>Planificar</span>
+                    </a>
+                    <a class="flow-link-button secondary" [routerLink]="['/mis-asignaciones', asignacion.id, 'notas']"
+                      title="Registrar notas de este curso">
                       <i class="fa-solid fa-pen-to-square"></i>
                       <span>Registrar Notas</span>
                     </a>
@@ -102,4 +113,9 @@
       </div>
     </div>
   </section>
+
+  <app-custom-alert [open]="alertState().open" [type]="alertState().type" [title]="alertState().title"
+    [message]="alertState().message" [confirmText]="alertState().confirmText" [cancelText]="alertState().cancelText"
+    [autoCloseMs]="alertState().autoCloseMs" (confirm)="cerrarAlerta()" (cancel)="cerrarAlerta()"
+    (dismiss)="cerrarAlerta()" />
 </app-shell>

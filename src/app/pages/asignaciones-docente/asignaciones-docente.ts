@@ -1,4 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { CustomAlertComponent, CustomAlertType } from '../../components/custom-alert/custom-alert';
 import { Shell } from '../../layouts/shell/shell';
@@ -34,6 +35,7 @@ interface AlertState {
   styleUrl: './asignaciones-docente.scss'
 })
 export class AsignacionesTutorias {
+  private readonly route = inject(ActivatedRoute);
   private readonly docenteService = inject(DocenteService);
   private readonly cursoService = inject(CursoService);
   private readonly seccionService = inject(SeccionService);
@@ -44,6 +46,7 @@ export class AsignacionesTutorias {
 
   readonly currentYear = new Date().getFullYear();
   readonly vistaActiva = signal<'asignaciones' | 'tutorias'>('asignaciones');
+  readonly modalCreacion = signal<'asignacion' | 'tutoria' | null>(null);
 
   readonly docentes = signal<Docente[]>([]);
   readonly cargandoDocentes = signal(true);
@@ -66,6 +69,12 @@ export class AsignacionesTutorias {
   readonly guardandoTutoria = signal(false);
   readonly guardandoAsignacion = signal(false);
   readonly asignaciones = signal<AsignacionDocente[]>([]);
+  readonly busquedaTablaAsignaciones = signal('');
+  readonly cursoFiltroAsignaciones = signal('');
+  readonly seccionFiltroAsignaciones = signal('');
+  readonly busquedaTablaTutorias = signal('');
+  readonly nivelFiltroTutorias = signal('');
+  readonly estadoFiltroTutorias = signal('');
   readonly cargandoAsignaciones = signal(true);
   readonly errorAsignaciones = signal<string | null>(null);
   readonly actualizandoEstadoAsignacionId = signal<number | null>(null);
@@ -100,15 +109,33 @@ export class AsignacionesTutorias {
   readonly asignacionPeriodoQuery = signal('');
   readonly tutoriaPeriodoQuery = signal('');
 
-  readonly dropdownActivo = signal<'asignacion' | 'tutoria' | null>(null);
-  readonly modalContexto = signal<'asignacion' | 'tutoria' | null>(null);
+  readonly esAdmin = computed(() => this.authService.esAdministrador());
+
+  readonly asignacionEditando = signal<AsignacionDocente | null>(null);
+  readonly guardandoEdicionAsignacion = signal(false);
+  readonly edicionAsignacionDocente = signal<Docente | null>(null);
+  readonly edicionAsignacionCurso = signal<Curso | null>(null);
+  readonly edicionAsignacionSeccion = signal<Seccion | null>(null);
+  readonly edicionAsignacionDocenteQuery = signal('');
+  readonly edicionAsignacionCursoQuery = signal('');
+  readonly edicionAsignacionSeccionQuery = signal('');
+
+  readonly tutoriaEditando = signal<Tutoria | null>(null);
+  readonly guardandoEdicionTutoria = signal(false);
+  readonly edicionTutoriaDocente = signal<Docente | null>(null);
+  readonly edicionTutoriaSeccion = signal<Seccion | null>(null);
+  readonly edicionTutoriaDocenteQuery = signal('');
+  readonly edicionTutoriaSeccionQuery = signal('');
+
+  readonly dropdownActivo = signal<'asignacion' | 'tutoria' | 'asignacion-edit' | 'tutoria-edit' | null>(null);
+  readonly modalContexto = signal<'asignacion' | 'tutoria' | 'asignacion-edit' | 'tutoria-edit' | null>(null);
   readonly modalBusqueda = signal('');
 
   readonly cursoModalAbierto = signal(false);
   readonly cursoNivelActivo = signal<'PRIMARIA' | 'SECUNDARIA'>('PRIMARIA');
   readonly cursoModalBusqueda = signal('');
 
-  readonly seccionModalContexto = signal<'asignacion' | 'tutoria' | null>(null);
+  readonly seccionModalContexto = signal<'asignacion' | 'tutoria' | 'asignacion-edit' | 'tutoria-edit' | null>(null);
   readonly seccionNivelActivo = signal<'PRIMARIA' | 'SECUNDARIA'>('PRIMARIA');
   readonly seccionModalBusqueda = signal('');
 
@@ -176,12 +203,82 @@ export class AsignacionesTutorias {
       .sort((a, b) => a.anio - b.anio);
   });
 
+  readonly cursosFiltroAsignaciones = computed(() => {
+    const cursos = new Map<number, string>();
+    this.asignaciones().forEach((asignacion) => cursos.set(asignacion.cursoId, asignacion.curso));
+    return [...cursos].map(([id, nombre]) => ({ id, nombre })).sort((a, b) => a.nombre.localeCompare(b.nombre));
+  });
+
+  readonly seccionesFiltroAsignaciones = computed(() => {
+    const cursoId = this.cursoFiltroAsignaciones();
+    const secciones = new Map<number, string>();
+
+    this.asignaciones()
+      .filter((asignacion) => !cursoId || String(asignacion.cursoId) === cursoId)
+      .forEach((asignacion) => {
+        secciones.set(
+          asignacion.seccionId,
+          `${asignacion.grado} ${asignacion.nivel} · Sección ${asignacion.seccion}`
+        );
+      });
+
+    return [...secciones].map(([id, nombre]) => ({ id, nombre })).sort((a, b) => a.nombre.localeCompare(b.nombre));
+  });
+
+  readonly asignacionesFiltradas = computed(() => {
+    const query = this.normalizarTexto(this.busquedaTablaAsignaciones());
+    const cursoId = this.cursoFiltroAsignaciones();
+    const seccionId = this.seccionFiltroAsignaciones();
+
+    return this.asignaciones().filter((asignacion) => {
+      if (cursoId && String(asignacion.cursoId) !== cursoId) return false;
+      if (seccionId && String(asignacion.seccionId) !== seccionId) return false;
+      if (!query) return true;
+
+      const texto = this.normalizarTexto([
+        asignacion.docenteNombreCompleto,
+        asignacion.curso,
+        asignacion.seccion,
+        asignacion.grado,
+        asignacion.nivel,
+        asignacion.estado ?? 'ACTIVO'
+      ].join(' '));
+
+      return texto.includes(query);
+    });
+  });
+
+  readonly tutoriasFiltradas = computed(() => {
+    const query = this.normalizarTexto(this.busquedaTablaTutorias());
+    const nivel = this.nivelFiltroTutorias();
+    const estado = this.estadoFiltroTutorias();
+
+    return this.tutorias().filter((tutoria) => {
+      const estadoTutoria = tutoria.estado ?? 'ACTIVO';
+      if (nivel && tutoria.nivel.trim().toUpperCase() !== nivel) return false;
+      if (estado && estadoTutoria !== estado) return false;
+      if (!query) return true;
+
+      const texto = this.normalizarTexto([
+        tutoria.docenteNombreCompleto,
+        tutoria.seccion,
+        tutoria.grado,
+        tutoria.nivel,
+        tutoria.periodoAcademico,
+        estadoTutoria
+      ].join(' '));
+
+      return texto.includes(query);
+    });
+  });
+
   readonly esTutoriaEditable = computed(() => {
     const periodo = this.tutoriaPeriodo();
     return periodo ? periodo.anio >= this.currentYear || this.authService.esAdministrador() : false;
   });
 
   constructor() {
+    this.vistaActiva.set(this.route.snapshot.data['vista'] === 'tutorias' ? 'tutorias' : 'asignaciones');
     this.cargarDocentes();
     this.cargarCursos();
     this.cargarPeriodos();
@@ -367,6 +464,23 @@ export class AsignacionesTutorias {
     });
   }
 
+  cambiarCursoFiltroAsignaciones(cursoId: string): void {
+    this.cursoFiltroAsignaciones.set(cursoId);
+    this.seccionFiltroAsignaciones.set('');
+  }
+
+  limpiarFiltrosAsignaciones(): void {
+    this.busquedaTablaAsignaciones.set('');
+    this.cursoFiltroAsignaciones.set('');
+    this.seccionFiltroAsignaciones.set('');
+  }
+
+  limpiarFiltrosTutorias(): void {
+    this.busquedaTablaTutorias.set('');
+    this.nivelFiltroTutorias.set('');
+    this.estadoFiltroTutorias.set('');
+  }
+
   cargarTutorias(): void {
     const periodo = this.tutoriaPeriodo();
 
@@ -404,44 +518,64 @@ export class AsignacionesTutorias {
     });
   }
 
-  onDocenteInput(contexto: 'asignacion' | 'tutoria', value: string): void {
+  onDocenteInput(contexto: 'asignacion' | 'tutoria' | 'asignacion-edit' | 'tutoria-edit', value: string): void {
     if (contexto === 'asignacion') {
       this.asignacionQuery.set(value);
       this.asignacionDocente.set(null);
-    } else {
+    } else if (contexto === 'tutoria') {
       this.tutoriaQuery.set(value);
       this.tutoriaDocente.set(null);
+    } else if (contexto === 'asignacion-edit') {
+      this.edicionAsignacionDocenteQuery.set(value);
+      this.edicionAsignacionDocente.set(null);
+    } else if (contexto === 'tutoria-edit') {
+      this.edicionTutoriaDocenteQuery.set(value);
+      this.edicionTutoriaDocente.set(null);
     }
 
     this.dropdownActivo.set(contexto);
   }
 
-  docentesFiltrados(contexto: 'asignacion' | 'tutoria'): Docente[] {
-    const query = (contexto === 'asignacion' ? this.asignacionQuery() : this.tutoriaQuery())
-      .trim()
-      .toLowerCase();
+  docentesFiltrados(contexto: 'asignacion' | 'tutoria' | 'asignacion-edit' | 'tutoria-edit'): Docente[] {
+    let query = '';
+    if (contexto === 'asignacion') {
+      query = this.asignacionQuery();
+    } else if (contexto === 'tutoria') {
+      query = this.tutoriaQuery();
+    } else if (contexto === 'asignacion-edit') {
+      query = this.edicionAsignacionDocenteQuery();
+    } else if (contexto === 'tutoria-edit') {
+      query = this.edicionTutoriaDocenteQuery();
+    }
 
+    const normalizedQuery = query.trim().toLowerCase();
     return this.docentes()
-      .filter((docente) => this.coincideDocente(docente, query))
+      .filter((docente) => this.coincideDocente(docente, normalizedQuery))
       .slice(0, 6);
   }
 
-  seleccionarDocente(contexto: 'asignacion' | 'tutoria', docente: Docente): void {
+  seleccionarDocente(contexto: 'asignacion' | 'tutoria' | 'asignacion-edit' | 'tutoria-edit', docente: Docente): void {
     const etiqueta = this.formatearDocente(docente);
 
     if (contexto === 'asignacion') {
       this.asignacionDocente.set(docente);
       this.asignacionQuery.set(etiqueta);
-    } else {
+    } else if (contexto === 'tutoria') {
       this.tutoriaDocente.set(docente);
       this.tutoriaQuery.set(etiqueta);
+    } else if (contexto === 'asignacion-edit') {
+      this.edicionAsignacionDocente.set(docente);
+      this.edicionAsignacionDocenteQuery.set(etiqueta);
+    } else if (contexto === 'tutoria-edit') {
+      this.edicionTutoriaDocente.set(docente);
+      this.edicionTutoriaDocenteQuery.set(etiqueta);
     }
 
     this.dropdownActivo.set(null);
     this.modalContexto.set(null);
   }
 
-  abrirModal(contexto: 'asignacion' | 'tutoria'): void {
+  abrirModal(contexto: 'asignacion' | 'tutoria' | 'asignacion-edit' | 'tutoria-edit'): void {
     this.modalContexto.set(contexto);
     this.modalBusqueda.set('');
     this.dropdownActivo.set(null);
@@ -452,6 +586,12 @@ export class AsignacionesTutorias {
   }
 
   abrirModalCurso(): void {
+    if (this.asignacionEditando()) {
+      const seccion = this.edicionAsignacionSeccion();
+      if (seccion?.nivelNombre === 'SECUNDARIA' || seccion?.nivelNombre === 'PRIMARIA') {
+        this.cursoNivelActivo.set(seccion.nivelNombre as 'PRIMARIA' | 'SECUNDARIA');
+      }
+    }
     this.cursoModalAbierto.set(true);
     this.cursoModalBusqueda.set('');
   }
@@ -461,16 +601,34 @@ export class AsignacionesTutorias {
   }
 
   seleccionarCurso(curso: Curso): void {
-    this.asignacionCurso.set(curso);
-    this.cursoQuery.set(curso.nombre);
+    if (this.asignacionEditando()) {
+      this.edicionAsignacionCurso.set(curso);
+      this.edicionAsignacionCursoQuery.set(curso.nombre);
+      const seccion = this.edicionAsignacionSeccion();
+      if (seccion && seccion.nivelNombre !== curso.nivelNombre) {
+        this.edicionAsignacionSeccion.set(null);
+        this.edicionAsignacionSeccionQuery.set('');
+      }
+    } else {
+      this.asignacionCurso.set(curso);
+      this.cursoQuery.set(curso.nombre);
+    }
     this.cursoModalAbierto.set(false);
   }
 
-  abrirModalSeccion(contexto: 'asignacion' | 'tutoria'): void {
+  abrirModalSeccion(contexto: 'asignacion' | 'tutoria' | 'asignacion-edit' | 'tutoria-edit'): void {
     this.seccionModalContexto.set(contexto);
     this.seccionModalBusqueda.set('');
+    if (contexto === 'asignacion-edit') {
+      const curso = this.edicionAsignacionCurso();
+      if (curso?.nivelNombre === 'SECUNDARIA' || curso?.nivelNombre === 'PRIMARIA') {
+        this.seccionNivelActivo.set(curso.nivelNombre as 'PRIMARIA' | 'SECUNDARIA');
+      }
+    }
     this.cargarSecciones(
-      contexto === 'asignacion' ? this.asignacionPeriodo()?.id ?? null : this.tutoriaPeriodo()?.id ?? null
+      (contexto === 'asignacion' || contexto === 'asignacion-edit')
+        ? this.asignacionPeriodo()?.id ?? null
+        : this.tutoriaPeriodo()?.id ?? null
     );
   }
 
@@ -478,7 +636,7 @@ export class AsignacionesTutorias {
     this.seccionModalContexto.set(null);
   }
 
-  seleccionarSeccion(contexto: 'asignacion' | 'tutoria', seccion: Seccion): void {
+  seleccionarSeccion(contexto: 'asignacion' | 'tutoria' | 'asignacion-edit' | 'tutoria-edit', seccion: Seccion): void {
     const etiqueta = `${seccion.gradoNombre ?? ''} - ${seccion.nombre}`.trim();
 
     if (contexto === 'asignacion') {
@@ -490,9 +648,22 @@ export class AsignacionesTutorias {
 
       this.asignacionSecciones.set(siguiente);
       this.asignacionSeccionQuery.set(this.formatearSeccionesAsignacion(siguiente));
-    } else {
+    } else if (contexto === 'tutoria') {
       this.tutoriaSeccion.set(seccion);
       this.tutoriaSeccionQuery.set(etiqueta);
+      this.seccionModalContexto.set(null);
+    } else if (contexto === 'asignacion-edit') {
+      this.edicionAsignacionSeccion.set(seccion);
+      this.edicionAsignacionSeccionQuery.set(etiqueta);
+      const curso = this.edicionAsignacionCurso();
+      if (curso && curso.nivelNombre !== seccion.nivelNombre) {
+        this.edicionAsignacionCurso.set(null);
+        this.edicionAsignacionCursoQuery.set('');
+      }
+      this.seccionModalContexto.set(null);
+    } else if (contexto === 'tutoria-edit') {
+      this.edicionTutoriaSeccion.set(seccion);
+      this.edicionTutoriaSeccionQuery.set(etiqueta);
       this.seccionModalContexto.set(null);
     }
   }
@@ -547,6 +718,19 @@ export class AsignacionesTutorias {
 
   esPeriodoSeleccionable(periodo: PeriodoAcademico): boolean {
     return periodo.anio >= this.currentYear || this.authService.esAdministrador();
+  }
+
+  abrirModalCreacion(tipo: 'asignacion' | 'tutoria'): void {
+    if (tipo === 'asignacion') this.limpiarAsignacion();
+    else this.limpiarTutoria();
+    this.modalCreacion.set(tipo);
+  }
+
+  cerrarModalCreacion(): void {
+    const tipo = this.modalCreacion();
+    if (tipo === 'asignacion') this.limpiarAsignacion();
+    if (tipo === 'tutoria') this.limpiarTutoria();
+    this.modalCreacion.set(null);
   }
 
   limpiarAsignacion(): void {
@@ -619,6 +803,7 @@ export class AsignacionesTutorias {
         next: () => {
           this.guardandoAsignacion.set(false);
           this.limpiarAsignacion();
+          this.modalCreacion.set(null);
           this.asignacionPeriodoQuery.set(this.formatearPeriodo(periodo));
           this.mostrarAlerta(
             'success',
@@ -699,6 +884,7 @@ export class AsignacionesTutorias {
         next: () => {
           this.guardandoTutoria.set(false);
           this.limpiarTutoria();
+          this.modalCreacion.set(null);
           this.tutoriaPeriodoQuery.set(this.formatearPeriodo(periodo));
           this.mostrarAlerta(
             'success',
@@ -713,6 +899,225 @@ export class AsignacionesTutorias {
             'error',
             'No se pudo registrar',
             formatearMensajeError(error, 'No se pudo registrar la tutoría.')
+          );
+        }
+      });
+  }
+
+  abrirModalEdicionAsignacion(asignacion: AsignacionDocente): void {
+    const docente = this.docentes().find((d) => d.id === asignacion.docenteId) ?? null;
+    const curso = this.cursos().find((c) => c.id === asignacion.cursoId) ?? null;
+    const seccion = this.secciones().find((s) => s.id === asignacion.seccionId) ?? null;
+
+    this.asignacionEditando.set(asignacion);
+    this.edicionAsignacionDocente.set(docente);
+    this.edicionAsignacionCurso.set(curso);
+    this.edicionAsignacionSeccion.set(seccion);
+
+    this.edicionAsignacionDocenteQuery.set(
+      docente ? this.formatearDocente(docente) : asignacion.docenteNombreCompleto
+    );
+    this.edicionAsignacionCursoQuery.set(curso ? curso.nombre : asignacion.curso);
+    this.edicionAsignacionSeccionQuery.set(
+      seccion
+        ? `${seccion.gradoNombre ?? ''} - ${seccion.nombre}`.trim()
+        : `${asignacion.grado} - ${asignacion.seccion}`.trim()
+    );
+    this.dropdownActivo.set(null);
+  }
+
+  cerrarModalEdicionAsignacion(): void {
+    this.asignacionEditando.set(null);
+    this.edicionAsignacionDocente.set(null);
+    this.edicionAsignacionCurso.set(null);
+    this.edicionAsignacionSeccion.set(null);
+    this.edicionAsignacionDocenteQuery.set('');
+    this.edicionAsignacionCursoQuery.set('');
+    this.edicionAsignacionSeccionQuery.set('');
+    this.dropdownActivo.set(null);
+  }
+
+  guardarEdicionAsignacion(): void {
+    const asignacion = this.asignacionEditando();
+    if (!asignacion) return;
+
+    const periodo = this.asignacionPeriodo();
+    if (!periodo || (periodo.anio < this.currentYear && !this.authService.esAdministrador())) {
+      this.mostrarAlerta(
+        'warning',
+        'Período histórico',
+        'Solo puedes editar asignaciones en períodos académicos vigentes o futuros.'
+      );
+      return;
+    }
+
+    const docente = this.edicionAsignacionDocente();
+    const curso = this.edicionAsignacionCurso();
+    const seccion = this.edicionAsignacionSeccion();
+
+    if (!docente || !curso || !seccion) {
+      this.mostrarAlerta(
+        'warning',
+        'Completa la asignación',
+        'Debes seleccionar docente, curso y sección para actualizar la asignación.'
+      );
+      return;
+    }
+
+    if (curso.nivelNombre !== seccion.nivelNombre) {
+      this.mostrarAlerta(
+        'warning',
+        'Incompatibilidad de nivel',
+        `El curso pertenece al nivel ${curso.nivelNombre} pero la sección es de ${seccion.nivelNombre}.`
+      );
+      return;
+    }
+
+    const existeDuplicado = this.asignaciones().some(
+      (item) =>
+        item.id !== asignacion.id &&
+        item.cursoId === curso.id &&
+        item.seccionId === seccion.id &&
+        item.periodoAcademicoId === periodo.id &&
+        (item.estado ?? 'ACTIVO') === 'ACTIVO'
+    );
+
+    if (existeDuplicado) {
+      this.mostrarAlerta(
+        'warning',
+        'Asignación ya registrada',
+        `El curso ${curso.nombre} ya tiene docente asignado en la sección ${this.etiquetaSeccion(seccion)} para este período.`
+      );
+      return;
+    }
+
+    this.guardandoEdicionAsignacion.set(true);
+
+    this.asignacionAcademicaService
+      .actualizar(asignacion.id, {
+        docenteId: docente.id,
+        cursoId: curso.id,
+        seccionId: seccion.id,
+        periodoAcademicoId: periodo.id
+      })
+      .subscribe({
+        next: () => {
+          this.guardandoEdicionAsignacion.set(false);
+          this.cerrarModalEdicionAsignacion();
+          this.mostrarAlerta(
+            'success',
+            'Asignación actualizada',
+            'Los datos de la asignación docente se actualizaron correctamente.'
+          );
+          this.cargarAsignaciones();
+        },
+        error: (error) => {
+          this.guardandoEdicionAsignacion.set(false);
+          this.mostrarAlerta(
+            'error',
+            'No se pudo actualizar',
+            formatearMensajeError(error, 'No se pudo actualizar la asignación docente.')
+          );
+        }
+      });
+  }
+
+  abrirModalEdicionTutoria(tutoria: Tutoria): void {
+    const docente = this.docentes().find((d) => d.id === tutoria.docenteId) ?? null;
+    const seccion = this.secciones().find((s) => s.id === tutoria.seccionId) ?? null;
+
+    this.tutoriaEditando.set(tutoria);
+    this.edicionTutoriaDocente.set(docente);
+    this.edicionTutoriaSeccion.set(seccion);
+
+    this.edicionTutoriaDocenteQuery.set(
+      docente ? this.formatearDocente(docente) : tutoria.docenteNombreCompleto
+    );
+    this.edicionTutoriaSeccionQuery.set(
+      seccion
+        ? `${seccion.gradoNombre ?? ''} - ${seccion.nombre}`.trim()
+        : `${tutoria.grado} - ${tutoria.seccion}`.trim()
+    );
+    this.dropdownActivo.set(null);
+  }
+
+  cerrarModalEdicionTutoria(): void {
+    this.tutoriaEditando.set(null);
+    this.edicionTutoriaDocente.set(null);
+    this.edicionTutoriaSeccion.set(null);
+    this.edicionTutoriaDocenteQuery.set('');
+    this.edicionTutoriaSeccionQuery.set('');
+    this.dropdownActivo.set(null);
+  }
+
+  guardarEdicionTutoria(): void {
+    const tutoria = this.tutoriaEditando();
+    if (!tutoria) return;
+
+    if (!this.esTutoriaEditable()) {
+      this.mostrarAlerta(
+        'warning',
+        'Período histórico',
+        'Solo puedes editar tutorías en períodos académicos vigentes o futuros.'
+      );
+      return;
+    }
+
+    const docente = this.edicionTutoriaDocente();
+    const seccion = this.edicionTutoriaSeccion();
+    const periodo = this.tutoriaPeriodo();
+
+    if (!docente || !seccion || !periodo) {
+      this.mostrarAlerta(
+        'warning',
+        'Completa la tutoría',
+        'Selecciona docente tutor y sección antes de guardar los cambios.'
+      );
+      return;
+    }
+
+    const tutoriaActiva = this.tutorias().find(
+      (item) =>
+        item.id !== tutoria.id &&
+        item.seccionId === seccion.id &&
+        item.periodoAcademicoId === periodo.id &&
+        (item.estado ?? 'ACTIVO') === 'ACTIVO'
+    );
+
+    if (tutoriaActiva) {
+      this.mostrarAlerta(
+        'warning',
+        'Tutoría ya registrada',
+        `${this.etiquetaSeccion(seccion)} ya tiene como tutor(a) a ${tutoriaActiva.docenteNombreCompleto} en este período.`
+      );
+      return;
+    }
+
+    this.guardandoEdicionTutoria.set(true);
+
+    this.tutoriaService
+      .actualizar(tutoria.id, {
+        docenteId: docente.id,
+        seccionId: seccion.id,
+        periodoAcademicoId: periodo.id
+      })
+      .subscribe({
+        next: () => {
+          this.guardandoEdicionTutoria.set(false);
+          this.cerrarModalEdicionTutoria();
+          this.mostrarAlerta(
+            'success',
+            'Tutoría actualizada',
+            'La tutoría se actualizó correctamente.'
+          );
+          this.cargarTutorias();
+        },
+        error: (error) => {
+          this.guardandoEdicionTutoria.set(false);
+          this.mostrarAlerta(
+            'error',
+            'No se pudo actualizar',
+            formatearMensajeError(error, 'No se pudo actualizar la tutoría.')
           );
         }
       });
@@ -768,8 +1173,9 @@ export class AsignacionesTutorias {
       } else if (modalPendiente === 'cursos') {
         this.cargarCursos();
       } else if (modalPendiente === 'secciones') {
+        const ctx = this.seccionModalContexto();
         this.cargarSecciones(
-          this.seccionModalContexto() === 'asignacion'
+          (ctx === 'asignacion' || ctx === 'asignacion-edit')
             ? this.asignacionPeriodo()?.id ?? null
             : this.tutoriaPeriodo()?.id ?? null
         );
@@ -923,6 +1329,14 @@ export class AsignacionesTutorias {
 
   formatearPeriodo(periodo: PeriodoAcademico): string {
     return `${periodo.nombre} (${periodo.anio})`;
+  }
+
+  private normalizarTexto(valor: string): string {
+    return valor
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase();
   }
 
   formatearSeccionesAsignacion(secciones: Seccion[]): string {

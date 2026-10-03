@@ -1,6 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { CustomAlertComponent, CustomAlertType } from '../../components/custom-alert/custom-alert';
 import { DatePickerComponent } from '../../components/date-picker/date-picker';
@@ -37,6 +37,7 @@ interface AlertState {
 })
 export class AlumnosSeccion {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly alumnoService = inject(AlumnoService);
   private readonly periodoAcademicoService = inject(PeriodoAcademicoService);
   private readonly gradoService = inject(GradoService);
@@ -78,6 +79,15 @@ export class AlumnosSeccion {
   readonly errorBase = signal<string | null>(null);
   readonly errorMatriculas = signal<string | null>(null);
 
+  readonly busquedaAlumnos = signal('');
+  readonly ordenAscendente = signal(true);
+  readonly estadoFiltro = signal('');
+  readonly matriculaPendienteCambioEstado = signal<Matricula | null>(null);
+  readonly cambiandoEstadoMatriculaId = signal<number | null>(null);
+  readonly alumnoEditandoId = signal<number | null>(null);
+  readonly alumnoEditandoNombre = signal<string | null>(null);
+  readonly cargandoDetalleAlumnoId = signal<number | null>(null);
+
   readonly formAlumno = signal<AlumnoPayload>({
     codigo: null,
     tipoDocumentoId: 1,
@@ -101,10 +111,33 @@ export class AlumnosSeccion {
   );
 
   readonly matriculasSeccion = computed(() =>
-    this.matriculas()
-      .filter((matricula) => matricula.seccionId === this.seccionId)
-      .sort((a, b) => a.alumnoNombreCompleto.localeCompare(b.alumnoNombreCompleto))
+    this.matriculas().filter((matricula) => matricula.seccionId === this.seccionId)
   );
+
+  readonly matriculasFiltradas = computed(() => {
+    const query = this.busquedaAlumnos().trim().toLowerCase();
+    const filtroEstado = this.estadoFiltro();
+    let items = this.matriculasSeccion();
+
+    if (query) {
+      items = items.filter(
+        (m) =>
+          m.alumnoNombreCompleto.toLowerCase().includes(query) ||
+          m.codigoAlumno.toLowerCase().includes(query)
+      );
+    }
+
+    if (filtroEstado) {
+      items = items.filter((m) => (m.estado || 'ACTIVO') === filtroEstado);
+    }
+
+    const asc = this.ordenAscendente();
+
+    return [...items].sort((a, b) => {
+      const diff = a.alumnoNombreCompleto.localeCompare(b.alumnoNombreCompleto, 'es', { sensitivity: 'base' });
+      return asc ? diff : -diff;
+    });
+  });
 
   readonly periodoAnterior = computed(() => {
     const actual = this.periodo();
@@ -127,6 +160,10 @@ export class AlumnosSeccion {
   );
 
   constructor() {
+    if (!this.authService.tieneGestionAdministrativa()) {
+      void this.router.navigate(['/mis-asignaciones']);
+      return;
+    }
     this.cargarBase();
     this.cargarMatriculas();
     this.cargarTiposDocumento();
@@ -348,6 +385,93 @@ export class AlumnosSeccion {
     }));
   }
 
+  esTeclaControl(event: KeyboardEvent): boolean {
+    return (
+      event.ctrlKey ||
+      event.metaKey ||
+      event.altKey ||
+      [
+        'Backspace',
+        'Delete',
+        'Tab',
+        'Escape',
+        'Enter',
+        'ArrowLeft',
+        'ArrowRight',
+        'ArrowUp',
+        'ArrowDown',
+        'Home',
+        'End'
+      ].includes(event.key)
+    );
+  }
+
+  filtrarTeclasNumeroDocumento(event: KeyboardEvent): void {
+    if (this.esTeclaControl(event)) {
+      return;
+    }
+
+    const tipoDocumento = this.tipoDocumentoAlumno();
+    const esSoloNumeros = !tipoDocumento || tipoDocumento.tipo === 'NUMERICO';
+
+    if (esSoloNumeros) {
+      if (!/^\d$/.test(event.key)) {
+        event.preventDefault();
+      }
+    } else {
+      if (!/^[a-zA-Z0-9]$/.test(event.key)) {
+        event.preventDefault();
+      }
+    }
+  }
+
+  onInputNumeroDocumento(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const tipoDocumento = this.tipoDocumentoAlumno();
+    const normalizado = this.normalizarNumeroDocumento(input.value, tipoDocumento);
+    input.value = normalizado;
+    this.actualizarCampoAlumno('numeroDocumento', normalizado || null);
+  }
+
+  filtrarTeclasSoloLetras(event: KeyboardEvent): void {
+    if (this.esTeclaControl(event)) {
+      return;
+    }
+    if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]$/.test(event.key)) {
+      event.preventDefault();
+    }
+  }
+
+  onInputSoloLetras(campo: 'nombres' | 'apellidos' | 'nombreApoderado', event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const normalizado = input.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, '');
+    input.value = normalizado;
+    this.actualizarCampoAlumno(campo, normalizado);
+  }
+
+  filtrarTeclasTelefono(event: KeyboardEvent): void {
+    if (this.esTeclaControl(event)) {
+      return;
+    }
+    if (!/^\d$/.test(event.key)) {
+      event.preventDefault();
+    }
+  }
+
+  onInputTelefono(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const normalizado = input.value.replace(/\D/g, '').slice(0, 9);
+    input.value = normalizado;
+    this.actualizarCampoAlumno('telefonoApoderado', normalizado || null);
+  }
+
+  onInputDireccion(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const valor = input.value.slice(0, 150);
+    input.value = valor;
+    this.actualizarCampoAlumno('direccion', valor || null);
+  }
+
   actualizarNumeroDocumentoAlumno(valor: string): void {
     const tipoDocumento = this.tipoDocumentoAlumno();
     const numeroDocumento = this.normalizarNumeroDocumento(valor, tipoDocumento);
@@ -355,11 +479,17 @@ export class AlumnosSeccion {
   }
 
   actualizarTipoDocumentoAlumno(tipoDocumentoId: number): void {
-    this.formAlumno.update((actual) => ({
-      ...actual,
-      tipoDocumentoId,
-      numeroDocumento: null
-    }));
+    this.formAlumno.update((actual) => {
+      const tipoDocumento = this.tiposDocumento().find((tipo) => tipo.id === tipoDocumentoId) ?? null;
+      const numeroDocumento = actual.numeroDocumento
+        ? this.normalizarNumeroDocumento(actual.numeroDocumento, tipoDocumento)
+        : null;
+      return {
+        ...actual,
+        tipoDocumentoId,
+        numeroDocumento: numeroDocumento || null
+      };
+    });
   }
 
   limpiarFormularioAlumno(): void {
@@ -377,25 +507,140 @@ export class AlumnosSeccion {
     });
   }
 
-  guardarAlumnoNuevo(): void {
+  seleccionarAlumnoParaEditar(matricula: Matricula): void {
+    if (!this.esPeriodoEditable()) {
+      this.mostrarAlerta('warning', 'Período no editable', 'No se pueden editar alumnos en un período histórico.');
+      return;
+    }
+
+    this.cargandoDetalleAlumnoId.set(matricula.alumnoId);
+
+    this.alumnoService.obtenerPorId(matricula.alumnoId).subscribe({
+      next: (alumno) => {
+        this.cargandoDetalleAlumnoId.set(null);
+        this.alumnoEditandoId.set(alumno.id);
+        this.alumnoEditandoNombre.set(`${alumno.nombres} ${alumno.apellidos}`.trim());
+        this.formAlumno.set({
+          codigo: alumno.codigo || null,
+          tipoDocumentoId: alumno.tipoDocumentoId || 1,
+          numeroDocumento: alumno.numeroDocumento || null,
+          nombres: alumno.nombres || '',
+          apellidos: alumno.apellidos || '',
+          fechaNacimiento: alumno.fechaNacimiento ? String(alumno.fechaNacimiento).slice(0, 10) : null,
+          sexo: alumno.sexo || null,
+          direccion: alumno.direccion || null,
+          nombreApoderado: alumno.nombreApoderado || null,
+          telefonoApoderado: alumno.telefonoApoderado || null
+        });
+      },
+      error: (error) => {
+        this.cargandoDetalleAlumnoId.set(null);
+        this.mostrarAlerta(
+          'error',
+          'No se pudo cargar el alumno',
+          formatearMensajeError(error, 'No se pudo obtener la información del alumno para editar.')
+        );
+      }
+    });
+  }
+
+  cancelarEdicion(): void {
+    this.alumnoEditandoId.set(null);
+    this.alumnoEditandoNombre.set(null);
+    this.limpiarFormularioAlumno();
+  }
+
+  guardarAlumno(): void {
     const payload = this.normalizarAlumno(this.formAlumno());
 
     if (!payload.nombres || !payload.apellidos) {
       this.mostrarAlerta(
         'warning',
-        'Completa los datos',
-        'Completa nombres y apellidos antes de registrar el alumno.'
+        'Completa los datos obligatorios',
+        'Ingresa los nombres y apellidos antes de guardar.'
+      );
+      return;
+    }
+
+    if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(payload.nombres)) {
+      this.mostrarAlerta(
+        'warning',
+        'Nombres no válidos',
+        'Los nombres solo deben contener letras.'
+      );
+      return;
+    }
+
+    if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(payload.apellidos)) {
+      this.mostrarAlerta(
+        'warning',
+        'Apellidos no válidos',
+        'Los apellidos solo deben contener letras.'
       );
       return;
     }
 
     const errorDocumento = this.validarDocumentoAlumno(payload.numeroDocumento, this.tipoDocumentoAlumno());
     if (errorDocumento) {
-      this.mostrarAlerta('warning', 'Documento no valido', errorDocumento);
+      this.mostrarAlerta('warning', 'Documento no válido', errorDocumento);
+      return;
+    }
+
+    if (payload.nombreApoderado && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(payload.nombreApoderado)) {
+      this.mostrarAlerta(
+        'warning',
+        'Nombre del apoderado no válido',
+        'El nombre del apoderado solo debe contener letras.'
+      );
+      return;
+    }
+
+    if (payload.telefonoApoderado && !/^\d{9}$/.test(payload.telefonoApoderado)) {
+      this.mostrarAlerta(
+        'warning',
+        'Teléfono no válido',
+        'El teléfono del apoderado debe tener exactamente 9 dígitos.'
+      );
       return;
     }
 
     this.guardandoAlumno.set(true);
+
+    const editandoId = this.alumnoEditandoId();
+    if (editandoId) {
+      this.alumnoService.actualizar(editandoId, payload).subscribe({
+        next: (alumnoActualizado) => {
+          this.guardandoAlumno.set(false);
+          const nombreCompleto = `${alumnoActualizado.nombres} ${alumnoActualizado.apellidos}`.trim();
+          this.matriculas.update((actuales) =>
+            actuales.map((m) =>
+              m.alumnoId === editandoId
+                ? {
+                    ...m,
+                    alumnoNombreCompleto: nombreCompleto,
+                    codigoAlumno: alumnoActualizado.codigo || m.codigoAlumno
+                  }
+                : m
+            )
+          );
+          this.cancelarEdicion();
+          this.mostrarAlerta(
+            'success',
+            'Alumno actualizado',
+            `Los datos de ${nombreCompleto} se actualizaron correctamente.`
+          );
+        },
+        error: (error) => {
+          this.guardandoAlumno.set(false);
+          this.mostrarAlerta(
+            'error',
+            'No se pudo actualizar',
+            formatearMensajeError(error, 'No se pudo actualizar los datos del alumno.')
+          );
+        }
+      });
+      return;
+    }
 
     this.alumnoService
       .crearYMatricular({
@@ -427,6 +672,86 @@ export class AlumnosSeccion {
       });
   }
 
+  guardarAlumnoNuevo(): void {
+    this.guardarAlumno();
+  }
+
+  alternarOrdenNombre(): void {
+    this.ordenAscendente.update((asc) => !asc);
+  }
+
+  limpiarFiltros(): void {
+    this.busquedaAlumnos.set('');
+    this.estadoFiltro.set('');
+  }
+
+  solicitarCambioEstadoMatricula(matricula: Matricula): void {
+    if (!this.esPeriodoEditable()) {
+      this.mostrarAlerta('warning', 'Período no editable', 'No se pueden realizar cambios en un período histórico.');
+      return;
+    }
+
+    const estaActivo = (matricula.estado || 'ACTIVO') === 'ACTIVO';
+    this.matriculaPendienteCambioEstado.set(matricula);
+
+    this.alertState.set({
+      open: true,
+      type: 'warning',
+      title: estaActivo ? '¿Desactivar matrícula?' : '¿Activar matrícula?',
+      message: estaActivo
+        ? `¿Estás seguro de que deseas desactivar la matrícula de ${matricula.alumnoNombreCompleto}? El alumno dejará de figurar activo en esta sección.`
+        : `¿Estás seguro de que deseas activar la matrícula de ${matricula.alumnoNombreCompleto}?`,
+      confirmText: estaActivo ? 'Sí, desactivar' : 'Sí, activar',
+      cancelText: 'Cancelar',
+      autoCloseMs: null
+    });
+  }
+
+  confirmarCambioEstadoMatricula(): void {
+    const matricula = this.matriculaPendienteCambioEstado();
+    if (!matricula) {
+      this.cerrarAlerta();
+      return;
+    }
+
+    const estaActivo = (matricula.estado || 'ACTIVO') === 'ACTIVO';
+    const nuevoActivo = !estaActivo;
+    this.matriculaPendienteCambioEstado.set(null);
+    this.cambiandoEstadoMatriculaId.set(matricula.id);
+
+    this.matriculaService.actualizarEstado(matricula.id, nuevoActivo).subscribe({
+      next: (actualizada) => {
+        this.cambiandoEstadoMatriculaId.set(null);
+        this.matriculas.update((lista) =>
+          lista.map((item) =>
+            item.id === matricula.id
+              ? { ...item, estado: actualizada.estado || (nuevoActivo ? 'ACTIVO' : 'INACTIVO') }
+              : item
+          )
+        );
+        this.mostrarAlerta(
+          'success',
+          'Estado actualizado',
+          `La matrícula de ${matricula.alumnoNombreCompleto} ahora está ${nuevoActivo ? 'activa' : 'inactiva'}.`,
+          { autoCloseMs: 2200 }
+        );
+      },
+      error: (err) => {
+        this.cambiandoEstadoMatriculaId.set(null);
+        this.mostrarAlerta(
+          'error',
+          'Error al cambiar estado',
+          formatearMensajeError(err, 'No se pudo actualizar el estado de la matrícula.')
+        );
+      }
+    });
+  }
+
+  cancelarCambioEstadoMatricula(): void {
+    this.matriculaPendienteCambioEstado.set(null);
+    this.cerrarAlerta();
+  }
+
   cerrarAlerta(): void {
     this.alertState.set({
       open: false,
@@ -456,7 +781,7 @@ export class AlumnosSeccion {
       message,
       confirmText: options?.confirmText ?? 'Entendido',
       cancelText: options?.cancelText ?? null,
-      autoCloseMs: null
+      autoCloseMs: options?.autoCloseMs ?? null
     });
   }
 

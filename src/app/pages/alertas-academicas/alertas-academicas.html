@@ -23,7 +23,11 @@
     } @else if (error()) {
       <div class="empty-state error-state"><i class="fa-solid fa-triangle-exclamation"></i><span>{{ error() }}</span></div>
     } @else if (!alertas().length) {
-      <div class="empty-state"><i class="fa-regular fa-circle-check"></i><strong>Todo al día</strong><span>No hay alertas para este filtro.</span></div>
+      <div class="empty-state-card">
+        <div class="empty-state-badge"><i class="fa-regular fa-circle-check"></i></div>
+        <strong class="empty-state-title">Todo al día</strong>
+        <p class="empty-state-desc">No hay alertas académicas pendientes para el filtro seleccionado.</p>
+      </div>
     } @else {
       <section class="alerts-list" aria-label="Alertas">
         @for (alerta of alertas(); track alerta.id) {

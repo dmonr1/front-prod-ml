@@ -1,185 +1,221 @@
 <app-shell>
   <app-custom-alert [open]="alertState().open" [type]="alertState().type" [title]="alertState().title"
     [message]="alertState().message" [confirmText]="alertState().confirmText" [cancelText]="alertState().cancelText"
-    [autoCloseMs]="alertState().autoCloseMs" (confirm)="cerrarAlerta()" (cancel)="cerrarAlerta()" (dismiss)="cerrarAlerta()" />
+    [autoCloseMs]="alertState().autoCloseMs" (confirm)="cerrarAlerta()" (cancel)="cerrarAlerta()"
+    (dismiss)="cerrarAlerta()" />
 
   <section class="assignment-card my-schedule-page">
-    <header class="card-head">
-      <div class="head-title-wrap">
-        <div class="head-icon">
-          <i class="fa-regular fa-calendar-days"></i>
-        </div>
-        <div>
-          <div class="head-title-line">
-            <h2>{{ seccionIdVista() ? 'Horario de la sección' : 'Mi horario' }}</h2>
-            @if (horarios().length) {
-              <span class="head-badge">{{ horarios().length }} clases semanales</span>
-            }
-          </div>
-          <p class="head-subtitle">{{ seccionIdVista() ? (etiquetaSeccionVista() || 'Consulta las clases programadas para esta sección') : 'Consulta tus sesiones de clase y accede al registro de asistencias o notas' }}</p>
+    <header class="card-head schedule-header">
+      <div class="header-left-cluster">
+        @if (seccionIdVista()) {
+        <button class="action-button secondary section-back-button" type="button" (click)="volverASeccionesTutoradas()"
+          title="Volver a secciones tutoradas">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>Volver</span>
+        </button>
+        }
+        <div class="schedule-title-group">
+          <h2>{{ seccionIdVista() ? 'Horario de la sección' : 'Mi horario' }}</h2>
         </div>
       </div>
 
-      <div class="schedule-controls">
-        @if (seccionIdVista()) {
-          <button class="btn-back-sections" type="button" (click)="volverASeccionesTutoradas()"><i class="fa-solid fa-arrow-left"></i><span>Secciones</span></button>
+      <div class="header-center-nav">
+        <div class="calendar-nav-cluster">
+          @if (!seccionIdVista()) {
+          <div class="view-toggle-group">
+            <button type="button" class="view-toggle-btn" [class.active]="!mostrarFinDeSemana()"
+              (click)="mostrarFinDeSemana.set(false)">
+              5 días
+            </button>
+            <button type="button" class="view-toggle-btn" [class.active]="mostrarFinDeSemana()"
+              (click)="mostrarFinDeSemana.set(true)">
+              7 días
+            </button>
+          </div>
+          }
+
+          <div class="nav-buttons-group">
+            <button type="button" class="nav-arrow-btn" [disabled]="!puedeRetrocederSemana()" (click)="semanaAnterior()"
+              title="Semana anterior" aria-label="Semana anterior">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <button type="button" class="nav-arrow-btn" [disabled]="!puedeAvanzarSemana()" (click)="semanaSiguiente()"
+              title="Semana siguiente" aria-label="Semana siguiente">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+
+          <div class="calendar-title-wrap">
+            <h3 class="date-range-text">{{ textoRangoSemana() }}</h3>
+          </div>
+
+          <button type="button" class="btn-today" [class.is-current]="esSemanaActual()" (click)="irASemanaActual()"
+            title="Ir a la semana actual">
+            Hoy
+          </button>
+        </div>
+      </div>
+
+      <div class="header-right-controls">
+        @if (horarios().length) {
+        <span class="clases-badge-chip" title="Total de clases semanales programadas">
+          <i class="fa-solid fa-chalkboard-user"></i>
+          {{ horarios().length }} {{ horarios().length === 1 ? 'clase' : 'clases' }}
+        </span>
         }
+
         <span class="periodo-badge-chip">
           <i class="fa-solid fa-calendar-check"></i>
-          Período {{ periodoSeleccionado()?.nombre || '2026' }}
+          {{ periodoSeleccionado()?.nombre }}
         </span>
+
         @if (!seccionIdVista() && periodoEvaluacionSeleccionado()) {
-          <span class="periodo-eval-badge-chip">
-            <i class="fa-solid fa-bookmark"></i>
-            {{ periodoEvaluacionSeleccionado()?.nombre }}
-          </span>
+        <span class="periodo-eval-badge-chip">
+          <i class="fa-solid fa-bookmark"></i>
+          {{ periodoEvaluacionSeleccionado()?.nombre }}
+        </span>
         }
+
+        <span class="week-badge"><i class="fa-regular fa-calendar"></i> Semana {{ numeroSemana() }}</span>
       </div>
     </header>
 
     @if (cargando()) {
-      <div class="schedule-state">
-        <i class="fa-solid fa-spinner fa-spin"></i>
-        <strong>Cargando horario</strong>
-        <span>Sincronizando tus asignaciones y bloques de clase...</span>
-      </div>
+    <div class="schedule-state">
+      <i class="fa-solid fa-spinner fa-spin"></i>
+      <strong>Cargando horario</strong>
+      <span>Sincronizando tus asignaciones y bloques de clase...</span>
+    </div>
     } @else {
-      <section class="calendar-panel" [class.period-changing]="animandoCambioPeriodo()" aria-label="Horario semanal de clases">
-        <!-- Control de fecha sobre los días (Navegación restringida al año del período) -->
-        <div class="calendar-toolbar">
-          <div class="calendar-nav-cluster">
-            <div class="nav-buttons-group">
-              <button type="button" class="nav-arrow-btn" [disabled]="!puedeRetrocederSemana()" (click)="semanaAnterior()" title="Semana anterior" aria-label="Semana anterior">
-                <i class="fa-solid fa-chevron-left"></i>
-              </button>
-              <button type="button" class="nav-arrow-btn" [disabled]="!puedeAvanzarSemana()" (click)="semanaSiguiente()" title="Semana siguiente" aria-label="Semana siguiente">
-                <i class="fa-solid fa-chevron-right"></i>
-              </button>
-            </div>
+    <section class="calendar-panel" [class.period-changing]="animandoCambioPeriodo()"
+      aria-label="Horario semanal de clases">
+      <!-- Grid del calendario con horas grandes, fechas debajo de los días y tarjetas con atajos -->
+      <div class="calendar-scroll">
+        <div class="calendar-grid" [class.seven-days]="mostrarFinDeSemana()" [class.is-empty]="!horarios().length"
+          [style.--hour-count]="rango().horasCount" [style.--hour-height.px]="altoHora()">
+          <!-- Esquina superior izquierda pegajosa -->
+          <div class="calendar-corner"><i class="fa-regular fa-clock"></i></div>
 
-            <div class="calendar-title-wrap">
-              <h3 class="date-range-text">{{ textoRangoSemana() }}</h3>
-              <span class="week-badge">Semana {{ numeroSemana() }}</span>
-            </div>
+          <!-- Cabeceras de los días con la fecha debajo del nombre -->
+          @for (dia of columnasDias(); track dia.value; let i = $index) {
+          <div class="day-heading" [class.is-today]="dia.esHoy" [style.grid-column]="obtenerColumnaDia(i)">
+            <span class="day-name">{{ dia.short }}</span>
+            <span class="day-number">{{ dia.numero }}</span>
+            @if (evaluacionesDeFecha(dia.fechaStr).length; as totalEvals) {
+            <span class="day-eval-dot"
+              [title]="totalEvals + (totalEvals === 1 ? ' evaluación programada' : ' evaluaciones programadas')">
+              <i class="fa-solid fa-file-pen"></i>
+            </span>
+            }
+          </div>
+          }
 
-            <button type="button" class="btn-today" [class.is-current]="esSemanaActual()" (click)="irASemanaActual()" title="Ir a la semana actual">
-              Hoy
-            </button>
+          @if (horarios().length) {
+          <!-- Eje de tiempo a la izquierda con horas legibles y destacadas -->
+          <div class="time-axis" [style.grid-row]="'2 / span ' + rango().horasCount">
+            @for (marca of rango().marcas; track marca; let first = $first; let last = $last) {
+            <span class="time-label" [class.first-hour-label]="first" [class.time-end-label]="last"
+              [style.top.px]="posicionMarca(marca)">
+              {{ formatearHora(marca) }}
+            </span>
+            }
+            @if (semanaContieneHoy() && estaEnRangoHorario()) {
+            <div class="axis-time-marker" [style.top.px]="posicionAhora()" title="Hora actual">
+              <span class="axis-marker-dot"></span>
+            </div>
+            }
           </div>
 
-          <div class="calendar-toolbar-actions">
-            @if (!seccionIdVista()) { <div class="view-toggle-group">
-              <button type="button" class="view-toggle-btn" [class.active]="!mostrarFinDeSemana()" (click)="mostrarFinDeSemana.set(false)">
-                5 días
-              </button>
-              <button type="button" class="view-toggle-btn" [class.active]="mostrarFinDeSemana()" (click)="mostrarFinDeSemana.set(true)">
-                7 días
-              </button>
-            </div> }
-          </div>
-        </div>
-
-        <!-- Grid del calendario con horas grandes, fechas debajo de los días y tarjetas con atajos -->
-        <div class="calendar-scroll">
-          <div class="calendar-grid" [class.seven-days]="mostrarFinDeSemana()" [style.--hour-count]="rango().horasCount">
-            <!-- Esquina superior izquierda pegajosa -->
-            <div class="calendar-corner"></div>
-
-            <!-- Cabeceras de los días con la fecha debajo del nombre -->
-            @for (dia of columnasDias(); track dia.value; let i = $index) {
-              <div class="day-heading" [class.is-today]="dia.esHoy" [style.grid-column]="obtenerColumnaDia(i)">
-                <span class="day-name">{{ dia.short }}</span>
-                <span class="day-number">{{ dia.numero }}</span>
-              </div>
+          <!-- Carriles de cada día con tarjetas altas y atajos para Asistencias y Notas -->
+          @for (dia of columnasDias(); track dia.value; let i = $index) {
+          <div class="day-lane" [class.is-today]="dia.esHoy" [style.grid-column]="obtenerColumnaDia(i)"
+            [style.grid-row]="'2 / span ' + rango().horasCount">
+            @for (marca of rango().marcas; track marca) {
+            <span class="period-grid-line" [style.top.px]="posicionMarca(marca)" aria-hidden="true"></span>
+            }
+            <!-- Indicador de hora actual si el día es hoy -->
+            @if (dia.esHoy && estaEnRangoHorario()) {
+            <div class="now-indicator" [style.top.px]="posicionAhora()" title="Hora actual">
+              <span class="now-dot"></span>
+              <span class="now-line"></span>
+            </div>
             }
 
-            <!-- Eje de tiempo a la izquierda con horas legibles y destacadas -->
-            <div class="time-axis" [style.grid-row]="'2 / span ' + rango().horasCount">
-              @for (marca of rango().marcas; track marca; let first = $first; let last = $last) {
-                <span class="time-label" [class.first-hour-label]="first" [class.time-end-label]="last" [style.top.px]="posicionMarca(marca)">
-                  {{ formatearHora(marca) }}
+            @for (clase of dia.clases; track clase.id) {
+            <div [class]="'class-block ' + tonoClase(clase)" [class.has-eval]="!!evaluacionDeClase(clase, dia.fechaStr)"
+              [style.top.px]="posicionClase(clase)" [style.height.px]="altoClase(clase)">
+              <div class="class-header-text">
+                <strong class="class-title" [title]="clase.curso">{{ clase.curso }}</strong>
+                <span class="class-details">{{ clase.grado }} · Sec. {{ clase.seccion }}</span>
+              </div>
+
+              @if (evaluacionDeClase(clase, dia.fechaStr); as ev) {
+              <div class="class-eval-badge scheduled-today"
+                [title]="'Evaluación programada: ' + ev.nombre + ' (' + ev.tipoEvaluacion + ')'">
+                <i class="fa-solid fa-clipboard-check"></i>
+                <span class="eval-badge-text">
+                  <strong>{{ ev.nombre }}</strong> · {{ ev.tipoEvaluacion }}
                 </span>
+              </div>
+              } @else if (proximaEvaluacion(clase, dia.fechaStr); as prox) {
+              <div class="class-eval-badge scheduled-other"
+                [title]="'Evaluación de este curso programada para el ' + formatearFechaCorta(prox.fechaEvaluacion)">
+                <i class="fa-regular fa-calendar-check"></i>
+                <span class="eval-badge-text">
+                  Eval. prog: <strong>{{ prox.nombre }}</strong> ({{ formatearFechaCorta(prox.fechaEvaluacion) }})
+                </span>
+              </div>
               }
-              @if (semanaContieneHoy() && estaEnRangoHorario()) {
-                <div class="axis-time-marker" [style.top.px]="posicionAhora()" title="Hora actual">
-                  <span class="axis-marker-dot"></span>
-                </div>
-              }
-            </div>
 
-            <!-- Carriles de cada día con tarjetas altas y atajos para Asistencias y Notas -->
-            @for (dia of columnasDias(); track dia.value; let i = $index) {
-              <div class="day-lane" [class.is-today]="dia.esHoy" [style.grid-column]="obtenerColumnaDia(i)" [style.grid-row]="'2 / span ' + rango().horasCount">
-                @for (marca of rango().marcas; track marca) {
-                  <span class="period-grid-line" [style.top.px]="posicionMarca(marca)" aria-hidden="true"></span>
-                }
-                <!-- Indicador de hora actual si el día es hoy -->
-                @if (dia.esHoy && estaEnRangoHorario()) {
-                  <div class="now-indicator" [style.top.px]="posicionAhora()" title="Hora actual">
-                    <span class="now-dot"></span>
-                    <span class="now-line"></span>
-                  </div>
-                }
-
-                @for (clase of dia.clases; track clase.id) {
-                  <div [class]="'class-block ' + tonoClase(clase)"
-                    [style.top.px]="posicionClase(clase)"
-                    [style.height.px]="altoClase(clase)">
-                    <div class="class-header-text">
-                      <strong class="class-title" [title]="clase.curso">{{ clase.curso }}</strong>
-                      <span class="class-details">{{ clase.grado }} · Sec. {{ clase.seccion }}</span>
-                    </div>
-
-                    <div class="class-time-row">
-                      <small class="class-time">
-                        <i class="fa-regular fa-clock"></i>
-                        {{ limpiarHora(clase.horaInicio) }} – {{ limpiarHora(clase.horaFin) }}
-                      </small>
-                      @if (clase.bloquesContinuos > 1) {
-                        <span class="continuous-session-tag">Sesión continua · {{ clase.bloquesContinuos }} bloques</span>
-                      }
-                    </div>
-
-                    <!-- Atajos para ingresar asistencia o notas directamente -->
-                    @if (!seccionIdVista()) { <div class="class-block-actions">
-                      <button type="button" class="btn-card-action action-asistencia"
-                        (click)="abrirAsistencia(clase, dia.fechaStr)"
-                        title="Registrar asistencia para esta clase">
-                        <i class="fa-solid fa-user-check"></i>
-                        <span>Asistencia</span>
-                      </button>
-                      <button type="button" class="btn-card-action action-notas"
-                        (click)="abrirNotas(clase)"
-                        title="Cargar notas de este curso">
-                        <i class="fa-solid fa-pen-to-square"></i>
-                        <span>Notas</span>
-                      </button>
-                    </div> }
-                  </div>
+              <div class="class-time-row">
+                <small class="class-time">
+                  <i class="fa-regular fa-clock"></i>
+                  {{ limpiarHora(clase.horaInicio) }} – {{ limpiarHora(clase.horaFin) }}
+                </small>
+                @if (clase.bloquesContinuos > 1) {
+                <span class="continuous-session-tag">Sesión continua · {{ clase.bloquesContinuos }} bloques</span>
                 }
               </div>
+
+              <!-- Atajos para ingresar asistencia o notas directamente -->
+              @if (!seccionIdVista()) { <div class="class-block-actions">
+                <button type="button" class="btn-card-action action-asistencia"
+                  (click)="abrirAsistencia(clase, dia.fechaStr)" title="Registrar asistencia para esta clase">
+                  <i class="fa-solid fa-user-check"></i>
+                  <span>Asistencia</span>
+                </button>
+                <button type="button" class="btn-card-action action-notas" (click)="abrirNotas(clase)"
+                  title="Cargar notas de este curso">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                  <span>Notas</span>
+                </button>
+              </div> }
+            </div>
             }
-
-            <div class="recess-week-lane" [style.grid-column]="'2 / span 5'" [style.grid-row]="'2 / span ' + rango().horasCount" aria-label="Recreos de lunes a viernes">
-              @for (recreo of recreosVisibles(); track recreo.id) {
-                <div class="recess-week-band" [style.top.px]="posicionRecreo(recreo)" [style.height.px]="altoRecreo(recreo)"
-                  [title]="'Recreo · ' + limpiarHora(recreo.horaInicio) + '–' + limpiarHora(recreo.horaFin)">
-                  <strong>Recreo</strong>
-                  <small>{{ limpiarHora(recreo.horaInicio) }}–{{ limpiarHora(recreo.horaFin) }}</small>
-                </div>
-              }
-            </div>
           </div>
+          }
 
-          @if (!horarios().length) {
-            <div class="schedule-empty">
-              <div class="empty-icon"><i class="fa-regular fa-calendar-xmark"></i></div>
-              <h4>No tienes clases programadas</h4>
-              <p>No se encontraron clases para el período académico activo.</p>
+          <div class="recess-week-lane" [style.grid-column]="'2 / span 5'"
+            [style.grid-row]="'2 / span ' + rango().horasCount" aria-label="Recreos de lunes a viernes">
+            @for (recreo of recreosVisibles(); track recreo.id) {
+            <div class="recess-week-band" [style.top.px]="posicionRecreo(recreo)" [style.height.px]="altoRecreo(recreo)"
+              [title]="'Recreo · ' + limpiarHora(recreo.horaInicio) + '–' + limpiarHora(recreo.horaFin)">
+              <strong>Recreo</strong>
+              <small>{{ limpiarHora(recreo.horaInicio) }}–{{ limpiarHora(recreo.horaFin) }}</small>
             </div>
+            }
+          </div>
+          } @else {
+          <!-- Estado vacío dentro del calendario (mantiene los días arriba y no renderiza horas 8-9) -->
+          <div class="schedule-calendar-empty">
+            <div class="empty-icon"><i class="fa-regular fa-calendar-xmark"></i></div>
+            <h4>No tienes clases programadas</h4>
+            <p>No se encontraron clases para el período académico activo.</p>
+          </div>
           }
         </div>
-      </section>
+      </div>
+    </section>
     }
   </section>
 </app-shell>

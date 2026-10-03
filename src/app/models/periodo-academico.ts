@@ -8,6 +8,10 @@ export interface PeriodoAcademico {
   estado: string | null;
   duracionHoraPrimariaMinutos: number;
   duracionRecreoPrimariaMinutos: number;
+  horaInicioJornadaPrimaria: string;
+  horaFinJornadaPrimaria: string;
   duracionHoraSecundariaMinutos: number;
   duracionRecreoSecundariaMinutos: number;
+  horaInicioJornadaSecundaria: string;
+  horaFinJornadaSecundaria: string;
 }

@@ -1,19 +1,39 @@
 <app-shell>
   <section class="tutorada-page" [class.skeleton-mode]="mostrarSkeleton()">
     <!-- Cabecera Institucional Superior -->
-    <header class="card-head">
-      <div class="head-title-wrap">
-        <div class="head-icon">
-          <i class="fa-solid fa-users-rectangle"></i>
-        </div>
-        <div>
-          <div class="head-title-line">
-            <h2>Mi sección tutorada</h2>
-            @if (tutoria(); as tut) {
-              <span class="head-badge">{{ tut.grado }} "{{ tut.seccion }}" - {{ tut.nivel }}</span>
-            }
-          </div>
-          <p class="head-subtitle">{{ tutoriaIdRuta ? 'Panorama de rendimiento académico y asistencia de la sección' : 'Consulta el horario, las notas y la asistencia de cada sección' }}</p>
+    <header class="card-head detail-card-head">
+      <div class="head-left-col">
+        @if (tutoriaIdRuta) {
+          <a class="action-button secondary section-back-button" routerLink="/seccion-tutorada" title="Volver a mis secciones tutoradas">
+            <i class="fa-solid fa-arrow-left"></i><span>Volver</span>
+          </a>
+        }
+      </div>
+
+      <div class="section-title-centered">
+        <span class="panel-kicker">Acompañamiento y tutoría</span>
+        <h2>Mi sección tutorada</h2>
+        <div class="section-title-badges">
+          @if (tutoria(); as tut) {
+            <span class="meta-badge-chip">
+              <i class="fa-solid fa-graduation-cap"></i>
+              <span>{{ tut.grado }} "{{ tut.seccion }}"</span>
+            </span>
+            <span class="badge-level">{{ tut.nivel }}</span>
+            <span class="meta-badge-chip">
+              <i class="fa-regular fa-calendar-check"></i>
+              <span>Período {{ tut.periodoAcademico || '2026' }}</span>
+            </span>
+          } @else {
+            <span class="meta-badge-chip">
+              <i class="fa-regular fa-calendar-check"></i>
+              <span>Año académico · {{ currentYear }}</span>
+            </span>
+            <span class="meta-badge-chip">
+              <i class="fa-solid fa-users"></i>
+              <span>{{ tutoriasDisponibles().length }} secciones tutoradas</span>
+            </span>
+          }
         </div>
       </div>
 
@@ -46,11 +66,6 @@
             }
           </div>
         }
-
-        @if (tutoriaIdRuta) { <span class="period-informative-chip">
-          <i class="fa-regular fa-calendar-check"></i>
-          <span>Período {{ tutoria()?.periodoAcademico || '2026' }}</span>
-        </span> }
       </div>
     </header>
 
@@ -79,25 +94,27 @@
     }
 
     @if (!mostrarSkeleton() && !tutoriaIdRuta && tutoriasDisponibles().length) {
-      <section class="tutoria-section-grid" aria-label="Secciones tutoradas">
-        @for (item of tutoriasDisponibles(); track item.id) {
-          <article class="tutoria-section-card">
-            <div class="tutoria-card-main">
-              <span class="tutoria-level-tag">{{ item.nivel }}</span>
-              <h3>{{ item.grado }} · Sección {{ item.seccion }}</h3>
-              <p>Período {{ item.periodoAcademico }}</p>
-            </div>
-            <div class="tutoria-card-actions">
-              <button type="button" class="section-action secondary" (click)="verHorarioTutoria(item)">
-                <i class="fa-regular fa-calendar-days"></i><span>Ver horario</span>
-              </button>
-              <button type="button" class="section-action primary" (click)="verSeguimientoTutoria(item)">
-                <i class="fa-solid fa-chart-line"></i><span>Notas y asistencia</span>
-              </button>
-            </div>
-          </article>
-        }
-      </section>
+      <div class="cards-surface">
+        <section class="tutoria-section-grid" aria-label="Secciones tutoradas">
+          @for (item of tutoriasDisponibles(); track item.id) {
+            <article class="tutoria-section-card">
+              <div class="tutoria-card-main">
+                <span class="tutoria-level-tag">{{ item.nivel }}</span>
+                <h3>{{ item.grado }} · Sección {{ item.seccion }}</h3>
+                <p>Período {{ item.periodoAcademico }}</p>
+              </div>
+              <div class="tutoria-card-actions">
+                <button type="button" class="section-action secondary" (click)="verHorarioTutoria(item)">
+                  <i class="fa-regular fa-calendar-days"></i><span>Ver horario</span>
+                </button>
+                <button type="button" class="section-action primary" (click)="verSeguimientoTutoria(item)">
+                  <i class="fa-solid fa-chart-line"></i><span>Notas y asistencia</span>
+                </button>
+              </div>
+            </article>
+          }
+        </section>
+      </div>
     }
 
     <!-- Vista Principal Activa -->
@@ -348,17 +365,12 @@
         @if (modoVista() === 'matriz') {
           <div class="matrix-wrapper">
             @if (!resumenAcademico()?.cursos?.length) {
-              <div class="empty-state">
-                <i class="fa-solid fa-book-open"></i>
-                <p>No se encontraron cursos registrados para esta sección en el período actual.</p>
-              </div>
-            } @else if (alumnosFiltrados().length === 0) {
-              <div class="empty-state">
-                <i class="fa-solid fa-user-slash"></i>
-                <p>No se encontraron estudiantes que coincidan con los filtros aplicados.</p>
-                <button type="button" class="btn-reset" (click)="limpiarBusqueda(); setFiltroRiesgo('todos')">
-                  Limpiar filtros
-                </button>
+              <div class="empty-state-card">
+                <div class="empty-state-badge">
+                  <i class="fa-solid fa-book-open"></i>
+                </div>
+                <strong class="empty-state-title">Sin cursos registrados</strong>
+                <p class="empty-state-desc">No se encontraron cursos activos registrados para esta sección en el período actual.</p>
               </div>
             } @else {
               <div class="matrix-table-container">
@@ -505,11 +517,14 @@
         @if (modoVista() === 'fichas') {
           <div class="cards-view-wrapper">
             @if (alumnosFiltrados().length === 0) {
-              <div class="empty-state">
-                <i class="fa-solid fa-user-slash"></i>
-                <p>No se encontraron estudiantes que coincidan con los filtros aplicados.</p>
-                <button type="button" class="btn-reset" (click)="limpiarBusqueda(); setFiltroRiesgo('todos')">
-                  Limpiar filtros
+              <div class="empty-state-card">
+                <div class="empty-state-badge">
+                  <i class="fa-solid fa-user-slash"></i>
+                </div>
+                <strong class="empty-state-title">No se encontraron estudiantes</strong>
+                <p class="empty-state-desc">No hay estudiantes que coincidan con los filtros o búsqueda aplicados.</p>
+                <button type="button" class="empty-state-btn" (click)="limpiarBusqueda(); setFiltroRiesgo('todos')">
+                  <i class="fa-solid fa-rotate-left"></i> Limpiar filtros
                 </button>
               </div>
             } @else {

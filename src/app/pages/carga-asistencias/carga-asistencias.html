@@ -232,16 +232,17 @@
               </td>
             </tr>
             } @empty {
-            @if (!periodosEvaluacionPeriodo().length) {
-            <tr class="message-row">
-              <td colspan="3">
-                <div class="table-message neutral">
-                  <i class="fa-regular fa-folder-open"></i>
-                  <span>No hay períodos registrados para esta sección.</span>
+            <tr>
+              <td colspan="3" class="table-empty-cell">
+                <div class="table-empty-state">
+                  <div class="empty-state-badge">
+                    <i class="fa-solid fa-users-slash"></i>
+                  </div>
+                  <strong class="empty-state-title">No hay asistencias registradas</strong>
+                  <p class="empty-state-desc">No se encontraron alumnos para registrar asistencia en este período.</p>
                 </div>
               </td>
             </tr>
-            }
             }
           </tbody>
         </table>

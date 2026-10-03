@@ -4,6 +4,32 @@
       [message]="alertState().message" confirmText="Entendido" (confirm)="cerrarAlerta()" (cancel)="cerrarAlerta()"
       (dismiss)="cerrarAlerta()" />
 
+    @if (modalMotivoEdicionAbierto()) {
+    <div class="edit-reason-backdrop" (click)="cancelarMotivoEdicion()">
+      <section class="edit-reason-modal" role="dialog" aria-modal="true" aria-labelledby="editReasonTitle"
+        (click)="$event.stopPropagation()">
+        <div class="edit-reason-heading">
+          <span class="edit-reason-icon"><i class="fa-solid fa-pen-to-square"></i></span>
+          <div>
+            <h2 id="editReasonTitle">Motivo de la corrección</h2>
+            <p>Indica por qué necesitas corregir esta asistencia.</p>
+          </div>
+        </div>
+        <label for="motivoEdicion">Motivo</label>
+        <textarea id="motivoEdicion" name="motivoEdicion" rows="3" maxlength="500"
+          placeholder="Escribe el motivo (mínimo 5 caracteres)..." [ngModel]="motivoEdicion()"
+          (ngModelChange)="motivoEdicion.set($event)"></textarea>
+        <div class="edit-reason-footer">
+          <button type="button" class="edit-reason-cancel" (click)="cancelarMotivoEdicion()">Cancelar</button>
+          <button type="button" class="edit-reason-confirm" [disabled]="motivoEdicion().trim().length < 5"
+            (click)="confirmarMotivoEdicion()">
+            <i class="fa-solid fa-arrow-right"></i> Continuar
+          </button>
+        </div>
+      </section>
+    </div>
+    }
+
     <!-- 1. Encabezado unificado de página (solo para la agenda de sesiones) -->
     @if (vista() === 'agenda') {
     <header class="card-head">
@@ -128,10 +154,12 @@
         <!-- Contenedor scrollable de sesiones estirado a todo el ancho -->
         <div class="sessions-scroll-view">
           @if (!sesionesFiltradas().length) {
-          <div class="empty-state">
-            <i class="fa-regular fa-calendar-xmark"></i>
-            <h3>No hay sesiones programadas</h3>
-            <p>No se encontraron clases para el filtro o período seleccionado.</p>
+          <div class="empty-state-card">
+            <div class="empty-state-badge">
+              <i class="fa-regular fa-calendar-xmark"></i>
+            </div>
+            <strong class="empty-state-title">No hay sesiones programadas</strong>
+            <p class="empty-state-desc">No se encontraron clases para el filtro o período seleccionado.</p>
           </div>
           } @else {
           <div class="session-list">
@@ -230,10 +258,9 @@
         <!-- Encabezado Principal del Detalle de Sesión -->
         <div class="sheet-top-banner">
           <div class="sheet-title-row">
-            <button type="button" class="btn-back-nav" (click)="volverAgenda()"
-              title="Volver a la programación de clases">
+            <button type="button" class="action-button secondary section-back-button" (click)="volverAgenda()" title="Volver a la programación de clases">
               <i class="fa-solid fa-arrow-left"></i>
-              <span>Volver a Clases</span>
+              <span>Volver</span>
             </button>
 
             <div class="sheet-heading">
@@ -264,15 +291,6 @@
             </button>
             }
           </div>
-
-          @if (edicionHistorica()) {
-          <div class="attendance-edit-reason">
-            <label for="motivoEdicion"><i class="fa-solid fa-pen-nib"></i> Motivo de la corrección:</label>
-            <input id="motivoEdicion" type="text" maxlength="500" [ngModel]="motivoEdicion()"
-              (ngModelChange)="motivoEdicion.set($event)"
-              placeholder="Describe por qué se corrige esta asistencia..." />
-          </div>
-          }
 
           <!-- Resumen numérico KPI en tarjetas suaves sin bordes y con sombras sutiles -->
           <div class="kpi-strip">
@@ -307,16 +325,18 @@
         <div class="sheet-action-toolbar">
           <div class="bulk-group">
             <span class="bulk-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Marcar todos:</span>
-            <button type="button" class="btn-bulk btn-bulk-pres" [disabled]="soloLectura()"
+            <button type="button" class="btn-bulk btn-bulk-pres" [class.active]="todosMarcados('PRESENTE')"
+              [attr.aria-pressed]="todosMarcados('PRESENTE')" [disabled]="soloLectura()"
               (click)="marcarTodos('PRESENTE')">
-              <i class="fa-solid fa-check"></i> Presentes
+              <span class="bulk-checkbox"><i class="fa-solid fa-check"></i></span> Presentes
             </button>
-            <button type="button" class="btn-bulk btn-bulk-aus" [disabled]="soloLectura()"
+            <button type="button" class="btn-bulk btn-bulk-aus" [class.active]="todosMarcados('AUSENTE')"
+              [attr.aria-pressed]="todosMarcados('AUSENTE')" [disabled]="soloLectura()"
               (click)="marcarTodos('AUSENTE')">
-              <i class="fa-solid fa-xmark"></i> Ausentes
+              <span class="bulk-checkbox"><i class="fa-solid fa-xmark"></i></span> Ausentes
             </button>
             <button type="button" class="btn-bulk btn-bulk-reset" [disabled]="soloLectura()" (click)="limpiarTodos()">
-              <i class="fa-solid fa-rotate-left"></i> Limpiar
+              <span class="bulk-checkbox"><i class="fa-solid fa-rotate-left"></i></span> Limpiar
             </button>
           </div>
 
@@ -363,9 +383,10 @@
                   <div class="status-switches" role="radiogroup">
                     @for (estado of estados; track estado.value) {
                     <button type="button" class="switch-pill status-{{ estado.value.toLowerCase() }}"
-                      [class.active]="fila.estado === estado.value" [disabled]="soloLectura()"
+                      [class.active]="fila.estado === estado.value" role="radio"
+                      [attr.aria-checked]="fila.estado === estado.value" [disabled]="soloLectura()"
                       (click)="cambiarEstado(fila.matricula.id, estado.value)">
-                      <i [class]="estado.icon"></i>
+                      <span class="status-checkbox" aria-hidden="true"><i [class]="estado.icon"></i></span>
                       <span>{{ estado.label }}</span>
                     </button>
                     }
@@ -379,9 +400,19 @@
               </tr>
               } @empty {
               <tr>
-                <td colspan="4" class="empty-cell">
-                  <i class="fa-solid fa-users-slash"></i>
-                  <span>No se encontraron estudiantes para esta búsqueda.</span>
+                <td colspan="4" class="table-empty-cell">
+                  <div class="table-empty-state">
+                    <div class="empty-state-badge">
+                      <i class="fa-solid fa-users-slash"></i>
+                    </div>
+                    <strong class="empty-state-title">No se encontraron estudiantes</strong>
+                    <p class="empty-state-desc">No hay alumnos que coincidan con la búsqueda ingresada.</p>
+                    @if (busquedaEstudiante()) {
+                      <button type="button" class="empty-state-btn" (click)="limpiarBusquedaEstudiante()">
+                        <i class="fa-solid fa-rotate-left"></i> Limpiar búsqueda
+                      </button>
+                    }
+                  </div>
                 </td>
               </tr>
               }

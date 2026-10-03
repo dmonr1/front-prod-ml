@@ -35,6 +35,11 @@ export const routes: Routes = [
           )
       },
       {
+        path: 'gestion-estudiantil/periodo/:periodoId/seccion/:seccionId/evaluaciones',
+        loadComponent: () =>
+          import('./pages/evaluaciones-seccion/evaluaciones-seccion').then((m) => m.EvaluacionesSeccion)
+      },
+      {
         path: 'gestion-estudiantil/periodo/:periodoId/seccion/:seccionId',
         loadComponent: () =>
           import('./pages/alumnos-seccion/alumnos-seccion').then((m) => m.AlumnosSeccion)
@@ -92,16 +97,20 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/asignaciones-docente/asignaciones-docente').then(
             (m) => m.AsignacionesTutorias
-          )
+          ),
+        data: { vista: 'asignaciones' }
       },
       {
         path: 'tutorias-seccion',
-        redirectTo: 'asignaciones-tutorias',
-        pathMatch: 'full'
+        loadComponent: () =>
+          import('./pages/asignaciones-docente/asignaciones-docente').then(
+            (m) => m.AsignacionesTutorias
+          ),
+        data: { vista: 'tutorias' }
       },
       {
         path: 'asignaciones-tutorias',
-        redirectTo: 'asignaciones-docente',
+        redirectTo: 'tutorias-seccion',
         pathMatch: 'full'
       },
       {
@@ -125,6 +134,11 @@ export const routes: Routes = [
         path: 'mis-asignaciones/:asignacionId/asistencias',
         loadComponent: () =>
           import('./pages/carga-asistencias/carga-asistencias').then((m) => m.CargaAsistencias)
+      },
+      {
+        path: 'mis-asignaciones/periodo/:periodoId/seccion/:seccionId/evaluaciones',
+        loadComponent: () =>
+          import('./pages/evaluaciones-seccion/evaluaciones-seccion').then((m) => m.EvaluacionesSeccion)
       },
       {
         path: 'asistencias',

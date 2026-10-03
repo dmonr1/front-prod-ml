@@ -26,6 +26,14 @@ export class CursoService {
     return this.http.post<Curso>(this.api, payload);
   }
 
+  actualizar(cursoId: number, payload: CursoPayload): Observable<Curso> {
+    return this.http.put<Curso>(`${this.api}/${cursoId}`, payload);
+  }
+
+  eliminar(cursoId: number): Observable<void> {
+    return this.http.delete<void>(`${this.api}/${cursoId}`);
+  }
+
   actualizarEstado(cursoId: number, activo: boolean): Observable<Curso> {
     return this.http.patch<Curso>(`${this.api}/${cursoId}/estado`, null, {
       params: { activa: String(activo) }

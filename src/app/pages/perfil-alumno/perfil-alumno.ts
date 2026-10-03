@@ -1,4 +1,4 @@
-import { DecimalPipe } from '@angular/common';
+import { DecimalPipe, LowerCasePipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
@@ -54,7 +54,7 @@ interface PeriodoPerfilItem {
 @Component({
   selector: 'app-perfil-alumno',
   standalone: true,
-  imports: [Shell, RouterLink, DecimalPipe],
+  imports: [Shell, RouterLink, DecimalPipe, LowerCasePipe],
   templateUrl: './perfil-alumno.html',
   styleUrl: './perfil-alumno.scss'
 })
@@ -65,9 +65,42 @@ export class PerfilAlumno {
   private readonly periodoEvaluacionService = inject(PeriodoEvaluacionService);
 
   readonly alumnoId = Number(this.route.snapshot.paramMap.get('alumnoId'));
-  readonly periodoEvaluacionId = Number(this.route.snapshot.queryParamMap.get('periodoEvaluacionId'));
+  readonly from = this.route.snapshot.queryParamMap.get('from');
+  readonly tutoriaId = this.route.snapshot.queryParamMap.get('tutoriaId');
+  readonly periodoEvaluacionIdTermino = this.route.snapshot.queryParamMap.get('periodoEvaluacionIdTermino');
+  readonly corteSeguimientoId = this.route.snapshot.queryParamMap.get('corteSeguimientoId');
+  readonly periodoEvaluacionId =
+    Number(this.route.snapshot.queryParamMap.get('periodoEvaluacionId')) ||
+    Number(this.route.snapshot.queryParamMap.get('corteSeguimientoId')) ||
+    Number(this.route.snapshot.queryParamMap.get('periodoEvaluacionIdTermino')) ||
+    0;
   readonly seccionId = Number(this.route.snapshot.queryParamMap.get('seccionId'));
   readonly vista = this.route.snapshot.queryParamMap.get('vista');
+
+  readonly enlaceVolver = computed(() => {
+    if (this.from === 'seccion-tutorada') {
+      return this.tutoriaId ? ['/mis-asignaciones', 'tutorias', this.tutoriaId] : ['/seccion-tutorada'];
+    }
+    return ['/predicciones'];
+  });
+
+  readonly queryParamsVolver = computed(() => {
+    if (this.from === 'seccion-tutorada') {
+      return {
+        periodoEvaluacionId: this.periodoEvaluacionId || null
+      };
+    }
+    return {
+      periodoEvaluacionIdTermino: this.periodoEvaluacionIdTermino || null,
+      corteSeguimientoId: this.corteSeguimientoId || null,
+      seccionId: this.seccionId || null,
+      vista: this.vista || null
+    };
+  });
+
+  readonly textoVolver = computed(() => {
+    return this.from === 'seccion-tutorada' ? 'Volver a sección tutorada' : 'Volver a predicciones';
+  });
 
   readonly cargando = signal(true);
   readonly error = signal<string | null>(null);
@@ -95,6 +128,31 @@ export class PerfilAlumno {
     }
 
     return actual;
+  });
+
+  readonly prediccionesUnicas = computed<PrediccionDetalleVista[]>(() => {
+    const list = this.predicciones();
+    const periodos = this.periodosEvaluacion();
+    const seen = new Set<string>();
+    const unicas: PrediccionDetalleVista[] = [];
+
+    for (const item of list) {
+      const periodoObj = periodos.find((p) => p.id === item.periodoEvaluacionId);
+      const periodoNombre = item.nombrePeriodoEvaluacion
+        || periodoObj?.nombre
+        || (item.numeroPeriodoEvaluacion ? `Período ${item.numeroPeriodoEvaluacion}` : 'General');
+
+      const key = `${item.cursoId ?? 'global'}-${item.periodoEvaluacionId ?? 'sin_periodo'}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        unicas.push({
+          ...item,
+          nombrePeriodoEvaluacion: periodoNombre
+        });
+      }
+    }
+
+    return unicas;
   });
 
   readonly prediccionesGlobales = computed(() =>
@@ -308,14 +366,14 @@ export class PerfilAlumno {
   readonly svgEvolucion = computed(() => {
     const puntos = this.evolucionRiesgo();
     if (!puntos.length) {
-      return { path: '', points: [] as Array<{ x: number; y: number; valor: number; etiqueta: string }> };
+      return { path: '', areaPath: '', points: [] as Array<{ x: number; y: number; valor: number | null; etiqueta: string }>, validCount: 0 };
     }
 
     const width = 360;
-    const height = 220;
-    const paddingX = 38;
-    const paddingTop = 18;
-    const paddingBottom = 24;
+    const height = 180;
+    const paddingX = 36;
+    const paddingTop = 20;
+    const paddingBottom = 26;
     const stepX = puntos.length > 1 ? (width - paddingX * 2) / (puntos.length - 1) : 0;
 
     const mapped = puntos.map((punto, index) => {
@@ -326,12 +384,18 @@ export class PerfilAlumno {
       return { ...punto, x, y };
     });
 
-    const path = mapped
-      .filter((point): point is { etiqueta: string; valor: number; x: number; y: number } => point.valor != null && point.y != null)
-      .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`)
-      .join(' ');
+    const validPoints = mapped.filter((point): point is { etiqueta: string; valor: number; x: number; y: number } => point.valor != null && point.y != null);
 
-    return { path, points: mapped };
+    let path = '';
+    let areaPath = '';
+    const baselineY = height - paddingBottom;
+
+    if (validPoints.length > 1) {
+      path = validPoints.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ');
+      areaPath = `${path} L ${validPoints[validPoints.length - 1].x} ${baselineY} L ${validPoints[0].x} ${baselineY} Z`;
+    }
+
+    return { path, areaPath, points: mapped, validCount: validPoints.length };
   });
 
   readonly recomendacionesPersonalizadas = computed<RecomendacionPersonalizada[]>(() => {
@@ -450,6 +514,12 @@ export class PerfilAlumno {
       nivel === 'ALTO' ? '#ef4444' : nivel === 'MEDIO' ? '#f59e0b' : '#10b981';
 
     return `background: conic-gradient(${color} 0 ${porcentaje}%, #e7eef9 ${porcentaje}% 100%);`;
+  }
+
+  calcularOffsetCirculo(puntaje: number): number {
+    const p = Math.max(0, Math.min(100, puntaje || 0));
+    const circumference = 339.292; // 2 * Math.PI * 54
+    return circumference * (1 - p / 100);
   }
 
   obtenerInicialPeriodo(nombre: string | null | undefined): string {

@@ -28,6 +28,13 @@ export class CustomAlertComponent {
   readonly rendered = signal(false);
   readonly closing = signal(false);
 
+  // Estados visuales activos (se congelan durante la animación de salida para evitar que cambien a info/vacío al cerrar)
+  readonly activeType = signal<CustomAlertType>('info');
+  readonly activeTitle = signal('');
+  readonly activeMessage = signal('');
+  readonly activeConfirmText = signal<string | null>('Entendido');
+  readonly activeCancelText = signal<string | null>(null);
+
   /**
    * Sanitiza el mensaje antes de mostrarlo, asegurando que cadenas técnicas
    * como "400 BAD_REQUEST", excepciones SQL o errores HTTP crudos sean
@@ -49,27 +56,37 @@ export class CustomAlertComponent {
 
   constructor() {
     effect(() => {
-      const open = this.open();
+      const isOpen = this.open();
+      const currentType = this.type();
+      const currentTitle = this.title();
+      const currentMessage = this.displayMessage();
+      const currentConfirm = this.effectiveConfirmText();
+      const currentCancel = this.cancelText();
 
       this.clearExitTimeout();
 
-      if (open) {
+      if (isOpen) {
+        this.activeType.set(currentType);
+        this.activeTitle.set(currentTitle);
+        this.activeMessage.set(currentMessage);
+        this.activeConfirmText.set(currentConfirm);
+        this.activeCancelText.set(currentCancel);
         this.rendered.set(true);
         this.closing.set(false);
       } else if (this.rendered()) {
+        // Al cerrar, MANTENER intactos activeType, activeTitle, activeMessage, etc.
+        // para que durante los 180ms de animación de salida la tarjeta no mute a 'info' ni a vacío.
         this.closing.set(true);
         this.exitTimeoutId = setTimeout(() => {
           this.rendered.set(false);
           this.closing.set(false);
         }, CustomAlertComponent.EXIT_MS);
       }
-      // Nota: El temporizador de auto-cierre fue eliminado deliberadamente
-      // para que el pop-up nunca desaparezca solo; debe cerrarse mediante 'Entendido' o 'X'.
     });
   }
 
   iconClass(): string {
-    switch (this.type()) {
+    switch (this.activeType()) {
       case 'success':
         return 'fa-solid fa-circle-check';
       case 'error':
@@ -82,7 +99,7 @@ export class CustomAlertComponent {
   }
 
   hasActions(): boolean {
-    return Boolean(this.cancelText() || this.effectiveConfirmText());
+    return Boolean(this.activeCancelText() || this.activeConfirmText());
   }
 
   onConfirm(): void {

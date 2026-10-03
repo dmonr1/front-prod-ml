@@ -1,7 +1,7 @@
 <app-shell>
   <section class="management-card">
     <div class="card-head">
-      <div class="panel-head">
+      <div class="panel-head enrollment-page-title">
         <span class="panel-kicker">Configuración operativa</span>
         <h2>Matrículas por período</h2>
         <p>Registra alumnos dentro del período académico activo y consulta la lista oficial de matriculados.</p>
@@ -130,13 +130,6 @@
               <span>{{ errorMatriculas() }}</span>
             </div>
           </ng-container>
-        } @else if (!matriculas().length) {
-          <ng-container>
-            <div class="table-state">
-              <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-              <span>No hay alumnos matriculados en este período con el filtro actual.</span>
-            </div>
-          </ng-container>
         } @else {
           <div class="table-scroll">
             <table class="app-table">
@@ -150,7 +143,20 @@
                 </tr>
               </thead>
               <tbody>
-                @for (matricula of matriculas(); track matricula.id) {
+                @if (!matriculas().length) {
+                  <tr>
+                    <td colspan="5" class="table-empty-cell">
+                      <div class="table-empty-state">
+                        <div class="empty-state-badge">
+                          <i class="fa-solid fa-graduation-cap"></i>
+                        </div>
+                        <strong class="empty-state-title">No hay alumnos matriculados</strong>
+                        <p class="empty-state-desc">No se encontraron matrículas en este período con el filtro seleccionado.</p>
+                      </div>
+                    </td>
+                  </tr>
+                } @else {
+                  @for (matricula of matriculas(); track matricula.id) {
                   <tr>
                     <td>
                       <strong>{{ matricula.alumnoNombreCompleto }}</strong>
@@ -164,6 +170,7 @@
                     <td>{{ matricula.fechaMatricula }}</td>
                     <td><span class="status-badge active">MATRICULADO</span></td>
                   </tr>
+                }
                 }
               </tbody>
             </table>
@@ -218,11 +225,6 @@
             <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
             <span>{{ errorAlumnos() }}</span>
           </div>
-        } @else if (!alumnosModalFiltrados().length) {
-          <div class="table-state">
-            <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-            <span>No hay alumnos disponibles con esa búsqueda para este período.</span>
-          </div>
         } @else {
           <div class="table-scroll modal-table">
             <table class="app-table">
@@ -230,13 +232,27 @@
                 <tr><th>Alumno</th><th>Código</th><th>Documento</th><th>Estado</th></tr>
               </thead>
               <tbody>
-                @for (alumno of alumnosModalFiltrados(); track alumno.id) {
-                  <tr class="selectable-row" (click)="seleccionarAlumno(alumno)">
-                    <td>{{ formatearAlumno(alumno) }}</td>
-                    <td>{{ alumno.codigo }}</td>
-                    <td>{{ alumno.tipoDocumentoNombre }} {{ alumno.numeroDocumento || 'Sin documento' }}</td>
-                    <td><span class="status-badge active">{{ alumno.estado || 'ACTIVO' }}</span></td>
+                @if (!alumnosModalFiltrados().length) {
+                  <tr>
+                    <td colspan="4" class="table-empty-cell">
+                      <div class="table-empty-state">
+                        <div class="empty-state-badge">
+                          <i class="fa-solid fa-user-slash"></i>
+                        </div>
+                        <strong class="empty-state-title">No hay alumnos disponibles</strong>
+                        <p class="empty-state-desc">No se encontraron alumnos con esa búsqueda para este período.</p>
+                      </div>
+                    </td>
                   </tr>
+                } @else {
+                  @for (alumno of alumnosModalFiltrados(); track alumno.id) {
+                    <tr class="selectable-row" (click)="seleccionarAlumno(alumno)">
+                      <td>{{ formatearAlumno(alumno) }}</td>
+                      <td>{{ alumno.codigo }}</td>
+                      <td>{{ alumno.tipoDocumentoNombre }} {{ alumno.numeroDocumento || 'Sin documento' }}</td>
+                      <td><span class="status-badge active">{{ alumno.estado || 'ACTIVO' }}</span></td>
+                    </tr>
+                  }
                 }
               </tbody>
             </table>
@@ -296,11 +312,6 @@
             <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
             <span>{{ errorSecciones() }}</span>
           </div>
-        } @else if (!seccionesModalFiltradas().length) {
-          <div class="table-state">
-            <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-            <span>No se encontraron secciones con esa búsqueda.</span>
-          </div>
         } @else {
           <div class="table-scroll modal-table">
             <table class="app-table">
@@ -308,13 +319,27 @@
                 <tr><th>Sección</th><th>Grado</th><th>Nivel</th><th>Capacidad</th></tr>
               </thead>
               <tbody>
-                @for (seccion of seccionesModalFiltradas(); track seccion.id) {
-                  <tr class="selectable-row" (click)="seleccionarSeccion(seccion)">
-                    <td>{{ seccion.nombre }}</td>
-                    <td>{{ seccion.gradoNombre || 'Sin grado' }}</td>
-                    <td>{{ seccion.nivelNombre || 'Sin nivel' }}</td>
-                    <td>{{ seccion.capacidad ?? 'No definida' }}</td>
+                @if (!seccionesModalFiltradas().length) {
+                  <tr>
+                    <td colspan="4" class="table-empty-cell">
+                      <div class="table-empty-state">
+                        <div class="empty-state-badge">
+                          <i class="fa-solid fa-chalkboard"></i>
+                        </div>
+                        <strong class="empty-state-title">No se encontraron secciones</strong>
+                        <p class="empty-state-desc">No hay secciones en este nivel que coincidan con la búsqueda.</p>
+                      </div>
+                    </td>
                   </tr>
+                } @else {
+                  @for (seccion of seccionesModalFiltradas(); track seccion.id) {
+                    <tr class="selectable-row" (click)="seleccionarSeccion(seccion)">
+                      <td>{{ seccion.nombre }}</td>
+                      <td>{{ seccion.gradoNombre || 'Sin grado' }}</td>
+                      <td>{{ seccion.nivelNombre || 'Sin nivel' }}</td>
+                      <td>{{ seccion.capacidad ?? 'No definida' }}</td>
+                    </tr>
+                  }
                 }
               </tbody>
             </table>
@@ -369,11 +394,6 @@
             <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
             <span>{{ errorPeriodos() }}</span>
           </div>
-        } @else if (!periodosModalFiltrados().length) {
-          <div class="table-state">
-            <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-            <span>No se encontraron períodos académicos con esa búsqueda.</span>
-          </div>
         } @else {
           <div class="table-scroll modal-table">
             <table class="app-table">
@@ -381,13 +401,27 @@
                 <tr><th>Período</th><th>Año</th><th>Fechas</th><th>Estado</th></tr>
               </thead>
               <tbody>
-                @for (periodo of periodosModalFiltrados(); track periodo.id) {
-                  <tr class="selectable-row" (click)="seleccionarPeriodo(periodo)">
-                    <td>{{ periodo.nombre }}</td>
-                    <td>{{ periodo.anio }}</td>
-                    <td>{{ periodo.fechaInicio }} - {{ periodo.fechaFin }}</td>
-                    <td><span class="status-badge active">{{ periodo.estado || 'ACTIVO' }}</span></td>
+                @if (!periodosModalFiltrados().length) {
+                  <tr>
+                    <td colspan="4" class="table-empty-cell">
+                      <div class="table-empty-state">
+                        <div class="empty-state-badge">
+                          <i class="fa-solid fa-calendar-xmark"></i>
+                        </div>
+                        <strong class="empty-state-title">No se encontraron períodos</strong>
+                        <p class="empty-state-desc">No hay períodos académicos que coincidan con la búsqueda.</p>
+                      </div>
+                    </td>
                   </tr>
+                } @else {
+                  @for (periodo of periodosModalFiltrados(); track periodo.id) {
+                    <tr class="selectable-row" (click)="seleccionarPeriodo(periodo)">
+                      <td>{{ periodo.nombre }}</td>
+                      <td>{{ periodo.anio }}</td>
+                      <td>{{ periodo.fechaInicio }} - {{ periodo.fechaFin }}</td>
+                      <td><span class="status-badge active">{{ periodo.estado || 'ACTIVO' }}</span></td>
+                    </tr>
+                  }
                 }
               </tbody>
             </table>

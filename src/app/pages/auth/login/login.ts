@@ -106,89 +106,89 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
   readonly previewData = computed(() =>
     this.previewMode() === 'global'
       ? {
-          headerTitle: 'Seguimiento global por alumno',
-          switchLabel: 'Riesgo global',
-          chips: ['PERIODO I', '1RO PRIMARIA A'],
-          kpis: [
-            { label: 'Alumnos evaluados', icon: 'users', tone: 'blue', valueWidth: '22%', detailWidth: '58%' },
-            { label: 'Casos prioritarios', icon: 'target', tone: 'amber', valueWidth: '18%', detailWidth: '66%' },
-            { label: 'Riesgo promedio', icon: 'chart', tone: 'blue', valueWidth: '30%', detailWidth: '72%' },
-            { label: 'Riesgo alto', icon: 'alert', tone: 'rose', valueWidth: '16%', detailWidth: '52%' }
-          ],
-          chart: {
-            title: 'Alumnos por nivel de riesgo',
-            total: '6',
-            segments: {
-              high: 50,
-              medium: 0,
-              low: 50
-            },
-            legend: [
-              { label: 'Riesgo alto', value: '50%', tone: 'high' },
-              { label: 'Riesgo medio', value: '0%', tone: 'medium' },
-              { label: 'Riesgo bajo', value: '50%', tone: 'low' }
-            ]
+        headerTitle: 'Seguimiento global por alumno',
+        switchLabel: 'Riesgo global',
+        chips: ['PERIODO I', '1RO PRIMARIA A'],
+        kpis: [
+          { label: 'Alumnos evaluados', icon: 'users', tone: 'blue', valueWidth: '22%', detailWidth: '58%' },
+          { label: 'Casos prioritarios', icon: 'target', tone: 'amber', valueWidth: '18%', detailWidth: '66%' },
+          { label: 'Riesgo promedio', icon: 'chart', tone: 'blue', valueWidth: '30%', detailWidth: '72%' },
+          { label: 'Riesgo alto', icon: 'alert', tone: 'rose', valueWidth: '16%', detailWidth: '52%' }
+        ],
+        chart: {
+          title: 'Alumnos por nivel de riesgo',
+          total: '6',
+          segments: {
+            high: 50,
+            medium: 0,
+            low: 50
           },
-          rows: [
-            { risk: 'BAJO', tone: 'low', failure: '3%', nameWidth: '72%' },
-            { risk: 'ALTO', tone: 'high', failure: '77%', nameWidth: '64%' },
-            { risk: 'MEDIO', tone: 'medium', failure: '39%', nameWidth: '58%' },
-            { risk: 'BAJO', tone: 'low', failure: '8%', nameWidth: '68%' },
-            { risk: 'ALTO', tone: 'high', failure: '62%', nameWidth: '54%' }
-          ],
-          sideTitle: 'Riesgo global',
-          sideMetrics: [
-            { label: 'Riesgo promedio de fracaso', valueWidth: '26%' },
-            { label: 'Asistencia promedio', valueWidth: '22%' },
-            { label: 'Meta de asistencia del periodo', valueWidth: '18%' },
-            { label: 'Casos prioritarios', valueWidth: '20%' },
-            { label: 'Riesgo alto', valueWidth: '24%' },
-            { label: 'Inasistencias', valueWidth: '18%' },
-            { label: 'Clases programadas', valueWidth: '22%' }
+          legend: [
+            { label: 'Riesgo alto', value: '50%', tone: 'high' },
+            { label: 'Riesgo medio', value: '0%', tone: 'medium' },
+            { label: 'Riesgo bajo', value: '50%', tone: 'low' }
           ]
-        }
+        },
+        rows: [
+          { risk: 'BAJO', tone: 'low', failure: '3%', nameWidth: '72%' },
+          { risk: 'ALTO', tone: 'high', failure: '77%', nameWidth: '64%' },
+          { risk: 'MEDIO', tone: 'medium', failure: '39%', nameWidth: '58%' },
+          { risk: 'BAJO', tone: 'low', failure: '8%', nameWidth: '68%' },
+          { risk: 'ALTO', tone: 'high', failure: '62%', nameWidth: '54%' }
+        ],
+        sideTitle: 'Riesgo global',
+        sideMetrics: [
+          { label: 'Riesgo promedio de fracaso', valueWidth: '26%' },
+          { label: 'Asistencia promedio', valueWidth: '22%' },
+          { label: 'Meta de asistencia del periodo', valueWidth: '18%' },
+          { label: 'Casos prioritarios', valueWidth: '20%' },
+          { label: 'Riesgo alto', valueWidth: '24%' },
+          { label: 'Inasistencias', valueWidth: '18%' },
+          { label: 'Clases programadas', valueWidth: '22%' }
+        ]
+      }
       : {
-          headerTitle: 'Seguimiento focalizado por curso',
-          switchLabel: 'Riesgo por curso',
-          chips: ['PERIODO I', '1RO PRIMARIA A'],
-          kpis: [
-            { label: 'Curso seleccionado', icon: 'book', tone: 'blue', valueWidth: '28%', detailWidth: '58%' },
-            { label: 'Alumnos evaluados', icon: 'users-group', tone: 'blue', valueWidth: '18%', detailWidth: '56%' },
-            { label: 'Riesgo promedio', icon: 'chart', tone: 'amber', valueWidth: '26%', detailWidth: '68%' },
-            { label: 'Riesgo alto', icon: 'alert', tone: 'rose', valueWidth: '14%', detailWidth: '48%' }
-          ],
-          chart: {
-            title: 'Cursos por nivel de riesgo',
-            total: '6',
-            segments: {
-              high: 33,
-              medium: 17,
-              low: 50
-            },
-            legend: [
-              { label: 'Riesgo alto', value: '33%', tone: 'high' },
-              { label: 'Riesgo medio', value: '17%', tone: 'medium' },
-              { label: 'Riesgo bajo', value: '50%', tone: 'low' }
-            ]
+        headerTitle: 'Seguimiento focalizado por curso',
+        switchLabel: 'Riesgo por curso',
+        chips: ['PERIODO I', '1RO PRIMARIA A'],
+        kpis: [
+          { label: 'Curso seleccionado', icon: 'book', tone: 'blue', valueWidth: '28%', detailWidth: '58%' },
+          { label: 'Alumnos evaluados', icon: 'users-group', tone: 'blue', valueWidth: '18%', detailWidth: '56%' },
+          { label: 'Riesgo promedio', icon: 'chart', tone: 'amber', valueWidth: '26%', detailWidth: '68%' },
+          { label: 'Riesgo alto', icon: 'alert', tone: 'rose', valueWidth: '14%', detailWidth: '48%' }
+        ],
+        chart: {
+          title: 'Cursos por nivel de riesgo',
+          total: '6',
+          segments: {
+            high: 33,
+            medium: 17,
+            low: 50
           },
-          rows: [
-            { risk: 'BAJO', tone: 'low', failure: '8%', nameWidth: '70%' },
-            { risk: 'ALTO', tone: 'high', failure: '94%', nameWidth: '62%' },
-            { risk: 'MEDIO', tone: 'medium', failure: '28%', nameWidth: '56%' },
-            { risk: 'BAJO', tone: 'low', failure: '15%', nameWidth: '66%' },
-            { risk: 'MEDIO', tone: 'medium', failure: '44%', nameWidth: '60%' }
-          ],
-          sideTitle: 'Riesgo por curso',
-          sideMetrics: [
-            { label: 'Riesgo promedio de fracaso', valueWidth: '22%' },
-            { label: 'Asistencia promedio', valueWidth: '24%' },
-            { label: 'Meta de asistencia del periodo', valueWidth: '18%' },
-            { label: 'Casos prioritarios', valueWidth: '26%' },
-            { label: 'Riesgo alto', valueWidth: '20%' },
-            { label: 'Inasistencias', valueWidth: '18%' },
-            { label: 'Clases programadas', valueWidth: '24%' }
+          legend: [
+            { label: 'Riesgo alto', value: '33%', tone: 'high' },
+            { label: 'Riesgo medio', value: '17%', tone: 'medium' },
+            { label: 'Riesgo bajo', value: '50%', tone: 'low' }
           ]
-        }
+        },
+        rows: [
+          { risk: 'BAJO', tone: 'low', failure: '8%', nameWidth: '70%' },
+          { risk: 'ALTO', tone: 'high', failure: '94%', nameWidth: '62%' },
+          { risk: 'MEDIO', tone: 'medium', failure: '28%', nameWidth: '56%' },
+          { risk: 'BAJO', tone: 'low', failure: '15%', nameWidth: '66%' },
+          { risk: 'MEDIO', tone: 'medium', failure: '44%', nameWidth: '60%' }
+        ],
+        sideTitle: 'Riesgo por curso',
+        sideMetrics: [
+          { label: 'Riesgo promedio de fracaso', valueWidth: '22%' },
+          { label: 'Asistencia promedio', valueWidth: '24%' },
+          { label: 'Meta de asistencia del periodo', valueWidth: '18%' },
+          { label: 'Casos prioritarios', valueWidth: '26%' },
+          { label: 'Riesgo alto', valueWidth: '20%' },
+          { label: 'Inasistencias', valueWidth: '18%' },
+          { label: 'Clases programadas', valueWidth: '24%' }
+        ]
+      }
   );
 
   ngAfterViewInit(): void {

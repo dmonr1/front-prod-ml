@@ -12,6 +12,23 @@
   opacity: 0.78;
 }
 
+.date-picker-inline {
+  position: static;
+  width: 100%;
+
+  .date-picker-panel {
+    position: static;
+    top: auto;
+    left: auto;
+    width: 100%;
+    animation: none;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    background: transparent;
+  }
+}
+
 .date-picker-trigger {
   display: flex;
   align-items: center;

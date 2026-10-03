@@ -46,4 +46,8 @@ export class AsignacionAcademicaService {
       }
     });
   }
+
+  actualizar(asignacionId: number, payload: AsignacionDocentePayload): Observable<AsignacionDocente> {
+    return this.http.put<AsignacionDocente>(`${this.api}/asignaciones-docente/${asignacionId}`, payload);
+  }
 }

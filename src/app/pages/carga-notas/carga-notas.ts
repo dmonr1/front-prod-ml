@@ -1,15 +1,11 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
 import { CustomAlertComponent, CustomAlertType } from '../../components/custom-alert/custom-alert';
 import { DatePickerComponent } from '../../components/date-picker/date-picker';
 import { Shell } from '../../layouts/shell/shell';
 import { AsignacionDocente } from '../../models/asignacion';
-import {
-  ConfiguracionEvaluacionCursoDetalle,
-  ConfiguracionEvaluacionCursoItem
-} from '../../models/configuracion-evaluacion-curso';
 import { PeriodoEvaluacion } from '../../models/periodo-evaluacion';
 import { DetalleNotaEvaluacion, Evaluacion } from '../../models/evaluacion';
 import { Matricula } from '../../models/matricula';
@@ -18,7 +14,6 @@ import { AuthService } from '../../services/auth/auth.service';
 import { AsignacionAcademicaService } from '../../services/asignaciones/asignacion-academica.service';
 import { PeriodoEvaluacionService } from '../../services/academico/periodo-evaluacion.service';
 import { MatriculaService } from '../../services/academico/matricula.service';
-import { ConfiguracionEvaluacionCursoService } from '../../services/evaluacion/configuracion-evaluacion-curso.service';
 import { EvaluacionService } from '../../services/evaluacion/evaluacion.service';
 import { formatearMensajeError } from '../../utils/error-formatter';
 
@@ -35,11 +30,7 @@ interface AlertState {
   confirmText: string | null;
   cancelText: string | null;
   autoCloseMs: number | null;
-  action: 'planificar-fechas' | 'configurar-estructura' | null;
-}
-
-interface ConfiguracionEvaluacionEditable extends ConfiguracionEvaluacionCursoItem {
-  cantidadActual: number;
+  action: 'planificar-fechas' | 'confirmar-guardar-notas' | 'abrir-planificacion' | null;
 }
 
 interface SemanaPlanificacionEvaluaciones {
@@ -50,8 +41,6 @@ interface SemanaPlanificacionEvaluaciones {
   evaluaciones: Evaluacion[];
 }
 
-type PanelConfiguracionEvaluaciones = 'fechas' | 'estructura';
-
 @Component({
   selector: 'app-carga-notas',
   imports: [Shell, RouterLink, FormsModule, CustomAlertComponent, DatePickerComponent],
@@ -60,13 +49,13 @@ type PanelConfiguracionEvaluaciones = 'fechas' | 'estructura';
 })
 export class CargaNotas implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   private readonly asignacionService = inject(AsignacionAcademicaService);
   private readonly periodoAcademicoService = inject(PeriodoAcademicoService);
   private readonly periodoEvaluacionService = inject(PeriodoEvaluacionService);
   private readonly matriculaService = inject(MatriculaService);
   private readonly evaluacionService = inject(EvaluacionService);
-  private readonly configuracionCursoService = inject(ConfiguracionEvaluacionCursoService);
 
   readonly asignacionId = Number(this.route.snapshot.paramMap.get('asignacionId'));
   readonly currentYear = new Date().getFullYear();
@@ -88,22 +77,45 @@ export class CargaNotas implements OnInit {
   readonly periodosEvaluacion = signal<PeriodoEvaluacion[]>([]);
   readonly periodoEvaluacionSeleccionadoId = signal<number | null>(null);
   readonly evaluaciones = signal<Evaluacion[]>([]);
-  readonly guardandoFechaEvaluacion = signal<number | null>(null);
   readonly matriculas = signal<Matricula[]>([]);
   readonly filasNotas = signal<NotaFila[]>([]);
   readonly notasPorEvaluacion = signal<Record<number, DetalleNotaEvaluacion[]>>({});
   readonly mostrarConfiguracionEvaluaciones = signal(false);
-  readonly panelConfiguracionEvaluaciones = signal<PanelConfiguracionEvaluaciones>('fechas');
-  readonly evaluacionFechaSeleccionadaId = signal<number | null>(null);
-  readonly cargandoConfiguracion = signal(false);
+  readonly fechasEditables = signal<Record<string, string>>({});
   readonly guardandoConfiguracion = signal(false);
-  readonly errorConfiguracion = signal<string | null>(null);
-  readonly detalleConfiguracion = signal<ConfiguracionEvaluacionCursoDetalle | null>(null);
-  readonly configuracionesEditables = signal<ConfiguracionEvaluacionEditable[]>([]);
+  readonly evaluacionDatePickerAbiertaId = signal<number | null>(null);
   private readonly autoSaveTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private readonly autoSaveInFlight = new Map<string, string>();
   private readonly autoSavePending = new Map<string, { matriculaId: number; evaluacionId: number; valor: string }>();
   private readonly periodosProgramacionRevisada = new Set<number>();
+  private readonly modificacionesLocales = new Map<number, string>();
+
+  obtenerCreadoPor(evaluacion: Evaluacion): string {
+    const raw = evaluacion as any;
+    return (
+      evaluacion.creadoPor ||
+      raw?.creado_por ||
+      raw?.createdBy ||
+      raw?.usuarioCreacion ||
+      raw?.usuarioRegistro ||
+      'Registro inicial'
+    );
+  }
+
+  obtenerModificadoPor(evaluacion: Evaluacion): string | null {
+    const raw = evaluacion as any;
+    return (
+      evaluacion.modificadoPor ||
+      raw?.modificado_por ||
+      raw?.actualizadoPor ||
+      raw?.actualizado_por ||
+      raw?.usuarioModificacion ||
+      raw?.usuarioActualizacion ||
+      raw?.updatedBy ||
+      this.modificacionesLocales.get(evaluacion.id) ||
+      null
+    );
+  }
 
   readonly periodosEvaluacionPeriodo = computed(() =>
     this.periodosEvaluacion()
@@ -167,17 +179,6 @@ export class CargaNotas implements OnInit {
     }));
   });
 
-  readonly resumenConfiguracionEvaluaciones = computed(() =>
-    this.configuracionesEditables()
-      .filter((configuracion) => configuracion.cantidadActual > 0)
-      .map((configuracion) => ({
-        tipoEvaluacionId: configuracion.tipoEvaluacionId,
-        abreviatura: this.abreviarTipoEvaluacion(configuracion.nombreTipoEvaluacion),
-        nombre: configuracion.nombreTipoEvaluacion,
-        cantidad: configuracion.cantidadActual
-      }))
-  );
-
   readonly evaluacionesPendientesFecha = computed(() =>
     this.evaluaciones().filter((evaluacion) => !evaluacion.fechaEvaluacion)
   );
@@ -202,7 +203,9 @@ export class CargaNotas implements OnInit {
       if (semana) semana.evaluaciones.push(evaluacion);
     }
 
-    const grupos: SemanaPlanificacionEvaluaciones[] = semanas.map(({ semana, evaluaciones }) => {
+    const grupos: SemanaPlanificacionEvaluaciones[] = semanas
+      .filter(({ evaluaciones }) => evaluaciones.length > 0)
+      .map(({ semana, evaluaciones }) => {
         const inicio = this.sumarDias(periodo.fechaInicio, (semana - 1) * 7);
         const finSemana = this.sumarDias(inicio, 6);
         return {
@@ -221,14 +224,7 @@ export class CargaNotas implements OnInit {
   });
 
   readonly totalColumnasNotas = computed(() =>
-    1 + this.planificacionPorSemana().reduce((total, grupo) => total + Math.max(1, grupo.evaluaciones.length), 0)
-  );
-
-  readonly evaluacionFechaSeleccionada = computed<Evaluacion | null>(() =>
-    this.evaluaciones().find((evaluacion) => evaluacion.id === this.evaluacionFechaSeleccionadaId())
-      ?? this.evaluacionesPendientesFecha()[0]
-      ?? this.evaluaciones()[0]
-      ?? null
+    1 + this.planificacionPorSemana().reduce((total, grupo) => total + grupo.evaluaciones.length, 0)
   );
 
   readonly hayNotasRegistradas = computed(() =>
@@ -373,14 +369,11 @@ export class CargaNotas implements OnInit {
 
             if (periodoInicial) {
               if (evaluacionPendienteId) {
-                this.panelConfiguracionEvaluaciones.set('fechas');
-                this.evaluacionFechaSeleccionadaId.set(evaluacionPendienteId);
                 this.mostrarConfiguracionEvaluaciones.set(true);
               }
               this.seleccionarPeriodoEvaluacion(periodoInicial.id);
             }
 
-            this.cargarConfiguracionEvaluaciones();
           },
           error: (error) => {
             this.cargando.set(false);
@@ -406,8 +399,8 @@ export class CargaNotas implements OnInit {
     }
 
     this.periodoEvaluacionSeleccionadoId.set(periodoEvaluacionId);
-    this.evaluacionFechaSeleccionadaId.set(null);
     this.evaluaciones.set([]);
+    this.fechasEditables.set({});
     this.notasPorEvaluacion.set({});
     this.filasNotas.set([]);
     this.error.set(null);
@@ -418,12 +411,11 @@ export class CargaNotas implements OnInit {
     }).subscribe({
       next: ({ evaluaciones, matriculas }) => {
         this.evaluaciones.set(evaluaciones);
+        this.sincronizarFechasEditables(evaluaciones);
         this.matriculas.set(matriculas);
         const evaluacionPendienteId = Number(this.route.snapshot.queryParamMap.get('evaluacionId'));
         const evaluacionPendiente = evaluaciones.find((item) => item.id === evaluacionPendienteId);
         if (evaluacionPendiente) {
-          this.panelConfiguracionEvaluaciones.set('fechas');
-          this.evaluacionFechaSeleccionadaId.set(evaluacionPendiente.id);
           this.mostrarConfiguracionEvaluaciones.set(true);
         }
         if (!this.periodosProgramacionRevisada.has(periodoEvaluacionId)) {
@@ -468,9 +460,8 @@ export class CargaNotas implements OnInit {
 
   private advertirPlanificacionPendiente(evaluaciones: Evaluacion[]): void {
     if (!evaluaciones.length) {
-      this.mostrarAlerta('warning', 'Falta configurar las evaluaciones',
-        'Configura las evaluaciones del período antes de registrar notas.',
-        { confirmText: 'Configurar ahora', cancelText: 'Después', action: 'configurar-estructura' });
+      this.mostrarAlerta('warning', 'Aún no hay evaluaciones',
+        'La estructura anual debe configurarla Dirección para que las evaluaciones aparezcan en cada período.');
       return;
     }
 
@@ -482,130 +473,195 @@ export class CargaNotas implements OnInit {
     }
   }
 
-  actualizarFechaEvaluacion(evaluacion: Evaluacion, fecha: string): void {
-    if (!fecha) {
+  alternarPanelConfiguracion(): void {
+    if (this.guardandoConfiguracion()) return;
+    const siguiente = !this.mostrarConfiguracionEvaluaciones();
+    if (siguiente) {
+      this.sincronizarFechasEditables(this.evaluaciones());
+    }
+    this.mostrarConfiguracionEvaluaciones.set(siguiente);
+  }
+
+  abrirPlanificacionEvaluacion(): void {
+    this.sincronizarFechasEditables(this.evaluaciones());
+    this.mostrarConfiguracionEvaluaciones.set(true);
+  }
+
+  navegarAPlanificacion(): void {
+    const asignacion = this.asignacion();
+    if (!asignacion) return;
+
+    void this.router.navigate(
+      [
+        '/gestion-estudiantil/periodo',
+        asignacion.periodoAcademicoId,
+        'seccion',
+        asignacion.seccionId,
+        'evaluaciones'
+      ],
+      {
+        queryParams: {
+          cursoId: asignacion.cursoId,
+          from: 'carga-notas',
+          asignacionId: asignacion.id
+        }
+      }
+    );
+  }
+
+  toggleDatePickerEvaluacion(evaluacionId: number, event: Event): void {
+    event.stopPropagation();
+    if (this.evaluacionDatePickerAbiertaId() === evaluacionId) {
+      this.evaluacionDatePickerAbiertaId.set(null);
+    } else {
+      this.evaluacionDatePickerAbiertaId.set(evaluacionId);
+    }
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (this.evaluacionDatePickerAbiertaId() === null) {
       return;
     }
-    const periodo = this.periodosEvaluacionPeriodo().find((item) => item.id === evaluacion.periodoEvaluacionId);
-    if (!periodo || fecha < periodo.fechaInicio || fecha > periodo.fechaFin) {
-      this.mostrarAlerta('error', 'Fecha no válida', 'La fecha de evaluación debe estar dentro del período seleccionado.');
+    const target = event.target as HTMLElement | null;
+    if (!target?.closest('.eval-picker-wrap')) {
+      this.evaluacionDatePickerAbiertaId.set(null);
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.evaluacionDatePickerAbiertaId.set(null);
+  }
+
+  esColumnaDerecha(evaluacionId: number): boolean {
+    const evals = this.evaluaciones();
+    const index = evals.findIndex((e) => e.id === evaluacionId);
+    return index >= 0 && index >= evals.length - 2;
+  }
+
+  actualizarFechaRapida(evaluacion: Evaluacion, fecha: string): void {
+    this.evaluacionDatePickerAbiertaId.set(null);
+    if (!fecha || fecha === evaluacion.fechaEvaluacion) {
       return;
+    }
+    const periodo = this.periodoEvaluacionSeleccionado();
+    if (periodo) {
+      const min = periodo.fechaInicio.slice(0, 10);
+      const max = periodo.fechaFin.slice(0, 10);
+      if (fecha < min || fecha > max) {
+        this.mostrarAlerta(
+          'warning',
+          'Fecha fuera de rango',
+          `La fecha debe estar dentro del período seleccionado (${min} al ${max}).`
+        );
+        return;
+      }
     }
 
-    this.guardandoFechaEvaluacion.set(evaluacion.id);
     this.evaluacionService.actualizarFecha(evaluacion.id, fecha).subscribe({
       next: (actualizada) => {
-        this.evaluaciones.update((actuales) => actuales.map((item) => item.id === actualizada.id ? actualizada : item));
-        this.guardandoFechaEvaluacion.set(null);
+        const usuarioActual = this.authService.usuarioSesion()?.username || 'Docente';
+        this.modificacionesLocales.set(evaluacion.id, actualizada?.modificadoPor || usuarioActual);
+        this.evaluaciones.update((evals) =>
+          evals.map((e) => (e.id === evaluacion.id ? { ...e, ...actualizada, fechaEvaluacion: fecha } : e))
+        );
+        this.fechasEditables.update((actuales) => ({ ...actuales, [evaluacion.id]: fecha }));
+        this.mostrarAlerta(
+          'success',
+          'Fecha programada',
+          `Se programó ${evaluacion.nombre} para el ${this.formatoFechaCorta(fecha)}.`,
+          { autoCloseMs: 2500 }
+        );
       },
       error: (error) => {
-        this.guardandoFechaEvaluacion.set(null);
-        this.mostrarAlerta('error', 'No se guardó la fecha', formatearMensajeError(error, 'No se pudo actualizar la fecha de evaluación.'));
+        this.mostrarAlerta(
+          'error',
+          'Error al programar',
+          formatearMensajeError(error, 'No se pudo guardar la fecha de la evaluación.')
+        );
       }
     });
   }
 
-  alternarPanelConfiguracion(): void {
-    const siguiente = !this.mostrarConfiguracionEvaluaciones();
-    if (siguiente) {
-      this.panelConfiguracionEvaluaciones.set(this.evaluaciones().length ? 'fechas' : 'estructura');
-      this.evaluacionFechaSeleccionadaId.set(this.evaluacionesPendientesFecha()[0]?.id ?? this.evaluaciones()[0]?.id ?? null);
-    }
-    this.mostrarConfiguracionEvaluaciones.set(siguiente);
-
-    if (siguiente && !this.detalleConfiguracion() && !this.cargandoConfiguracion()) {
-      this.cargarConfiguracionEvaluaciones();
-    }
+  fechaEditable(evaluacionId: number): string {
+    return this.fechasEditables()[String(evaluacionId)] ?? '';
   }
 
-  seleccionarPanelConfiguracion(panel: PanelConfiguracionEvaluaciones): void {
-    this.panelConfiguracionEvaluaciones.set(panel);
-    if (panel === 'estructura' && !this.detalleConfiguracion() && !this.cargandoConfiguracion()) {
-      this.cargarConfiguracionEvaluaciones();
-    }
+  actualizarFechaEditable(evaluacionId: number, fecha: string): void {
+    this.fechasEditables.update((actuales) => ({
+      ...actuales,
+      [evaluacionId]: fecha
+    }));
   }
 
-  seleccionarEvaluacionFecha(event: Event): void {
-    this.evaluacionFechaSeleccionadaId.set(Number((event.target as HTMLSelectElement).value));
-  }
-
-  abrirPlanificacionEvaluacion(evaluacionId: number): void {
-    this.panelConfiguracionEvaluaciones.set('fechas');
-    this.evaluacionFechaSeleccionadaId.set(evaluacionId);
-    this.mostrarConfiguracionEvaluaciones.set(true);
-  }
-
-  actualizarCantidadConfiguracion(tipoEvaluacionId: number, valor: string | number): void {
-    const cantidad = Math.max(0, Number(valor || 0));
-    this.configuracionesEditables.update((actual) =>
-      actual.map((configuracion) =>
-        configuracion.tipoEvaluacionId === tipoEvaluacionId
-          ? { ...configuracion, cantidadActual: cantidad }
-          : configuracion
-      )
-    );
-  }
-
-  alternarTipoConfiguracion(configuracion: ConfiguracionEvaluacionEditable): void {
-    if (configuracion.cantidadActual > 0) {
-      this.actualizarCantidadConfiguracion(configuracion.tipoEvaluacionId, 0);
-      return;
-    }
-
-    const restaurada = configuracion.cantidadBasePeriodo > 0 ? configuracion.cantidadBasePeriodo : 1;
-    this.actualizarCantidadConfiguracion(configuracion.tipoEvaluacionId, restaurada);
-  }
-
-  restaurarConfiguracionBase(): void {
-    this.configuracionesEditables.update((actual) =>
-      actual.map((configuracion) => ({
-        ...configuracion,
-        cantidadActual: configuracion.cantidadBasePeriodo
-      }))
-    );
+  private sincronizarFechasEditables(evaluaciones: Evaluacion[]): void {
+    this.fechasEditables.set(Object.fromEntries(evaluaciones.map((evaluacion) => [
+      String(evaluacion.id),
+      evaluacion.fechaEvaluacion ?? ''
+    ])));
   }
 
   guardarConfiguracionEvaluaciones(): void {
     const asignacion = this.asignacion();
     const periodoEvaluacionId = this.periodoEvaluacionSeleccionadoId();
+    const periodo = this.periodoEvaluacionSeleccionado();
 
-    if (!asignacion) {
+    if (!asignacion || !periodoEvaluacionId || !periodo || this.guardandoConfiguracion()) {
+      return;
+    }
+
+    const sinFecha = this.evaluaciones().find((item) => !this.fechaEditable(item.id));
+    if (sinFecha) {
+      this.mostrarAlerta('error', 'Fecha obligatoria', `Selecciona la fecha de ${sinFecha.nombre}.`);
+      return;
+    }
+    const fueraDePeriodo = this.evaluaciones().find((item) => {
+      const fecha = this.fechaEditable(item.id);
+      return fecha < periodo.fechaInicio.slice(0, 10) || fecha > periodo.fechaFin.slice(0, 10);
+    }
+    );
+    if (fueraDePeriodo) {
+      this.mostrarAlerta('error', 'Fecha no válida', `La fecha de ${fueraDePeriodo.nombre} debe estar dentro del período seleccionado.`);
       return;
     }
 
     this.guardandoConfiguracion.set(true);
-    this.errorConfiguracion.set(null);
-
-    this.configuracionCursoService.guardar({
-      periodoAcademicoId: asignacion.periodoAcademicoId,
-      cursoId: asignacion.cursoId,
-      configuraciones: this.configuracionesEditables().map((configuracion) => ({
-        tipoEvaluacionId: configuracion.tipoEvaluacionId,
-        cantidadEvaluaciones: configuracion.cantidadActual,
-        calcularEnPromedio: true
-      }))
-    }).subscribe({
-      next: (detalle) => {
+    const usuarioActual = this.authService.usuarioSesion()?.username || 'Docente';
+    const evaluacionesModificadasIds: number[] = [];
+    const cambiosFecha = this.evaluaciones().flatMap((evaluacion) => {
+      const fecha = this.fechaEditable(evaluacion.id);
+      if (evaluacion.fechaEvaluacion !== fecha) {
+        evaluacionesModificadasIds.push(evaluacion.id);
+        return [this.evaluacionService.actualizarFecha(evaluacion.id, fecha)];
+      }
+      return [];
+    });
+    (cambiosFecha.length ? forkJoin(cambiosFecha) : of([] as Evaluacion[])).subscribe({
+      next: (actualizadas) => {
+        for (const id of evaluacionesModificadasIds) {
+          this.modificacionesLocales.set(id, usuarioActual);
+        }
+        for (const act of actualizadas) {
+          if (act?.id && act.modificadoPor) {
+            this.modificacionesLocales.set(act.id, act.modificadoPor);
+          }
+        }
         this.guardandoConfiguracion.set(false);
-        this.detalleConfiguracion.set(detalle);
-        this.configuracionesEditables.set(this.construirConfiguracionesEditables(detalle));
+        this.mostrarConfiguracionEvaluaciones.set(false);
         this.mostrarAlerta(
           'success',
-          'Evaluaciones actualizadas',
-          'La grilla de evaluaciones se resincronizó para esta asignación.'
+          'Planificación guardada',
+          'Se guardaron las fechas del período.'
         );
-
-        if (periodoEvaluacionId) {
-          this.seleccionarPeriodoEvaluacion(periodoEvaluacionId);
-        }
+        this.seleccionarPeriodoEvaluacion(periodoEvaluacionId);
       },
       error: (error) => {
         this.guardandoConfiguracion.set(false);
-        this.errorConfiguracion.set(formatearMensajeError(error, 'No se pudo actualizar la configuración.'));
         this.mostrarAlerta(
           'error',
           'No se pudo guardar',
-          formatearMensajeError(error, 'No se pudo actualizar la configuración de evaluaciones.')
+          formatearMensajeError(error, 'No se pudo guardar toda la planificación. Revisa las fechas e inténtalo de nuevo.')
         );
       }
     });
@@ -660,6 +716,53 @@ export class CargaNotas implements OnInit {
     this.guardarNotaAutomatica(matriculaId, evaluacionId);
   }
 
+  navegarSiguienteNota(rowIndex: number, evaluacionId: number, event: Event): void {
+    const keyboardEvent = event as KeyboardEvent;
+    keyboardEvent.preventDefault();
+
+    const filaActual = this.filasNotas()[rowIndex];
+    if (filaActual) {
+      this.guardarNotaAutomatica(filaActual.matricula.id, evaluacionId);
+    }
+
+    const evaluacionesEditables = this.planificacionPorSemana()
+      .flatMap((grupo) => grupo.evaluaciones)
+      .filter((evaluacion) => !!evaluacion.fechaEvaluacion);
+
+    const totalFilas = this.filasNotas().length;
+    if (totalFilas === 0 || evaluacionesEditables.length === 0) {
+      return;
+    }
+
+    const colIndex = evaluacionesEditables.findIndex((e) => e.id === evaluacionId);
+    if (colIndex < 0) {
+      return;
+    }
+
+    let siguienteRowIndex = rowIndex + 1;
+    let siguienteColIndex = colIndex;
+
+    // Si ya no hay más alumnos abajo, salta a la siguiente evaluación en el primer alumno
+    if (siguienteRowIndex >= totalFilas) {
+      siguienteRowIndex = 0;
+      siguienteColIndex = (colIndex + 1) % evaluacionesEditables.length;
+    }
+
+    const siguienteEvaluacion = evaluacionesEditables[siguienteColIndex];
+    if (!siguienteEvaluacion) {
+      return;
+    }
+
+    const selector = `input.grade-input[data-row="${siguienteRowIndex}"][data-eval-id="${siguienteEvaluacion.id}"]`;
+    const siguienteInput = document.querySelector<HTMLInputElement>(selector);
+
+    if (siguienteInput) {
+      siguienteInput.focus();
+      siguienteInput.select();
+      siguienteInput.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
+  }
+
   guardarNotas(): void {
     const evaluaciones = this.evaluaciones();
     if (!evaluaciones.length) {
@@ -671,7 +774,36 @@ export class CargaNotas implements OnInit {
       return;
     }
 
-    const solicitudes = evaluaciones
+    const solicitudes = this.construirSolicitudesNotas();
+
+    const notasInvalidas = solicitudes.some((item) =>
+      item.notas.some((nota) => Number.isNaN(nota.nota) || nota.nota < 0 || nota.nota > 20)
+    );
+
+    if (!solicitudes.length || notasInvalidas) {
+      this.mostrarAlerta(
+        'warning',
+        'Notas inválidas',
+        'Ingresa notas válidas entre 0 y 20 antes de guardar.'
+      );
+      return;
+    }
+
+    const totalNotas = solicitudes.reduce((acc, s) => acc + s.notas.length, 0);
+    this.mostrarAlerta(
+      'warning',
+      '¿Guardar calificaciones registradas?',
+      `¿Estás seguro de registrar las ${totalNotas} notas ingresadas? Se actualizarán las calificaciones oficiales y se recalculará el promedio del período para esta sección.`,
+      {
+        confirmText: 'Sí, guardar notas',
+        cancelText: 'Revisar notas',
+        action: 'confirmar-guardar-notas'
+      }
+    );
+  }
+
+  private construirSolicitudesNotas() {
+    return this.evaluaciones()
       .map((evaluacion) => {
         const notas = this.filasNotas()
           .map((fila) => ({
@@ -688,19 +820,11 @@ export class CargaNotas implements OnInit {
         return { evaluacion, notas };
       })
       .filter((item) => item.notas.length > 0);
+  }
 
-    const notasInvalidas = solicitudes.some((item) =>
-      item.notas.some((nota) => Number.isNaN(nota.nota) || nota.nota < 0 || nota.nota > 20)
-    );
-
-    if (!solicitudes.length || notasInvalidas) {
-      this.mostrarAlerta(
-        'warning',
-        'Notas inválidas',
-        'Ingresa notas válidas entre 0 y 20 antes de guardar.'
-      );
-      return;
-    }
+  private ejecutarGuardadoNotas(): void {
+    const solicitudes = this.construirSolicitudesNotas();
+    if (!solicitudes.length) return;
 
     this.guardandoNotas.set(true);
     this.error.set(null);
@@ -748,15 +872,28 @@ export class CargaNotas implements OnInit {
     });
   }
 
+  cancelarAlerta(): void {
+    this.cerrarAlerta();
+  }
+
   confirmarAlerta(): void {
     const action = this.alertState().action;
     this.cerrarAlerta();
     if (!action) return;
 
-    this.mostrarConfiguracionEvaluaciones.set(true);
-    this.seleccionarPanelConfiguracion(action === 'configurar-estructura' ? 'estructura' : 'fechas');
+    if (action === 'confirmar-guardar-notas') {
+      this.ejecutarGuardadoNotas();
+      return;
+    }
+
     if (action === 'planificar-fechas') {
-      this.evaluacionFechaSeleccionadaId.set(this.evaluacionesPendientesFecha()[0]?.id ?? null);
+      this.navegarAPlanificacion();
+      return;
+    }
+
+    if (action === 'abrir-planificacion') {
+      this.abrirPlanificacionEvaluacion();
+      return;
     }
   }
 
@@ -803,46 +940,6 @@ export class CargaNotas implements OnInit {
         };
       })
     );
-  }
-
-  private cargarConfiguracionEvaluaciones(): void {
-    const asignacion = this.asignacion();
-    if (!asignacion) {
-      return;
-    }
-
-    this.cargandoConfiguracion.set(true);
-    this.errorConfiguracion.set(null);
-
-    this.configuracionCursoService
-      .obtenerDetalle(asignacion.periodoAcademicoId, asignacion.cursoId)
-      .subscribe({
-        next: (detalle) => {
-          this.detalleConfiguracion.set(detalle);
-          this.configuracionesEditables.set(this.construirConfiguracionesEditables(detalle));
-          this.cargandoConfiguracion.set(false);
-        },
-        error: (error) => {
-          this.detalleConfiguracion.set(null);
-          this.configuracionesEditables.set([]);
-          this.cargandoConfiguracion.set(false);
-          this.errorConfiguracion.set(
-            formatearMensajeError(error, 'No se pudo cargar la configuración de evaluaciones.')
-          );
-        }
-      });
-  }
-
-  private construirConfiguracionesEditables(
-    detalle: ConfiguracionEvaluacionCursoDetalle
-  ): ConfiguracionEvaluacionEditable[] {
-    return detalle.configuraciones
-      .map((configuracion) => ({
-        ...configuracion,
-        cantidadActual: configuracion.cantidadEvaluaciones,
-        calcularEnPromedio: true
-      }))
-      .sort((a, b) => a.nombreTipoEvaluacion.localeCompare(b.nombreTipoEvaluacion));
   }
 
   private programarGuardadoAutomatico(matriculaId: number, evaluacionId: number): void {

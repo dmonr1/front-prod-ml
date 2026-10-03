@@ -6,6 +6,7 @@ import {
   HostListener,
   Input,
   OnChanges,
+  OnInit,
   Output,
   SimpleChanges,
   inject
@@ -27,7 +28,7 @@ interface CalendarCell {
   templateUrl: './date-picker.html',
   styleUrl: './date-picker.scss'
 })
-export class DatePickerComponent implements OnChanges {
+export class DatePickerComponent implements OnInit, OnChanges {
   private static abiertaActual: DatePickerComponent | null = null;
   private readonly elementRef = inject(ElementRef<HTMLElement>);
   private animationTimeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -39,8 +40,10 @@ export class DatePickerComponent implements OnChanges {
   @Input() maxYear?: number;
   @Input() minDate?: string;
   @Input() maxDate?: string;
+  @Input() inline = false;
 
   @Output() valueChange = new EventEmitter<string>();
+  @Output() openChange = new EventEmitter<boolean>();
 
   abierto = false;
   monthMenuOpen = false;
@@ -80,6 +83,12 @@ export class DatePickerComponent implements OnChanges {
   ];
 
   readonly weekDays = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
+
+  ngOnInit(): void {
+    if (this.inline) {
+      this.sincronizarVista();
+    }
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['value'] || changes['minYear'] || changes['maxYear'] || changes['minDate'] || changes['maxDate']) {
@@ -243,6 +252,7 @@ export class DatePickerComponent implements OnChanges {
     }
 
     this.abierto = !this.abierto;
+    this.openChange.emit(this.abierto);
     if (this.abierto) {
       DatePickerComponent.abiertaActual = this;
       this.sincronizarVista();
@@ -252,9 +262,13 @@ export class DatePickerComponent implements OnChanges {
   }
 
   close(): void {
+    const estabaAbierto = this.abierto;
     this.abierto = false;
     this.monthMenuOpen = false;
     this.yearMenuOpen = false;
+    if (estabaAbierto) {
+      this.openChange.emit(false);
+    }
     if (DatePickerComponent.abiertaActual === this) {
       DatePickerComponent.abiertaActual = null;
     }

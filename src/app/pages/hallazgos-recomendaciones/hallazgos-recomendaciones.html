@@ -210,9 +210,10 @@
               </div>
 
               @if (!hallazgos().length) {
-              <div class="state-card empty-state">
-                <span class="state-title">Sin hallazgos generados</span>
-                <p>Aún no hay patrones registrados para la sección y corte seleccionados.</p>
+              <div class="empty-state-card compact">
+                <div class="empty-state-badge"><i class="fa-solid fa-chart-line"></i></div>
+                <strong class="empty-state-title">Sin hallazgos generados</strong>
+                <p class="empty-state-desc">Aún no hay patrones registrados para la sección y corte seleccionados.</p>
               </div>
               } @else {
               <div class="item-list">
@@ -271,9 +272,10 @@
               </div>
 
               @if (!recomendacionesDerivadas().length) {
-              <div class="state-card empty-state">
-                <span class="state-title">Sin sugerencias derivadas</span>
-                <p>No hay suficientes hallazgos para proponer acciones complementarias.</p>
+              <div class="empty-state-card compact">
+                <div class="empty-state-badge"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
+                <strong class="empty-state-title">Sin sugerencias derivadas</strong>
+                <p class="empty-state-desc">No hay suficientes hallazgos para proponer acciones complementarias.</p>
               </div>
               } @else {
               <div class="item-list">
@@ -322,9 +324,10 @@
             </div>
 
             @if (!recomendaciones().length) {
-            <div class="state-card empty-state">
-              <span class="state-title">Sin recomendaciones registradas</span>
-              <p>No llegaron recomendaciones persistidas para los filtros actuales.</p>
+            <div class="empty-state-card compact">
+              <div class="empty-state-badge"><i class="fa-solid fa-clipboard-list"></i></div>
+              <strong class="empty-state-title">Sin recomendaciones registradas</strong>
+              <p class="empty-state-desc">No llegaron recomendaciones persistidas para los filtros actuales.</p>
             </div>
             } @else {
             <div class="item-list tracking-list">

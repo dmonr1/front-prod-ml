@@ -102,6 +102,7 @@ export class AsistenciaSesionPage implements OnInit {
   readonly periodoId = signal<number | null>(null);
   readonly filas = signal<FilaAsistencia[]>([]);
   readonly edicionHistorica = signal(false);
+  readonly modalMotivoEdicionAbierto = signal(false);
   readonly motivoEdicion = signal('');
   readonly asistenciaExistente = signal(false);
   readonly busquedaEstudiante = signal('');
@@ -441,7 +442,8 @@ export class AsistenciaSesionPage implements OnInit {
     this.horarioSemanalId.set(horarioSemanalId);
     this.fecha.set(fecha);
     this.periodoId.set(periodo.id);
-    this.edicionHistorica.set(editar && this.puedeEditarHistorico());
+    this.edicionHistorica.set(false);
+    this.modalMotivoEdicionAbierto.set(editar && this.puedeEditarHistorico());
     this.motivoEdicion.set('');
     this.asistenciaExistente.set(false);
     this.vista.set('lista');
@@ -468,6 +470,8 @@ export class AsistenciaSesionPage implements OnInit {
     this.fecha.set('');
     this.periodoId.set(null);
     this.edicionHistorica.set(false);
+    this.modalMotivoEdicionAbierto.set(false);
+    this.motivoEdicion.set('');
     this.asistenciaExistente.set(false);
     this.cerrarAlerta();
     this.busquedaEstudiante.set('');
@@ -501,6 +505,11 @@ export class AsistenciaSesionPage implements OnInit {
   marcarTodos(estado: EstadoAsistenciaSesion): void {
     if (this.soloLectura()) return;
     this.filas.update((filas) => filas.map((fila) => ({ ...fila, estado })));
+  }
+
+  todosMarcados(estado: EstadoAsistenciaSesion): boolean {
+    const filas = this.filas();
+    return filas.length > 0 && filas.every((fila) => fila.estado === estado);
   }
 
   limpiarTodos(): void {
@@ -633,8 +642,18 @@ export class AsistenciaSesionPage implements OnInit {
 
   iniciarEdicionHistorica(): void {
     if (!this.puedeEditarHistorico()) return;
+    this.motivoEdicion.set('');
+    this.modalMotivoEdicionAbierto.set(true);
+  }
+
+  confirmarMotivoEdicion(): void {
+    if (!this.puedeEditarHistorico() || this.motivoEdicion().trim().length < 5) return;
     this.edicionHistorica.set(true);
-    this.cerrarAlerta();
+    this.modalMotivoEdicionAbierto.set(false);
+  }
+
+  cancelarMotivoEdicion(): void {
+    this.volverAgenda();
   }
 
   esFechaPasada(): boolean {

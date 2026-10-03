@@ -1,4 +1,4 @@
-<aside class="sidebar" [class.collapsed]="collapsed()">
+<aside class="sidebar" [class.collapsed]="collapsed()" [class.no-transition]="!transitionReady()">
   <div class="sidebar-head">
     @if (collapsed()) {
     <button class="brand-toggle" type="button" (click)="toggleCollapsed()" aria-label="Expandir menú">

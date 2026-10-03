@@ -1,15 +1,8 @@
 <app-shell>
   <section class="courses-page">
-    <app-custom-alert
-      [open]="alertState().open"
-      [type]="alertState().type"
-      [title]="alertState().title"
-      [message]="alertState().message"
-      [confirmText]="alertState().confirmText"
-      [cancelText]="alertState().cancelText"
-      [autoCloseMs]="alertState().autoCloseMs"
-      (confirm)="cerrarAlerta()"
-      (cancel)="descartarAlerta()"
+    <app-custom-alert [open]="alertState().open" [type]="alertState().type" [title]="alertState().title"
+      [message]="alertState().message" [confirmText]="alertState().confirmText" [cancelText]="alertState().cancelText"
+      [autoCloseMs]="alertState().autoCloseMs" (confirm)="cerrarAlerta()" (cancel)="descartarAlerta()"
       (dismiss)="descartarAlerta()" />
 
     <div class="page-card page-slide-in">
@@ -17,16 +10,37 @@
         <div class="card-head-inline">
           <div class="panel-head">
             <h2>Catálogo de Cursos</h2>
-            <p>Administración de cursos base del sistema.</p>
-          </div>
-
-          <div class="head-actions">
-            <button class="action-button primary" type="button" [disabled]="!esAdmin()" (click)="abrirModalRegistro()">
-              <i class="fa-solid fa-plus"></i>
-              <span>Registrar nuevo curso</span>
-            </button>
           </div>
         </div>
+      </div>
+
+      <div class="course-filter-bar">
+        <div class="course-search-field">
+          <button class="course-search-button" type="button" aria-label="Buscar cursos" title="Buscar cursos"
+            (click)="courseSearchInput.focus()">
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+          </button>
+          <input #courseSearchInput type="text" placeholder="Buscar curso o descripción..." aria-label="Buscar cursos"
+            [value]="busquedaCursos()" (input)="busquedaCursos.set($any($event.target).value)" />
+          <button class="course-search-button" type="button" aria-label="Limpiar filtros" title="Limpiar filtros"
+            [disabled]="!busquedaCursos() && !estadoFiltroCursos()" (click)="limpiarFiltrosCursos()">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        </div>
+        <label class="course-status-filter">
+          <span>Estado</span>
+          <select aria-label="Filtrar cursos por estado" [value]="estadoFiltroCursos()"
+            (change)="estadoFiltroCursos.set($any($event.target).value)">
+            <option value="">Todos los estados</option>
+            <option value="ACTIVO">Activo</option>
+            <option value="INACTIVO">Inactivo</option>
+          </select>
+        </label>
+        <button class="action-button primary course-create-button" type="button" [disabled]="!esAdmin()"
+          (click)="abrirModalRegistro()">
+          <i class="fa-solid fa-plus"></i>
+          <span>Registrar curso</span>
+        </button>
       </div>
 
       <section class="table-panel full-table">
@@ -46,301 +60,309 @@
         </div>
 
         @if (mostrarSkeleton()) {
-          <div class="table-scroll" [class.slide-left]="animacionNivel() === 'left'" [class.slide-right]="animacionNivel() === 'right'">
-            <table class="app-table">
-              <thead>
-                <tr>
-                  <th>Curso</th>
-                  <th>Nivel</th>
-                  <th>Descripción</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (row of skeletonRows; track row) {
-                  <tr>
-                    <td><span class="skeleton-line medium"></span></td>
-                    <td><span class="skeleton-line short"></span></td>
-                    <td><span class="skeleton-line long"></span></td>
-                    <td><span class="skeleton-line short"></span></td>
-                    <td><span class="skeleton-line medium"></span></td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        } @else if (!cursosFiltrados().length) {
-          <div class="table-state">
-            <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-            <span>No hay cursos registrados para este nivel.</span>
-            <small>Cambia el nivel con las flechas o registra un nuevo curso.</small>
-          </div>
+        <div class="table-scroll" [class.slide-left]="animacionNivel() === 'left'"
+          [class.slide-right]="animacionNivel() === 'right'">
+          <table class="app-table">
+            <thead>
+              <tr>
+                <th>Curso</th>
+                <th>Nivel</th>
+                <th>Descripción</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of skeletonRows; track row) {
+              <tr>
+                <td><span class="skeleton-line medium"></span></td>
+                <td><span class="skeleton-line short"></span></td>
+                <td><span class="skeleton-line long"></span></td>
+                <td><span class="skeleton-line short"></span></td>
+                <td><span class="skeleton-line medium"></span></td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
         } @else {
-          <div class="table-scroll" [class.slide-left]="animacionNivel() === 'left'" [class.slide-right]="animacionNivel() === 'right'">
-            <table class="app-table">
-              <thead>
-                <tr>
-                  <th>Curso</th>
-                  <th>Nivel</th>
-                  <th>Descripción</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (curso of cursosFiltrados(); track curso.id) {
-                  <tr>
-                    <td>
-                      <div class="course-cell">
-                        <strong>{{ curso.nombre }}</strong>
-                        <small>ID {{ curso.id }}</small>
-                      </div>
-                    </td>
-                    <td>{{ curso.nivelNombre }}</td>
-                    <td>{{ curso.descripcion || 'Sin descripción registrada' }}</td>
-                    <td>
-                      <span
-                        class="status-badge"
-                        [class.active]="(curso.estado || 'ACTIVO') === 'ACTIVO'"
-                        [class.inactive]="(curso.estado || 'ACTIVO') === 'INACTIVO'">
-                        {{ curso.estado || 'ACTIVO' }}
-                      </span>
-                    </td>
-                    <td>
-                      <div class="row-actions">
-                        <button
-                          class="row-action"
-                          [class.state-active]="(curso.estado || 'ACTIVO') === 'ACTIVO'"
-                          [class.state-inactive]="(curso.estado || 'ACTIVO') === 'INACTIVO'"
-                          type="button"
-                          [disabled]="actualizandoEstadoCursoId() === curso.id || !esAdmin()"
-                          (click)="toggleEstadoCurso(curso)">
-                          <i [class]="(curso.estado || 'ACTIVO') === 'ACTIVO' ? 'fa-solid fa-ban' : 'fa-solid fa-rotate-left'"></i>
-                          <span>
-                            {{
-                              actualizandoEstadoCursoId() === curso.id
-                                ? 'Actualizando...'
-                                : ((curso.estado || 'ACTIVO') === 'ACTIVO' ? 'Deshabilitar' : 'Habilitar')
-                            }}
-                          </span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
+        <div class="table-scroll" [class.slide-left]="animacionNivel() === 'left'"
+          [class.slide-right]="animacionNivel() === 'right'">
+          <table class="app-table">
+            <thead>
+              <tr>
+                <th>Curso</th>
+                <th>Nivel</th>
+                <th>Descripción</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (!cursosFiltrados().length) {
+              <tr>
+                <td colspan="5" class="table-empty-cell">
+                  <div class="table-empty-state">
+                    <div class="empty-state-badge">
+                      <i class="fa-solid fa-book-open"></i>
+                    </div>
+                    <strong class="empty-state-title">No hay cursos que coincidan</strong>
+                    <p class="empty-state-desc">No se encontraron cursos con los filtros o búsqueda ingresados.</p>
+                    @if (busquedaCursos() || estadoFiltroCursos()) {
+                    <button type="button" class="empty-state-btn" (click)="limpiarFiltrosCursos()">
+                      <i class="fa-solid fa-rotate-left"></i> Limpiar filtros
+                    </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+              } @else {
+              @for (curso of cursosFiltrados(); track curso.id) {
+              <tr>
+                <td>
+                  <div class="course-cell">
+                    <strong>{{ curso.nombre }}</strong>
+                    <small>ID {{ curso.id }}</small>
+                  </div>
+                </td>
+                <td>{{ curso.nivelNombre }}</td>
+                <td>{{ curso.descripcion || 'Sin descripción registrada' }}</td>
+                <td>
+                  <button class="state-switch" type="button" role="switch"
+                    [class.is-active]="(curso.estado || 'ACTIVO') === 'ACTIVO'"
+                    [attr.aria-checked]="(curso.estado || 'ACTIVO') === 'ACTIVO'"
+                    [attr.aria-label]="'Estado del curso ' + curso.nombre"
+                    [title]="actualizandoEstadoCursoId() === curso.id ? 'Actualizando estado...' : ((curso.estado || 'ACTIVO') === 'ACTIVO' ? 'Deshabilitar curso' : 'Habilitar curso')"
+                    [disabled]="actualizandoEstadoCursoId() === curso.id || !esAdmin()"
+                    (click)="toggleEstadoCurso(curso)">
+                    <span class="state-switch-track" aria-hidden="true"><span></span></span>
+                    <span class="state-switch-label">
+                      {{
+                      actualizandoEstadoCursoId() === curso.id
+                      ? '...'
+                      : ((curso.estado || 'ACTIVO') === 'ACTIVO' ? 'Activo' : 'Inactivo')
+                      }}
+                    </span>
+                  </button>
+                </td>
+                <td>
+                  <div class="row-actions">
+                    <button class="row-action row-action-edit" type="button" [disabled]="!esAdmin()"
+                      (click)="abrirModalEdicion(curso)" title="Editar curso">
+                      <i class="fa-solid fa-pen-to-square"></i>
+                      <span>Editar</span>
+                    </button>
+                    <button class="row-action row-action-delete" type="button" [disabled]="!esAdmin() || guardando()"
+                      (click)="solicitarEliminarCurso(curso)" title="Eliminar curso">
+                      <i class="fa-solid fa-trash-can"></i>
+                      <span>Eliminar</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              }
+              }
+            </tbody>
+          </table>
+        </div>
         }
       </section>
 
     </div>
 
     @if (mostrarModalRegistro()) {
-      <div class="mini-modal-overlay" [class.is-closing]="cerrandoModalRegistro()" (click)="cerrarModalRegistro()">
-        <aside class="mini-modal-card" [class.is-closing]="cerrandoModalRegistro()" (click)="$event.stopPropagation()">
-          <div class="mini-modal-head">
-            <div class="panel-head">
-              <h3>Registrar curso</h3>
-              <p>Agrega un nuevo curso al catálogo académico institucional.</p>
-            </div>
-
-            <button class="drawer-close" type="button" (click)="cerrarModalRegistro()">
-              <i class="fa-solid fa-xmark"></i>
-            </button>
+    <div class="mini-modal-overlay" [class.is-closing]="cerrandoModalRegistro()" (click)="cerrarModalRegistro()">
+      <aside class="mini-modal-card" [class.is-closing]="cerrandoModalRegistro()" (click)="$event.stopPropagation()">
+        <div class="mini-modal-head">
+          <div class="panel-head">
+            <h3>{{ cursoEditandoId() ? 'Editar curso' : 'Registrar curso' }}</h3>
+            <p>{{ cursoEditandoId() ? 'Actualiza los datos del curso seleccionado.' : 'Agrega un nuevo curso al catálogo
+              académico institucional.' }}</p>
           </div>
 
-          <div class="mini-modal-body">
-            <div class="course-form-layout">
-              <form class="master-form compact-form">
-                <div class="course-form-top-row">
-                  <label>
-                    Nivel
-                    <select [ngModel]="formNivelId()" (ngModelChange)="formNivelId.set(+$event)" name="nivelCurso">
-                      <option [value]="1">Primaria</option>
-                      <option [value]="2">Secundaria</option>
-                    </select>
-                  </label>
+          <button class="drawer-close" type="button" (click)="cerrarModalRegistro()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
 
-                  <label>
-                    Nombre del curso
-                    <input
-                      type="text"
-                      [ngModel]="formNombre()"
-                      (ngModelChange)="formNombre.set($event)"
-                      name="nombreCurso"
-                      placeholder="Ejemplo: Matemática" />
-                  </label>
-                </div>
-
-                <div class="cover-config compact-cover-config">
-                  <span class="cover-config-label">Portada</span>
-
-                  <div class="course-form-cover-row">
-                    <label class="color-picker-field portada-color-field">
-                      <span>Color</span>
-                      <input
-                        type="color"
-                        [ngModel]="formPortadaColor()"
-                        (ngModelChange)="formPortadaColor.set($event)"
-                        name="portadaColor" />
-                    </label>
-
-                    <div class="cover-selectors">
-                      <div class="selector-field">
-                        <span class="selector-label">Icono</span>
-                        <button class="action-button tertiary icon-selector-button" type="button" (click)="abrirModalIconos()">
-                          <i [class]="formPortadaIcono()"></i>
-                          <span>{{ formPortadaIcono() ? 'Cambiar' : 'Seleccionar' }}</span>
-                        </button>
-                      </div>
-
-                      <div class="selector-field">
-                        <span class="selector-label">Imagen de portada</span>
-                        <button class="action-button tertiary image-selector-button" type="button" (click)="abrirModalImagenes()">
-                          <i class="fa-regular fa-image"></i>
-                          <span>{{ formPortadaImagen() ? 'Cambiar' : 'Seleccionar' }}</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
+        <div class="mini-modal-body">
+          <div class="course-form-layout">
+            <form class="master-form compact-form">
+              <div class="course-form-top-row">
                 <label>
-                  Descripción
-                  <textarea
-                    [ngModel]="formDescripcion()"
-                    (ngModelChange)="formDescripcion.set($event)"
-                    name="descripcionCurso"
-                    rows="4"
-                    placeholder="Descripción breve del curso"></textarea>
+                  Nivel
+                  <select [ngModel]="formNivelId()" (ngModelChange)="formNivelId.set(+$event)" name="nivelCurso">
+                    <option [value]="1">Primaria</option>
+                    <option [value]="2">Secundaria</option>
+                  </select>
                 </label>
 
-                @if (!esAdmin()) {
-                  <div class="form-note">
-                    <i class="fa-solid fa-lock"></i>
-                    <span>Solo un administrador puede registrar cursos.</span>
-                  </div>
-                }
-              </form>
-
-              <div class="cover-preview-panel">
-                <span class="cover-preview-label">Vista previa</span>
-
-                <article class="course-preview-card">
-                  <div
-                    class="course-preview-cover"
-                    [style.--cover-color]="formPortadaColor()"
-                    [class.has-image]="!!formPortadaImagen()">
-                    @if (formPortadaImagen()) {
-                      <img class="course-preview-image" [src]="formPortadaImagen()!" alt="Portada del curso" />
-                    }
-                    <span class="course-preview-badge">
-                      {{ formNivelId() === 1 ? 'Primaria' : 'Secundaria' }}
-                    </span>
-                  </div>
-
-                  <div class="course-preview-body">
-                    <div class="course-preview-title-row">
-                      <strong>{{ formNombre().trim() || 'Nombre del curso' }}</strong>
-                      <span class="course-preview-title-icon">
-                        <i [class]="formPortadaIcono()"></i>
-                      </span>
-                    </div>
-                    <small>{{ formDescripcion().trim() || 'Descripción breve del curso' }}</small>
-                  </div>
-
-                  <div class="course-preview-footer">
-                    <span><i class="fa-solid fa-users"></i> Sección A</span>
-                    <span class="course-preview-action">
-                      <i class="fa-solid fa-pen-to-square"></i>
-                      <span>Registrar Notas</span>
-                    </span>
-                  </div>
-                </article>
+                <label>
+                  Nombre del curso
+                  <input type="text" [ngModel]="formNombre()" (ngModelChange)="formNombre.set($event)"
+                    name="nombreCurso" placeholder="Ejemplo: Matemática" />
+                </label>
               </div>
-            </div>
-          </div>
 
-          <div class="mini-modal-footer">
-            <div class="form-actions">
-              <button class="action-button primary" type="button" [disabled]="guardando() || !esAdmin()" (click)="guardarCurso()">
-                {{ guardando() ? 'Guardando...' : 'Guardar curso' }}
-              </button>
-              <button class="action-button tertiary" type="button" (click)="limpiarFormulario()">Limpiar</button>
+              <div class="cover-config compact-cover-config">
+                <span class="cover-config-label">Portada</span>
+
+                <div class="course-form-cover-row">
+                  <label class="color-picker-field portada-color-field">
+                    <span>Color</span>
+                    <input type="color" [ngModel]="formPortadaColor()" (ngModelChange)="formPortadaColor.set($event)"
+                      name="portadaColor" />
+                  </label>
+
+                  <div class="cover-selectors">
+                    <div class="selector-field">
+                      <span class="selector-label">Icono</span>
+                      <button class="action-button tertiary icon-selector-button" type="button"
+                        (click)="abrirModalIconos()">
+                        <i [class]="formPortadaIcono()"></i>
+                        <span>{{ formPortadaIcono() ? 'Cambiar' : 'Seleccionar' }}</span>
+                      </button>
+                    </div>
+
+                    <div class="selector-field">
+                      <span class="selector-label">Imagen de portada</span>
+                      <button class="action-button tertiary image-selector-button" type="button"
+                        (click)="abrirModalImagenes()">
+                        <i class="fa-regular fa-image"></i>
+                        <span>{{ formPortadaImagen() ? 'Cambiar' : 'Seleccionar' }}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <label>
+                Descripción
+                <textarea [ngModel]="formDescripcion()" (ngModelChange)="formDescripcion.set($event)"
+                  name="descripcionCurso" rows="4" placeholder="Descripción breve del curso"></textarea>
+              </label>
+
+              @if (!esAdmin()) {
+              <div class="form-note">
+                <i class="fa-solid fa-lock"></i>
+                <span>Solo un administrador puede registrar cursos.</span>
+              </div>
+              }
+            </form>
+
+            <div class="cover-preview-panel">
+              <span class="cover-preview-label">Vista previa</span>
+
+              <article class="course-preview-card">
+                <div class="course-preview-cover" [style.--cover-color]="formPortadaColor()"
+                  [class.has-image]="!!formPortadaImagen()">
+                  @if (formPortadaImagen()) {
+                  <img class="course-preview-image" [src]="formPortadaImagen()!" alt="Portada del curso" />
+                  }
+                  <span class="course-preview-badge">
+                    {{ formNivelId() === 1 ? 'Primaria' : 'Secundaria' }}
+                  </span>
+                </div>
+
+                <div class="course-preview-body">
+                  <div class="course-preview-title-row">
+                    <strong>{{ formNombre().trim() || 'Nombre del curso' }}</strong>
+                    <span class="course-preview-title-icon">
+                      <i [class]="formPortadaIcono()"></i>
+                    </span>
+                  </div>
+                  <small>{{ formDescripcion().trim() || 'Descripción breve del curso' }}</small>
+                </div>
+
+                <div class="course-preview-footer">
+                  <span><i class="fa-solid fa-users"></i> Sección A</span>
+                  <span class="course-preview-action">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span>Registrar Notas</span>
+                  </span>
+                </div>
+              </article>
             </div>
           </div>
-        </aside>
-      </div>
+        </div>
+
+        <div class="mini-modal-footer">
+          <div class="form-actions">
+            <button class="action-button primary" type="button" [disabled]="guardando() || !esAdmin()"
+              (click)="guardarCurso()">
+              {{ guardando() ? 'Guardando...' : (cursoEditandoId() ? 'Guardar cambios' : 'Guardar curso') }}
+            </button>
+            @if (!cursoEditandoId()) {
+            <button class="action-button tertiary" type="button" (click)="limpiarFormulario()">Limpiar</button>
+            }
+            <button class="action-button secondary" type="button" (click)="cerrarModalRegistro()">Cancelar</button>
+          </div>
+        </div>
+      </aside>
+    </div>
     }
 
     @if (mostrarModalIconos()) {
-      <div class="icon-modal-overlay" [class.is-closing]="cerrandoModalIconos()" (click)="cerrarModalIconos()">
-        <div class="icon-modal-card" [class.is-closing]="cerrandoModalIconos()" (click)="$event.stopPropagation()">
-          <div class="icon-modal-head">
-            <div class="panel-head">
-              <span class="panel-kicker">Portada</span>
-              <h3>Seleccionar icono</h3>
-              <p>Elige el icono que identificará visualmente al curso.</p>
-            </div>
-
-            <button class="drawer-close" type="button" (click)="cerrarModalIconos()">
-              <i class="fa-solid fa-xmark"></i>
-            </button>
+    <div class="icon-modal-overlay" [class.is-closing]="cerrandoModalIconos()" (click)="cerrarModalIconos()">
+      <div class="icon-modal-card" [class.is-closing]="cerrandoModalIconos()" (click)="$event.stopPropagation()">
+        <div class="icon-modal-head">
+          <div class="panel-head">
+            <span class="panel-kicker">Portada</span>
+            <h3>Seleccionar icono</h3>
+            <p>Elige el icono que identificará visualmente al curso.</p>
           </div>
 
-          <div class="icon-modal-body">
-            <div class="icon-grid">
-              @for (icono of iconosPortada; track icono.valor) {
-                <button
-                  class="icon-option"
-                  type="button"
-                  [class.active]="formPortadaIcono() === icono.valor"
-                  (click)="seleccionarIconoPortada(icono.valor)">
-                  <span class="icon-option-preview">
-                    <i [class]="icono.valor"></i>
-                  </span>
-                  <span>{{ icono.etiqueta }}</span>
-                </button>
-              }
-            </div>
+          <button class="drawer-close" type="button" (click)="cerrarModalIconos()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="icon-modal-body">
+          <div class="icon-grid">
+            @for (icono of iconosPortada; track icono.valor) {
+            <button class="icon-option" type="button" [class.active]="formPortadaIcono() === icono.valor"
+              (click)="seleccionarIconoPortada(icono.valor)">
+              <span class="icon-option-preview">
+                <i [class]="icono.valor"></i>
+              </span>
+              <span>{{ icono.etiqueta }}</span>
+            </button>
+            }
           </div>
         </div>
       </div>
+    </div>
     }
 
     @if (mostrarModalImagenes()) {
-      <div class="icon-modal-overlay" [class.is-closing]="cerrandoModalImagenes()" (click)="cerrarModalImagenes()">
-        <div class="icon-modal-card image-modal-card" [class.is-closing]="cerrandoModalImagenes()" (click)="$event.stopPropagation()">
-          <div class="icon-modal-head">
-            <div class="panel-head">
-              <span class="panel-kicker">Portada</span>
-              <h3>Seleccionar imagen</h3>
-              <p>Elige una imagen por defecto para la portada del curso.</p>
-            </div>
-
-            <button class="drawer-close" type="button" (click)="cerrarModalImagenes()">
-              <i class="fa-solid fa-xmark"></i>
-            </button>
+    <div class="icon-modal-overlay" [class.is-closing]="cerrandoModalImagenes()" (click)="cerrarModalImagenes()">
+      <div class="icon-modal-card image-modal-card" [class.is-closing]="cerrandoModalImagenes()"
+        (click)="$event.stopPropagation()">
+        <div class="icon-modal-head">
+          <div class="panel-head">
+            <span class="panel-kicker">Portada</span>
+            <h3>Seleccionar imagen</h3>
+            <p>Elige una imagen por defecto para la portada del curso.</p>
           </div>
 
-          <div class="icon-modal-body">
-            <div class="image-grid">
-              @for (imagen of imagenesPortada; track imagen.ruta) {
-                <button
-                  class="image-option"
-                  type="button"
-                  [class.active]="formPortadaImagen() === imagen.ruta"
-                  (click)="seleccionarImagenPortada(imagen.ruta)">
-                  <img [src]="imagen.ruta" [alt]="imagen.etiqueta" />
-                  <span>{{ imagen.etiqueta }}</span>
-                </button>
-              }
-            </div>
+          <button class="drawer-close" type="button" (click)="cerrarModalImagenes()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="icon-modal-body">
+          <div class="image-grid">
+            @for (imagen of imagenesPortada; track imagen.ruta) {
+            <button class="image-option" type="button" [class.active]="formPortadaImagen() === imagen.ruta"
+              (click)="seleccionarImagenPortada(imagen.ruta)">
+              <img [src]="imagen.ruta" [alt]="imagen.etiqueta" />
+              <span>{{ imagen.etiqueta }}</span>
+            </button>
+            }
           </div>
         </div>
       </div>
+    </div>
     }
   </section>
 </app-shell>

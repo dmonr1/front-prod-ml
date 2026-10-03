@@ -25,10 +25,9 @@
 
 .periods-panel {
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: minmax(0, 1fr);
   height: 100%;
   min-height: 0;
-  gap: 20px;
 }
 
 .page-slide-in {
@@ -117,7 +116,7 @@
   min-width: 0;
   padding: 25px;
   border-radius: 18px;
-  background: var(--color-surface-secondary);
+  background: var(--color-bg-secondary);
   border: none;
   box-shadow: var(--shadow-sm);
 }
@@ -158,8 +157,8 @@
   flex-direction: column;
   gap: 12px;
   min-height: 165px;
-  padding: 20px 22px;
-  border: none;
+  padding: 18px 20px;
+  border: 2px solid transparent !important;
   border-radius: 20px;
   background: var(--color-surface-primary);
   color: var(--color-text-primary);
@@ -170,13 +169,15 @@
     0 6px 18px -2px rgba(15, 23, 42, 0.06);
   transition:
     transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 160ms ease;
   position: relative;
   overflow: hidden;
 }
 
 .period-card:hover {
   transform: translateY(-4px);
+  border-color: #315fca !important;
   box-shadow:
     0 4px 10px rgba(15, 23, 42, 0.04),
     0 16px 32px -4px rgba(15, 23, 42, 0.11);
@@ -229,14 +230,14 @@
   justify-content: center;
   gap: 6px;
   padding: 6px 14px;
-  border: none;
+  border: 1px solid rgba(37, 99, 235, 0.28);
   border-radius: 999px;
-  background: rgba(37, 99, 235, 0.08);
+  background: var(--color-brand-subtle);
   color: var(--color-brand-primary);
   font-size: 11.5px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
   transition: all 180ms cubic-bezier(0.2, 0, 0, 1);
 
   i {
@@ -245,13 +246,14 @@
   }
 
   &:hover {
-    background: var(--color-brand-primary);
-    color: #ffffff;
-    box-shadow: 0 4px 14px rgba(30, 58, 138, 0.28);
-    transform: translateY(-1.5px);
+    background: rgba(37, 99, 235, 0.16);
+    color: var(--color-brand-hover);
+    border-color: var(--color-brand-primary);
+    box-shadow: 0 3px 8px rgba(37, 99, 235, 0.18);
+    transform: translateY(-1px);
 
     i {
-      transform: scale(1.15) rotate(-6deg);
+      transform: scale(1.1) rotate(-6deg);
     }
   }
 
@@ -529,17 +531,67 @@
   gap: 20px;
 }
 
-.schedule-duration-settings { display: grid; gap: 10px; }
-.schedule-duration-heading { display: grid; gap: 3px; }
-.schedule-duration-heading strong { color: var(--color-text-primary); font-size: 13px; }
-.schedule-duration-heading span { color: var(--color-text-secondary); font-size: 12px; }
-.schedule-duration-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.schedule-duration-level { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: end; gap: 9px 12px; min-width: 0; margin: 0; padding: 12px; border: 1px solid var(--color-border-subtle); border-radius: 10px; background: #fff; }
-.schedule-duration-level legend { grid-column: 1 / -1; padding: 0 5px; color: var(--color-brand-primary); font-size: 12px; font-weight: 700; }
-.schedule-duration-level label { gap: 5px; font-size: 11px; }
-.schedule-duration-level input { min-height: 36px; }
+.schedule-duration-settings {
+  display: grid;
+  gap: 10px;
+}
 
-@media (max-width: 760px) { .schedule-duration-grid { grid-template-columns: minmax(0, 1fr); } }
+.schedule-duration-heading {
+  display: grid;
+  gap: 3px;
+}
+
+.schedule-duration-heading strong {
+  color: var(--color-text-primary);
+  font-size: 13px;
+}
+
+.schedule-duration-heading span {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.schedule-duration-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.schedule-duration-level {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
+  gap: 9px 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.schedule-duration-level legend {
+  grid-column: 1 / -1;
+  padding: 0 5px;
+  color: var(--color-brand-primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.schedule-duration-level label {
+  gap: 5px;
+  font-size: 11px;
+}
+
+.schedule-duration-level input {
+  min-height: 36px;
+}
+
+@media (max-width: 760px) {
+  .schedule-duration-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 
 label {
   display: grid;
@@ -571,8 +623,9 @@ select:disabled {
 
 input:focus,
 select:focus {
-  border-color: var(--color-brand-primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+  border-color: var(--color-border-subtle);
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 select {
@@ -801,12 +854,21 @@ select {
   vertical-align: middle;
 }
 
+.evaluation-template-table thead th,
 .evaluation-template-table th {
-  color: var(--color-text-secondary);
+  color: #ffffff !important;
+  background: var(--color-brand-primary, #1e3a8a) !important;
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  border: none !important;
+
+  i,
+  span,
+  strong {
+    color: #ffffff !important;
+  }
 }
 
 .evaluation-template-table tbody tr:last-child td {
@@ -1931,5 +1993,41 @@ select {
   .course-option-level.secundaria {
     background: rgba(167, 139, 250, 0.18);
     color: #c084fc;
+  }
+}
+
+.periods-page-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+}
+
+.periods-page-head > .panel-head {
+  grid-column: 2;
+  justify-items: center;
+  text-align: center;
+}
+
+.periods-page-head > .head-actions {
+  grid-column: 3;
+  justify-self: end;
+}
+
+@media (max-width: 960px) {
+  .periods-page-head {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 12px;
+  }
+
+  .periods-page-head > .panel-head,
+  .periods-page-head > .head-actions {
+    grid-column: 1;
+    justify-self: center;
+  }
+
+  .periods-page-head > .head-actions {
+    width: auto;
+    justify-content: center;
   }
 }

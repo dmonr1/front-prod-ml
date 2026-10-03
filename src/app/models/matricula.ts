@@ -12,4 +12,5 @@ export interface Matricula {
   periodoAcademico: string;
   anioAcademico: number;
   fechaMatricula: string;
+  estado?: string;
 }

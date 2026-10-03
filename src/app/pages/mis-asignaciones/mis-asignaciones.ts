@@ -1,7 +1,8 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Shell } from '../../layouts/shell/shell';
-import { CustomAlertComponent } from '../../components/custom-alert/custom-alert';
+import { CustomAlertComponent, CustomAlertType } from '../../components/custom-alert/custom-alert';
 import { AsignacionDocente } from '../../models/asignacion';
 import { Curso } from '../../models/curso';
 import { Seccion } from '../../models/seccion';
@@ -18,7 +19,7 @@ import { formatearMensajeError } from '../../utils/error-formatter';
 
 @Component({
   selector: 'app-mis-asignaciones',
-  imports: [Shell, RouterLink, CustomAlertComponent],
+  imports: [Shell, RouterLink, FormsModule, CustomAlertComponent],
   templateUrl: './mis-asignaciones.html',
   styleUrl: './mis-asignaciones.scss'
 })
@@ -44,6 +45,24 @@ export class MisAsignaciones implements OnInit {
   readonly seccionesTutoradas = signal<Tutoria[]>([]);
   readonly mostrarSkeleton = computed(() => this.cargando() || !!this.error());
   readonly periodoAcademicoAnio = computed(() => this.asignaciones()[0]?.anioAcademico ?? this.seccionesTutoradas()[0]?.anioAcademico ?? null);
+
+  readonly alertState = signal<{
+    open: boolean;
+    type: CustomAlertType;
+    title: string;
+    message: string;
+    confirmText: string;
+    cancelText: string | null;
+    autoCloseMs: number | null;
+  }>({
+    open: false,
+    type: 'info',
+    title: '',
+    message: '',
+    confirmText: 'Entendido',
+    cancelText: null,
+    autoCloseMs: null
+  });
 
   ngOnInit(): void {
     this.resolverPeriodoYCargarAsignaciones();
@@ -139,7 +158,7 @@ export class MisAsignaciones implements OnInit {
   }
 
   obtenerDescripcion(asignacion: AsignacionDocente): string {
-    return `${asignacion.grado} - Sección ${asignacion.seccion}`;
+    return asignacion.grado;
   }
 
   obtenerAnioPeriodo(etiqueta: string): string {
@@ -205,5 +224,21 @@ export class MisAsignaciones implements OnInit {
         this.cargando.set(false);
       }
     });
+  }
+
+  mostrarAlertaModal(type: CustomAlertType, title: string, message: string): void {
+    this.alertState.set({
+      open: true,
+      type,
+      title,
+      message,
+      confirmText: 'Aceptar',
+      cancelText: null,
+      autoCloseMs: type === 'success' ? 3000 : null
+    });
+  }
+
+  cerrarAlerta(): void {
+    this.alertState.update((state) => ({ ...state, open: false }));
   }
 }

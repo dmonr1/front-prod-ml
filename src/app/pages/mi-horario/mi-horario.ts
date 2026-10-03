@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, HostListener, OnInit, OnDestroy, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CustomAlertComponent, CustomAlertType } from '../../components/custom-alert/custom-alert';
@@ -6,10 +6,12 @@ import { Shell } from '../../layouts/shell/shell';
 import { PeriodoAcademico } from '../../models/periodo-academico';
 import { PeriodoEvaluacion } from '../../models/periodo-evaluacion';
 import { BloqueHorario, DiaSemana, HorarioSemanal } from '../../models/horario';
-import { forkJoin } from 'rxjs';
+import { Evaluacion } from '../../models/evaluacion';
+import { forkJoin, of } from 'rxjs';
 import { HorarioService } from '../../services/academico/horario.service';
 import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
 import { PeriodoEvaluacionService } from '../../services/academico/periodo-evaluacion.service';
+import { EvaluacionService } from '../../services/evaluacion/evaluacion.service';
 import { formatearMensajeError } from '../../utils/error-formatter';
 
 interface AlertState {
@@ -43,11 +45,13 @@ export class MiHorario implements OnInit, OnDestroy {
   private readonly periodosService = inject(PeriodoAcademicoService);
   private readonly horarioService = inject(HorarioService);
   private readonly periodoEvaluacionService = inject(PeriodoEvaluacionService);
+  private readonly evaluacionService = inject(EvaluacionService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly elementRef = inject(ElementRef);
 
-  // Altura por cada hora en píxeles (brinda espacio amplio para atajos de Asistencia y Notas)
-  readonly HOUR_HEIGHT = 120;
+  // Altura por cada hora en píxeles (dinámica y autoajustable al alto del scroll)
+  readonly altoHora = signal<number>(150);
 
   readonly periodos = signal<PeriodoAcademico[]>([]);
   readonly periodoId = signal<number | null>(null);
@@ -57,6 +61,7 @@ export class MiHorario implements OnInit, OnDestroy {
   readonly periodoEvaluacionId = signal<number | null>(null);
   readonly horarios = signal<HorarioSemanal[]>([]);
   readonly recreos = signal<BloqueHorario[]>([]);
+  readonly evaluaciones = signal<Evaluacion[]>([]);
   readonly cargando = signal(true);
   readonly alertState = signal<AlertState>({
     open: false,
@@ -208,19 +213,29 @@ export class MiHorario implements OnInit, OnDestroy {
   readonly posicionAhora = computed(() => {
     const m = this.horaActualMinutos();
     const horas = m / 60;
-    return (horas - this.rango().inicioHora) * this.HOUR_HEIGHT;
+    return (horas - this.rango().inicioHora) * this.altoHora();
   });
 
   readonly rango = computed(() => {
     const items = this.horarios();
+    if (!items.length) {
+      return {
+        inicioHora: 0,
+        finHora: 0,
+        inicio: 0,
+        fin: 0,
+        horasCount: 0,
+        marcas: []
+      };
+    }
     const tiempos = [
       ...items.flatMap((item) => [this.minutos(item.horaInicio), this.minutos(item.horaFin)]),
       ...this.recreosVisibles().flatMap((item) => [this.minutos(item.horaInicio), this.minutos(item.horaFin)])
     ];
-    const horaMin = tiempos.length ? Math.floor(Math.min(...tiempos) / 60) : 8;
-    const horaMax = tiempos.length ? Math.ceil(Math.max(...tiempos) / 60) : 18;
-    const inicioHora = Math.min(8, horaMin);
-    const finHora = Math.max(18, horaMax);
+    const inicioHora = Math.floor(Math.min(...tiempos) / 60);
+    const finHora = tiempos.length
+      ? Math.max(inicioHora + 1, Math.ceil(Math.max(...tiempos) / 60))
+      : inicioHora + 1;
     const horasCount = finHora - inicioHora;
     const marcas = new Set<number>([inicioHora * 60, finHora * 60]);
     for (const item of items) {
@@ -376,31 +391,129 @@ export class MiHorario implements OnInit, OnDestroy {
     return indice + 2;
   }
 
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.ajustarAltoHorario();
+  }
+
+  ajustarAltoHorario(): void {
+    const scrollEl: HTMLElement | null = this.elementRef.nativeElement.querySelector('.calendar-scroll');
+    if (!scrollEl) return;
+    const clientHeight = scrollEl.clientHeight;
+    const headerHeight = 70;
+    const available = clientHeight - headerHeight;
+    const horas = this.rango().horasCount;
+    if (horas > 0 && available > 150) {
+      const ideal = Math.max(150, Math.floor(available / horas));
+      if (this.altoHora() !== ideal) {
+        this.altoHora.set(ideal);
+      }
+    }
+  }
+
   posicionMarca(marca: number): number {
-    return ((marca - this.rango().inicio) / 60) * this.HOUR_HEIGHT;
+    return ((marca - this.rango().inicio) / 60) * this.altoHora();
   }
 
   posicionClase(clase: HorarioSemanal): number {
     const offsetMinutos = this.minutos(clase.horaInicio) - this.rango().inicio;
-    return (offsetMinutos / 60) * this.HOUR_HEIGHT + 3;
+    return (offsetMinutos / 60) * this.altoHora() + 3;
   }
 
   altoClase(clase: ClaseHorarioVisual): number {
     const duracionMinutos = this.minutos(clase.horaFin) - this.minutos(clase.horaInicio);
-    return Math.max(28, (duracionMinutos / 60) * this.HOUR_HEIGHT - 6);
+    return Math.max(34, (duracionMinutos / 60) * this.altoHora() - 6);
   }
 
   posicionRecreo(recreo: BloqueHorario): number {
-    return ((this.minutos(recreo.horaInicio) - this.rango().inicio) / 60) * this.HOUR_HEIGHT + 2;
+    return ((this.minutos(recreo.horaInicio) - this.rango().inicio) / 60) * this.altoHora() + 2;
   }
 
   altoRecreo(recreo: BloqueHorario): number {
     const duracion = this.minutos(recreo.horaFin) - this.minutos(recreo.horaInicio);
-    return Math.max(20, (duracion / 60) * this.HOUR_HEIGHT - 4);
+    return Math.max(22, (duracion / 60) * this.altoHora() - 4);
   }
 
+  readonly mapaTonoCursos = computed(() => {
+    const mapa = new Map<number, number>();
+    const totalTonos = 16;
+    const cursosDocente = new Set<number>();
+    for (const h of this.horarios()) {
+      cursosDocente.add(h.cursoId);
+    }
+    const listaOrdenada = [...cursosDocente].sort((a, b) => {
+      const nombreA = this.horarios().find((h) => h.cursoId === a)?.curso ?? '';
+      const nombreB = this.horarios().find((h) => h.cursoId === b)?.curso ?? '';
+      return nombreA.localeCompare(nombreB, 'es') || (a - b);
+    });
+    listaOrdenada.forEach((cursoId, idx) => {
+      mapa.set(cursoId, (idx % totalTonos) + 1);
+    });
+    return mapa;
+  });
+
   tonoClase(clase: HorarioSemanal): string {
-    return `tone-${(clase.cursoId % 6) + 1}`;
+    const tono = this.mapaTonoCursos().get(clase.cursoId);
+    return `tone-${tono ?? ((clase.cursoId % 16) + 1)}`;
+  }
+
+  evaluacionesDeFecha(fechaStr: string): Evaluacion[] {
+    return this.evaluaciones().filter(
+      (ev) => ev.fechaEvaluacion && ev.fechaEvaluacion.slice(0, 10) === fechaStr
+    );
+  }
+
+  evaluacionDeClase(clase: HorarioSemanal, fechaStr: string): Evaluacion | null {
+    return this.evaluaciones().find(
+      (ev) => ev.docenteCursoSeccionId === clase.asignacionId &&
+              ev.fechaEvaluacion &&
+              ev.fechaEvaluacion.slice(0, 10) === fechaStr
+    ) ?? null;
+  }
+
+  evaluacionesProgramadasDeClase(clase: HorarioSemanal): Evaluacion[] {
+    return this.evaluaciones().filter(
+      (ev) => ev.docenteCursoSeccionId === clase.asignacionId && !!ev.fechaEvaluacion
+    );
+  }
+
+  proximaEvaluacion(clase: HorarioSemanal, fechaDia: string): Evaluacion | null {
+    const evals = this.evaluacionesProgramadasDeClase(clase);
+    if (!evals.length) return null;
+    const enFecha = evals.find((ev) => ev.fechaEvaluacion?.slice(0, 10) === fechaDia);
+    if (enFecha) return null;
+    const futuras = evals
+      .filter((ev) => (ev.fechaEvaluacion?.slice(0, 10) || '') >= fechaDia)
+      .sort((a, b) => (a.fechaEvaluacion || '').localeCompare(b.fechaEvaluacion || ''));
+    if (futuras.length) return futuras[0];
+    return evals[0];
+  }
+
+  formatearFechaCorta(fechaStr: string | null | undefined): string {
+    if (!fechaStr) return '';
+    const partes = fechaStr.slice(0, 10).split('-');
+    if (partes.length === 3) {
+      return `${partes[2]}/${partes[1]}`;
+    }
+    return fechaStr;
+  }
+
+  cargarEvaluaciones(): void {
+    const periodoEvalId = this.periodoEvaluacionId();
+    const asigIds = [...new Set(this.horarios().map((h) => h.asignacionId))];
+    if (!periodoEvalId || !asigIds.length) {
+      this.evaluaciones.set([]);
+      return;
+    }
+    const solicitudes = asigIds.map((id) =>
+      this.evaluacionService.listarEvaluaciones(id, periodoEvalId)
+    );
+    forkJoin(solicitudes).subscribe({
+      next: (listas) => {
+        this.evaluaciones.set(listas.flat());
+      },
+      error: () => this.evaluaciones.set([])
+    });
   }
 
   cerrarAlerta(): void {
@@ -420,6 +533,8 @@ export class MiHorario implements OnInit, OnDestroy {
           this.mostrarFinDeSemana.set(true);
         }
         this.cargando.set(false);
+        this.cargarEvaluaciones();
+        setTimeout(() => this.ajustarAltoHorario(), 60);
       },
       error: (e) => this.mostrarError(e)
     });
@@ -457,6 +572,7 @@ export class MiHorario implements OnInit, OnDestroy {
       ?? evaluaciones.find((item) => hoy < item.fechaInicio)
       ?? evaluaciones[evaluaciones.length - 1];
     this.periodoEvaluacionId.set(seleccionada.id);
+    this.cargarEvaluaciones();
   }
 
   private animarCambioCalendario(): void {

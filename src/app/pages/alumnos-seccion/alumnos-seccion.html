@@ -2,38 +2,27 @@
   <section class="section-students-page">
     <app-custom-alert [open]="alertState().open" [type]="alertState().type" [title]="alertState().title"
       [message]="alertState().message" [confirmText]="alertState().confirmText" [cancelText]="alertState().cancelText"
-      [autoCloseMs]="alertState().autoCloseMs" (confirm)="cerrarAlerta()" (cancel)="cerrarAlerta()"
-      (dismiss)="cerrarAlerta()" />
+      [autoCloseMs]="alertState().autoCloseMs"
+      (confirm)="matriculaPendienteCambioEstado() ? confirmarCambioEstadoMatricula() : cerrarAlerta()"
+      (cancel)="matriculaPendienteCambioEstado() ? cancelarCambioEstadoMatricula() : cerrarAlerta()"
+      (dismiss)="matriculaPendienteCambioEstado() ? cancelarCambioEstadoMatricula() : cerrarAlerta()" />
 
     <div class="page-card page-slide-in">
       <div class="card-head">
-        <div class="card-head-inline">
-          <div class="panel-head">
-            <a class="back-link" [routerLink]="['/gestion-estudiantil/periodo', periodoId]">
-              <i class="fa-solid fa-arrow-left"></i>
-              Volver a grados y secciones
-            </a>
-            <h2 style="  margin-top: 15px;">{{ grado()?.nombre }} - Sección {{ seccion()?.nombre }}</h2>
-
+        <div class="students-page-head">
+          <a class="action-button secondary section-back-button back-link" [routerLink]="['/gestion-estudiantil/periodo', periodoId]" title="Volver a grados y secciones">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>Volver</span>
+          </a>
+          <div class="panel-head students-page-title">
+            <h2>Alumnos de {{ grado()?.nombre }} · Sección {{ seccion()?.nombre }}</h2>
+            <p>Consulta y gestiona los alumnos inscritos en esta sección.</p>
           </div>
-
-          <div class="head-context">
-            <div class="context-chip">
-              <span>Período: </span>
-              <strong>{{ periodo()?.anio || 'Sin año' }}</strong>
-            </div>
-            <div class="context-chip">
-              <span>Grado: </span>
-              <strong>{{ grado()?.nombre || 'Sin grado' }}</strong>
-            </div>
-            <div class="context-chip">
-              <span>Sección: </span>
-              <strong>{{ seccion()?.nombre || 'Sin sección' }}</strong>
-            </div>
-            <div class="context-chip">
-              <span>Matriculados: </span>
-              <strong>{{ matriculasSeccion().length }}</strong>
-            </div>
+          <div class="head-metrics students-summary">
+            <span class="records-chip">Período: {{ periodo()?.anio || 'Sin año' }}</span>
+            <span class="records-chip">Grado: {{ grado()?.nombre || 'Sin grado' }}</span>
+            <span class="records-chip">Sección: {{ seccion()?.nombre || 'Sin sección' }}</span>
+            <span class="records-chip accent">{{ matriculasSeccion().length }} matriculados</span>
           </div>
         </div>
       </div>
@@ -49,8 +38,42 @@
           <div class="panel-head section-head">
             <div class="section-head-main">
               <h3>Alumnos inscritos</h3>
-              <span class="records-chip">{{ matriculasSeccion().length }} alumnos</span>
+              <span class="records-chip">{{ matriculasFiltradas().length }} de {{ matriculasSeccion().length }} alumnos</span>
             </div>
+          </div>
+
+          <div class="students-filter-bar">
+            <div class="students-search-field">
+              <button class="students-search-button" type="button" aria-label="Buscar alumno" title="Buscar alumno"
+                (click)="studentsSearchInput.focus()">
+                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+              </button>
+              <input #studentsSearchInput type="text" placeholder="Buscar por alumno o código..."
+                aria-label="Buscar alumnos" [value]="busquedaAlumnos()"
+                (input)="busquedaAlumnos.set($any($event.target).value)" />
+              <button class="students-search-button" type="button" aria-label="Limpiar búsqueda"
+                title="Limpiar búsqueda" [disabled]="!busquedaAlumnos() && !estadoFiltro()" (click)="limpiarFiltros()">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+              </button>
+            </div>
+
+            <label class="students-filter-select">
+              <span>Estado</span>
+              <select aria-label="Filtrar por estado" [value]="estadoFiltro()"
+                (change)="estadoFiltro.set($any($event.target).value)">
+                <option value="">Todos los estados</option>
+                <option value="ACTIVO">Activos</option>
+                <option value="INACTIVO">Inactivos</option>
+              </select>
+            </label>
+
+            <button type="button" class="sort-chip-btn active"
+              (click)="alternarOrdenNombre()"
+              [title]="ordenAscendente() ? 'Ordenar de la Z a la A por nombre' : 'Ordenar de la A a la Z por nombre'">
+              <i class="fa-solid" [class.fa-arrow-down-a-z]="ordenAscendente()"
+                [class.fa-arrow-up-z-a]="!ordenAscendente()"></i>
+              <span>Nombre {{ ordenAscendente() ? '(A-Z)' : '(Z-A)' }}</span>
+            </button>
           </div>
 
           <div class="table-panel-body">
@@ -59,16 +82,18 @@
               <table class="app-table">
                 <thead>
                   <tr>
-                    <th>Alumno</th>
+                    <th class="text-left">Alumno</th>
                     <th>Código</th>
                     <th>Fecha de ingreso</th>
                     <th>Estado</th>
+                    <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   @for (row of [0, 1, 2, 3, 4]; track row) {
                   <tr>
                     <td><span class="skeleton-line long"></span></td>
+                    <td><span class="skeleton-line short"></span></td>
                     <td><span class="skeleton-line short"></span></td>
                     <td><span class="skeleton-line short"></span></td>
                     <td><span class="skeleton-line short"></span></td>
@@ -87,25 +112,76 @@
               <table class="app-table">
                 <thead>
                   <tr>
-                    <th>Alumno</th>
+                    <th class="text-left">Alumno</th>
                     <th>Código</th>
                     <th>Fecha de ingreso</th>
                     <th>Estado</th>
+                    <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   @if (!matriculasSeccion().length) {
                   <tr>
-                    <td class="empty-row" colspan="4">No hay alumnos registrados en esta sección para el período
-                      seleccionado.</td>
+                    <td colspan="5" class="table-empty-cell">
+                      <div class="table-empty-state">
+                        <div class="empty-state-badge">
+                          <i class="fa-solid fa-user-slash"></i>
+                        </div>
+                        <strong class="empty-state-title">No hay alumnos inscritos</strong>
+                        <p class="empty-state-desc">No se encontraron alumnos registrados en esta sección para el período seleccionado.</p>
+                      </div>
+                    </td>
+                  </tr>
+                  } @else if (!matriculasFiltradas().length) {
+                  <tr>
+                    <td colspan="5" class="table-empty-cell">
+                      <div class="table-empty-state">
+                        <div class="empty-state-badge">
+                          <i class="fa-solid fa-magnifying-glass"></i>
+                        </div>
+                        <strong class="empty-state-title">No se encontraron alumnos</strong>
+                        <p class="empty-state-desc">No hay alumnos que coincidan con la búsqueda o filtros aplicados.</p>
+                        <button type="button" class="empty-state-btn" (click)="limpiarFiltros()">
+                          <i class="fa-solid fa-rotate-left"></i> Limpiar filtros
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                   } @else {
-                  @for (matricula of matriculasSeccion(); track matricula.id) {
-                  <tr>
-                    <td>{{ matricula.alumnoNombreCompleto }}</td>
+                  @for (matricula of matriculasFiltradas(); track matricula.id) {
+                  <tr [class.row-editing]="alumnoEditandoId() === matricula.alumnoId">
+                    <td class="text-left font-medium">{{ matricula.alumnoNombreCompleto }}</td>
                     <td>{{ matricula.codigoAlumno }}</td>
                     <td>{{ matricula.fechaMatricula }}</td>
-                    <td><span class="status-badge active">ACTIVO</span></td>
+                    <td>
+                      <button class="state-switch" type="button" role="switch"
+                        [class.is-active]="(matricula.estado || 'ACTIVO') === 'ACTIVO'"
+                        [class.is-loading]="cambiandoEstadoMatriculaId() === matricula.id"
+                        [attr.aria-checked]="(matricula.estado || 'ACTIVO') === 'ACTIVO'"
+                        [attr.aria-label]="'Estado de matrícula de ' + matricula.alumnoNombreCompleto"
+                        [title]="esPeriodoEditable() ? 'Cambiar estado de matrícula' : 'El período no es editable'"
+                        [disabled]="!esPeriodoEditable() || cambiandoEstadoMatriculaId() === matricula.id"
+                        (click)="solicitarCambioEstadoMatricula(matricula)">
+                        <span class="state-switch-track" aria-hidden="true"><span></span></span>
+                        <span class="state-switch-label">
+                          {{ (matricula.estado || 'ACTIVO') === 'ACTIVO' ? 'Activo' : 'Inactivo' }}
+                        </span>
+                      </button>
+                    </td>
+                    <td>
+                      <div class="row-actions">
+                        <button class="row-action row-action-edit" type="button"
+                          [disabled]="!esPeriodoEditable() || cargandoDetalleAlumnoId() === matricula.alumnoId"
+                          [class.active-edit]="alumnoEditandoId() === matricula.alumnoId"
+                          (click)="seleccionarAlumnoParaEditar(matricula)"
+                          [title]="esPeriodoEditable() ? 'Editar datos del alumno' : 'El período no es editable'">
+                          <i class="fa-solid" [class.fa-pen-to-square]="cargandoDetalleAlumnoId() !== matricula.alumnoId"
+                            [class.fa-spinner]="cargandoDetalleAlumnoId() === matricula.alumnoId"
+                            [class.fa-spin]="cargandoDetalleAlumnoId() === matricula.alumnoId"></i>
+                          <span>Editar</span>
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                   }
                   }
@@ -129,29 +205,59 @@
           <div class="panel-stack">
             <section class="form-panel form-panel--primary">
               <div class="panel-head">
-                <h3 style="margin-bottom: 20px;">Registrar alumno nuevo</h3>
+                <h3>{{ alumnoEditandoId() ? 'Editar datos del alumno' : 'Registrar alumno nuevo' }}</h3>
+                @if (alumnoEditandoId()) {
+                <p class="edit-subtitle">Editando a: <strong>{{ alumnoEditandoNombre() }}</strong></p>
+                }
               </div>
 
-              <div class="quick-actions">
-                <button class="action-button tertiary full-button" type="button"
-                  [disabled]="!periodoAnterior() || cargandoPeriodoAnterior()" (click)="cargarAlumnosPeriodoAnterior()">
-                  {{ cargandoPeriodoAnterior() ? 'Cargando...' : 'Cargar alumnos del período anterior' }}
+              @if (alumnoEditandoId()) {
+              <div class="editing-indicator">
+                <div class="editing-info">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                  <span>Modo edición activo</span>
+                </div>
+                <button type="button" class="cancel-edit-btn" (click)="cancelarEdicion()" title="Cancelar edición">
+                  <i class="fa-solid fa-xmark"></i>
                 </button>
               </div>
+              } @else {
+              <div class="quick-actions">
+                <button class="load-previous-btn full-button" type="button"
+                  [disabled]="!periodoAnterior() || cargandoPeriodoAnterior()" (click)="cargarAlumnosPeriodoAnterior()">
+                  <i class="fa-solid" [class.fa-clock-rotate-left]="!cargandoPeriodoAnterior()"
+                    [class.fa-spinner]="cargandoPeriodoAnterior()"
+                    [class.fa-spin]="cargandoPeriodoAnterior()"></i>
+                  <span>{{ cargandoPeriodoAnterior() ? 'Cargando alumnos...' : 'Cargar alumnos del período anterior' }}</span>
+                </button>
+              </div>
+              }
 
-              <form class="master-form">
+              <form class="master-form" (submit)="$event.preventDefault(); guardarAlumno()">
+                @if (alumnoEditandoId() && formAlumno().codigo) {
+                <label>
+                  Código asignado
+                  <input type="text" [value]="formAlumno().codigo || ''" disabled
+                    name="codigo" placeholder="Código del alumno" />
+                </label>
+                }
+
                 <div class="form-two-columns">
                   <label>
                     Nombres
-                    <input type="text" [ngModel]="formAlumno().nombres"
-                      (ngModelChange)="actualizarCampoAlumno('nombres', $event)" name="nombres"
+                    <input type="text" [value]="formAlumno().nombres"
+                      (keydown)="filtrarTeclasSoloLetras($event)"
+                      (input)="onInputSoloLetras('nombres', $event)"
+                      maxlength="70" name="nombres"
                       placeholder="Nombres del alumno" />
                   </label>
 
                   <label>
                     Apellidos
-                    <input type="text" [ngModel]="formAlumno().apellidos"
-                      (ngModelChange)="actualizarCampoAlumno('apellidos', $event)" name="apellidos"
+                    <input type="text" [value]="formAlumno().apellidos"
+                      (keydown)="filtrarTeclasSoloLetras($event)"
+                      (input)="onInputSoloLetras('apellidos', $event)"
+                      maxlength="70" name="apellidos"
                       placeholder="Apellidos del alumno" />
                   </label>
                 </div>
@@ -169,8 +275,9 @@
 
                   <label>
                     Número de documento
-                    <input type="text" [ngModel]="formAlumno().numeroDocumento"
-                      (ngModelChange)="actualizarNumeroDocumentoAlumno($event)" name="numeroDocumento"
+                    <input type="text" [value]="formAlumno().numeroDocumento || ''"
+                      (keydown)="filtrarTeclasNumeroDocumento($event)"
+                      (input)="onInputNumeroDocumento($event)" name="numeroDocumento"
                       [attr.maxlength]="tipoDocumentoAlumno()?.longitud ?? 15"
                       [attr.inputmode]="tipoDocumentoAlumno()?.tipo === 'NUMERICO' ? 'numeric' : 'text'"
                       [attr.aria-required]="true" required placeholder="Ingresa el número" />
@@ -201,35 +308,56 @@
 
                 <label>
                   Dirección
-                  <input type="text" [ngModel]="formAlumno().direccion"
-                    (ngModelChange)="actualizarCampoAlumno('direccion', $event)" name="direccion"
+                  <input type="text" [value]="formAlumno().direccion || ''"
+                    (input)="onInputDireccion($event)" maxlength="150" name="direccion"
                     placeholder="Dirección del alumno" />
                 </label>
 
                 <div class="form-two-columns">
                   <label>
                     Nombre del apoderado
-                    <input type="text" [ngModel]="formAlumno().nombreApoderado"
-                      (ngModelChange)="actualizarCampoAlumno('nombreApoderado', $event)" name="nombreApoderado"
+                    <input type="text" [value]="formAlumno().nombreApoderado || ''"
+                      (keydown)="filtrarTeclasSoloLetras($event)"
+                      (input)="onInputSoloLetras('nombreApoderado', $event)"
+                      maxlength="100" name="nombreApoderado"
                       placeholder="Apoderado o tutor" />
                   </label>
 
                   <label>
                     Teléfono del apoderado
-                    <input type="text" [ngModel]="formAlumno().telefonoApoderado"
-                      (ngModelChange)="actualizarCampoAlumno('telefonoApoderado', $event)" name="telefonoApoderado"
-                      placeholder="Teléfono de contacto" />
+                    <input type="text" [value]="formAlumno().telefonoApoderado || ''"
+                      (keydown)="filtrarTeclasTelefono($event)"
+                      (input)="onInputTelefono($event)"
+                      maxlength="9" inputmode="numeric" name="telefonoApoderado"
+                      placeholder="Ej. 987654321" />
                   </label>
                 </div>
 
                 <div class="form-actions">
-                  <button class="action-button primary" type="button" [disabled]="guardandoAlumno()"
-                    (click)="guardarAlumnoNuevo()">
-                    {{ guardandoAlumno() ? 'Guardando...' : 'Guardar alumno' }}
+                  @if (alumnoEditandoId()) {
+                  <button class="action-button secondary" type="button" (click)="cancelarEdicion()" [disabled]="guardandoAlumno()">
+                    <i class="fa-solid fa-xmark"></i>
+                    <span>Cancelar</span>
                   </button>
+                  <button class="action-button primary" type="submit" [disabled]="guardandoAlumno() || cargandoDetalleAlumnoId() !== null"
+                    (click)="guardarAlumno()">
+                    @if (guardandoAlumno()) {
+                      <i class="fa-solid fa-spinner fa-spin"></i>
+                      <span>Actualizando...</span>
+                    } @else {
+                      <i class="fa-solid fa-floppy-disk"></i>
+                      <span>Guardar cambios</span>
+                    }
+                  </button>
+                  } @else {
                   <button class="action-button secondary" type="button" (click)="limpiarFormularioAlumno()">
                     Limpiar
                   </button>
+                  <button class="action-button primary" type="submit" [disabled]="guardandoAlumno()"
+                    (click)="guardarAlumno()">
+                    {{ guardandoAlumno() ? 'Guardando...' : 'Guardar alumno' }}
+                  </button>
+                  }
                 </div>
               </form>
             </section>
@@ -242,8 +370,8 @@
     </div>
 
     @if (modalAlumnosAnterioresAbierto()) {
-    <div class="student-copy-backdrop" role="presentation">
-      <section class="student-copy-modal" role="dialog" aria-modal="true" aria-labelledby="copy-students-title">
+    <div class="student-copy-backdrop" role="presentation" (click)="cerrarModalAlumnosAnteriores()">
+      <section class="student-copy-modal" role="dialog" aria-modal="true" aria-labelledby="copy-students-title" (click)="$event.stopPropagation()">
         <div class="student-copy-head">
           <div class="panel-head">
             <span class="panel-kicker">Período anterior</span>

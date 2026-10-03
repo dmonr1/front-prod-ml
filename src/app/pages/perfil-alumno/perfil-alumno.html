@@ -1,268 +1,383 @@
 <app-shell>
   <section class="student-profile-page">
     <div class="profile-card">
-      <div class="profile-head profile-slide-in profile-slide-in-top">
-        <a class="back-link-button" routerLink="/predicciones">
-          <i class="fa-solid fa-arrow-left"></i>
-          <span>Volver a seguimiento</span>
-        </a>
-      </div>
+      <!-- Cabecera institucional con botón volver y chip de período -->
+      <header class="profile-head profile-slide-in profile-slide-in-top">
+        <div class="head-left-col">
+          <a class="action-button secondary section-back-button" [routerLink]="enlaceVolver()" [queryParams]="queryParamsVolver()" [title]="textoVolver()">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>Volver</span>
+          </a>
+        </div>
+
+        <div class="head-center-col">
+          <h2>Ficha del estudiante</h2>
+          <span class="periodo-badge-chip">
+            <i class="fa-solid fa-calendar-check"></i>
+            Período {{ prediccionSeleccionada()?.anioAcademico || '2026' }}
+          </span>
+        </div>
+
+        <div class="head-right-col"></div>
+      </header>
 
       @if (cargando()) {
-      <section class="state-card profile-slide-in profile-slide-in-bottom">
-        <strong>Cargando ficha del alumno...</strong>
-        <p>Estamos reuniendo predicciones, alertas y recomendaciones del seguimiento.</p>
-      </section>
+        <section class="state-card profile-slide-in profile-slide-in-bottom">
+          <i class="fa-solid fa-spinner fa-spin state-spinner"></i>
+          <strong>Cargando ficha del alumno...</strong>
+          <p>Estamos reuniendo predicciones, alertas y recomendaciones del seguimiento.</p>
+        </section>
       } @else if (error()) {
-      <section class="state-card state-error profile-slide-in profile-slide-in-bottom">
-        <strong>Revisa el flujo</strong>
-        <p>{{ error() }}</p>
-      </section>
+        <section class="state-card state-error profile-slide-in profile-slide-in-bottom">
+          <i class="fa-solid fa-circle-exclamation state-error-icon"></i>
+          <strong>Revisa el flujo</strong>
+          <p>{{ error() }}</p>
+        </section>
       } @else if (prediccionSeleccionada(); as detalle) {
-      <div class="profile-layout">
-        <aside class="student-column profile-slide-in profile-slide-in-top">
-          <article class="student-summary-card">
-            <div class="student-avatar">{{ avatarIniciales() || 'A' }}</div>
+        <div class="profile-layout">
+          <!-- Columna Lateral Izquierda: Perfil y Casos Detectados -->
+          <aside class="student-column profile-slide-in profile-slide-in-top">
+            <!-- Tarjeta de Identificación del Estudiante con Chips -->
+            <article class="student-summary-card">
+              <div class="student-avatar">{{ avatarIniciales() || 'A' }}</div>
 
-            <div class="student-meta">
-              <h2>{{ detalle.alumnoNombreCompleto }}</h2>
-              <span>{{ detalle.codigoAlumno }}</span>
-              <span>{{ detalle.grado }} · Sección {{ detalle.seccion }}</span>
-              <span>Período {{ detalle.anioAcademico || 'Actual' }}</span>
-            </div>
-          </article>
-
-          <article class="cases-card">
-            <div class="section-head">
-              <span class="eyebrow">Resumen</span>
-              <h3>Casos detectados</h3>
-              <p>Selecciona el caso que quieres revisar con más detalle.</p>
-            </div>
-
-            <div class="case-list">
-              @for (item of predicciones(); track item.id) {
-              <button type="button" class="case-row" [class.active]="seleccionadaId() === item.id"
-                (click)="seleccionarPrediccion(item.id)">
-                <div class="case-main">
-                  <strong>{{ item.curso || 'Riesgo global' }}</strong>
-                  <span>{{ item.nombrePeriodoEvaluacion }}</span>
-                </div>
-
-                <span class="risk-badge" [class.high]="item.nivelRiesgoNormalizado === 'ALTO'"
-                  [class.medium]="item.nivelRiesgoNormalizado === 'MEDIO'"
-                  [class.low]="item.nivelRiesgoNormalizado === 'BAJO'">
-                  <i class="fa-solid" [class.fa-triangle-exclamation]="item.nivelRiesgoNormalizado === 'ALTO'"
-                    [class.fa-circle-exclamation]="item.nivelRiesgoNormalizado === 'MEDIO'"
-                    [class.fa-circle-check]="item.nivelRiesgoNormalizado === 'BAJO'" aria-hidden="true"></i>
-                  {{ item.nivelRiesgoNormalizado }}
-                </span>
-              </button>
-              }
-            </div>
-          </article>
-        </aside>
-
-        <section class="analytics-column">
-          <div class="summary-grid profile-slide-in profile-slide-in-top">
-            @for (item of metricasKpi(); track item.etiqueta) {
-            <article class="summary-tile" [class.tone-high]="item.tono === 'high'"
-              [class.tone-medium]="item.tono === 'medium'" [class.tone-low]="item.tono === 'low'">
-              <span>{{ item.etiqueta }}</span>
-              <strong>{{ item.valor }}</strong>
-              <small>{{ item.ayuda }}</small>
-            </article>
-            }
-          </div>
-
-          <div class="analysis-grid profile-slide-in profile-slide-in-middle">
-            <article class="analysis-card hero-analytics-card">
-              <div class="analysis-head">
-                <div class="head-card">
-                  <div>
-                    <span class="eyebrow">Predicción de riesgo académico</span>
-                    <h3>{{ detalle.curso || 'Vista global del alumno' }}</h3>
-                  </div>
-
-                  <span class="risk-badge tit" [class.high]="detalle.nivelRiesgoNormalizado === 'ALTO'"
-                    [class.medium]="detalle.nivelRiesgoNormalizado === 'MEDIO'"
-                    [class.low]="detalle.nivelRiesgoNormalizado === 'BAJO'">
-                    <i class="fa-solid" [class.fa-triangle-exclamation]="detalle.nivelRiesgoNormalizado === 'ALTO'"
-                      [class.fa-circle-exclamation]="detalle.nivelRiesgoNormalizado === 'MEDIO'"
-                      [class.fa-circle-check]="detalle.nivelRiesgoNormalizado === 'BAJO'" aria-hidden="true"></i>
-                    {{ detalle.nivelRiesgoNormalizado }}
+              <div class="student-meta">
+                <h2>{{ detalle.alumnoNombreCompleto }}</h2>
+                <div class="student-chips-row">
+                  <span class="info-chip code" title="Código de estudiante">
+                    <i class="fa-solid fa-id-card"></i>
+                    {{ detalle.codigoAlumno }}
+                  </span>
+                  <span class="info-chip grade" title="Grado y sección">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                    {{ detalle.grado }} · Sec. {{ detalle.seccion }}
+                  </span>
+                  <span class="info-chip period" title="Año lectivo">
+                    <i class="fa-regular fa-calendar-check"></i>
+                    Período {{ detalle.anioAcademico || '2026' }}
                   </span>
                 </div>
+              </div>
+            </article>
 
-                <div class="detail-tags">
-
-                  @if (periodosDisponiblesPerfil().length) {
-                  <div class="period-chip-row">
-                    @for (periodo of periodosDisponiblesPerfil(); track periodo.id) {
-                    <button type="button" class="period-chip"
-                      [class.active]="detalle.periodoEvaluacionId === periodo.id"
-                      [class.empty]="!prediccionesGlobales().some(item => item.periodoEvaluacionId === periodo.id)"
-                      (click)="seleccionarPeriodoPerfil(periodo.id)">
-                      {{ periodo.nombre }}
-                    </button>
-                    }
-                  </div>
-                  }
-                </div>
+            <!-- Casos Detectados Sin Repetición y con Chips de Riesgo -->
+            <article class="cases-card">
+              <div class="section-head">
+                <span class="eyebrow">Diagnósticos</span>
+                <h3>Casos detectados</h3>
+                <p>Selecciona el caso o período a evaluar:</p>
               </div>
 
-
-
-              <div class="risk-hero-grid">
-                <div class="risk-gauge-block">
-                  <div class="score-arc-shell">
-                    <svg class="score-arc" viewBox="0 0 220 130" aria-hidden="true">
-                      <path d="M 30 110 A 80 80 0 0 1 190 110" pathLength="100" class="score-arc-track"></path>
-                      <path d="M 30 110 A 80 80 0 0 1 190 110" pathLength="100" class="score-arc-fill"
-                        [class.high]="detalle.nivelRiesgoNormalizado === 'ALTO'"
-                        [class.medium]="detalle.nivelRiesgoNormalizado === 'MEDIO'"
-                        [class.low]="detalle.nivelRiesgoNormalizado === 'BAJO'"
-                        [attr.stroke-dasharray]="detalle.puntaje + ' 100'"></path>
-                    </svg>
-                    <div
-                      class="score-arc-copy"
-                      [class.high]="detalle.nivelRiesgoNormalizado === 'ALTO'"
-                      [class.medium]="detalle.nivelRiesgoNormalizado === 'MEDIO'"
-                      [class.low]="detalle.nivelRiesgoNormalizado === 'BAJO'"
-                    >
-                      <strong>{{ detalle.puntaje | number:'1.0-0' }}%</strong>
-                      <span>{{ detalle.nivelRiesgoNormalizado === 'ALTO' ? 'Riesgo alto' :
-                        detalle.nivelRiesgoNormalizado === 'MEDIO' ? 'Riesgo medio' : 'Riesgo bajo' }}</span>
+              <div class="case-list">
+                @for (item of prediccionesUnicas(); track item.id) {
+                  <button type="button" class="case-row" [class.active]="seleccionadaId() === item.id"
+                    (click)="seleccionarPrediccion(item.id)">
+                    <div class="case-icon-box" [class.is-course]="!!item.curso">
+                      <i [class]="item.curso ? 'fa-solid fa-book-bookmark' : 'fa-solid fa-shield-halved'"></i>
                     </div>
-                  </div>
-                </div>
-              </div>
 
-              <div class="hero-copy">
-                <h4>Interpretación del riesgo</h4>
-                <p>{{ detalle.alertaPrincipal }}</p>
-              </div>
-            </article>
+                    <div class="case-main">
+                      <strong>{{ item.curso ? item.curso : 'Diagnóstico General' }}</strong>
+                      <span class="case-period-label">
+                        <i class="fa-regular fa-calendar"></i>
+                        {{ item.nombrePeriodoEvaluacion }}
+                      </span>
+                    </div>
 
-            <article class="analysis-card factors-card">
-              <div class="analysis-head">
-                <div>
-                  <span class="eyebrow">Factores que influyen</span>
-                  <h3>Lectura del caso actual</h3>
-                </div>
-              </div>
-
-              <div class="factor-bars">
-                @for (factor of factoresAnaliticos(); track factor.titulo) {
-                <div class="factor-row">
-                  <div class="factor-meta">
-                    <strong>{{ factor.titulo }}</strong>
-                    <span>{{ factor.subtitulo }}</span>
-                  </div>
-
-                  <div class="factor-bar-shell">
-                    <div class="factor-bar-fill" [class.high]="factor.tono === 'high'"
-                      [class.medium]="factor.tono === 'medium'" [class.low]="factor.tono === 'low'"
-                      [style.width.%]="factor.valor"></div>
-                  </div>
-
-                  <span class="factor-level" [class.high]="factor.tono === 'high'"
-                    [class.medium]="factor.tono === 'medium'" [class.low]="factor.tono === 'low'">
-                    {{ factor.etiqueta }}
-                  </span>
-                </div>
+                    <span class="risk-badge-chip" [class.high]="item.nivelRiesgoNormalizado === 'ALTO'"
+                      [class.medium]="item.nivelRiesgoNormalizado === 'MEDIO'"
+                      [class.low]="item.nivelRiesgoNormalizado === 'BAJO'">
+                      <i class="fa-solid" [class.fa-triangle-exclamation]="item.nivelRiesgoNormalizado === 'ALTO'"
+                        [class.fa-circle-exclamation]="item.nivelRiesgoNormalizado === 'MEDIO'"
+                        [class.fa-circle-check]="item.nivelRiesgoNormalizado === 'BAJO'" aria-hidden="true"></i>
+                      {{ item.puntaje | number:'1.0-0' }}%
+                    </span>
+                  </button>
                 }
               </div>
             </article>
+          </aside>
 
-            <article class="analysis-card evolution-card">
-              <div class="analysis-head">
-                <div>
-                  <span class="eyebrow">Evolución del riesgo</span>
-                  <h3>Por períodos de evaluación</h3>
-                </div>
-              </div>
-
-              @if (svgEvolucion().points.length > 1) {
-              <div class="evolution-chart">
-                <div class="chart-body">
-                  <div class="chart-y-axis" aria-hidden="true">
-                    <span>100%</span>
-                    <span>75%</span>
-                    <span>50%</span>
-                    <span>25%</span>
-                    <span>0%</span>
-                  </div>
-
-                  <div class="chart-plot">
-                    <svg viewBox="0 0 360 220" preserveAspectRatio="none" aria-hidden="true">
-                      <line x1="24" y1="24" x2="336" y2="24" class="grid-line"></line>
-                      <line x1="24" y1="72" x2="336" y2="72" class="grid-line"></line>
-                      <line x1="24" y1="120" x2="336" y2="120" class="grid-line"></line>
-                      <line x1="24" y1="168" x2="336" y2="168" class="grid-line"></line>
-                      <line x1="24" y1="196" x2="336" y2="196" class="grid-axis"></line>
-                      <line x1="24" y1="24" x2="24" y2="196" class="grid-axis"></line>
-                      <path [attr.d]="svgEvolucion().path" class="chart-line"></path>
-                      @for (point of svgEvolucion().points; track point.etiqueta + point.valor) {
-                      @if (point.valor !== null && point.y !== null) {
-                      <text
-                        [attr.x]="point.x"
-                        [attr.y]="point.y - 14"
-                        text-anchor="middle"
-                        class="chart-point-value"
-                      >
-                        {{ point.valor | number:'1.0-0' }}%
-                      </text>
-                      <circle [attr.cx]="point.x" [attr.cy]="point.y" r="6" class="chart-point"></circle>
+          <!-- Columna Principal: Métricas, Análisis y Recomendaciones -->
+          <section class="analytics-column">
+            <!-- 1. Tarjetas KPI Superiores sin bordes con íconos e información relevante -->
+            <div class="summary-grid profile-slide-in profile-slide-in-top">
+              @for (item of metricasKpi(); track item.etiqueta) {
+                <article class="summary-tile" [class.tone-high]="item.tono === 'high'"
+                  [class.tone-medium]="item.tono === 'medium'" [class.tone-low]="item.tono === 'low'">
+                  <div class="tile-header">
+                    <span class="tile-label">{{ item.etiqueta }}</span>
+                    <div class="tile-icon" [class.tone-high]="item.tono === 'high'"
+                      [class.tone-medium]="item.tono === 'medium'" [class.tone-low]="item.tono === 'low'">
+                      @if (item.etiqueta.includes('Promedio')) {
+                        <i class="fa-solid fa-award"></i>
+                      } @else if (item.etiqueta.includes('Riesgo')) {
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                      } @else if (item.etiqueta.includes('Tendencia')) {
+                        <i class="fa-solid fa-arrow-trend-up"></i>
                       } @else {
-                      <circle [attr.cx]="point.x" cy="196" r="4.5" class="chart-point chart-point-empty"></circle>
-                      }
-                      }
-                    </svg>
-
-                    <div class="chart-labels">
-                      @for (point of svgEvolucion().points; track point.etiqueta + point.valor) {
-                      <span>{{ obtenerInicialPeriodo(point.etiqueta) }}</span>
+                        <i class="fa-solid fa-user-check"></i>
                       }
                     </div>
                   </div>
-                </div>
-              </div>
-              } @else {
-              <div class="mini-state">
-                <i class="fa-solid fa-chart-line"></i>
-                <span>Aún no hay suficientes períodos para mostrar una evolución de riesgo.</span>
-              </div>
+                  <strong class="tile-value">{{ item.valor }}</strong>
+                  <div class="tile-footer">
+                    <span class="tile-hint">{{ item.ayuda }}</span>
+                  </div>
+                </article>
               }
-            </article>
-          </div>
-
-          <section class="recommendations-panel profile-slide-in profile-slide-in-bottom">
-            <div class="analysis-head">
-              <div>
-                <span class="eyebrow">Recomendaciones personalizadas</span>
-                <h3>Acciones sugeridas para el alumno</h3>
-              </div>
             </div>
 
-            <div class="recommendations-grid">
-              @for (recomendacion of recomendacionesPersonalizadas(); track recomendacion.titulo) {
-              <article class="recommendation-card" [class.high]="recomendacion.tono === 'high'"
-                [class.medium]="recomendacion.tono === 'medium'" [class.low]="recomendacion.tono === 'low'">
-                <div class="recommendation-icon">
-                  <i [class]="recomendacion.icono"></i>
+            <!-- 2. Grilla de Análisis Central: Indicador de Riesgo, Factores y Evolución -->
+            <div class="analysis-grid profile-slide-in profile-slide-in-middle">
+              <!-- Card 1: Indicador de Riesgo Moderno con Anillo de Progreso (reemplazo del medidor roto) -->
+              <article class="analysis-card hero-analytics-card">
+                <div class="analysis-head">
+                  <div class="head-card">
+                    <div>
+                      <span class="eyebrow">Predicción de riesgo académico</span>
+                      <h3>{{ detalle.curso || 'Vista global del alumno' }}</h3>
+                    </div>
+
+                    <span class="risk-badge-chip tit" [class.high]="detalle.nivelRiesgoNormalizado === 'ALTO'"
+                      [class.medium]="detalle.nivelRiesgoNormalizado === 'MEDIO'"
+                      [class.low]="detalle.nivelRiesgoNormalizado === 'BAJO'">
+                      <i class="fa-solid" [class.fa-triangle-exclamation]="detalle.nivelRiesgoNormalizado === 'ALTO'"
+                        [class.fa-circle-exclamation]="detalle.nivelRiesgoNormalizado === 'MEDIO'"
+                        [class.fa-circle-check]="detalle.nivelRiesgoNormalizado === 'BAJO'" aria-hidden="true"></i>
+                      {{ detalle.nivelRiesgoNormalizado }}
+                    </span>
+                  </div>
+
+                  <!-- Chips de selección de período evaluativo -->
+                  @if (periodosDisponiblesPerfil().length) {
+                    <div class="period-chip-row">
+                      @for (periodo of periodosDisponiblesPerfil(); track periodo.id) {
+                        <button type="button" class="period-chip-btn"
+                          [class.active]="detalle.periodoEvaluacionId === periodo.id"
+                          [class.empty]="!prediccionesGlobales().some(item => item.periodoEvaluacionId === periodo.id)"
+                          (click)="seleccionarPeriodoPerfil(periodo.id)">
+                          <i class="fa-regular fa-calendar"></i>
+                          <span>{{ periodo.nombre }}</span>
+                        </button>
+                      }
+                    </div>
+                  }
                 </div>
 
-                <div class="recommendation-copy">
-                  <h4>{{ recomendacion.titulo }}</h4>
-                  <p>{{ recomendacion.descripcion }}</p>
-                  <a class="inline-link" href="javascript:void(0)">{{ recomendacion.accion }}</a>
+                <!-- Anillo de Riesgo Circular Moderno y Fiable -->
+                <div class="risk-circle-wrapper">
+                  <div class="risk-progress-ring" [class.high]="detalle.nivelRiesgoNormalizado === 'ALTO'"
+                    [class.medium]="detalle.nivelRiesgoNormalizado === 'MEDIO'"
+                    [class.low]="detalle.nivelRiesgoNormalizado === 'BAJO'">
+                    <svg class="ring-svg" viewBox="0 0 140 140">
+                      <circle class="ring-track" cx="70" cy="70" r="54" />
+                      <circle class="ring-progress" cx="70" cy="70" r="54"
+                        [style.strokeDashoffset]="calcularOffsetCirculo(detalle.puntaje)" />
+                    </svg>
+                    <div class="ring-data">
+                      <span class="ring-score">{{ detalle.puntaje | number:'1.0-0' }}%</span>
+                      <span class="ring-label" [class.high]="detalle.nivelRiesgoNormalizado === 'ALTO'"
+                        [class.medium]="detalle.nivelRiesgoNormalizado === 'MEDIO'"
+                        [class.low]="detalle.nivelRiesgoNormalizado === 'BAJO'">
+                        Riesgo {{ detalle.nivelRiesgoNormalizado | lowercase }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Escala de severidad explicativa en chips -->
+                  <div class="risk-scale-row">
+                    <span class="scale-chip low" [class.active]="detalle.nivelRiesgoNormalizado === 'BAJO'">
+                      Bajo 0–30%
+                    </span>
+                    <span class="scale-chip medium" [class.active]="detalle.nivelRiesgoNormalizado === 'MEDIO'">
+                      Medio 31–70%
+                    </span>
+                    <span class="scale-chip high" [class.active]="detalle.nivelRiesgoNormalizado === 'ALTO'">
+                      Alto 71–100%
+                    </span>
+                  </div>
+                </div>
+
+                <div class="interpretation-box" [class.high]="detalle.nivelRiesgoNormalizado === 'ALTO'"
+                  [class.medium]="detalle.nivelRiesgoNormalizado === 'MEDIO'"
+                  [class.low]="detalle.nivelRiesgoNormalizado === 'BAJO'">
+                  <div class="interpretation-header">
+                    <i class="fa-solid fa-file-waveform"></i>
+                    <strong>Diagnóstico del período</strong>
+                  </div>
+                  <p>{{ detalle.alertaPrincipal }}</p>
                 </div>
               </article>
-              }
+
+              <!-- Card 2: Factores que influyen con diseño de barras limpias y chips -->
+              <article class="analysis-card factors-card">
+                <div class="analysis-head">
+                  <div>
+                    <span class="eyebrow">Factores que influyen</span>
+                    <h3>Lectura del caso actual</h3>
+                  </div>
+                </div>
+
+                <div class="factor-bars">
+                  @for (factor of factoresAnaliticos(); track factor.titulo) {
+                    <div class="factor-item">
+                      <div class="factor-header">
+                        <div class="factor-info">
+                          <strong>{{ factor.titulo }}</strong>
+                          <span class="factor-subtext">{{ factor.subtitulo }}</span>
+                        </div>
+                        <span class="factor-level-chip" [class.high]="factor.tono === 'high'"
+                          [class.medium]="factor.tono === 'medium'" [class.low]="factor.tono === 'low'">
+                          {{ factor.etiqueta }}
+                        </span>
+                      </div>
+
+                      <div class="factor-track">
+                        <div class="factor-fill" [class.high]="factor.tono === 'high'"
+                          [class.medium]="factor.tono === 'medium'" [class.low]="factor.tono === 'low'"
+                          [style.width.%]="factor.valor"></div>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </article>
+
+              <!-- Card 3: Evolución del riesgo por períodos con resumen de chips -->
+              <article class="analysis-card evolution-card">
+                <div class="analysis-head">
+                  <div>
+                    <span class="eyebrow">Evolución del riesgo</span>
+                    <h3>Por períodos de evaluación</h3>
+                  </div>
+                </div>
+
+                @if (svgEvolucion().points.length > 0) {
+                  <div class="evolution-chart">
+                    <div class="chart-body">
+                      <div class="chart-y-axis" aria-hidden="true">
+                        <span>100%</span>
+                        <span>75%</span>
+                        <span>50%</span>
+                        <span>25%</span>
+                        <span>0%</span>
+                      </div>
+
+                      <div class="chart-plot">
+                        <svg viewBox="0 0 360 180" preserveAspectRatio="none" aria-hidden="true">
+                          <defs>
+                            <linearGradient id="chartAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.25" />
+                              <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.0" />
+                            </linearGradient>
+                          </defs>
+
+                          <line x1="24" y1="20" x2="336" y2="20" class="grid-line"></line>
+                          <line x1="24" y1="56" x2="336" y2="56" class="grid-line"></line>
+                          <line x1="24" y1="92" x2="336" y2="92" class="grid-line"></line>
+                          <line x1="24" y1="128" x2="336" y2="128" class="grid-line"></line>
+                          <line x1="24" y1="154" x2="336" y2="154" class="grid-axis"></line>
+
+                          @if (svgEvolucion().areaPath) {
+                            <path [attr.d]="svgEvolucion().areaPath" fill="url(#chartAreaGrad)" />
+                          }
+
+                          @if (svgEvolucion().path) {
+                            <path [attr.d]="svgEvolucion().path" class="chart-line" />
+                          }
+
+                          @for (point of svgEvolucion().points; track point.etiqueta) {
+                            @if (point.valor !== null && point.y !== null) {
+                              <text [attr.x]="point.x" [attr.y]="point.y - 10" text-anchor="middle" class="chart-point-value">
+                                {{ point.valor | number:'1.0-0' }}%
+                              </text>
+                              <circle [attr.cx]="point.x" [attr.cy]="point.y" r="5.5" class="chart-point"></circle>
+                            } @else {
+                              <circle [attr.cx]="point.x" cy="154" r="3.5" class="chart-point-empty"></circle>
+                            }
+                          }
+                        </svg>
+
+                        <div class="chart-labels">
+                          @for (point of svgEvolucion().points; track point.etiqueta) {
+                            <span>{{ obtenerInicialPeriodo(point.etiqueta) }}</span>
+                          }
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Mini-resumen de chips para cada período -->
+                    <div class="evolution-period-chips">
+                      @for (p of evolucionRiesgo(); track p.etiqueta) {
+                        <div class="period-status-chip" [class.has-data]="p.valor !== null">
+                          <span class="period-name">{{ p.etiqueta }}</span>
+                          @if (p.valor !== null) {
+                            <strong class="period-val" [class.high]="p.valor >= 71"
+                              [class.medium]="p.valor >= 31 && p.valor < 71" [class.low]="p.valor < 31">
+                              {{ p.valor | number:'1.0-0' }}%
+                            </strong>
+                          } @else {
+                            <span class="period-empty-tag">Pendiente</span>
+                          }
+                        </div>
+                      }
+                    </div>
+                  </div>
+                } @else {
+                  <div class="mini-state">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>Aún no hay períodos registrados para mostrar evolución.</span>
+                  </div>
+                }
+              </article>
             </div>
+
+            <!-- 3. Panel de Recomendaciones Personalizadas con Tarjetas Modernas sin bordes oscuros -->
+            <section class="recommendations-panel profile-slide-in profile-slide-in-bottom">
+              <div class="analysis-head">
+                <div>
+                  <span class="eyebrow">Recomendaciones personalizadas</span>
+                  <h3>Acciones sugeridas para el alumno</h3>
+                </div>
+              </div>
+
+              <div class="recommendations-grid">
+                @for (recomendacion of recomendacionesPersonalizadas(); track recomendacion.titulo) {
+                  <article class="recommendation-card" [class.high]="recomendacion.tono === 'high'"
+                    [class.medium]="recomendacion.tono === 'medium'" [class.low]="recomendacion.tono === 'low'">
+                    <div class="rec-top-row">
+                      <div class="recommendation-icon" [class.high]="recomendacion.tono === 'high'"
+                        [class.medium]="recomendacion.tono === 'medium'" [class.low]="recomendacion.tono === 'low'">
+                        <i [class]="recomendacion.icono"></i>
+                      </div>
+                      <span class="rec-badge" [class.high]="recomendacion.tono === 'high'"
+                        [class.medium]="recomendacion.tono === 'medium'" [class.low]="recomendacion.tono === 'low'">
+                        {{ recomendacion.tono === 'high' ? 'Prioridad alta' : recomendacion.tono === 'medium' ? 'Recomendado' : 'Seguimiento' }}
+                      </span>
+                    </div>
+
+                    <div class="recommendation-copy">
+                      <h4>{{ recomendacion.titulo }}</h4>
+                      <p>{{ recomendacion.descripcion }}</p>
+                      <button type="button" class="rec-action-chip">
+                        <span>{{ recomendacion.accion }}</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                      </button>
+                    </div>
+                  </article>
+                } @empty {
+                  <div class="empty-state-card" style="grid-column: 1 / -1;">
+                    <div class="empty-state-badge">
+                      <i class="fa-solid fa-lightbulb"></i>
+                    </div>
+                    <strong class="empty-state-title">Sin recomendaciones pendientes</strong>
+                    <p class="empty-state-desc">El estudiante no presenta indicadores de riesgo ni acciones prioritarias pendientes para este período.</p>
+                  </div>
+                }
+              </div>
+            </section>
           </section>
-        </section>
-      </div>
+        </div>
       }
     </div>
   </section>

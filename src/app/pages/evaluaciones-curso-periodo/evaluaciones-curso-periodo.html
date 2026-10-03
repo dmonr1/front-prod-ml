@@ -8,7 +8,7 @@
       [confirmText]="alertState().confirmText"
       [cancelText]="alertState().cancelText"
       [autoCloseMs]="alertState().autoCloseMs"
-      (confirm)="cerrarAlerta()"
+      (confirm)="confirmarAlerta()"
       (cancel)="cerrarAlerta()"
       (dismiss)="cerrarAlerta()" />
 
@@ -16,9 +16,9 @@
       <div class="card-head">
         <div class="card-head-inline">
           <div class="panel-head">
-            <a class="back-link" [routerLink]="['/gestion-estudiantil/periodo', periodoId]">
+            <a class="action-button secondary section-back-button back-link" [routerLink]="['/gestion-estudiantil/periodo', periodoId]" title="Volver al período">
               <i class="fa-solid fa-arrow-left"></i>
-              Volver al período
+              <span>Volver</span>
             </a>
             <h2>Evaluaciones por curso</h2>
             <p>{{ periodo()?.nombre || 'Período académico' }}</p>
@@ -84,9 +84,10 @@
             </div>
           } @else if (!cursosFiltrados().length) {
             <div class="cards-surface state-surface">
-              <div class="table-state">
-                <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-                <span>No hay cursos para mostrar en este período.</span>
+              <div class="empty-state-card">
+                <div class="empty-state-badge"><i class="fa-solid fa-book-open"></i></div>
+                <strong class="empty-state-title">No hay cursos para mostrar</strong>
+                <p class="empty-state-desc">No se encontraron cursos activos con los filtros seleccionados para este período.</p>
               </div>
             </div>
           } @else {
@@ -162,9 +163,10 @@
             </div>
           } @else if (!detalleCurso()) {
             <div class="cards-surface state-surface">
-              <div class="table-state">
-                <span class="table-state-icon"><i class="fa-solid fa-clipboard-list"></i></span>
-                <span>Selecciona un curso para abrir su configuración.</span>
+              <div class="empty-state-card">
+                <div class="empty-state-badge"><i class="fa-solid fa-clipboard-list"></i></div>
+                <strong class="empty-state-title">Selecciona un curso</strong>
+                <p class="empty-state-desc">Elige un curso del listado lateral para consultar y personalizar sus tipos de evaluación.</p>
               </div>
             </div>
           } @else {

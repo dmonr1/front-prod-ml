@@ -50,7 +50,7 @@ export class ConfiguracionAcademica {
     {
       key: 'asignaciones-docente',
       title: 'Asignaciones docentes',
-      description: 'Une docentes, cursos, secciones, períodos y tutorías dentro de un mismo flujo operativo.',
+      description: 'Asigna docentes a cursos y secciones, y administra el estado de cada asignación.',
       route: '/asignaciones-docente',
       icon: 'fa-solid fa-chalkboard-user',
       status: 'operativo',
@@ -60,7 +60,7 @@ export class ConfiguracionAcademica {
       key: 'tutorias',
       title: 'Tutorías por sección',
       description: 'Relaciona cada sección con su docente tutor para el seguimiento global del aula.',
-      route: '/asignaciones-docente',
+      route: '/tutorias-seccion',
       icon: 'fa-solid fa-people-roof',
       status: 'operativo',
       helper: 'Seguimiento'

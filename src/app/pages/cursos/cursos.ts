@@ -47,7 +47,11 @@ export class Cursos {
   readonly guardando = signal(false);
   readonly actualizandoEstadoCursoId = signal<number | null>(null);
   readonly nivelTab = signal<NivelTab>(1);
+  readonly busquedaCursos = signal('');
+  readonly estadoFiltroCursos = signal('');
   readonly animacionNivel = signal<'left' | 'right' | null>(null);
+  readonly cursoEditandoId = signal<number | null>(null);
+  readonly cursoPendienteEliminar = signal<Curso | null>(null);
   readonly mostrarModalRegistro = signal(false);
   readonly cerrandoModalRegistro = signal(false);
   readonly mostrarModalIconos = signal(false);
@@ -100,9 +104,18 @@ export class Cursos {
 
   readonly cursosFiltrados = computed(() => {
     const nivel = this.nivelTab();
+    const query = this.normalizarTexto(this.busquedaCursos());
+    const estado = this.estadoFiltroCursos();
 
     return this.cursos()
-      .filter((curso) => curso.nivelId === nivel)
+      .filter((curso) => {
+        if (curso.nivelId !== nivel) return false;
+        if (estado && (curso.estado ?? 'ACTIVO') !== estado) return false;
+        if (!query) return true;
+
+        return this.normalizarTexto(`${curso.nombre} ${curso.descripcion ?? ''} ${curso.nivelNombre}`)
+          .includes(query);
+      })
       .sort(
         (a, b) =>
           a.nombre.localeCompare(b.nombre) ||
@@ -159,6 +172,11 @@ export class Cursos {
     this.nivelTab.set(tab);
   }
 
+  limpiarFiltrosCursos(): void {
+    this.busquedaCursos.set('');
+    this.estadoFiltroCursos.set('');
+  }
+
   avanzarNivel(direccion: -1 | 1): void {
     const niveles: NivelTab[] = [1, 2];
     const actual = niveles.indexOf(this.nivelTab());
@@ -179,7 +197,29 @@ export class Cursos {
     return this.nivelTab() !== 2;
   }
 
+  private normalizarTexto(valor: string): string {
+    return valor
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
+  }
+
   abrirModalRegistro(): void {
+    this.cursoEditandoId.set(null);
+    this.limpiarFormulario();
+    this.cerrandoModalRegistro.set(false);
+    this.mostrarModalRegistro.set(true);
+  }
+
+  abrirModalEdicion(curso: Curso): void {
+    this.cursoEditandoId.set(curso.id);
+    this.formNombre.set(curso.nombre);
+    this.formDescripcion.set(curso.descripcion ?? '');
+    this.formNivelId.set(curso.nivelId);
+    this.formPortadaColor.set(curso.portadaColor || '#ff9742');
+    this.formPortadaIcono.set(curso.portadaIcono || 'fa-solid fa-calculator');
+    this.formPortadaImagen.set(curso.portadaImagen || null);
     this.cerrandoModalRegistro.set(false);
     this.mostrarModalRegistro.set(true);
   }
@@ -192,6 +232,7 @@ export class Cursos {
     setTimeout(() => {
       this.mostrarModalRegistro.set(false);
       this.cerrandoModalRegistro.set(false);
+      this.cursoEditandoId.set(null);
     }, 220);
   }
 
@@ -245,7 +286,7 @@ export class Cursos {
       this.mostrarAlerta(
         'warning',
         'Sin permisos',
-        'Solo un administrador puede registrar cursos.'
+        'Solo un administrador puede gestionar cursos.'
       );
       return;
     }
@@ -272,25 +313,97 @@ export class Cursos {
     };
 
     this.guardando.set(true);
+    const editandoId = this.cursoEditandoId();
 
-    this.cursoService.crear(payload).subscribe({
-      next: (curso) => {
+    if (editandoId) {
+      this.cursoService.actualizar(editandoId, payload).subscribe({
+        next: (cursoActualizado) => {
+          this.guardando.set(false);
+          this.cursos.update((actual) =>
+            actual.map((c) => (c.id === editandoId ? cursoActualizado : c))
+          );
+          this.limpiarFormulario();
+          this.cerrarModalRegistro();
+          this.mostrarAlerta(
+            'success',
+            'Curso actualizado',
+            `El curso "${cursoActualizado.nombre}" se actualizó correctamente.`
+          );
+        },
+        error: (error) => {
+          this.guardando.set(false);
+          this.mostrarAlerta(
+            'error',
+            'No se pudo actualizar',
+            formatearMensajeError(error, 'No se pudo actualizar el curso.')
+          );
+        }
+      });
+    } else {
+      this.cursoService.crear(payload).subscribe({
+        next: (curso) => {
+          this.guardando.set(false);
+          this.cursos.update((actual) => [...actual, curso]);
+          this.limpiarFormulario();
+          this.cerrarModalRegistro();
+          this.mostrarAlerta(
+            'success',
+            'Curso registrado',
+            `El curso "${curso.nombre}" se registró correctamente.`
+          );
+        },
+        error: (error) => {
+          this.guardando.set(false);
+          this.mostrarAlerta(
+            'error',
+            'No se pudo guardar',
+            formatearMensajeError(error, 'No se pudo registrar el curso.')
+          );
+        }
+      });
+    }
+  }
+
+  solicitarEliminarCurso(curso: Curso): void {
+    if (!this.esAdmin()) {
+      this.mostrarAlerta(
+        'warning',
+        'Sin permisos',
+        'Solo un administrador puede eliminar cursos.'
+      );
+      return;
+    }
+
+    this.cursoPendienteEliminar.set(curso);
+    this.mostrarAlerta(
+      'warning',
+      'Eliminar curso',
+      `¿Está seguro de que desea eliminar el curso "${curso.nombre}"? Esta acción no se puede deshacer.`,
+      { confirmText: 'Eliminar', cancelText: 'Cancelar' }
+    );
+  }
+
+  private ejecutarEliminacionCurso(curso: Curso): void {
+    this.guardando.set(true);
+    this.cursoService.eliminar(curso.id).subscribe({
+      next: () => {
         this.guardando.set(false);
-        this.cursos.update((actual) => [...actual, curso]);
-        this.limpiarFormulario();
-        this.cerrarModalRegistro();
+        this.cursos.update((actual) => actual.filter((c) => c.id !== curso.id));
         this.mostrarAlerta(
           'success',
-          'Curso registrado',
-          'El curso se registró correctamente.'
+          'Curso eliminado',
+          `El curso "${curso.nombre}" fue eliminado correctamente del catálogo.`
         );
       },
       error: (error) => {
         this.guardando.set(false);
         this.mostrarAlerta(
           'error',
-          'No se pudo guardar',
-          formatearMensajeError(error, 'No se pudo registrar el curso.')
+          'No se pudo eliminar',
+          formatearMensajeError(
+            error,
+            `No se pudo eliminar el curso "${curso.nombre}". Es posible que ya esté asignado a períodos académicos.`
+          )
         );
       }
     });
@@ -312,7 +425,7 @@ export class Cursos {
       this.mostrarAlerta(
         'warning',
         'Deshabilitar curso',
-        '¿Está seguro de que desea deshabilitar este curso?',
+        `¿Está seguro de que desea deshabilitar el curso "${curso.nombre}"?`,
         { confirmText: 'Deshabilitar', cancelText: 'Cancelar' }
       );
       return;
@@ -322,6 +435,15 @@ export class Cursos {
   }
 
   cerrarAlerta(): void {
+    const cursoPendienteEliminar = this.cursoPendienteEliminar();
+    if (cursoPendienteEliminar) {
+      this.cursoPendienteEliminar.set(null);
+      this.pendingAlertAction = 'none';
+      this.resetAlertState();
+      this.ejecutarEliminacionCurso(cursoPendienteEliminar);
+      return;
+    }
+
     const cursoPendiente = this.cursoPendienteEstado();
     if (cursoPendiente) {
       this.cursoPendienteEstado.set(null);
@@ -343,6 +465,7 @@ export class Cursos {
   descartarAlerta(): void {
     this.pendingAlertAction = 'none';
     this.cursoPendienteEstado.set(null);
+    this.cursoPendienteEliminar.set(null);
     this.resetAlertState();
   }
 

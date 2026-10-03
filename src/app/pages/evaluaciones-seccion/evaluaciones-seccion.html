@@ -1,0 +1,443 @@
+<app-shell>
+  <main class="section-evaluations-page" [class.course-picker-layout]="!cursoSeleccionado()">
+
+    @if (cargando()) {
+      <div class="loading-state"><i class="fa-solid fa-spinner fa-spin"></i> Cargando sección...</div>
+    } @else if (puedeGestionar) {
+      <section class="schedule-section" aria-labelledby="schedule-title">
+        @if (cargandoEvaluaciones()) {
+          <div class="loading-state"><i class="fa-solid fa-spinner fa-spin"></i> Cargando evaluaciones...</div>
+        } @else if (!cursoSeleccionado()) {
+          <div class="section-title schedule-title">
+            <a class="action-button secondary section-back-button back-link" [routerLink]="rutaVolver()" [title]="textoVolver()">
+              <i class="fa-solid fa-arrow-left"></i>
+              <span>{{ textoVolver() }}</span>
+            </a>
+            <div>
+              <h2 id="schedule-title">Cursos de la sección</h2>
+              <p>Elige un curso para programar las fechas de {{ periodoSeleccionado()?.nombre || 'este período' }}.</p>
+            </div>
+            <span class="course-total">{{ cursos().length }} cursos</span>
+          </div>
+          @if (!cursos().length) {
+            <div class="empty-state-card">
+              <div class="empty-state-badge">
+                <i class="fa-solid fa-book-open"></i>
+              </div>
+              <strong class="empty-state-title">No hay cursos asignados</strong>
+              <p class="empty-state-desc">Esta sección todavía no tiene cursos activos asignados para este período.</p>
+            </div>
+          } @else {
+            <div class="course-picker-surface">
+              <div class="course-picker-grid">
+                @for (curso of cursos(); track curso.id) {
+                <button class="evaluation-course-card" type="button" (click)="seleccionarCurso(curso.id)">
+                  <span class="course-cover" [style.--course-cover]="curso.portadaColor"
+                    [class.has-image]="!!curso.portadaImagen">
+                    @if (curso.portadaImagen) {
+                      <img class="course-cover-image" [src]="curso.portadaImagen" alt="" />
+                    } @else {
+                      <span class="course-cover-icon"><i [class]="curso.portadaIcono"></i></span>
+                    }
+                    <span class="course-cover-badge">{{ curso.nivel }}</span>
+                  </span>
+                  <span class="course-card-body">
+                    <span class="course-card-title">
+                      <strong>{{ curso.nombre }}</strong>
+                      <span class="course-card-open-icon"><i class="fa-solid fa-table-list"></i></span>
+                    </span>
+                    <span class="course-card-meta">
+                      <strong>{{ curso.seccion }}</strong>
+                      <span class="course-year-chip">{{ curso.anio }}</span>
+                    </span>
+                  </span>
+                  <span class="course-card-footer">
+                    <span [class.is-pending]="curso.pendientes > 0">
+                      <i class="fa-solid" [class.fa-circle-check]="curso.pendientes === 0"
+                        [class.fa-clock]="curso.pendientes > 0"></i>
+                      {{ curso.pendientes ? curso.pendientes + ' pendientes' : 'Fechas completas' }}
+                    </span>
+                    <small>{{ curso.evaluaciones.length }} evaluaciones</small>
+                  </span>
+                </button>
+                }
+              </div>
+            </div>
+          }
+        } @else {
+          <!-- VISTA DETALLE DEL CURSO: CONFIGURACIÓN DE EVALUACIONES -->
+          <div class="detail-container">
+            <!-- Encabezado con Título Centrado -->
+            <header class="card-head detail-card-head">
+              <button class="action-button secondary section-back-button back-to-courses" type="button" (click)="volverACursos()" [title]="textoVolver()">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span>{{ textoVolver() }}</span>
+              </button>
+
+              <div class="section-title-centered">
+                <span class="panel-kicker">Planificación académica</span>
+                <h2>{{ cursoSeleccionado()?.nombre }}</h2>
+                <div class="section-title-badges">
+                  <span>{{ cursoSeleccionado()?.seccion }}</span>
+                  <span>Año {{ cursoSeleccionado()?.anio }}</span>
+                  <span class="badge-level">{{ cursoSeleccionado()?.nivel }}</span>
+                </div>
+              </div>
+
+              <div class="head-right">
+                <div class="period-filter-box">
+                  <label for="periodoEvalSelect" class="filter-label">Período evaluativo</label>
+                  <div class="select-wrapper">
+                    <i class="fa-regular fa-calendar-check select-icon"></i>
+                    <select id="periodoEvalSelect" [ngModel]="periodoEvaluacionId()" (ngModelChange)="cambiarPeriodo($event)" name="periodoEvaluacion">
+                      @for (item of periodosEvaluacion(); track item.id) {
+                        <option [ngValue]="item.id">{{ item.nombre }}</option>
+                      }
+                    </select>
+                  </div>
+                </div>
+
+                <div class="status-summary-chip" [class.is-complete]="cursoSeleccionado()?.pendientes === 0">
+                  <i class="fa-solid" [class.fa-clock]="(cursoSeleccionado()?.pendientes ?? 0) > 0" [class.fa-circle-check]="cursoSeleccionado()?.pendientes === 0"></i>
+                  <span>{{ (cursoSeleccionado()?.pendientes ?? 0) > 0 ? (cursoSeleccionado()?.pendientes + ' pendientes') : 'Fechas completas' }}</span>
+                </div>
+              </div>
+            </header>
+
+            @if (cargandoEstructura()) {
+              <div class="loading-state compact-state">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                <span>Cargando configuración de evaluaciones...</span>
+              </div>
+            } @else {
+              <!-- Barra de Resumen y Acción Principal -->
+              <div class="eval-table-toolbar">
+                <div class="eval-summary-chips">
+                  <span class="summary-chip total">
+                    <i class="fa-solid fa-list-check"></i>
+                    <span><strong>{{ totalEvaluacionesPeriodo() }}</strong> evaluaciones</span>
+                  </span>
+                  <span class="summary-chip complete">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span><strong>{{ evaluacionesConFecha() }}</strong> programadas</span>
+                  </span>
+                  @if (evaluacionesPendientes() > 0) {
+                    <span class="summary-chip pending">
+                      <i class="fa-solid fa-clock"></i>
+                      <span><strong>{{ evaluacionesPendientes() }}</strong> sin fecha</span>
+                    </span>
+                  }
+                </div>
+
+                <div class="eval-toolbar-actions">
+                  <button type="button" class="action-button primary btn-new-eval" (click)="abrirModalCrearEvaluacion()" title="Crear un tipo y definir cantidad y fechas">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Nuevo tipo de evaluación</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Tabla con scroll vertical independiente y cabecera fija -->
+              <div class="table-scroll">
+                <table class="app-table configuration-table">
+                  <thead>
+                    <tr>
+                      <th class="col-type">Tipo de evaluación</th>
+                      <th class="col-qty">Cantidad del período</th>
+                      <th class="col-evals">Evaluaciones y fechas ({{ periodoSeleccionado()?.nombre || 'Período' }})</th>
+                      <th class="col-audit">Registro y cambios</th>
+                      <th class="col-action">Acciones del tipo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (fila of filasTiposEvaluacion(); track fila.configuracion.tipoEvaluacionId) {
+                      <tr>
+                        <!-- 1. Tipo de Evaluación -->
+                        <td class="type-cell">
+                          <div class="type-cell-content">
+                            <div class="type-title-row">
+                              <span class="type-icon-badge" [class]="iconoTipoEvaluacion(fila.configuracion.nombreTipoEvaluacion)">
+                                <i [class]="iconoClaseTipo(fila.configuracion.nombreTipoEvaluacion)"></i>
+                              </span>
+                              <strong>{{ nombreVisible(fila.configuracion.nombreTipoEvaluacion) }}</strong>
+                            </div>
+                            <span class="type-count-chip">
+                              {{ fila.evaluaciones.length }} en este período
+                            </span>
+                          </div>
+                        </td>
+
+                        <!-- 2. Cantidad del período -->
+                        <td class="quantity-cell">
+                          <div class="quantity-stepper">
+                            <button type="button" class="stepper-btn stepper-minus"
+                              [disabled]="guardandoEstructura() || fila.configuracion.cantidadActual <= (fila.bloqueado ? fila.evaluaciones.length : 0)"
+                              (click)="decrementarCantidad(fila.configuracion.tipoEvaluacionId)"
+                              [title]="fila.bloqueado ? 'No se puede reducir: este curso y sección ya tiene notas' : 'Reducir cantidad en este período'">
+                              <i class="fa-solid fa-minus"></i>
+                            </button>
+                            <input
+                              type="number"
+                              [min]="fila.bloqueado ? fila.evaluaciones.length : 0"
+                              max="99"
+                              step="1"
+                              [ngModel]="fila.configuracion.cantidadActual"
+                              (ngModelChange)="actualizarCantidad(fila.configuracion.tipoEvaluacionId, $event)"
+                              [name]="'cantidad-' + fila.configuracion.tipoEvaluacionId"
+                              class="stepper-input"
+                              title="Cantidad de evaluaciones en este período" />
+                            <button type="button" class="stepper-btn stepper-plus"
+                              [disabled]="guardandoEstructura()"
+                              (click)="incrementarCantidad(fila.configuracion.tipoEvaluacionId)"
+                              title="Aumentar cantidad en este período">
+                              <i class="fa-solid fa-plus"></i>
+                            </button>
+                          </div>
+                          <small class="stepper-label">en este período</small>
+                          @if (fila.bloqueado) {
+                            <small class="stepper-protected" title="Este curso y sección ya tiene notas; no se pueden quitar evaluaciones">Curso con notas</small>
+                          }
+                        </td>
+
+                        <!-- 3. Evaluaciones y Fechas: Lista Ordenada y Uniforme -->
+                        <td class="evaluations-cell">
+                          @if (fila.evaluaciones.length === 0) {
+                            <div class="empty-evals-note">
+                              <i class="fa-regular fa-calendar-xmark"></i>
+                              <span>Sin evaluaciones en {{ periodoSeleccionado()?.nombre || 'este período' }}</span>
+                              <button type="button" class="btn-quick-add" (click)="abrirModalCrearEvaluacion(fila.configuracion.tipoEvaluacionId)">
+                                <i class="fa-solid fa-plus"></i>
+                                <span>Programar una</span>
+                              </button>
+                            </div>
+                          } @else {
+                            <div class="evaluations-grid">
+                              @for (evaluacion of fila.evaluaciones; track evaluacion.id) {
+                                <div class="eval-row-card" [class.is-scheduled]="!!evaluacion.fechaEvaluacion" [class.is-pending]="!evaluacion.fechaEvaluacion">
+                                  <div class="eval-row-top">
+                                    <div class="eval-row-main">
+                                      <span class="eval-tag">Nº {{ evaluacion.numeroEvaluacion }}</span>
+                                      <strong class="eval-name" [title]="evaluacion.nombre">{{ nombreVisible(evaluacion.nombre) }}</strong>
+                                    </div>
+
+                                    <div class="eval-row-date">
+                                      <div class="date-field-wrap">
+                                        <i class="fa-regular fa-calendar-days"></i>
+                                        <input
+                                          class="eval-date-input"
+                                          type="date"
+                                          [ngModel]="fechaEditable(evaluacion)"
+                                          (ngModelChange)="actualizarFecha(evaluacion.id, $event)"
+                                          [name]="'fecha-' + evaluacion.id"
+                                          [min]="periodoSeleccionado()?.fechaInicio"
+                                          [max]="periodoSeleccionado()?.fechaFin" />
+                                      </div>
+
+                                      <span class="eval-status-badge"
+                                        [class.saving]="guardandoIds().has(evaluacion.id)"
+                                        [class.scheduled]="estadoGuardar(evaluacion) === 'Al día'"
+                                        [class.error]="estadoGuardar(evaluacion) === 'Fuera del período' || estadoGuardar(evaluacion) === 'Selecciona una fecha'">
+                                        @if (guardandoIds().has(evaluacion.id)) {
+                                          <i class="fa-solid fa-spinner fa-spin"></i>
+                                        } @else if (estadoGuardar(evaluacion) === 'Al día') {
+                                          <i class="fa-solid fa-circle-check"></i>
+                                          <span>Programada</span>
+                                        } @else {
+                                          <i class="fa-solid fa-clock"></i>
+                                          <span>Sin fecha</span>
+                                        }
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  <div class="eval-row-actions">
+                                    @if (evaluacion.hayNotasEnCursoSeccion) {
+                                      <span class="eval-notes-lock" title="Este curso y sección ya tiene notas; no se pueden quitar evaluaciones">
+                                        <i class="fa-solid fa-lock"></i> Curso con notas
+                                      </span>
+                                    }
+                                    <button type="button" class="eval-remove-button" (click)="solicitarQuitarEvaluacion(evaluacion)"
+                                      [disabled]="evaluacion.hayNotasEnCursoSeccion"
+                                      [title]="evaluacion.hayNotasEnCursoSeccion ? 'No se puede quitar: el curso y sección ya tiene notas' : 'Quitar solo ' + nombreVisible(evaluacion.nombre) + ' de este bimestre'"
+                                      [attr.aria-label]="'Quitar ' + nombreVisible(evaluacion.nombre) + ' de este bimestre'">
+                                      <i class="fa-solid fa-trash-can"></i>
+                                      <span>Quitar</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              }
+                            </div>
+                          }
+                        </td>
+
+                        <td class="audit-cell">
+                          @if (fila.evaluaciones.length === 0) {
+                            <span class="audit-empty">Sin evaluaciones</span>
+                          } @else {
+                            <div class="eval-audit-list">
+                              @for (evaluacion of fila.evaluaciones; track evaluacion.id) {
+                                <div class="eval-audit-entry">
+                                  <span class="audit-index">Nº {{ evaluacion.numeroEvaluacion }}</span>
+                                  <span class="audit-line" [title]="'Registró: ' + obtenerCreadoPor(evaluacion)">
+                                    <span class="audit-label">Registró:</span>
+                                    <strong class="audit-value">{{ obtenerCreadoPor(evaluacion) }}</strong>
+                                  </span>
+                                  <span class="audit-line" [title]="'Modificó: ' + (obtenerModificadoPor(evaluacion) || 'Sin cambios')">
+                                    <span class="audit-label">Modificó:</span>
+                                    <strong class="audit-value" [class.muted]="!obtenerModificadoPor(evaluacion)">{{ obtenerModificadoPor(evaluacion) || 'Sin cambios' }}</strong>
+                                  </span>
+                                </div>
+                              }
+                            </div>
+                          }
+                        </td>
+
+                        <!-- Acciones para todo el tipo en este período -->
+                        <td class="action-cell">
+                          <div class="action-cell-stack">
+                            <button
+                              class="row-action row-action-add"
+                              type="button"
+                              (click)="abrirModalCrearEvaluacion(fila.configuracion.tipoEvaluacionId)"
+                              [disabled]="guardandoEstructura()"
+                              title="Agregar otra evaluación de este tipo en este bimestre">
+                              <i class="fa-solid fa-plus"></i>
+                              <span>{{ fila.configuracion.cantidadActual > 0 ? 'Agregar otra' : 'Programar' }}</span>
+                            </button>
+                            <button
+                              class="row-action row-action-delete"
+                              type="button"
+                              (click)="solicitarExclusion(fila.configuracion)"
+                              [disabled]="fila.configuracion.cantidadActual === 0 || fila.bloqueado || guardandoEstructura()"
+                              [title]="fila.bloqueado ? 'No se puede quitar: el curso y sección ya tiene notas' : fila.configuracion.cantidadActual > 0 ? 'Quitar todas las evaluaciones de este tipo en el bimestre' : 'No hay evaluaciones que quitar'">
+                              <i class="fa-solid fa-trash-can"></i>
+                              <span>Quitar todas</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    } @empty {
+                      <tr>
+                        <td colspan="5" class="table-empty-cell">
+                          <div class="table-empty-state">
+                            <div class="empty-state-badge">
+                              <i class="fa-solid fa-clipboard-question"></i>
+                            </div>
+                            <strong class="empty-state-title">No hay tipos de evaluación activos</strong>
+                            <p class="empty-state-desc">No se encontraron tipos de evaluación configurados para este curso.</p>
+                          </div>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+
+            }
+          </div>
+        }
+      </section>
+    }
+
+    <!-- Modal para crear un tipo y planificar su cantidad y fechas -->
+    @if (modalNuevaEvaluacionAbierto()) {
+      <div class="modal-overlay" (click)="cerrarModalCrearEvaluacion()">
+        <section class="modal-dialog new-eval-dialog new-type-dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <div class="modal-title-group">
+              <span class="modal-title-icon"><i class="fa-solid fa-clipboard-list"></i></span>
+              <div>
+                <h3>{{ tipoExistenteId() ? 'Agregar evaluación' : 'Nuevo tipo de evaluación' }}</h3>
+                <p>{{ tipoExistenteId() ? 'Agrega una evaluación al tipo existente y programa su fecha.' : 'Define el tipo, la cantidad y sus fechas para esta sección y período.' }}</p>
+              </div>
+            </div>
+            <button type="button" class="modal-btn-close" (click)="cerrarModalCrearEvaluacion()" title="Cerrar modal">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <div class="modal-body">
+            @if (!tipoExistenteId()) {
+              <div class="form-group">
+                <label for="evalTipoNombre">Nombre del tipo <span class="required">*</span></label>
+                <input id="evalTipoNombre" class="modal-text-input" type="text" maxlength="80"
+                  placeholder="Ej. Examen bimestral" [ngModel]="formNuevaEvaluacion().nombre"
+                  (ngModelChange)="actualizarNombreNuevoTipo($event)" />
+              </div>
+
+              <div class="form-group">
+                <label for="evalTipoDescripcion">Descripción <span class="optional">Opcional</span></label>
+                <input id="evalTipoDescripcion" class="modal-text-input" type="text" maxlength="160"
+                  placeholder="Una referencia breve para docentes" [ngModel]="formNuevaEvaluacion().descripcion"
+                  (ngModelChange)="actualizarDescripcionNuevoTipo($event)" />
+              </div>
+
+              <div class="new-type-quantity-row">
+                <div>
+                  <label for="evalTipoCantidad">Cantidad en este período</label>
+                  <small>Solo se aplica al curso y sección seleccionados.</small>
+                </div>
+                <input id="evalTipoCantidad" class="stepper-input" type="number" min="1" max="99" step="1"
+                  [ngModel]="formNuevaEvaluacion().cantidad" (ngModelChange)="actualizarCantidadNuevoTipo($event)" />
+              </div>
+            } @else {
+              <div class="modal-info-box">
+                <i class="fa-solid fa-circle-info"></i>
+                <div>
+                  <strong>{{ nombreVisible(formNuevaEvaluacion().nombre) }}</strong>
+                  <p>Se agregará una evaluación solamente a esta sección y período.</p>
+                </div>
+              </div>
+            }
+
+            <div class="new-type-dates-heading">
+              <div>
+                <strong>{{ tipoExistenteId() ? 'Fecha de la nueva evaluación' : 'Fechas de ' + (periodoSeleccionado()?.nombre || 'este período') }}</strong>
+                <small>{{ tipoExistenteId() ? 'La fecha debe estar dentro del período seleccionado.' : 'Una fecha por cada evaluación. Deben estar dentro del período.' }}</small>
+              </div>
+              <span>{{ formNuevaEvaluacion().cantidad }} fechas</span>
+            </div>
+            <div class="new-type-date-grid">
+              @for (fecha of formNuevaEvaluacion().fechas; track $index; let i = $index) {
+                <label class="new-type-date-item" [for]="'new-eval-date-' + i">
+                  <span>{{ tipoExistenteId() ? 'Fecha' : 'Evaluación ' + (i + 1) }}</span>
+                  <input [id]="'new-eval-date-' + i" type="date" class="modal-date-input"
+                    [ngModel]="fecha" (ngModelChange)="actualizarFechaNuevoTipo(i, $event)"
+                    [min]="periodoSeleccionado()?.fechaInicio?.slice(0, 10)"
+                    [max]="periodoSeleccionado()?.fechaFin?.slice(0, 10)" />
+                </label>
+              }
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="action-button secondary" (click)="cerrarModalCrearEvaluacion()" [disabled]="creandoEvaluacion()">
+              Cancelar
+            </button>
+            <button type="button" class="action-button primary" (click)="confirmarCrearEvaluacion()" [disabled]="creandoEvaluacion() || !formNuevaEvaluacion().nombre.trim() || formNuevaEvaluacion().fechas.some(fecha => !fecha)">
+              @if (creandoEvaluacion()) {
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                <span>Guardando...</span>
+              } @else {
+                <i class="fa-solid fa-check"></i>
+                <span>{{ tipoExistenteId() ? 'Agregar y programar' : 'Crear y planificar' }}</span>
+              }
+            </button>
+          </div>
+        </section>
+      </div>
+    }
+  </main>
+
+  <app-custom-alert
+    [open]="alertState().open"
+    [type]="alertState().type"
+    [title]="alertState().title"
+    [message]="alertState().message"
+    [confirmText]="alertState().confirmText"
+    [cancelText]="alertState().cancelText"
+    [autoCloseMs]="alertState().autoCloseMs"
+    (confirm)="confirmarAlerta()"
+    (cancel)="cancelarAlerta()"
+    (dismiss)="cerrarAlerta()" />
+</app-shell>

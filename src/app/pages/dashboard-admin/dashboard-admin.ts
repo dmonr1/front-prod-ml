@@ -64,10 +64,11 @@ export class DashboardAdmin implements OnInit {
   readonly pendientes = signal<DashboardPending[]>([]);
 
   readonly accesos = [
-    { label: 'Estudiantes y matrículas', path: '/gestion-estudiantil', icon: 'fa-solid fa-users-gear' },
+    { label: 'Períodos y alumnos', path: '/gestion-estudiantil', icon: 'fa-solid fa-users-gear' },
     { label: 'Catálogo de cursos', path: '/cursos', icon: 'fa-solid fa-book-open-reader' },
     { label: 'Docentes y accesos', path: '/docentes-accesos', icon: 'fa-solid fa-id-card' },
-    { label: 'Asignaciones y tutorías', path: '/asignaciones-docente', icon: 'fa-solid fa-diagram-project' },
+    { label: 'Asignaciones docentes', path: '/asignaciones-docente', icon: 'fa-solid fa-chalkboard-user' },
+    { label: 'Tutorías por sección', path: '/tutorias-seccion', icon: 'fa-solid fa-people-roof' },
     { label: 'Predicción de riesgo', path: '/predicciones', icon: 'fa-solid fa-chart-line' },
     { label: 'Hallazgos y recomendaciones', path: '/hallazgos', icon: 'fa-solid fa-magnifying-glass-chart' }
   ] as const;

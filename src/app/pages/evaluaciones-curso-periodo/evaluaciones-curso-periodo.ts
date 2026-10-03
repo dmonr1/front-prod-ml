@@ -28,6 +28,8 @@ interface AlertState {
   confirmText: string | null;
   cancelText: string | null;
   autoCloseMs: number | null;
+  action?: string | null;
+  data?: any;
 }
 
 @Component({
@@ -201,7 +203,17 @@ export class EvaluacionesCursoPeriodo {
 
   alternarTipo(configuracion: ConfiguracionCursoEditable): void {
     if (configuracion.cantidadActual > 0) {
-      this.actualizarCantidad(configuracion.tipoEvaluacionId, '0');
+      this.mostrarAlerta(
+        'warning',
+        '¿Deshabilitar tipo de evaluación?',
+        `¿Estás seguro de establecer la cantidad a 0 para "${configuracion.nombreTipoEvaluacion}"? Este tipo no se incluirá en el curso para este período.`,
+        {
+          confirmText: 'Sí, deshabilitar',
+          cancelText: 'Cancelar',
+          action: 'deshabilitar-tipo',
+          data: configuracion
+        }
+      );
       return;
     }
 
@@ -210,11 +222,15 @@ export class EvaluacionesCursoPeriodo {
   }
 
   restaurarPlantillaGeneral(): void {
-    this.configuracionesEditables.update((actual) =>
-      actual.map((configuracion) => ({
-        ...configuracion,
-        cantidadActual: configuracion.cantidadBasePeriodo
-      }))
+    this.mostrarAlerta(
+      'warning',
+      '¿Restaurar plantilla general?',
+      '¿Estás seguro de restablecer todas las evaluaciones a la plantilla general del período? Se perderán las personalizaciones de cantidades hechas para este curso.',
+      {
+        confirmText: 'Sí, restaurar',
+        cancelText: 'Cancelar',
+        action: 'restaurar-plantilla'
+      }
     );
   }
 
@@ -286,8 +302,30 @@ export class EvaluacionesCursoPeriodo {
       message: '',
       confirmText: 'Entendido',
       cancelText: null,
-      autoCloseMs: null
+      autoCloseMs: null,
+      action: null,
+      data: null
     });
+  }
+
+  confirmarAlerta(): void {
+    const { action, data } = this.alertState();
+    this.cerrarAlerta();
+    if (!action) return;
+
+    if (action === 'deshabilitar-tipo') {
+      const config = data as ConfiguracionCursoEditable;
+      if (config) {
+        this.actualizarCantidad(config.tipoEvaluacionId, '0');
+      }
+    } else if (action === 'restaurar-plantilla') {
+      this.configuracionesEditables.update((actual) =>
+        actual.map((configuracion) => ({
+          ...configuracion,
+          cantidadActual: configuracion.cantidadBasePeriodo
+        }))
+      );
+    }
   }
 
   private mostrarAlerta(
@@ -298,6 +336,8 @@ export class EvaluacionesCursoPeriodo {
       confirmText?: string | null;
       cancelText?: string | null;
       autoCloseMs?: number | null;
+      action?: string | null;
+      data?: any;
     }
   ): void {
     this.alertState.set({
@@ -307,7 +347,9 @@ export class EvaluacionesCursoPeriodo {
       message,
       confirmText: options?.confirmText ?? 'Entendido',
       cancelText: options?.cancelText ?? null,
-      autoCloseMs: null
+      autoCloseMs: null,
+      action: options?.action ?? null,
+      data: options?.data ?? null
     });
   }
 }

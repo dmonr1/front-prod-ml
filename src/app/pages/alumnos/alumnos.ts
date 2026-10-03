@@ -19,6 +19,7 @@ import {
   PeriodoAcademicoService
 } from '../../services/academico/periodo-academico.service';
 import { TipoEvaluacionPayload, TipoEvaluacionService } from '../../services/evaluacion/tipo-evaluacion.service';
+import { AuthService } from '../../services/auth/auth.service';
 import { formatearMensajeError } from '../../utils/error-formatter';
 
 type TipoPeriodoEvaluacion = 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL';
@@ -70,6 +71,7 @@ interface NuevoTipoEvaluacionForm {
 })
 export class Alumnos {
   private readonly router = inject(Router);
+  private readonly authService = inject(AuthService);
   private readonly cursoService = inject(CursoService);
   private readonly cursoPeriodoAcademicoService = inject(CursoPeriodoAcademicoService);
   private readonly periodoAcademicoService = inject(PeriodoAcademicoService);
@@ -129,8 +131,12 @@ export class Alumnos {
     tipoPeriodoEvaluacion: 'BIMESTRAL',
     duracionHoraPrimariaMinutos: 50,
     duracionRecreoPrimariaMinutos: 20,
+    horaInicioJornadaPrimaria: '07:00',
+    horaFinJornadaPrimaria: '18:00',
     duracionHoraSecundariaMinutos: 90,
-    duracionRecreoSecundariaMinutos: 20
+    duracionRecreoSecundariaMinutos: 20,
+    horaInicioJornadaSecundaria: '07:00',
+    horaFinJornadaSecundaria: '18:00'
   });
   readonly anioCalendario = computed(() => {
     const anio = Number(this.formPeriodo().anio);
@@ -138,6 +144,10 @@ export class Alumnos {
   });
 
   constructor() {
+    if (!this.authService.tieneGestionAdministrativa()) {
+      void this.router.navigate(['/mis-asignaciones']);
+      return;
+    }
     this.regenerarPeriodosEvaluacionBorrador();
     this.cargarPeriodos();
     this.cargarCursos();
@@ -235,7 +245,9 @@ export class Alumnos {
     this.formPeriodo.set({
       nombre: '', anio: this.currentYear, fechaInicio: '', fechaFin: '', tipoPeriodoEvaluacion: 'BIMESTRAL',
       duracionHoraPrimariaMinutos: 50, duracionRecreoPrimariaMinutos: 20,
-      duracionHoraSecundariaMinutos: 90, duracionRecreoSecundariaMinutos: 20
+      horaInicioJornadaPrimaria: '07:00', horaFinJornadaPrimaria: '18:00',
+      duracionHoraSecundariaMinutos: 90, duracionRecreoSecundariaMinutos: 20,
+      horaInicioJornadaSecundaria: '07:00', horaFinJornadaSecundaria: '18:00'
     });
     this.regenerarPeriodosEvaluacionBorrador();
     this.regenerarCortesSeguimientoBorrador();
@@ -265,8 +277,12 @@ export class Alumnos {
           tipoPeriodoEvaluacion: (periodo.tipoPeriodoEvaluacion ?? 'BIMESTRAL') as TipoPeriodoEvaluacion,
           duracionHoraPrimariaMinutos: periodo.duracionHoraPrimariaMinutos ?? 50,
           duracionRecreoPrimariaMinutos: periodo.duracionRecreoPrimariaMinutos ?? 20,
+          horaInicioJornadaPrimaria: (periodo.horaInicioJornadaPrimaria ?? '07:00').slice(0, 5),
+          horaFinJornadaPrimaria: (periodo.horaFinJornadaPrimaria ?? '18:00').slice(0, 5),
           duracionHoraSecundariaMinutos: periodo.duracionHoraSecundariaMinutos ?? 90,
-          duracionRecreoSecundariaMinutos: periodo.duracionRecreoSecundariaMinutos ?? 20
+          duracionRecreoSecundariaMinutos: periodo.duracionRecreoSecundariaMinutos ?? 20,
+          horaInicioJornadaSecundaria: (periodo.horaInicioJornadaSecundaria ?? '07:00').slice(0, 5),
+          horaFinJornadaSecundaria: (periodo.horaFinJornadaSecundaria ?? '18:00').slice(0, 5)
         });
         this.tipoPeriodoEvaluacion.set((periodo.tipoPeriodoEvaluacion ?? 'BIMESTRAL') as TipoPeriodoEvaluacion);
         this.periodosEvaluacionBorrador.set(
@@ -819,8 +835,12 @@ export class Alumnos {
       tipoPeriodoEvaluacion: 'BIMESTRAL',
       duracionHoraPrimariaMinutos: 50,
       duracionRecreoPrimariaMinutos: 20,
+      horaInicioJornadaPrimaria: '07:00',
+      horaFinJornadaPrimaria: '18:00',
       duracionHoraSecundariaMinutos: 90,
-      duracionRecreoSecundariaMinutos: 20
+      duracionRecreoSecundariaMinutos: 20,
+      horaInicioJornadaSecundaria: '07:00',
+      horaFinJornadaSecundaria: '18:00'
     });
     this.tipoPeriodoEvaluacion.set('BIMESTRAL');
     this.regenerarPeriodosEvaluacionBorrador();
@@ -908,8 +928,12 @@ export class Alumnos {
       tipoPeriodoEvaluacion: this.tipoPeriodoEvaluacion(),
       duracionHoraPrimariaMinutos: payload.duracionHoraPrimariaMinutos,
       duracionRecreoPrimariaMinutos: payload.duracionRecreoPrimariaMinutos,
+      horaInicioJornadaPrimaria: payload.horaInicioJornadaPrimaria,
+      horaFinJornadaPrimaria: payload.horaFinJornadaPrimaria,
       duracionHoraSecundariaMinutos: payload.duracionHoraSecundariaMinutos,
       duracionRecreoSecundariaMinutos: payload.duracionRecreoSecundariaMinutos,
+      horaInicioJornadaSecundaria: payload.horaInicioJornadaSecundaria,
+      horaFinJornadaSecundaria: payload.horaFinJornadaSecundaria,
       periodosEvaluacion,
       cortesSeguimiento: this.cortesSeguimientoBorrador(),
       configuracionesEvaluacionDefault: configuracionesEvaluacion,
@@ -997,6 +1021,15 @@ export class Alumnos {
       ].every(([duracion, minimo, maximo]) => Number.isInteger(duracion) && duracion >= minimo && duracion <= maximo && duracion % 5 === 0);
       if (!duracionesValidas) {
         this.mostrarAlerta('warning', 'Duración no válida', 'Configura horas académicas y recreos en múltiplos de 5 minutos.');
+        return false;
+      }
+
+      const jornadasValidas = [
+        [payload.horaInicioJornadaPrimaria, payload.horaFinJornadaPrimaria],
+        [payload.horaInicioJornadaSecundaria, payload.horaFinJornadaSecundaria]
+      ].every(([inicio, fin]) => /^([01]\d|2[0-3]):[0-5]\d$/.test(inicio) && /^([01]\d|2[0-3]):[0-5]\d$/.test(fin) && inicio < fin);
+      if (!jornadasValidas) {
+        this.mostrarAlerta('warning', 'Horario de jornada no válido', 'En cada nivel, la hora de fin debe ser posterior a la hora de inicio.');
         return false;
       }
     }

@@ -63,4 +63,18 @@ describe('CustomAlertComponent', () => {
     expect(confirmSpy).toHaveBeenCalled();
     expect(dismissSpy).toHaveBeenCalled();
   });
+
+  it('NO debe emitir dismiss al hacer click en el backdrop exterior (solo con X o botones)', () => {
+    fixture.componentRef.setInput('open', true);
+    fixture.detectChanges();
+
+    const dismissSpy = vi.fn();
+    component.dismiss.subscribe(dismissSpy);
+
+    const backdrop = fixture.nativeElement.querySelector('.custom-alert-backdrop') as HTMLElement;
+    expect(backdrop).toBeTruthy();
+    backdrop.click();
+
+    expect(dismissSpy).not.toHaveBeenCalled();
+  });
 });

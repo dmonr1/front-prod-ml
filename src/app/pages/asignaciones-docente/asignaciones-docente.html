@@ -4,357 +4,628 @@
     [autoCloseMs]="alertState().autoCloseMs" (confirm)="confirmarCambioEstadoTutoria()"
     (cancel)="cancelarCambioEstadoTutoria()" (dismiss)="cerrarAlerta()" />
 
-  <section class="assignment-card assignment-page">
-    <div class="card-head assignment-slide-in assignment-slide-in-top">
-      <div class="panel-head">
-        <h2>Asignaciones académicas</h2>
+  <div class="assignment-layout"
+    [class.has-assignment-form]="modalCreacion() === 'asignacion' && vistaActiva() === 'asignaciones'">
+    <section class="assignment-card assignment-page">
+      <div class="card-head assignment-main-head assignment-slide-in assignment-slide-in-top">
+        <div class="panel-head">
+          <h2>{{ vistaActiva() === 'asignaciones' ? 'Asignaciones docentes' : 'Tutorías por sección' }}</h2>
+
+        </div>
+        <span class="period-chip">
+          {{ (vistaActiva() === 'asignaciones' ? asignacionPeriodo()?.nombre : tutoriaPeriodo()?.nombre) || 'Sin
+          período' }}
+        </span>
       </div>
-      <span class="period-chip">
-        {{ (vistaActiva() === 'asignaciones' ? asignacionPeriodo()?.nombre : tutoriaPeriodo()?.nombre) || 'Sin período' }}
-      </span>
-    </div>
 
-    <div class="view-switch assignment-slide-in assignment-slide-in-middle" [class.is-tutorias]="vistaActiva() === 'tutorias'">
-      <span class="view-switch-thumb" aria-hidden="true"></span>
-      <button class="view-pill" type="button" [class.active]="vistaActiva() === 'asignaciones'"
-        (click)="vistaActiva.set('asignaciones')">
-        Asignaciones docentes
-      </button>
-      <button class="view-pill" type="button" [class.active]="vistaActiva() === 'tutorias'"
-        (click)="vistaActiva.set('tutorias')">
-        Tutorías por sección
-      </button>
-    </div>
-
-    @if (vistaActiva() === 'asignaciones') {
-    <article class="assignment-panel assignment-slide-in assignment-slide-in-bottom">
-      <div class="content">
-        <div class="form-cont">
-          <form class="module-form">
-            <label>
-              Docente
-              <div class="lookup-field">
-                <input type="text" placeholder="Escribe para buscar docente" [value]="asignacionQuery()"
-                  (input)="onDocenteInput('asignacion', $any($event.target).value)" />
-                <button class="lookup-button" type="button" (click)="abrirModal('asignacion')">
-                  <i class="fa-solid fa-magnifying-glass"></i>
-                </button>
-              </div>
-
-              @if (dropdownActivo() === 'asignacion' && docentesFiltrados('asignacion').length) {
-              <div class="lookup-dropdown">
-                @for (docente of docentesFiltrados('asignacion'); track docente.id) {
-                <button class="lookup-option" type="button" (mousedown)="seleccionarDocente('asignacion', docente)">
-                  <strong>{{ formatearDocente(docente) }}</strong>
-                  <span>{{ docente.tipoDocumentoNombre }} {{ docente.numeroDocumento || 'Sin documento' }} · {{ docente.especialidad || 'Sin especialidad' }}</span>
-                </button>
-                }
-              </div>
-              }
-            </label>
-
-            <div class="form-two-columns">
-              <label>
-                Curso
-                <div class="lookup-field">
-                  <input type="text" placeholder="Seleccionar curso" [value]="cursoQuery()" readonly />
-                  <button class="lookup-button" type="button" (click)="abrirModalCurso()">
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                  </button>
-                </div>
-              </label>
-
-              <label>
-                Sección
-                <div class="lookup-field">
-                  <input type="text" placeholder="Seleccionar una o varias secciones" [value]="asignacionSeccionQuery()"
-                    readonly />
-                  <button class="lookup-button" type="button" (click)="abrirModalSeccion('asignacion')">
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                  </button>
-                </div>
-              </label>
-
-            </div>
-
-            <label>
-              Período académico
-              <div class="lookup-field">
-                <input type="text" placeholder="Seleccionar período académico" [value]="asignacionPeriodoQuery()"
-                  readonly />
-                <button class="lookup-button" type="button" (click)="abrirModalPeriodo('asignacion')">
-                  <i class="fa-solid fa-magnifying-glass"></i>
-                </button>
-              </div>
-            </label>
-          </form>
-
-          @if (asignacionSecciones().length) {
-          <section class="selected-sections-card">
-            <div class="selected-sections-head">
-              <strong>Secciones seleccionadas</strong>
-              <span>{{ asignacionSecciones().length }} elegidas</span>
-            </div>
-
-            <div class="selected-sections-table">
-              <div class="selected-sections-body">
-                <table class="selected-sections-native-table">
-                  <thead>
-                    <tr>
-                      <th>Sección</th>
-                      <th>Nivel</th>
-                      <th>Acción</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                  @for (seccion of asignacionSecciones(); track seccion.id) {
-                    <tr class="selected-sections-row">
-                      <td>{{ etiquetaSeccion(seccion) }}</td>
-                      <td>{{ seccion.nivelNombre || 'Sin nivel' }}</td>
-                      <td class="selected-sections-action">
-                      <button class="mini-remove-button" type="button" (click)="removerSeccionAsignacion(seccion.id)">
-                        Quitar
-                      </button>
-                      </td>
-                    </tr>
-                  }
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section>
-          }
-
-          <div class="form-actions">
-            <button class="action-button primary" type="button" [disabled]="guardandoAsignacion()"
-              (click)="guardarAsignacion()">
-              {{ guardandoAsignacion() ? 'Guardando...' : 'Guardar asignación' }}
+      @if (vistaActiva() === 'asignaciones') {
+      <article class="assignment-panel assignment-list-panel assignment-slide-in assignment-slide-in-bottom">
+        <div class="assignment-filter-bar">
+          <div class="assignment-search-field">
+            <button class="assignment-search-button" type="button" aria-label="Buscar" title="Buscar"
+              (click)="assignmentSearchInput.focus()">
+              <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
             </button>
-            <button class="action-button secondary" type="button" (click)="limpiarAsignacion()">Limpiar</button>
+            <input #assignmentSearchInput type="text" placeholder="Buscar docente, curso o sección..."
+              aria-label="Buscar asignaciones" [value]="busquedaTablaAsignaciones()"
+              (input)="busquedaTablaAsignaciones.set($any($event.target).value)" />
+            <div class="assignment-search-actions">
+              <button class="assignment-search-button" type="button" aria-label="Limpiar filtros"
+                title="Limpiar filtros"
+                [disabled]="!busquedaTablaAsignaciones() && !cursoFiltroAsignaciones() && !seccionFiltroAsignaciones()"
+                (click)="limpiarFiltrosAsignaciones()">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+              </button>
+            </div>
+          </div>
+          <label class="assignment-filter-select">
+            <span>Curso</span>
+            <select aria-label="Filtrar por curso" [value]="cursoFiltroAsignaciones()"
+              (change)="cambiarCursoFiltroAsignaciones($any($event.target).value)">
+              <option value="">Todos los cursos</option>
+              @for (curso of cursosFiltroAsignaciones(); track curso.id) {
+              <option [value]="curso.id">{{ curso.nombre }}</option>
+              }
+            </select>
+          </label>
+          <label class="assignment-filter-select">
+            <span>Sección</span>
+            <select aria-label="Filtrar por sección" [value]="seccionFiltroAsignaciones()"
+              (change)="seccionFiltroAsignaciones.set($any($event.target).value)">
+              <option value="">Todas las secciones</option>
+              @for (seccion of seccionesFiltroAsignaciones(); track seccion.id) {
+              <option [value]="seccion.id">{{ seccion.nombre }}</option>
+              }
+            </select>
+          </label>
+          <button class="action-button primary create-trigger" type="button" (click)="abrirModalCreacion('asignacion')">
+            <i class="fa-solid fa-plus"></i> Nueva asignación
+          </button>
+        </div>
+        <div class="content">
+          <div class="table-cont">
+            @if (cargandoAsignaciones() || !!errorAsignaciones()) {
+            <div class="table-scroll assignment-results-scroll">
+              <table class="app-table">
+                <thead>
+                  <tr>
+                    <th>Docente</th>
+                    <th>Curso</th>
+                    <th>Sección</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of [0,1,2,3]; track row) {
+                  <tr>
+                    <td><span class="skeleton-line long"></span></td>
+                    <td><span class="skeleton-line medium"></span></td>
+                    <td><span class="skeleton-line medium"></span></td>
+                    <td><span class="skeleton-line short"></span></td>
+                    <td><span class="skeleton-line short"></span></td>
+                  </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            } @else {
+            <div class="table-scroll assignment-results-scroll">
+              <table class="app-table">
+                <thead>
+                  <tr>
+                    <th>Docente</th>
+                    <th>Curso</th>
+                    <th>Sección</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @if (!asignacionesFiltradas().length) {
+                  <tr>
+                    <td colspan="5" class="table-empty-cell">
+                      <div class="table-empty-state">
+                        <div class="empty-state-badge">
+                          <i class="fa-solid fa-chalkboard-user"></i>
+                        </div>
+                        <strong class="empty-state-title">No se encontraron asignaciones</strong>
+                        <p class="empty-state-desc">No hay asignaciones docentes que coincidan con la búsqueda o filtros
+                          aplicados.</p>
+                        @if (busquedaTablaAsignaciones() || cursoFiltroAsignaciones() || seccionFiltroAsignaciones()) {
+                        <button type="button" class="empty-state-btn" (click)="limpiarFiltrosAsignaciones()">
+                          <i class="fa-solid fa-rotate-left"></i> Limpiar filtros
+                        </button>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                  } @else {
+                  @for (asignacion of asignacionesFiltradas(); track asignacion.id) {
+                  <tr>
+                    <td>
+                      <strong>{{ asignacion.docenteNombreCompleto }}</strong>
+                      <div class="cell-help">{{ asignacion.nivel }}</div>
+                    </td>
+                    <td>{{ asignacion.curso }}</td>
+                    <td>
+                      <strong>{{ asignacion.seccion }}</strong>
+                      <div class="cell-help">{{ obtenerResumenAsignacion(asignacion) }}</div>
+                    </td>
+                    <td>
+                      <button class="state-switch" type="button" role="switch"
+                        [class.is-active]="(asignacion.estado ?? 'ACTIVO') === 'ACTIVO'"
+                        [attr.aria-checked]="(asignacion.estado ?? 'ACTIVO') === 'ACTIVO'"
+                        [attr.aria-label]="'Estado de la asignación de ' + asignacion.docenteNombreCompleto"
+                        [title]="actualizandoEstadoAsignacionId() === asignacion.id ? 'Actualizando estado' : 'Cambiar estado de la asignación'"
+                        [disabled]="actualizandoEstadoAsignacionId() === asignacion.id"
+                        (click)="toggleEstadoAsignacion(asignacion)">
+                        <span class="state-switch-track" aria-hidden="true"><span></span></span>
+                        <span class="state-switch-label">
+                          {{ actualizandoEstadoAsignacionId() === asignacion.id ? 'Actualizando...' :
+                          ((asignacion.estado ?? 'ACTIVO') === 'ACTIVO' ? 'Activo' : 'Inactivo') }}
+                        </span>
+                      </button>
+                    </td>
+                    <td>
+                      <div class="row-actions">
+                        <button class="row-action row-action-edit" type="button" [disabled]="!esAdmin()"
+                          (click)="abrirModalEdicionAsignacion(asignacion)" title="Editar asignación">
+                          <i class="fa-solid fa-pen-to-square"></i>
+                          <span>Editar</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  }
+                  }
+                </tbody>
+              </table>
+            </div>
+            }
           </div>
         </div>
+      </article>
+      }
 
-        <div class="table-cont">
-          @if (cargandoAsignaciones() || !!errorAsignaciones()) {
-          <div class="table-scroll assignment-results-scroll">
-            <table class="app-table">
-              <thead>
-                <tr>
-                  <th>Docente</th>
-                  <th>Curso</th>
-                  <th>Sección</th>
-                  <th>Estado</th>
-                  <th>Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (row of [0,1,2,3]; track row) {
-                <tr>
-                  <td><span class="skeleton-line long"></span></td>
-                  <td><span class="skeleton-line medium"></span></td>
-                  <td><span class="skeleton-line medium"></span></td>
-                  <td><span class="skeleton-line short"></span></td>
-                  <td><span class="skeleton-line short"></span></td>
-                </tr>
-                }
-              </tbody>
-            </table>
+      @if (vistaActiva() === 'tutorias') {
+      <article class="assignment-panel assignment-slide-in assignment-slide-in-bottom">
+        <div class="assignment-filter-bar tutoria-filter-bar">
+          <div class="assignment-search-field">
+            <button class="assignment-search-button" type="button" aria-label="Buscar" title="Buscar"
+              (click)="tutoriaSearchInput.focus()">
+              <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            </button>
+            <input #tutoriaSearchInput type="text" placeholder="Buscar tutor o sección..." aria-label="Buscar tutorías"
+              [value]="busquedaTablaTutorias()" (input)="busquedaTablaTutorias.set($any($event.target).value)" />
+            <div class="assignment-search-actions">
+              <button class="assignment-search-button" type="button" aria-label="Limpiar filtros"
+                title="Limpiar filtros"
+                [disabled]="!busquedaTablaTutorias() && !nivelFiltroTutorias() && !estadoFiltroTutorias()"
+                (click)="limpiarFiltrosTutorias()">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+              </button>
+            </div>
           </div>
-          } @else if (!asignaciones().length) {
-          <div class="table-state">
-            <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-            <span>No hay asignaciones registradas para este período.</span>
-          </div>
-          } @else {
-          <div class="table-scroll assignment-results-scroll">
-            <table class="app-table">
-              <thead>
-                <tr>
-                  <th>Docente</th>
-                  <th>Curso</th>
-                  <th>Sección</th>
-                  <th>Estado</th>
-                  <th>Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (asignacion of asignaciones(); track asignacion.id) {
-                <tr>
-                  <td>
-                    <strong>{{ asignacion.docenteNombreCompleto }}</strong>
-                    <div class="cell-help">{{ asignacion.nivel }}</div>
-                  </td>
-                  <td>{{ asignacion.curso }}</td>
-                  <td>
-                    <strong>{{ asignacion.seccion }}</strong>
-                    <div class="cell-help">{{ obtenerResumenAsignacion(asignacion) }}</div>
-                  </td>
-                  <td>
-                    <span class="status-badge" [class.active]="(asignacion.estado ?? 'ACTIVO') === 'ACTIVO'"
-                      [class.inactive]="(asignacion.estado ?? 'ACTIVO') === 'INACTIVO'">
-                      {{ asignacion.estado ?? 'ACTIVO' }}
-                    </span>
-                  </td>
-                  <td>
-                    <button class="state-action" type="button"
-                      [disabled]="actualizandoEstadoAsignacionId() === asignacion.id"
-                      (click)="toggleEstadoAsignacion(asignacion)">
-                      {{
-                      actualizandoEstadoAsignacionId() === asignacion.id
-                      ? 'Actualizando...'
-                      : ((asignacion.estado ?? 'ACTIVO') === 'ACTIVO' ? 'Deshabilitar' : 'Habilitar')
-                      }}
-                    </button>
-                  </td>
-                </tr>
-                }
-              </tbody>
-            </table>
+          <label class="assignment-filter-select">
+            <span>Nivel</span>
+            <select aria-label="Filtrar por nivel" [value]="nivelFiltroTutorias()"
+              (change)="nivelFiltroTutorias.set($any($event.target).value)">
+              <option value="">Todos los niveles</option>
+              <option value="PRIMARIA">Primaria</option>
+              <option value="SECUNDARIA">Secundaria</option>
+            </select>
+          </label>
+          <label class="assignment-filter-select">
+            <span>Estado</span>
+            <select aria-label="Filtrar por estado" [value]="estadoFiltroTutorias()"
+              (change)="estadoFiltroTutorias.set($any($event.target).value)">
+              <option value="">Todos los estados</option>
+              <option value="ACTIVO">Activo</option>
+              <option value="INACTIVO">Inactivo</option>
+            </select>
+          </label>
+          <button class="action-button primary create-trigger" type="button" (click)="abrirModalCreacion('tutoria')">
+            <i class="fa-solid fa-plus"></i> Nueva tutoría
+          </button>
+        </div>
+        <div class="content">
+          @if (modalCreacion() === 'tutoria') {
+          <div class="create-modal-backdrop" (click)="cerrarModalCreacion()" (keydown.escape)="cerrarModalCreacion()">
+            <section class="create-modal centered-modal-heading tutoria-create-modal" role="dialog" aria-modal="true"
+              aria-labelledby="tutoriaCreateTitle" (click)="$event.stopPropagation()">
+              <header class="create-modal-head">
+                <div>
+                  <h3 id="tutoriaCreateTitle">Nueva tutoría por sección</h3>
+                  <p>Elige docente tutor y sección.</p>
+                </div>
+                <button class="modal-close" type="button" aria-label="Cerrar" (click)="cerrarModalCreacion()"><i
+                    class="fa-solid fa-xmark"></i></button>
+              </header>
+              <div class="form-cont">
+                <form class="module-form">
+                  <label>
+                    Docente tutor
+                    <div class="tutoria-docente-lookup">
+                      <div class="lookup-field">
+                        <input type="text" placeholder="Escribe para buscar tutor" [value]="tutoriaQuery()"
+                          (input)="onDocenteInput('tutoria', $any($event.target).value)" />
+                        <button class="lookup-button" type="button" aria-label="Buscar docente tutor"
+                          title="Buscar docente tutor" (click)="abrirModal('tutoria')">
+                          <i class="fa-solid fa-magnifying-glass"></i>
+                        </button>
+                      </div>
+
+                      @if (dropdownActivo() === 'tutoria' && docentesFiltrados('tutoria').length) {
+                      <div class="lookup-dropdown">
+                        @for (docente of docentesFiltrados('tutoria'); track docente.id) {
+                        <button class="lookup-option" type="button"
+                          (mousedown)="seleccionarDocente('tutoria', docente)">
+                          <strong>{{ formatearDocente(docente) }}</strong>
+                          <span>{{ docente.tipoDocumentoNombre }} {{ docente.numeroDocumento || 'Sin documento' }} · {{
+                            docente.especialidad || 'Sin especialidad' }}</span>
+                        </button>
+                        }
+                      </div>
+                      }
+                    </div>
+                  </label>
+
+                  <label>
+                    Sección
+                    <div class="lookup-field">
+                      <input type="text" placeholder="Seleccionar sección" [value]="tutoriaSeccionQuery()" readonly />
+                      <button class="lookup-button" type="button" aria-label="Seleccionar sección"
+                        title="Seleccionar sección" (click)="abrirModalSeccion('tutoria')">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                      </button>
+                    </div>
+                  </label>
+
+                </form>
+              </div>
+              <footer class="form-actions tutoria-form-actions">
+                <button class="action-button primary" type="button" [disabled]="guardandoTutoria()"
+                  (click)="guardarTutoria()">
+                  {{ guardandoTutoria() ? 'Guardando...' : 'Guardar tutoría' }}
+                </button>
+                <button class="action-button secondary" type="button" (click)="cerrarModalCreacion()">Cancelar</button>
+              </footer>
+            </section>
           </div>
           }
-        </div>
-      </div>
-    </article>
-    }
 
-    @if (vistaActiva() === 'tutorias') {
-    <article class="assignment-panel assignment-slide-in assignment-slide-in-bottom">
-      <div class="content">
-        <div class="form-cont">
-          <form class="module-form">
-            <label>
-              Docente tutor
+          <div class="table-cont">
+            @if (cargandoTutorias() || !!errorTutorias()) {
+            <div class="table-scroll">
+              <table class="app-table">
+                <thead>
+                  <tr>
+                    <th>Docente tutor</th>
+                    <th>Sección</th>
+                    <th>Período</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of [0,1,2,3]; track row) {
+                  <tr>
+                    <td><span class="skeleton-line long"></span></td>
+                    <td><span class="skeleton-line medium"></span></td>
+                    <td><span class="skeleton-line short"></span></td>
+                    <td><span class="skeleton-line short"></span></td>
+                    <td><span class="skeleton-line short"></span></td>
+                  </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            } @else {
+            <div class="table-scroll">
+              <table class="app-table">
+                <thead>
+                  <tr>
+                    <th>Docente tutor</th>
+                    <th>Sección</th>
+                    <th>Período</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @if (!tutoriasFiltradas().length) {
+                  <tr>
+                    <td colspan="5" class="table-empty-cell">
+                      <div class="table-empty-state">
+                        <div class="empty-state-badge">
+                          <i class="fa-solid fa-people-roof"></i>
+                        </div>
+                        <strong class="empty-state-title">No se encontraron tutorías</strong>
+                        <p class="empty-state-desc">No hay tutorías que coincidan con la búsqueda o filtros
+                          seleccionados.</p>
+                        @if (busquedaTablaTutorias() || nivelFiltroTutorias() || estadoFiltroTutorias()) {
+                        <button type="button" class="empty-state-btn" (click)="limpiarFiltrosTutorias()">
+                          <i class="fa-solid fa-rotate-left"></i> Limpiar filtros
+                        </button>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                  } @else {
+                  @for (tutoria of tutoriasFiltradas(); track tutoria.id) {
+                  <tr>
+                    <td><strong>{{ tutoria.docenteNombreCompleto }}</strong></td>
+                    <td>
+                      <strong>{{ tutoria.seccion }}</strong>
+                      <div class="cell-help">{{ tutoria.grado }} · {{ tutoria.nivel }}</div>
+                    </td>
+                    <td>{{ tutoria.periodoAcademico }}</td>
+                    <td>
+                      <button class="state-switch" type="button" role="switch"
+                        [class.is-active]="(tutoria.estado ?? 'ACTIVO') === 'ACTIVO'"
+                        [attr.aria-checked]="(tutoria.estado ?? 'ACTIVO') === 'ACTIVO'"
+                        [attr.aria-label]="'Estado de la tutoría de ' + tutoria.docenteNombreCompleto"
+                        [title]="actualizandoEstadoTutoriaId() === tutoria.id ? 'Actualizando estado' : 'Cambiar estado de la tutoría'"
+                        [disabled]="actualizandoEstadoTutoriaId() === tutoria.id"
+                        (click)="toggleEstadoTutoria(tutoria)">
+                        <span class="state-switch-track" aria-hidden="true"><span></span></span>
+                        <span class="state-switch-label">
+                          {{ actualizandoEstadoTutoriaId() === tutoria.id ? 'Actualizando...' : ((tutoria.estado ??
+                          'ACTIVO') === 'ACTIVO' ? 'Activo' : 'Inactivo') }}
+                        </span>
+                      </button>
+                    </td>
+                    <td>
+                      <div class="row-actions">
+                        <button class="row-action row-action-edit" type="button" [disabled]="!esAdmin()"
+                          (click)="abrirModalEdicionTutoria(tutoria)" title="Editar tutoría">
+                          <i class="fa-solid fa-pen-to-square"></i>
+                          <span>Editar</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  }
+                  }
+                </tbody>
+              </table>
+            </div>
+            }
+          </div>
+        </div>
+      </article>
+      }
+    </section>
+
+    @if (modalCreacion() === 'asignacion' && vistaActiva() === 'asignaciones') {
+    <aside class="assignment-card assignment-create-sidecard" aria-labelledby="assignmentCreateTitle">
+      <header class="assignment-sidecard-head">
+        <div class="panel-head">
+          <h3 id="assignmentCreateTitle">Nueva asignación docente</h3>
+          <p>Elige docente, curso y secciones.</p>
+        </div>
+        <button class="modal-close" type="button" aria-label="Cerrar" (click)="cerrarModalCreacion()">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </header>
+
+      <div class="assignment-side-form">
+        <form class="module-form">
+          <label>
+            Docente
+            <div class="lookup-field">
+              <input type="text" placeholder="Escribe para buscar docente" [value]="asignacionQuery()"
+                (input)="onDocenteInput('asignacion', $any($event.target).value)" />
+              <button class="lookup-button" type="button" aria-label="Buscar docente" title="Buscar docente"
+                (click)="abrirModal('asignacion')">
+                <i class="fa-solid fa-magnifying-glass"></i>
+              </button>
+            </div>
+
+            @if (dropdownActivo() === 'asignacion' && docentesFiltrados('asignacion').length) {
+            <div class="lookup-dropdown">
+              @for (docente of docentesFiltrados('asignacion'); track docente.id) {
+              <button class="lookup-option" type="button" (mousedown)="seleccionarDocente('asignacion', docente)">
+                <strong>{{ formatearDocente(docente) }}</strong>
+                <span>{{ docente.tipoDocumentoNombre }} {{ docente.numeroDocumento || 'Sin documento' }} · {{
+                  docente.especialidad || 'Sin especialidad' }}</span>
+              </button>
+              }
+            </div>
+            }
+          </label>
+
+          <label>
+            Curso
+            <div class="lookup-field">
+              <input type="text" placeholder="Seleccionar curso" [value]="cursoQuery()" readonly />
+              <button class="lookup-button" type="button" aria-label="Seleccionar curso" title="Seleccionar curso"
+                (click)="abrirModalCurso()">
+                <i class="fa-solid fa-magnifying-glass"></i>
+              </button>
+            </div>
+          </label>
+
+          <label>
+            Sección
+            <div class="lookup-field">
+              <input type="text" placeholder="Seleccionar una o varias secciones" [value]="asignacionSeccionQuery()"
+                readonly />
+              <button class="lookup-button" type="button" aria-label="Seleccionar secciones"
+                title="Seleccionar secciones" (click)="abrirModalSeccion('asignacion')">
+                <i class="fa-solid fa-magnifying-glass"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+
+        @if (asignacionSecciones().length) {
+        <section class="selected-sections-card">
+          <div class="selected-sections-head">
+            <strong>Secciones seleccionadas</strong>
+            <span>{{ asignacionSecciones().length }} elegidas</span>
+          </div>
+          <div class="selected-sections-table">
+            <div class="selected-sections-body">
+              <table class="selected-sections-native-table">
+                <thead>
+                  <tr>
+                    <th>Sección</th>
+                    <th>Nivel</th>
+                    <th>Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (seccion of asignacionSecciones(); track seccion.id) {
+                  <tr class="selected-sections-row">
+                    <td>{{ etiquetaSeccion(seccion) }}</td>
+                    <td>{{ seccion.nivelNombre || 'Sin nivel' }}</td>
+                    <td class="selected-sections-action">
+                      <button class="mini-remove-button" type="button" (click)="removerSeccionAsignacion(seccion.id)"
+                        [attr.aria-label]="'Quitar sección ' + etiquetaSeccion(seccion)" title="Quitar sección">
+                        <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+        }
+      </div>
+
+      <footer class="assignment-side-actions">
+        <button class="action-button primary" type="button" [disabled]="guardandoAsignacion()"
+          (click)="guardarAsignacion()">
+          {{ guardandoAsignacion() ? 'Guardando...' : 'Guardar asignación' }}
+        </button>
+        <button class="action-button secondary" type="button" (click)="cerrarModalCreacion()">Cancelar</button>
+      </footer>
+    </aside>
+    }
+  </div>
+
+  @if (asignacionEditando()) {
+  <div class="create-modal-backdrop" (click)="cerrarModalEdicionAsignacion()" (keydown.escape)="cerrarModalEdicionAsignacion()">
+    <section class="create-modal centered-modal-heading tutoria-create-modal" role="dialog" aria-modal="true"
+      aria-labelledby="asignacionEditTitle" (click)="$event.stopPropagation()">
+      <header class="create-modal-head">
+        <div>
+          <h3 id="asignacionEditTitle">Editar asignación docente</h3>
+          <p>Modifica el docente, curso o sección de la asignación.</p>
+        </div>
+        <button class="modal-close" type="button" aria-label="Cerrar" (click)="cerrarModalEdicionAsignacion()"><i
+            class="fa-solid fa-xmark"></i></button>
+      </header>
+      <div class="form-cont">
+        <form class="module-form">
+          <label>
+            Docente
+            <div class="tutoria-docente-lookup">
               <div class="lookup-field">
-                <input type="text" placeholder="Escribe para buscar tutor" [value]="tutoriaQuery()"
-                  (input)="onDocenteInput('tutoria', $any($event.target).value)" />
-                <button class="lookup-button" type="button" (click)="abrirModal('tutoria')">
+                <input type="text" placeholder="Escribe para buscar docente" [value]="edicionAsignacionDocenteQuery()"
+                  (input)="onDocenteInput('asignacion-edit', $any($event.target).value)" />
+                <button class="lookup-button" type="button" aria-label="Buscar docente"
+                  title="Buscar docente" (click)="abrirModal('asignacion-edit')">
                   <i class="fa-solid fa-magnifying-glass"></i>
                 </button>
               </div>
 
-              @if (dropdownActivo() === 'tutoria' && docentesFiltrados('tutoria').length) {
+              @if (dropdownActivo() === 'asignacion-edit' && docentesFiltrados('asignacion-edit').length) {
               <div class="lookup-dropdown">
-                @for (docente of docentesFiltrados('tutoria'); track docente.id) {
-                <button class="lookup-option" type="button" (mousedown)="seleccionarDocente('tutoria', docente)">
+                @for (docente of docentesFiltrados('asignacion-edit'); track docente.id) {
+                <button class="lookup-option" type="button"
+                  (mousedown)="seleccionarDocente('asignacion-edit', docente)">
                   <strong>{{ formatearDocente(docente) }}</strong>
-                  <span>{{ docente.tipoDocumentoNombre }} {{ docente.numeroDocumento || 'Sin documento' }} · {{ docente.especialidad || 'Sin especialidad' }}</span>
+                  <span>{{ docente.tipoDocumentoNombre }} {{ docente.numeroDocumento || 'Sin documento' }} · {{
+                    docente.especialidad || 'Sin especialidad' }}</span>
                 </button>
                 }
               </div>
               }
-            </label>
-
-            <div class="form-two-columns">
-              <label>
-                Sección
-                <div class="lookup-field">
-                  <input type="text" placeholder="Seleccionar sección" [value]="tutoriaSeccionQuery()" readonly />
-                  <button class="lookup-button" type="button" (click)="abrirModalSeccion('tutoria')">
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                  </button>
-                </div>
-              </label>
-
-              <label>
-                Período
-                <div class="lookup-field">
-                  <input type="text" placeholder="Seleccionar período" [value]="tutoriaPeriodoQuery()" readonly />
-                  <button class="lookup-button" type="button" (click)="abrirModalPeriodo('tutoria')">
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                  </button>
-                </div>
-              </label>
             </div>
+          </label>
 
-            <div class="form-actions">
-              <button class="action-button primary" type="button" [disabled]="guardandoTutoria()"
-                (click)="guardarTutoria()">
-                {{ guardandoTutoria() ? 'Guardando...' : 'Guardar tutoría' }}
+          <label>
+            Curso
+            <div class="lookup-field">
+              <input type="text" placeholder="Seleccionar curso" [value]="edicionAsignacionCursoQuery()" readonly />
+              <button class="lookup-button" type="button" aria-label="Seleccionar curso" title="Seleccionar curso"
+                (click)="abrirModalCurso()">
+                <i class="fa-solid fa-magnifying-glass"></i>
               </button>
-              <button class="action-button secondary" type="button" (click)="limpiarTutoria()">Limpiar</button>
             </div>
-          </form>
-        </div>
+          </label>
 
-        <div class="table-cont">
-          @if (cargandoTutorias() || !!errorTutorias()) {
-          <div class="table-scroll">
-            <table class="app-table">
-              <thead>
-                <tr>
-                  <th>Docente tutor</th>
-                  <th>Sección</th>
-                  <th>Período</th>
-                  <th>Estado</th>
-                  <th>Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (row of [0,1,2,3]; track row) {
-                <tr>
-                  <td><span class="skeleton-line long"></span></td>
-                  <td><span class="skeleton-line medium"></span></td>
-                  <td><span class="skeleton-line short"></span></td>
-                  <td><span class="skeleton-line short"></span></td>
-                  <td><span class="skeleton-line short"></span></td>
-                </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-          } @else if (!tutorias().length) {
-          <div class="table-state">
-            <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-            <span>No hay tutorías registradas para este período.</span>
-          </div>
-          } @else {
-          <div class="table-scroll">
-            <table class="app-table">
-              <thead>
-                <tr>
-                  <th>Docente tutor</th>
-                  <th>Sección</th>
-                  <th>Período</th>
-                  <th>Estado</th>
-                  <th>Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (tutoria of tutorias(); track tutoria.id) {
-                <tr>
-                  <td><strong>{{ tutoria.docenteNombreCompleto }}</strong></td>
-                  <td>
-                    <strong>{{ tutoria.seccion }}</strong>
-                    <div class="cell-help">{{ tutoria.grado }} · {{ tutoria.nivel }}</div>
-                  </td>
-                  <td>{{ tutoria.periodoAcademico }}</td>
-                  <td>
-                    <span class="status-badge" [class.active]="(tutoria.estado ?? 'ACTIVO') === 'ACTIVO'"
-                      [class.inactive]="(tutoria.estado ?? 'ACTIVO') === 'INACTIVO'">
-                      {{ tutoria.estado ?? 'ACTIVO' }}
-                    </span>
-                  </td>
-                  <td>
-                    <button class="state-action" type="button" [disabled]="actualizandoEstadoTutoriaId() === tutoria.id"
-                      (click)="toggleEstadoTutoria(tutoria)">
-                      {{
-                      actualizandoEstadoTutoriaId() === tutoria.id
-                      ? 'Actualizando...'
-                      : ((tutoria.estado ?? 'ACTIVO') === 'ACTIVO' ? 'Deshabilitar' : 'Habilitar')
-                      }}
-                    </button>
-                  </td>
-                </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-          }
-        </div>
+          <label>
+            Sección
+            <div class="lookup-field">
+              <input type="text" placeholder="Seleccionar sección" [value]="edicionAsignacionSeccionQuery()" readonly />
+              <button class="lookup-button" type="button" aria-label="Seleccionar sección"
+                title="Seleccionar sección" (click)="abrirModalSeccion('asignacion-edit')">
+                <i class="fa-solid fa-magnifying-glass"></i>
+              </button>
+            </div>
+          </label>
+        </form>
       </div>
-    </article>
-    }
-  </section>
+      <footer class="form-actions tutoria-form-actions">
+        <button class="action-button primary" type="button" [disabled]="guardandoEdicionAsignacion()"
+          (click)="guardarEdicionAsignacion()">
+          {{ guardandoEdicionAsignacion() ? 'Guardando...' : 'Guardar cambios' }}
+        </button>
+        <button class="action-button secondary" type="button" (click)="cerrarModalEdicionAsignacion()">Cancelar</button>
+      </footer>
+    </section>
+  </div>
+  }
+
+  @if (tutoriaEditando()) {
+  <div class="create-modal-backdrop" (click)="cerrarModalEdicionTutoria()" (keydown.escape)="cerrarModalEdicionTutoria()">
+    <section class="create-modal centered-modal-heading tutoria-create-modal" role="dialog" aria-modal="true"
+      aria-labelledby="tutoriaEditTitle" (click)="$event.stopPropagation()">
+      <header class="create-modal-head">
+        <div>
+          <h3 id="tutoriaEditTitle">Editar tutoría por sección</h3>
+          <p>Modifica el docente tutor o la sección asignada.</p>
+        </div>
+        <button class="modal-close" type="button" aria-label="Cerrar" (click)="cerrarModalEdicionTutoria()"><i
+            class="fa-solid fa-xmark"></i></button>
+      </header>
+      <div class="form-cont">
+        <form class="module-form">
+          <label>
+            Docente tutor
+            <div class="tutoria-docente-lookup">
+              <div class="lookup-field">
+                <input type="text" placeholder="Escribe para buscar tutor" [value]="edicionTutoriaDocenteQuery()"
+                  (input)="onDocenteInput('tutoria-edit', $any($event.target).value)" />
+                <button class="lookup-button" type="button" aria-label="Buscar docente tutor"
+                  title="Buscar docente tutor" (click)="abrirModal('tutoria-edit')">
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                </button>
+              </div>
+
+              @if (dropdownActivo() === 'tutoria-edit' && docentesFiltrados('tutoria-edit').length) {
+              <div class="lookup-dropdown">
+                @for (docente of docentesFiltrados('tutoria-edit'); track docente.id) {
+                <button class="lookup-option" type="button"
+                  (mousedown)="seleccionarDocente('tutoria-edit', docente)">
+                  <strong>{{ formatearDocente(docente) }}</strong>
+                  <span>{{ docente.tipoDocumentoNombre }} {{ docente.numeroDocumento || 'Sin documento' }} · {{
+                    docente.especialidad || 'Sin especialidad' }}</span>
+                </button>
+                }
+              </div>
+              }
+            </div>
+          </label>
+
+          <label>
+            Sección
+            <div class="lookup-field">
+              <input type="text" placeholder="Seleccionar sección" [value]="edicionTutoriaSeccionQuery()" readonly />
+              <button class="lookup-button" type="button" aria-label="Seleccionar sección"
+                title="Seleccionar sección" (click)="abrirModalSeccion('tutoria-edit')">
+                <i class="fa-solid fa-magnifying-glass"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+      </div>
+      <footer class="form-actions tutoria-form-actions">
+        <button class="action-button primary" type="button" [disabled]="guardandoEdicionTutoria()"
+          (click)="guardarEdicionTutoria()">
+          {{ guardandoEdicionTutoria() ? 'Guardando...' : 'Guardar cambios' }}
+        </button>
+        <button class="action-button secondary" type="button" (click)="cerrarModalEdicionTutoria()">Cancelar</button>
+      </footer>
+    </section>
+  </div>
+  }
 
   @if (modalContexto()) {
   <div class="modal-backdrop" (click)="cerrarModal()">
@@ -398,11 +669,6 @@
           </tbody>
         </table>
       </div>
-      } @else if (!docentesModalFiltrados().length) {
-      <div class="table-state">
-        <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-        <span>No se encontraron docentes con esa búsqueda.</span>
-      </div>
       } @else {
       <div class="table-scroll modal-table">
         <table class="app-table">
@@ -415,6 +681,19 @@
             </tr>
           </thead>
           <tbody>
+            @if (!docentesModalFiltrados().length) {
+            <tr>
+              <td colspan="4" class="table-empty-cell">
+                <div class="table-empty-state">
+                  <div class="empty-state-badge">
+                    <i class="fa-solid fa-user-slash"></i>
+                  </div>
+                  <strong class="empty-state-title">No se encontraron docentes</strong>
+                  <p class="empty-state-desc">No hay docentes que coincidan con el término de búsqueda.</p>
+                </div>
+              </td>
+            </tr>
+            } @else {
             @for (docente of docentesModalFiltrados(); track docente.id) {
             <tr class="selectable-row" (click)="seleccionarDocente(modalContexto()!, docente)">
               <td>{{ formatearDocente(docente) }}</td>
@@ -422,6 +701,7 @@
               <td>{{ docente.especialidad || 'Sin especialidad' }}</td>
               <td>{{ docente.username || 'Sin usuario' }}</td>
             </tr>
+            }
             }
           </tbody>
         </table>
@@ -478,11 +758,6 @@
           </tbody>
         </table>
       </div>
-      } @else if (!cursosModalFiltrados().length) {
-      <div class="table-state">
-        <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-        <span>No se encontraron cursos en este nivel con esa búsqueda.</span>
-      </div>
       } @else {
       <div class="table-scroll modal-table">
         <table class="app-table">
@@ -494,12 +769,26 @@
             </tr>
           </thead>
           <tbody>
+            @if (!cursosModalFiltrados().length) {
+            <tr>
+              <td colspan="3" class="table-empty-cell">
+                <div class="table-empty-state">
+                  <div class="empty-state-badge">
+                    <i class="fa-solid fa-book-open"></i>
+                  </div>
+                  <strong class="empty-state-title">No se encontraron cursos</strong>
+                  <p class="empty-state-desc">No hay cursos en este nivel con esa búsqueda.</p>
+                </div>
+              </td>
+            </tr>
+            } @else {
             @for (curso of cursosModalFiltrados(); track curso.id) {
             <tr class="selectable-row" (click)="seleccionarCurso(curso)">
               <td>{{ curso.nombre }}</td>
               <td>{{ curso.nivelNombre }}</td>
               <td>{{ curso.descripcion || 'Sin descripción' }}</td>
             </tr>
+            }
             }
           </tbody>
         </table>
@@ -567,30 +856,6 @@
           </tbody>
         </table>
       </div>
-      } @else if (!seccionesModalFiltradas().length) {
-      <div class="table-state">
-        <table class="app-table">
-          <thead>
-            <tr>
-              @if (seccionModalContexto() === 'asignacion') {
-              <th>Sel.</th>
-              }
-              <th>Sección</th>
-              <th>Grado</th>
-              <th>Nivel</th>
-              <th>Capacidad</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              @if (seccionModalContexto() === 'asignacion') {
-              <td></td>
-              }
-              <td colspan="4">No se encontraron secciones en este nivel con esa búsqueda.</td>
-            </tr>
-           
-          </tbody>
-        </table>      </div>
       } @else {
       <div class="table-scroll modal-table">
         <table class="app-table">
@@ -606,6 +871,19 @@
             </tr>
           </thead>
           <tbody>
+            @if (!seccionesModalFiltradas().length) {
+            <tr>
+              <td [attr.colspan]="seccionModalContexto() === 'asignacion' ? 5 : 4" class="table-empty-cell">
+                <div class="table-empty-state">
+                  <div class="empty-state-badge">
+                    <i class="fa-solid fa-layer-group"></i>
+                  </div>
+                  <strong class="empty-state-title">No se encontraron secciones</strong>
+                  <p class="empty-state-desc">No hay secciones en este nivel con esa búsqueda.</p>
+                </div>
+              </td>
+            </tr>
+            } @else {
             @for (seccion of seccionesModalFiltradas(); track seccion.id) {
             <tr class="selectable-row"
               [class.selected-row]="seccionModalContexto() === 'asignacion' && seccionAsignacionSeleccionada(seccion.id)"
@@ -620,6 +898,7 @@
               <td>{{ seccion.nivelNombre || 'Sin nivel' }}</td>
               <td>{{ seccion.capacidad ?? 'No definida' }}</td>
             </tr>
+            }
             }
           </tbody>
         </table>
@@ -676,9 +955,10 @@
         </table>
       </div>
       } @else if (!periodosModalFiltrados().length) {
-      <div class="table-state">
-        <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-        <span>No se encontraron períodos académicos con esa búsqueda.</span>
+      <div class="empty-state-card compact">
+        <div class="empty-state-badge"><i class="fa-regular fa-calendar-xmark"></i></div>
+        <strong class="empty-state-title">No se encontraron períodos</strong>
+        <p class="empty-state-desc">No hay períodos académicos que coincidan con la búsqueda ingresada.</p>
       </div>
       } @else {
       <div class="table-scroll modal-table">

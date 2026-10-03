@@ -119,6 +119,10 @@ export class AlumnosPeriodo {
   });
 
   constructor() {
+    if (!this.authService.tieneGestionAdministrativa()) {
+      void this.router.navigate(['/mis-asignaciones']);
+      return;
+    }
     this.cargarTodo();
   }
 
@@ -216,6 +220,12 @@ export class AlumnosPeriodo {
 
   abrirSeccion(seccionId: number): void {
     void this.router.navigate(['/gestion-estudiantil/periodo', this.periodoId, 'seccion', seccionId]);
+  }
+
+  abrirEvaluacionesSeccion(seccionId: number): void {
+    void this.router.navigate([
+      '/gestion-estudiantil/periodo', this.periodoId, 'seccion', seccionId, 'evaluaciones'
+    ]);
   }
 
   abrirModalSeccion(): void {

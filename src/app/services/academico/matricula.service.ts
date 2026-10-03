@@ -28,4 +28,10 @@ export class MatriculaService {
   crear(payload: MatriculaPayload): Observable<Matricula> {
     return this.http.post<Matricula>(this.api, payload);
   }
+
+  actualizarEstado(matriculaId: number, activo: boolean): Observable<Matricula> {
+    return this.http.patch<Matricula>(`${this.api}/${matriculaId}/estado`, null, {
+      params: { activo }
+    });
+  }
 }

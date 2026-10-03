@@ -33,8 +33,16 @@ export class AlumnoService {
     return this.http.get<Alumno[]>(this.api);
   }
 
+  obtenerPorId(id: number): Observable<Alumno> {
+    return this.http.get<Alumno>(`${this.api}/${id}`);
+  }
+
   crear(payload: AlumnoPayload): Observable<Alumno> {
     return this.http.post<Alumno>(this.api, payload);
+  }
+
+  actualizar(id: number, payload: AlumnoPayload): Observable<Alumno> {
+    return this.http.put<Alumno>(`${this.api}/${id}`, payload);
   }
 
   crearYMatricular(payload: AlumnoMatriculaPayload): Observable<Matricula> {

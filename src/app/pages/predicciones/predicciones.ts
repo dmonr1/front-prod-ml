@@ -1,6 +1,6 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, ElementRef, HostListener, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, forkJoin, of } from 'rxjs';
 import { CustomAlertComponent } from '../../components/custom-alert/custom-alert';
 import { Shell } from '../../layouts/shell/shell';
@@ -55,6 +55,7 @@ export class Predicciones {
   private estadoInicialPresentado = false;
   private readonly elementRef = inject(ElementRef<HTMLElement>);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
   private readonly periodoAcademicoService = inject(PeriodoAcademicoService);
   private readonly periodoEvaluacionService = inject(PeriodoEvaluacionService);
@@ -527,6 +528,7 @@ export class Predicciones {
     }
 
     this.vistaActiva.set(vista);
+    this.persistirFiltros();
     this.ajustarCursoSeleccionado();
     this.asegurarSeleccion();
     this.animarPanel();
@@ -535,6 +537,7 @@ export class Predicciones {
   onPeriodoEvaluacionChange(value: string): void {
     this.periodoEvaluacionSeleccionadoId.set(Number(value));
     this.mostrarSelectorPeriodo.set(false);
+    this.persistirFiltros();
     this.cargarVista();
   }
 
@@ -544,6 +547,7 @@ export class Predicciones {
     this.mostrarSelectorSeccion.set(false);
     this.ajustarPeriodoTerminoSegunSeccion();
     this.ajustarPeriodoSegunSeccion();
+    this.persistirFiltros();
     this.cargarVista();
   }
 
@@ -567,6 +571,7 @@ export class Predicciones {
     this.periodoEvaluacionSeleccionadoIdTermino.set(Number(value));
     this.mostrarSelectorPeriodoEvaluacion.set(false);
     this.ajustarPeriodoSegunSeccion();
+    this.persistirFiltros();
     this.cargarVista();
     this.abrirEstadoCortes();
   }
@@ -748,8 +753,11 @@ export class Predicciones {
   }
 
   verFichaAlumno(alumnoId: number): void {
+    this.persistirFiltros();
     void this.router.navigate(['/alumno', alumnoId], {
       queryParams: {
+        from: 'predicciones',
+        periodoEvaluacionIdTermino: this.periodoEvaluacionSeleccionadoIdTermino(),
         corteSeguimientoId: this.periodoEvaluacionSeleccionadoId(),
         seccionId: this.seccionSeleccionadaId(),
         vista: this.vistaActiva()
@@ -774,8 +782,13 @@ export class Predicciones {
           .filter((periodo) => periodo.periodoAcademicoId === periodoAcademico?.id && periodo.estado !== 'INACTIVO')
           .sort((a, b) => a.numero - b.numero);
         this.periodosAcademicosEvaluacion.set(terminosDelPeriodo);
+        const persistidos = this.obtenerFiltrosPersistidos();
+        const qpTermino = Number(this.route.snapshot.queryParamMap.get('periodoEvaluacionIdTermino')) || null;
+        const terminoDeseado = qpTermino ?? persistidos?.periodoEvaluacionIdTermino ?? null;
+        const terminoEncontrado = terminosDelPeriodo.find((t) => t.id === terminoDeseado);
+
         this.periodoEvaluacionSeleccionadoIdTermino.set(
-          this.resolverPeriodoEvaluacionVigente(terminosDelPeriodo)?.id ?? null
+          terminoEncontrado?.id ?? this.resolverPeriodoEvaluacionVigente(terminosDelPeriodo)?.id ?? null
         );
         if (!periodoAcademico) {
           this.configurarFiltros([], []);
@@ -1231,21 +1244,80 @@ export class Predicciones {
     return 'low';
   }
 
+  private readonly STORAGE_KEY_FILTROS = 'predicciones_filtros_seleccionados';
+
+  private persistirFiltros(): void {
+    try {
+      const estado = {
+        periodoEvaluacionIdTermino: this.periodoEvaluacionSeleccionadoIdTermino(),
+        corteSeguimientoId: this.periodoEvaluacionSeleccionadoId(),
+        seccionId: this.seccionSeleccionadaId(),
+        vista: this.vistaActiva()
+      };
+      sessionStorage.setItem(this.STORAGE_KEY_FILTROS, JSON.stringify(estado));
+    } catch {
+      // Storage no disponible
+    }
+  }
+
+  private obtenerFiltrosPersistidos(): {
+    periodoEvaluacionIdTermino?: number | null;
+    corteSeguimientoId?: number | null;
+    seccionId?: number | null;
+    vista?: VistaPrediccion | null;
+  } | null {
+    try {
+      const raw = sessionStorage.getItem(this.STORAGE_KEY_FILTROS);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
   private configurarFiltros(periodos: CorteSeguimiento[], secciones: Seccion[]): void {
     this.periodosEvaluacion.set(periodos);
     this.secciones.set(secciones);
-    this.seccionSeleccionadaId.set(secciones[0]?.id ?? null);
+
+    const persistidos = this.obtenerFiltrosPersistidos();
+    const qpSeccion = Number(this.route.snapshot.queryParamMap.get('seccionId')) || null;
+    const seccionDeseada = qpSeccion ?? persistidos?.seccionId ?? null;
+    const seccionEncontrada = secciones.find((s) => s.id === seccionDeseada);
+
+    this.seccionSeleccionadaId.set(seccionEncontrada?.id ?? secciones[0]?.id ?? null);
+
+    const qpVista = this.route.snapshot.queryParamMap.get('vista') as VistaPrediccion | null;
+    const vistaDeseada = qpVista ?? persistidos?.vista;
+    if (vistaDeseada && (vistaDeseada === 'global' || vistaDeseada === 'curso')) {
+      this.vistaActiva.set(vistaDeseada);
+    }
+
     this.ajustarPeriodoTerminoSegunSeccion();
-    this.ajustarPeriodoSegunSeccion();
+
+    const qpCorte = Number(this.route.snapshot.queryParamMap.get('corteSeguimientoId')) || null;
+    const corteDeseado = qpCorte ?? persistidos?.corteSeguimientoId ?? null;
+    const disponibles = this.periodosEvaluacionDisponibles();
+    const corteEncontrado = disponibles.find((c) => c.id === corteDeseado);
+
+    if (corteEncontrado) {
+      this.periodoEvaluacionSeleccionadoId.set(corteEncontrado.id);
+    } else {
+      this.ajustarPeriodoSegunSeccion();
+    }
+
     this.cargandoFiltros.set(false);
 
     if (this.periodoEvaluacionSeleccionadoId() && this.seccionSeleccionadaId()) {
       this.cargarVista();
     }
 
-    if (!this.estadoInicialPresentado && this.seccionSeleccionadaId()) {
+    const esRegreso = Boolean(
+      qpSeccion || qpCorte || this.route.snapshot.queryParamMap.get('from') || persistidos
+    );
+    if (!this.estadoInicialPresentado && this.seccionSeleccionadaId() && !esRegreso) {
       this.estadoInicialPresentado = true;
       this.abrirEstadoCortes();
+    } else {
+      this.estadoInicialPresentado = true;
     }
   }
 
@@ -1265,7 +1337,11 @@ export class Predicciones {
     const existe = disponibles.some((periodo) => periodo.id === periodoActual);
 
     if (!existe) {
-      this.periodoEvaluacionSeleccionadoId.set(this.seleccionarCortePorFecha(disponibles)?.id ?? null);
+      const persistidos = this.obtenerFiltrosPersistidos();
+      const corteEnPersistencia = disponibles.find((c) => c.id === persistidos?.corteSeguimientoId);
+      this.periodoEvaluacionSeleccionadoId.set(
+        corteEnPersistencia?.id ?? this.seleccionarCortePorFecha(disponibles)?.id ?? null
+      );
     }
   }
 

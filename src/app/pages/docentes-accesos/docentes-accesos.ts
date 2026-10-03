@@ -55,6 +55,9 @@ export class DocentesAccesos {
 
   readonly docentes = signal<Docente[]>([]);
   readonly filas = signal<DocenteAccesoRow[]>([]);
+  readonly busquedaFilas = signal('');
+  readonly tipoFiltroFilas = signal('');
+  readonly estadoFiltroFilas = signal('');
   readonly tiposDocumento = signal<TipoDocumento[]>([]);
   readonly cargando = signal(true);
   readonly error = signal<string | null>(null);
@@ -91,6 +94,31 @@ export class DocentesAccesos {
 
   readonly esAdmin = computed(() => this.authService.tieneGestionAdministrativa());
   readonly mostrarSkeleton = computed(() => this.cargando() || !!this.error());
+  readonly filasFiltradas = computed(() => {
+    const query = this.normalizarTexto(this.busquedaFilas());
+    const tipo = this.tipoFiltroFilas();
+    const estado = this.estadoFiltroFilas();
+
+    return this.filas().filter((fila) => {
+      if (tipo === 'DOCENTE' && fila.esCuentaAdministrativa) return false;
+      if (tipo === 'ADMINISTRATIVA' && !fila.esCuentaAdministrativa) return false;
+      if (estado && fila.accesoEstado !== estado) return false;
+      if (!query) return true;
+
+      const texto = this.normalizarTexto([
+        this.nombreVisible(fila),
+        fila.tipoDocumentoNombre,
+        fila.numeroDocumento ?? '',
+        fila.especialidad ?? '',
+        fila.username ?? '',
+        fila.correo ?? '',
+        fila.roles.join(' '),
+        fila.accesoEstado
+      ].join(' '));
+
+      return texto.includes(query);
+    });
+  });
   readonly totalCuentasAdministrativas = computed(
     () => this.filas().filter((fila) => fila.esCuentaAdministrativa).length
   );
@@ -524,6 +552,22 @@ export class DocentesAccesos {
     return true;
   }
 
+  motivoEstadoBloqueado(fila: DocenteAccesoRow): string {
+    if (!fila.usuarioGestionId) {
+      return 'Sin acceso vinculado';
+    }
+
+    if (fila.accesoEstado === 'ACTIVO' && fila.roles.includes('ADMIN')) {
+      return 'Cuenta protegida';
+    }
+
+    if (fila.accesoEstado === 'ACTIVO' && fila.roles.includes('DOCENTE_TUTOR')) {
+      return 'Tutoría activa';
+    }
+
+    return this.esAdmin() ? '' : 'Solo administrador';
+  }
+
   etiquetaAccionEstado(fila: DocenteAccesoRow): string {
     if (fila.accesoEstado === 'ACTIVO' && fila.roles.includes('ADMIN')) {
       return 'Cuenta protegida';
@@ -533,7 +577,7 @@ export class DocentesAccesos {
       return 'Tutoría activa';
     }
 
-    return fila.accesoEstado === 'ACTIVO' ? 'Deshabilitar' : 'Activar';
+    return fila.accesoEstado === 'ACTIVO' ? 'Inactivar' : 'Activar';
   }
 
   nombreVisible(fila: DocenteAccesoRow): string {
@@ -542,6 +586,12 @@ export class DocentesAccesos {
     }
 
     return `${fila.apellidos}, ${fila.nombres}`;
+  }
+
+  limpiarFiltrosFilas(): void {
+    this.busquedaFilas.set('');
+    this.tipoFiltroFilas.set('');
+    this.estadoFiltroFilas.set('');
   }
 
   cerrarAlerta(): void {
@@ -637,5 +687,13 @@ export class DocentesAccesos {
       } satisfies DocenteAccesoRow));
 
     return [...filasDocentes, ...filasAdministrativas];
+  }
+
+  private normalizarTexto(valor: string): string {
+    return valor
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
   }
 }

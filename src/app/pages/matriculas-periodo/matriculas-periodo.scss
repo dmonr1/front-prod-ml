@@ -145,8 +145,9 @@
   }
   
   input:focus {
-    border-color: var(--color-brand-primary);
-    box-shadow: 0 0 0 3px var(--color-brand-subtle);
+    border-color: var(--color-border-subtle);
+    outline: none !important;
+    box-shadow: none !important;
   }
   
   .feedback {
@@ -413,5 +414,10 @@
     .table-panel-head {
       flex-direction: column;
     }
+  }
+
+  .enrollment-page-title {
+    justify-items: center;
+    text-align: center;
   }
   

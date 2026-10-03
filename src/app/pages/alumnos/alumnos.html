@@ -1,773 +1,726 @@
 <app-shell>
   <section class="periods-page">
-    <app-custom-alert
-      [open]="alertState().open"
-      [type]="alertState().type"
-      [title]="alertState().title"
-      [message]="alertState().message"
-      [confirmText]="alertState().confirmText"
-      [cancelText]="alertState().cancelText"
-      [autoCloseMs]="alertState().autoCloseMs"
-      (confirm)="cerrarAlerta()"
-      (cancel)="cerrarAlerta()"
+    <app-custom-alert [open]="alertState().open" [type]="alertState().type" [title]="alertState().title"
+      [message]="alertState().message" [confirmText]="alertState().confirmText" [cancelText]="alertState().cancelText"
+      [autoCloseMs]="alertState().autoCloseMs" (confirm)="cerrarAlerta()" (cancel)="cerrarAlerta()"
       (dismiss)="cerrarAlerta()" />
 
     <div class="page-card page-slide-in">
       <div class="card-head">
-        <div class="card-head-inline">
+        <div class="card-head-inline periods-page-head">
           <div class="panel-head">
-            <h2>Gestión estudiantil por período académico</h2>
+            <h2>Períodos académicos</h2>
+            <p>Crea un período o selecciónalo para gestionar sus grados, secciones y alumnos.</p>
           </div>
 
           <div class="head-actions">
-            <button class="action-button secondary" type="button" (click)="abrirModalPeriodo()"><i class="fa-solid fa-plus"></i>
+            <button class="action-button secondary" type="button" (click)="abrirModalPeriodo()"><i
+                class="fa-solid fa-plus"></i>
               Añadir período académico
             </button>
           </div>
         </div>
       </div>
 
-      <section class="periods-panel">
-        <div class="panel-head section-head">
-          <div>
-            <h3>Períodos académicos</h3>
-            <p>Haz clic en el período para ver sus grados y secciones.</p>
+      <section class="periods-panel" aria-label="Períodos académicos">
+        @if (cargandoPeriodos()) {
+        <div class="periods-surface">
+          <div class="periods-grid">
+            @for (row of [0, 1, 2, 3, 4, 5]; track row) {
+            <article class="period-card skeleton-card">
+              <span class="skeleton-line long"></span>
+              <span class="skeleton-line mini"></span>
+              <span class="skeleton-line short"></span>
+              <span class="skeleton-line mini"></span>
+              <span class="skeleton-line long"></span>
+              <span class="skeleton-line medium"></span>
+            </article>
+            }
           </div>
         </div>
-
-        @if (cargandoPeriodos()) {
-          <div class="periods-surface">
-            <div class="periods-grid">
-              @for (row of [0, 1, 2, 3, 4, 5]; track row) {
-                <article class="period-card skeleton-card">
-                  <span class="skeleton-line long"></span>
-                  <span class="skeleton-line mini"></span>
-                  <span class="skeleton-line short"></span>
-                  <span class="skeleton-line mini"></span>
-                  <span class="skeleton-line long"></span>
-                  <span class="skeleton-line medium"></span>
-                </article>
-              }
-            </div>
-          </div>
         } @else if (errorPeriodos()) {
-          <div class="periods-surface state-surface">
-            <div class="table-state error">
-              <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
-              <span>{{ errorPeriodos() }}</span>
-            </div>
+        <div class="periods-surface state-surface">
+          <div class="table-state error">
+            <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
+            <span>{{ errorPeriodos() }}</span>
           </div>
+        </div>
         } @else if (!periodos().length) {
-          <div class="periods-surface state-surface">
-            <div class="table-state">
-              <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-              <span>Todavía no hay periodos académicos registrados.</span>
-            </div>
+        <div class="periods-surface state-surface">
+          <div class="empty-state-card">
+            <div class="empty-state-badge"><i class="fa-regular fa-calendar-xmark"></i></div>
+            <strong class="empty-state-title">Sin períodos académicos</strong>
+            <p class="empty-state-desc">Todavía no hay períodos académicos registrados en el sistema.</p>
           </div>
+        </div>
         } @else {
-          <div class="periods-surface">
-            <div class="periods-grid">
-              @for (periodo of periodos(); track periodo.id) {
-                <article class="period-card" (click)="abrirPeriodo(periodo.id)">
-                  <div class="period-card-top">
-                    <div class="period-year-badge">
-                      <i class="fa-regular fa-calendar-check"></i>
-                      <span class="period-year">{{ periodo.anio }}</span>
-                    </div>
-                    <div class="period-card-actions">
-                      @if (periodo.anio === currentYear) {
-                        <button class="card-inline-button" type="button" (click)="editarPeriodo(periodo.id, $event)" title="Editar configuración del período">
-                          <i class="fa-solid fa-pen-to-square"></i>
-                          <span>Editar</span>
-                        </button>
-                      }
-                    </div>
-                  </div>
+        <div class="periods-surface">
+          <div class="periods-grid">
+            @for (periodo of periodos(); track periodo.id) {
+            <article class="period-card" (click)="abrirPeriodo(periodo.id)">
+              <div class="period-card-top">
+                <div class="period-year-badge">
+                  <i class="fa-regular fa-calendar-check"></i>
+                  <span class="period-year">{{ periodo.anio }}</span>
+                </div>
+                <div class="period-card-actions">
+                  @if (periodo.anio === currentYear) {
+                  <button class="card-inline-button" type="button" (click)="editarPeriodo(periodo.id, $event)"
+                    title="Editar configuración del período">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span>Editar</span>
+                  </button>
+                  }
+                </div>
+              </div>
 
-                  <strong class="period-card-title">{{ periodo.nombre }}</strong>
+              <strong class="period-card-title">{{ periodo.nombre }}</strong>
 
-                  <div class="period-meta-list">
-                    <div class="period-meta-row">
-                      <i class="fa-regular fa-calendar-days"></i>
-                      <span>{{ periodo.fechaInicio }} &nbsp;al&nbsp; {{ periodo.fechaFin }}</span>
-                    </div>
-                    <div class="period-meta-row">
-                      <i class="fa-solid fa-layer-group"></i>
-                      <span>Esquema {{ nombreEsquemaPeriodoEvaluacion(periodo.tipoPeriodoEvaluacion) }}</span>
-                    </div>
-                  </div>
+              <div class="period-meta-list">
+                <div class="period-meta-row">
+                  <i class="fa-regular fa-calendar-days"></i>
+                  <span>{{ periodo.fechaInicio }} &nbsp;al&nbsp; {{ periodo.fechaFin }}</span>
+                </div>
+                <div class="period-meta-row">
+                  <i class="fa-solid fa-layer-group"></i>
+                  <span>Esquema {{ nombreEsquemaPeriodoEvaluacion(periodo.tipoPeriodoEvaluacion) }}</span>
+                </div>
+              </div>
 
-                  <div class="period-card-footer">
-                    <span class="period-count">
-                      <i class="fa-solid fa-calendar-days"></i>
-                      <span>{{ totalPeriodosEvaluacionPeriodo(periodo.id) }} periodos</span>
-                    </span>
-                    <div class="period-card-badges">
-                      <span
-                        class="bimester-state"
-                        [class.complete]="totalPeriodosEvaluacionPeriodo(periodo.id) > 0"
-                        [class.warning]="totalPeriodosEvaluacionPeriodo(periodo.id) === 0">
-                        @if (totalPeriodosEvaluacionPeriodo(periodo.id) > 0) {
-                          <i class="fa-solid fa-circle-check"></i>
-                        } @else {
-                          <i class="fa-solid fa-circle-exclamation"></i>
-                        }
-                        <span>{{ totalPeriodosEvaluacionPeriodo(periodo.id) > 0 ? 'Configurado' : 'Sin periodos' }}</span>
-                      </span>
-                      <span
-                        class="bimester-state"
-                        [class.editable]="periodo.anio === currentYear"
-                        [class.historic]="periodo.anio !== currentYear">
-                        @if (periodo.anio === currentYear) {
-                          <i class="fa-solid fa-bolt"></i>
-                        } @else {
-                          <i class="fa-solid fa-clock-rotate-left"></i>
-                        }
-                        <span>{{ periodo.anio === currentYear ? 'Editable' : 'Histórico' }}</span>
-                      </span>
-                    </div>
-                  </div>
-                </article>
-              }
-            </div>
+              <div class="period-card-footer">
+                <span class="period-count">
+                  <i class="fa-solid fa-calendar-days"></i>
+                  <span>{{ totalPeriodosEvaluacionPeriodo(periodo.id) }} periodos</span>
+                </span>
+                <div class="period-card-badges">
+                  <span class="bimester-state" [class.complete]="totalPeriodosEvaluacionPeriodo(periodo.id) > 0"
+                    [class.warning]="totalPeriodosEvaluacionPeriodo(periodo.id) === 0">
+                    @if (totalPeriodosEvaluacionPeriodo(periodo.id) > 0) {
+                    <i class="fa-solid fa-circle-check"></i>
+                    } @else {
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    }
+                    <span>{{ totalPeriodosEvaluacionPeriodo(periodo.id) > 0 ? 'Configurado' : 'Sin periodos' }}</span>
+                  </span>
+                  <span class="bimester-state" [class.editable]="periodo.anio === currentYear"
+                    [class.historic]="periodo.anio !== currentYear">
+                    @if (periodo.anio === currentYear) {
+                    <i class="fa-solid fa-bolt"></i>
+                    } @else {
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    }
+                    <span>{{ periodo.anio === currentYear ? 'Editable' : 'Histórico' }}</span>
+                  </span>
+                </div>
+              </div>
+            </article>
+            }
           </div>
+        </div>
         }
       </section>
     </div>
 
     @if (modalPeriodoAbierto()) {
-      <div class="modal-backdrop">
-        <div class="modal-card modal-card--compact" (click)="$event.stopPropagation()">
-          <div class="modal-head">
-            <div>
-              <span class="panel-kicker">
-                {{ editandoPeriodoId() ? 'Editar período académico' : 'Registrar período académico' }}
-              </span>
-            </div>
-            <button class="modal-close" type="button" (click)="cerrarModalPeriodo()">
-              <i class="fa-solid fa-xmark"></i>
-            </button>
+    <div class="modal-backdrop" (click)="cerrarModalPeriodo()">
+      <div class="modal-card modal-card--compact" (click)="$event.stopPropagation()">
+        <div class="modal-head">
+          <div>
+            <span class="panel-kicker">
+              {{ editandoPeriodoId() ? 'Editar período académico' : 'Registrar período académico' }}
+            </span>
           </div>
+          <button class="modal-close" type="button" (click)="cerrarModalPeriodo()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
 
-            <form class="master-form">
-              @if (cargandoDetallePeriodo()) {
-                <div class="modal-loading-state">
-                  <span class="table-state-icon"><i class="fa-solid fa-pen-to-square"></i></span>
-                  <span>Cargando datos del período...</span>
+        <form class="master-form">
+          @if (cargandoDetallePeriodo()) {
+          <div class="modal-loading-state">
+            <span class="table-state-icon"><i class="fa-solid fa-pen-to-square"></i></span>
+            <span>Cargando datos del período...</span>
+          </div>
+          } @else {
+          <div class="stepper-shell">
+            <div class="stepper-head">
+              <div class="stepper-track">
+                <div class="stepper-progress" [style.width.%]="((pasoModalPeriodo() - 1) / 4) * 100"></div>
+              </div>
+
+              <button class="step-node" type="button" [class.active]="pasoModalPeriodo() === 1"
+                [class.completed]="pasoModalPeriodo() > 1" (click)="irAPasoModal(1)">
+                <span class="step-node-circle">1</span>
+                <span class="step-node-label">Datos</span>
+              </button>
+
+              <button class="step-node" type="button" [class.active]="pasoModalPeriodo() === 2"
+                [class.completed]="pasoModalPeriodo() > 2" (click)="irAPasoModal(2)">
+                <span class="step-node-circle">2</span>
+                <span class="step-node-label">Calendario</span>
+              </button>
+
+              <button class="step-node" type="button" [class.active]="pasoModalPeriodo() === 3"
+                [class.completed]="pasoModalPeriodo() > 3" (click)="irAPasoModal(3)">
+                <span class="step-node-circle">3</span>
+                <span class="step-node-label">Cortes</span>
+              </button>
+
+              <button class="step-node" type="button" [class.active]="pasoModalPeriodo() === 4"
+                [class.completed]="pasoModalPeriodo() > 4" (click)="irAPasoModal(4)">
+                <span class="step-node-circle">4</span>
+                <span class="step-node-label">Evaluaciones</span>
+              </button>
+
+              <button class="step-node" type="button" [class.active]="pasoModalPeriodo() === 5"
+                (click)="irAPasoModal(5)">
+                <span class="step-node-circle">5</span>
+                <span class="step-node-label">Cursos</span>
+              </button>
+            </div>
+
+            @if (pasoModalPeriodo() === 1) {
+            <section class="step-panel">
+              <div class="draft-head">
+                <strong>Datos del periodo académico</strong>
+                <span>Define el año, fechas base y esquema de evaluación</span>
+              </div>
+
+              <section class="modal-form-main">
+                <div class="period-base-fields">
+                  <label>
+                    Nombre
+                    <input type="text" [ngModel]="formPeriodo().nombre"
+                      (ngModelChange)="actualizarCampoPeriodo('nombre', $event)" name="nombrePeriodo"
+                      placeholder="Ejemplo: Período 2026" />
+                  </label>
+                  <label>
+                    Año
+                    <input type="number" [ngModel]="formPeriodo().anio" (ngModelChange)="actualizarAnioPeriodo($event)"
+                      name="anioPeriodo" min="2000" max="2100" step="1" placeholder="2026" />
+                  </label>
+                  <label>
+                    Fecha de inicio
+                    <app-date-picker [value]="formPeriodo().fechaInicio" [minYear]="anioCalendario()"
+                      [maxYear]="anioCalendario()" (valueChange)="actualizarCampoPeriodo('fechaInicio', $event)" />
+                  </label>
+
+                  <label>
+                    Fecha de fin
+                    <app-date-picker [value]="formPeriodo().fechaFin" [minYear]="anioCalendario()"
+                      [maxYear]="anioCalendario()" (valueChange)="actualizarCampoPeriodo('fechaFin', $event)" />
+                  </label>
                 </div>
-              } @else {
-                <div class="stepper-shell">
-                  <div class="stepper-head">
-                    <div class="stepper-track">
-                      <div
-                        class="stepper-progress"
-                        [style.width.%]="((pasoModalPeriodo() - 1) / 4) * 100"></div>
+
+                <section class="schedule-duration-settings" aria-labelledby="schedule-duration-title">
+                  <div class="schedule-duration-heading">
+                    <strong id="schedule-duration-title">Jornada, duración de clases y recreo</strong>
+                    <span>Define el horario disponible para programar bloques en cada nivel.</span>
+                  </div>
+                  <div class="schedule-duration-grid">
+                    <fieldset class="schedule-duration-level">
+                      <legend>Primaria</legend>
+                      <label>Inicio de jornada
+                        <input type="time" [ngModel]="formPeriodo().horaInicioJornadaPrimaria"
+                          (ngModelChange)="actualizarCampoPeriodo('horaInicioJornadaPrimaria', $event)"
+                          name="horaInicioJornadaPrimaria" />
+                      </label>
+                      <label>Fin de jornada
+                        <input type="time" [ngModel]="formPeriodo().horaFinJornadaPrimaria"
+                          (ngModelChange)="actualizarCampoPeriodo('horaFinJornadaPrimaria', $event)"
+                          name="horaFinJornadaPrimaria" />
+                      </label>
+                      <label>Hora académica (minutos)
+                        <input type="number" min="30" max="180" step="5"
+                          [ngModel]="formPeriodo().duracionHoraPrimariaMinutos"
+                          (ngModelChange)="actualizarDuracionHorario('duracionHoraPrimariaMinutos', $event)"
+                          name="duracionHoraPrimaria" />
+                      </label>
+                      <label>Recreo (minutos)
+                        <input type="number" min="5" max="60" step="5"
+                          [ngModel]="formPeriodo().duracionRecreoPrimariaMinutos"
+                          (ngModelChange)="actualizarDuracionHorario('duracionRecreoPrimariaMinutos', $event)"
+                          name="duracionRecreoPrimaria" />
+                      </label>
+                    </fieldset>
+                    <fieldset class="schedule-duration-level">
+                      <legend>Secundaria</legend>
+                      <label>Inicio de jornada
+                        <input type="time" [ngModel]="formPeriodo().horaInicioJornadaSecundaria"
+                          (ngModelChange)="actualizarCampoPeriodo('horaInicioJornadaSecundaria', $event)"
+                          name="horaInicioJornadaSecundaria" />
+                      </label>
+                      <label>Fin de jornada
+                        <input type="time" [ngModel]="formPeriodo().horaFinJornadaSecundaria"
+                          (ngModelChange)="actualizarCampoPeriodo('horaFinJornadaSecundaria', $event)"
+                          name="horaFinJornadaSecundaria" />
+                      </label>
+                      <label>Hora académica (minutos)
+                        <input type="number" min="30" max="180" step="5"
+                          [ngModel]="formPeriodo().duracionHoraSecundariaMinutos"
+                          (ngModelChange)="actualizarDuracionHorario('duracionHoraSecundariaMinutos', $event)"
+                          name="duracionHoraSecundaria" />
+                      </label>
+                      <label>Recreo (minutos)
+                        <input type="number" min="5" max="60" step="5"
+                          [ngModel]="formPeriodo().duracionRecreoSecundariaMinutos"
+                          (ngModelChange)="actualizarDuracionHorario('duracionRecreoSecundariaMinutos', $event)"
+                          name="duracionRecreoSecundaria" />
+                      </label>
+                    </fieldset>
+                  </div>
+                </section>
+
+                <label>
+                  Esquema de evaluación
+                  <select [ngModel]="tipoPeriodoEvaluacion()" (ngModelChange)="cambiarTipoPeriodoEvaluacion($event)"
+                    name="tipoPeriodoEvaluacion">
+                    @for (esquema of esquemasPeriodoEvaluacion; track esquema.tipo) {
+                    <option [value]="esquema.tipo">{{ esquema.nombre }} - {{ esquema.cantidad }} periodos</option>
+                    }
+                  </select>
+                </label>
+              </section>
+            </section>
+            }
+
+            @if (pasoModalPeriodo() === 2) {
+            <section class="evaluation-draft step-panel">
+              <div class="draft-head">
+                <div>
+                  <strong>Períodos de evaluación</strong>
+                  <p class="draft-head-sub">Fechas de inicio y fin para cada período según el esquema seleccionado.</p>
+                </div>
+                <span class="draft-counter-badge">{{ periodosEvaluacionBorrador().length }} períodos</span>
+              </div>
+
+              <div class="evaluation-period-grid">
+                @for (periodoEvaluacion of periodosEvaluacionBorrador(); track periodoEvaluacion.numero; let i = $index)
+                {
+                <article class="evaluation-period-card">
+                  <div class="period-card-header">
+                    <span class="period-num-badge">{{ periodoEvaluacion.numero }}</span>
+                    <strong class="period-title">{{ periodoEvaluacion.nombre }}</strong>
+                  </div>
+
+                  <div class="period-card-dates-grid">
+                    <div class="period-date-group">
+                      <span class="period-date-tag"><i class="fa-regular fa-calendar-plus"></i> Inicio</span>
+                      <app-date-picker [value]="periodoEvaluacion.fechaInicio" [minYear]="anioCalendario()"
+                        [maxYear]="anioCalendario()" [minDate]="formPeriodo().fechaInicio"
+                        [maxDate]="formPeriodo().fechaFin"
+                        (valueChange)="actualizarFechaBorrador(i, 'fechaInicio', $event)" />
                     </div>
 
-                    <button
-                      class="step-node"
-                      type="button"
-                      [class.active]="pasoModalPeriodo() === 1"
-                      [class.completed]="pasoModalPeriodo() > 1"
-                      (click)="irAPasoModal(1)">
-                      <span class="step-node-circle">1</span>
-                      <span class="step-node-label">Datos</span>
-                    </button>
+                    <div class="period-date-group">
+                      <span class="period-date-tag"><i class="fa-regular fa-calendar-check"></i> Fin</span>
+                      <app-date-picker [value]="periodoEvaluacion.fechaFin" [minYear]="anioCalendario()"
+                        [maxYear]="anioCalendario()" [minDate]="formPeriodo().fechaInicio"
+                        [maxDate]="formPeriodo().fechaFin"
+                        (valueChange)="actualizarFechaBorrador(i, 'fechaFin', $event)" />
+                    </div>
+                  </div>
+                </article>
+                }
+              </div>
+            </section>
+            }
 
-                    <button
-                      class="step-node"
-                      type="button"
-                      [class.active]="pasoModalPeriodo() === 2"
-                      [class.completed]="pasoModalPeriodo() > 2"
-                      (click)="irAPasoModal(2)">
-                      <span class="step-node-circle">2</span>
-                      <span class="step-node-label">Calendario</span>
-                    </button>
+            @if (pasoModalPeriodo() === 3) {
+            <section class="cuts-panel step-panel">
+              <div class="draft-head">
+                <div>
+                  <strong>Cortes de seguimiento preventivo</strong>
+                  <p class="draft-head-sub">Semanas de corte en las que se monitoreará el riesgo académico de los
+                    alumnos.</p>
+                </div>
+                <button class="action-button primary action-button--add-cut" type="button"
+                  (click)="agregarCorteSeguimiento()">
+                  <i class="fa-solid fa-plus"></i>
+                  <span>Agregar corte</span>
+                </button>
+              </div>
 
-                    <button
-                      class="step-node"
-                      type="button"
-                      [class.active]="pasoModalPeriodo() === 3"
-                      [class.completed]="pasoModalPeriodo() > 3"
-                      (click)="irAPasoModal(3)">
-                      <span class="step-node-circle">3</span>
-                      <span class="step-node-label">Cortes</span>
-                    </button>
+              <div class="cut-info-banner">
+                <i class="fa-solid fa-lightbulb"></i>
+                <span>Las semanas configuradas se calcularán desde el inicio de cada período de evaluación para
+                  monitorear el rendimiento oportunamente.</span>
+              </div>
 
-                    <button
-                      class="step-node"
-                      type="button"
-                      [class.active]="pasoModalPeriodo() === 4"
-                      [class.completed]="pasoModalPeriodo() > 4"
-                      (click)="irAPasoModal(4)">
-                      <span class="step-node-circle">4</span>
-                      <span class="step-node-label">Evaluaciones</span>
-                    </button>
+              <div class="cut-preset-bar">
+                <span class="cut-preset-title"><i class="fa-solid fa-wand-magic-sparkles"></i> Sugerencias:</span>
+                <button type="button" class="cut-preset-chip" (click)="agregarCortePreset(5)">
+                  <i class="fa-solid fa-plus"></i> Semana 5 (Mitad de período)
+                </button>
+                <button type="button" class="cut-preset-chip" (click)="agregarCortePreset(8)">
+                  <i class="fa-solid fa-plus"></i> Semana 8 (Cierre preliminar)
+                </button>
+              </div>
 
-                    <button
-                      class="step-node"
-                      type="button"
-                      [class.active]="pasoModalPeriodo() === 5"
-                      (click)="irAPasoModal(5)">
-                      <span class="step-node-circle">5</span>
-                      <span class="step-node-label">Cursos</span>
+              <div class="cut-draft-grid">
+                @for (corte of cortesSeguimientoBorrador(); track $index; let i = $index) {
+                <article class="cut-item-card">
+                  <div class="cut-item-top">
+                    <div class="cut-item-badge">
+                      <span class="cut-badge-index">{{ i + 1 }}</span>
+                      <span class="cut-badge-title">Corte de riesgo</span>
+                    </div>
+                    <button class="cut-delete-button" type="button" title="Eliminar este corte"
+                      (click)="quitarCorteSeguimiento(i)">
+                      <i class="fa-solid fa-trash-can"></i>
                     </button>
                   </div>
 
-              @if (pasoModalPeriodo() === 1) {
-                <section class="step-panel">
-                  <div class="draft-head">
-                    <strong>Datos del periodo académico</strong>
-                    <span>Define el año, fechas base y esquema de evaluación</span>
-                  </div>
-
-                  <section class="modal-form-main">
-                    <div class="period-base-fields">
-                      <label>
-                        Nombre
-                        <input
-                          type="text"
-                          [ngModel]="formPeriodo().nombre"
-                          (ngModelChange)="actualizarCampoPeriodo('nombre', $event)"
-                          name="nombrePeriodo"
-                          placeholder="Ejemplo: Período 2026" />
-                      </label>
-                      <label>
-                        Año
-                        <input
-                          type="number"
-                          [ngModel]="formPeriodo().anio"
-                          (ngModelChange)="actualizarAnioPeriodo($event)"
-                          name="anioPeriodo"
-                          min="2000"
-                          max="2100"
-                          step="1"
-                          placeholder="2026" />
-                      </label>
-                      <label>
-                        Fecha de inicio
-                        <app-date-picker
-                          [value]="formPeriodo().fechaInicio"
-                          [minYear]="anioCalendario()"
-                          [maxYear]="anioCalendario()"
-                          (valueChange)="actualizarCampoPeriodo('fechaInicio', $event)" />
-                      </label>
-
-                      <label>
-                        Fecha de fin
-                        <app-date-picker
-                          [value]="formPeriodo().fechaFin"
-                          [minYear]="anioCalendario()"
-                          [maxYear]="anioCalendario()"
-                          (valueChange)="actualizarCampoPeriodo('fechaFin', $event)" />
-                      </label>
-                    </div>
-
-                    <section class="schedule-duration-settings" aria-labelledby="schedule-duration-title">
-                      <div class="schedule-duration-heading">
-                        <strong id="schedule-duration-title">Duración de clases y recreo</strong>
-                        <span>Se usará para crear rangos fijos en Horarios y programación.</span>
+                  <div class="cut-item-body">
+                    <label class="cut-week-label">
+                      <span class="cut-label-text">Semana de evaluación</span>
+                      <div class="cut-week-input-wrapper">
+                        <i class="fa-regular fa-calendar-check"></i>
+                        <input type="number" min="1" max="20" [ngModel]="corte.semana"
+                          (ngModelChange)="actualizarCorte(i, 'semana', $event)" [name]="'corte-semana-' + i" />
+                        <span class="cut-week-suffix">Semana</span>
                       </div>
-                      <div class="schedule-duration-grid">
-                        <fieldset class="schedule-duration-level">
-                          <legend>Primaria</legend>
-                          <label>Hora académica (minutos)
-                            <input type="number" min="30" max="180" step="5" [ngModel]="formPeriodo().duracionHoraPrimariaMinutos"
-                              (ngModelChange)="actualizarDuracionHorario('duracionHoraPrimariaMinutos', $event)" name="duracionHoraPrimaria" />
-                          </label>
-                          <label>Recreo (minutos)
-                            <input type="number" min="5" max="60" step="5" [ngModel]="formPeriodo().duracionRecreoPrimariaMinutos"
-                              (ngModelChange)="actualizarDuracionHorario('duracionRecreoPrimariaMinutos', $event)" name="duracionRecreoPrimaria" />
-                          </label>
-                        </fieldset>
-                        <fieldset class="schedule-duration-level">
-                          <legend>Secundaria</legend>
-                          <label>Hora académica (minutos)
-                            <input type="number" min="30" max="180" step="5" [ngModel]="formPeriodo().duracionHoraSecundariaMinutos"
-                              (ngModelChange)="actualizarDuracionHorario('duracionHoraSecundariaMinutos', $event)" name="duracionHoraSecundaria" />
-                          </label>
-                          <label>Recreo (minutos)
-                            <input type="number" min="5" max="60" step="5" [ngModel]="formPeriodo().duracionRecreoSecundariaMinutos"
-                              (ngModelChange)="actualizarDuracionHorario('duracionRecreoSecundariaMinutos', $event)" name="duracionRecreoSecundaria" />
-                          </label>
-                        </fieldset>
-                      </div>
-                    </section>
-
-                    <label>
-                      Esquema de evaluación
-                      <select
-                        [ngModel]="tipoPeriodoEvaluacion()"
-                        (ngModelChange)="cambiarTipoPeriodoEvaluacion($event)"
-                        name="tipoPeriodoEvaluacion">
-                        @for (esquema of esquemasPeriodoEvaluacion; track esquema.tipo) {
-                          <option [value]="esquema.tipo">{{ esquema.nombre }} - {{ esquema.cantidad }} periodos</option>
-                        }
-                      </select>
                     </label>
-                  </section>
-                </section>
-              }
-
-              @if (pasoModalPeriodo() === 2) {
-                <section class="evaluation-draft step-panel">
-                  <div class="draft-head">
-                    <div>
-                      <strong>Períodos de evaluación</strong>
-                      <p class="draft-head-sub">Fechas de inicio y fin para cada período según el esquema seleccionado.</p>
-                    </div>
-                    <span class="draft-counter-badge">{{ periodosEvaluacionBorrador().length }} períodos</span>
                   </div>
 
-                  <div class="evaluation-period-grid">
-                    @for (periodoEvaluacion of periodosEvaluacionBorrador(); track periodoEvaluacion.numero; let i = $index) {
-                      <article class="evaluation-period-card">
-                        <div class="period-card-header">
-                          <span class="period-num-badge">{{ periodoEvaluacion.numero }}</span>
-                          <strong class="period-title">{{ periodoEvaluacion.nombre }}</strong>
-                        </div>
-
-                        <div class="period-card-dates-grid">
-                          <div class="period-date-group">
-                            <span class="period-date-tag"><i class="fa-regular fa-calendar-plus"></i> Inicio</span>
-                            <app-date-picker
-                              [value]="periodoEvaluacion.fechaInicio"
-                              [minYear]="anioCalendario()"
-                              [maxYear]="anioCalendario()"
-                              [minDate]="formPeriodo().fechaInicio"
-                              [maxDate]="formPeriodo().fechaFin"
-                              (valueChange)="actualizarFechaBorrador(i, 'fechaInicio', $event)" />
-                          </div>
-
-                          <div class="period-date-group">
-                            <span class="period-date-tag"><i class="fa-regular fa-calendar-check"></i> Fin</span>
-                            <app-date-picker
-                              [value]="periodoEvaluacion.fechaFin"
-                              [minYear]="anioCalendario()"
-                              [maxYear]="anioCalendario()"
-                              [minDate]="formPeriodo().fechaInicio"
-                              [maxDate]="formPeriodo().fechaFin"
-                              (valueChange)="actualizarFechaBorrador(i, 'fechaFin', $event)" />
-                          </div>
-                        </div>
-                      </article>
-                    }
+                  <div class="cut-item-footer">
+                    <span class="cut-repeat-pill">
+                      <i class="fa-solid fa-arrows-rotate"></i>
+                      Aplica a cada período
+                    </span>
                   </div>
-                </section>
-              }
+                </article>
+                } @empty {
+                <div class="table-state compact-state">
+                  <span class="table-state-icon"><i class="fa-solid fa-chart-line"></i></span>
+                  <span>Agrega al menos un corte semanal para habilitar las alertas tempranas y el semáforo de
+                    riesgo.</span>
+                </div>
+                }
+              </div>
+            </section>
+            }
 
-              @if (pasoModalPeriodo() === 3) {
-                <section class="cuts-panel step-panel">
-                  <div class="draft-head">
-                    <div>
-                      <strong>Cortes de seguimiento preventivo</strong>
-                      <p class="draft-head-sub">Semanas de corte en las que se monitoreará el riesgo académico de los alumnos.</p>
+            @if (pasoModalPeriodo() === 4) {
+            <section class="evaluation-template step-panel">
+              <div class="draft-head">
+                <strong>Plantilla anual de evaluaciones</strong>
+                <span>Selecciona solo los tipos que usarás y luego define su cantidad base.</span>
+              </div>
+
+              @if (cargandoTiposEvaluacion()) {
+              <div class="evaluation-template-list">
+                @for (row of [0, 1, 2, 3, 4, 5]; track row) {
+                <article class="evaluation-template-row skeleton-card">
+                  <span class="skeleton-line long"></span>
+                  <span class="skeleton-line medium"></span>
+                  <span class="skeleton-line short"></span>
+                </article>
+                }
+              </div>
+              } @else if (!tiposEvaluacion().length) {
+              <div class="empty-state-card compact">
+                <div class="empty-state-badge"><i class="fa-solid fa-clipboard-list"></i></div>
+                <strong class="empty-state-title">Sin tipos de evaluación</strong>
+                <p class="empty-state-desc">No hay tipos de evaluación disponibles para configurar.</p>
+              </div>
+              } @else {
+              <div class="evaluation-template-builder">
+                <div class="evaluation-type-picker">
+                  <div class="picker-head">
+                    <strong>Tipos disponibles</strong>
+                    <div class="picker-head-actions">
+                      <span>{{ configuracionesEvaluacionSeleccionadas().length }} seleccionados</span>
+                      <button class="action-button tertiary" type="button" (click)="abrirNuevoTipoEvaluacion()">
+                        <i class="fa-solid fa-plus"></i>
+                        Nuevo tipo
+                      </button>
                     </div>
-                    <button class="action-button primary action-button--add-cut" type="button" (click)="agregarCorteSeguimiento()">
+                  </div>
+
+                  <div class="picker-chip-list">
+                    @for (configuracion of configuracionesEvaluacionDisponibles(); track configuracion.tipoEvaluacionId)
+                    {
+                    <button class="picker-chip" type="button"
+                      (click)="agregarTipoEvaluacionBorrador(configuracion.tipoEvaluacionId)">
+                      <span>{{ nombreTipoEvaluacionVisible(configuracion.nombreTipoEvaluacion) }}</span>
                       <i class="fa-solid fa-plus"></i>
-                      <span>Agregar corte</span>
                     </button>
-                  </div>
+                    }
 
-                  <div class="cut-info-banner">
-                    <i class="fa-solid fa-lightbulb"></i>
-                    <span>Las semanas configuradas se calcularán desde el inicio de cada período de evaluación para monitorear el rendimiento oportunamente.</span>
-                  </div>
-
-                  <div class="cut-preset-bar">
-                    <span class="cut-preset-title"><i class="fa-solid fa-wand-magic-sparkles"></i> Sugerencias:</span>
-                    <button type="button" class="cut-preset-chip" (click)="agregarCortePreset(5)">
-                      <i class="fa-solid fa-plus"></i> Semana 5 (Mitad de período)
-                    </button>
-                    <button type="button" class="cut-preset-chip" (click)="agregarCortePreset(8)">
-                      <i class="fa-solid fa-plus"></i> Semana 8 (Cierre preliminar)
-                    </button>
-                  </div>
-
-                  <div class="cut-draft-grid">
-                    @for (corte of cortesSeguimientoBorrador(); track $index; let i = $index) {
-                      <article class="cut-item-card">
-                        <div class="cut-item-top">
-                          <div class="cut-item-badge">
-                            <span class="cut-badge-index">{{ i + 1 }}</span>
-                            <span class="cut-badge-title">Corte de riesgo</span>
-                          </div>
-                          <button
-                            class="cut-delete-button"
-                            type="button"
-                            title="Eliminar este corte"
-                            (click)="quitarCorteSeguimiento(i)">
-                            <i class="fa-solid fa-trash-can"></i>
-                          </button>
-                        </div>
-
-                        <div class="cut-item-body">
-                          <label class="cut-week-label">
-                            <span class="cut-label-text">Semana de evaluación</span>
-                            <div class="cut-week-input-wrapper">
-                              <i class="fa-regular fa-calendar-check"></i>
-                              <input
-                                type="number"
-                                min="1"
-                                max="20"
-                                [ngModel]="corte.semana"
-                                (ngModelChange)="actualizarCorte(i, 'semana', $event)"
-                                [name]="'corte-semana-' + i" />
-                              <span class="cut-week-suffix">Semana</span>
-                            </div>
-                          </label>
-                        </div>
-
-                        <div class="cut-item-footer">
-                          <span class="cut-repeat-pill">
-                            <i class="fa-solid fa-arrows-rotate"></i>
-                            Aplica a cada período
-                          </span>
-                        </div>
-                      </article>
-                    } @empty {
-                      <div class="table-state compact-state">
-                        <span class="table-state-icon"><i class="fa-solid fa-chart-line"></i></span>
-                        <span>Agrega al menos un corte semanal para habilitar las alertas tempranas y el semáforo de riesgo.</span>
-                      </div>
+                    @if (!configuracionesEvaluacionDisponibles().length) {
+                    <span class="picker-empty">Ya agregaste todos los tipos disponibles.</span>
                     }
                   </div>
-                </section>
-              }
 
-              @if (pasoModalPeriodo() === 4) {
-                <section class="evaluation-template step-panel">
-                  <div class="draft-head">
-                    <strong>Plantilla anual de evaluaciones</strong>
-                    <span>Selecciona solo los tipos que usarás y luego define su cantidad base.</span>
+                </div>
+
+                <div class="evaluation-template-table-wrap">
+                  <div class="picker-head">
+                    <strong>Configuración anual</strong>
+                    <span>Solo se guardarán los tipos seleccionados</span>
                   </div>
 
-                  @if (cargandoTiposEvaluacion()) {
-                    <div class="evaluation-template-list">
-                      @for (row of [0, 1, 2, 3, 4, 5]; track row) {
-                        <article class="evaluation-template-row skeleton-card">
-                          <span class="skeleton-line long"></span>
-                          <span class="skeleton-line medium"></span>
-                          <span class="skeleton-line short"></span>
-                        </article>
-                      }
-                    </div>
-                  } @else if (!tiposEvaluacion().length) {
-                    <div class="table-state">
-                      <span class="table-state-icon"><i class="fa-solid fa-clipboard-list"></i></span>
-                      <span>No hay tipos de evaluación disponibles para configurar.</span>
-                    </div>
-                  } @else {
-                    <div class="evaluation-template-builder">
-                      <div class="evaluation-type-picker">
-                        <div class="picker-head">
-                          <strong>Tipos disponibles</strong>
-                          <div class="picker-head-actions">
-                            <span>{{ configuracionesEvaluacionSeleccionadas().length }} seleccionados</span>
-                            <button class="action-button tertiary" type="button" (click)="abrirNuevoTipoEvaluacion()">
-                              <i class="fa-solid fa-plus"></i>
-                              Nuevo tipo
-                            </button>
-                          </div>
-                        </div>
-
-                        <div class="picker-chip-list">
-                          @for (configuracion of configuracionesEvaluacionDisponibles(); track configuracion.tipoEvaluacionId) {
-                            <button
-                              class="picker-chip"
-                              type="button"
-                              (click)="agregarTipoEvaluacionBorrador(configuracion.tipoEvaluacionId)">
-                              <span>{{ nombreTipoEvaluacionVisible(configuracion.nombreTipoEvaluacion) }}</span>
-                              <i class="fa-solid fa-plus"></i>
-                            </button>
-                          }
-
-                          @if (!configuracionesEvaluacionDisponibles().length) {
-                            <span class="picker-empty">Ya agregaste todos los tipos disponibles.</span>
-                          }
-                        </div>
-
-                      </div>
-
-                      <div class="evaluation-template-table-wrap">
-                        <div class="picker-head">
-                          <strong>Configuración anual</strong>
-                          <span>Solo se guardarán los tipos seleccionados</span>
-                        </div>
-
+                  <div class="evaluation-template-table-scroll">
+                    <table class="evaluation-template-table">
+                      <thead>
+                        <tr>
+                          <th>Tipo</th>
+                          <th>Cantidad</th>
+                          <th>Acción</th>
+                        </tr>
+                      </thead>
+                      <tbody>
                         @if (!configuracionesEvaluacionSeleccionadas().length) {
-                          <div class="table-state compact-state">
-                            <span class="table-state-icon"><i class="fa-solid fa-list-check"></i></span>
-                            <span>Agrega al menos un tipo de evaluación para definir la plantilla anual.</span>
-                          </div>
+                        <tr>
+                          <td colspan="3" class="table-empty-cell">
+                            <div class="table-empty-state">
+                              <div class="empty-state-badge">
+                                <i class="fa-solid fa-list-check"></i>
+                              </div>
+                              <strong class="empty-state-title">Sin evaluaciones seleccionadas</strong>
+                              <p class="empty-state-desc">Agrega al menos un tipo de evaluación para definir la
+                                plantilla anual.</p>
+                            </div>
+                          </td>
+                        </tr>
                         } @else {
-                          <div class="evaluation-template-table-scroll">
-                            <table class="evaluation-template-table">
-                              <thead>
-                                <tr>
-                                  <th>Tipo</th>
-                                  <th>Cantidad</th>
-                                  <th>Acción</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                @for (configuracion of configuracionesEvaluacionSeleccionadas(); track configuracion.tipoEvaluacionId) {
-                                  <tr>
-                                    <td>
-                                      <div class="template-type">
-                                        <strong>{{ nombreTipoEvaluacionVisible(configuracion.nombreTipoEvaluacion) }}</strong>
-                                        <small>{{ configuracion.descripcionTipoEvaluacion || 'Sin descripción adicional.' }}</small>
-                                      </div>
-                                    </td>
-                                    <td>
-                                      <input
-                                        class="template-quantity-input"
-                                        type="number"
-                                        min="1"
-                                        [ngModel]="configuracion.cantidadEvaluaciones"
-                                        (ngModelChange)="actualizarConfiguracionEvaluacionBorrador(configuracion.tipoEvaluacionId, { cantidadEvaluaciones: +$event || 1 })"
-                                        [name]="'cantidad-' + configuracion.tipoEvaluacionId" />
-                                    </td>
-                                    <td>
-                                      <button
-                                        class="table-inline-action"
-                                        type="button"
-                                        (click)="quitarTipoEvaluacionBorrador(configuracion.tipoEvaluacionId)">
-                                        Quitar
-                                      </button>
-                                    </td>
-                                  </tr>
-                                }
-                              </tbody>
-                            </table>
-                          </div>
+                        @for (configuracion of configuracionesEvaluacionSeleccionadas(); track
+                        configuracion.tipoEvaluacionId) {
+                        <tr>
+                          <td>
+                            <div class="template-type">
+                              <strong>{{ nombreTipoEvaluacionVisible(configuracion.nombreTipoEvaluacion) }}</strong>
+                              <small>{{ configuracion.descripcionTipoEvaluacion || 'Sin descripción adicional.'
+                                }}</small>
+                            </div>
+                          </td>
+                          <td>
+                            <input class="template-quantity-input" type="number" min="1"
+                              [ngModel]="configuracion.cantidadEvaluaciones"
+                              (ngModelChange)="actualizarConfiguracionEvaluacionBorrador(configuracion.tipoEvaluacionId, { cantidadEvaluaciones: +$event || 1 })"
+                              [name]="'cantidad-' + configuracion.tipoEvaluacionId" />
+                          </td>
+                          <td>
+                            <button class="table-inline-action" type="button"
+                              (click)="quitarTipoEvaluacionBorrador(configuracion.tipoEvaluacionId)">
+                              Quitar
+                            </button>
+                          </td>
+                        </tr>
                         }
-                      </div>
-                    </div>
-                  }
-                </section>
-              }
-
-              @if (pasoModalPeriodo() === 5) {
-                <section class="courses-template step-panel">
-                  <div class="draft-head">
-                    <div>
-                      <strong>Cursos del período</strong>
-                      <p class="draft-head-sub">Selecciona las materias que formarán parte de la currícula de este período académico.</p>
-                    </div>
-                    <span class="draft-counter-badge">{{ cursosSeleccionadosIds().length }} de {{ cursos().length }} seleccionados</span>
-                  </div>
-
-                  <div class="courses-toolbar">
-                    <div class="courses-toolbar-actions">
-                      <button
-                        class="action-button secondary"
-                        type="button"
-                        [disabled]="copiandoCursosAnteriores()"
-                        (click)="copiarCursosPeriodoAnterior()">
-                        <i class="fa-solid fa-copy"></i>
-                        {{ copiandoCursosAnteriores() ? 'Copiando cursos...' : 'Copiar del período anterior' }}
-                      </button>
-
-                      <button class="action-button ghost action-button--iconic" type="button" (click)="seleccionarTodosLosCursos()">
-                        <i class="fa-solid fa-check-double"></i>
-                        <span>Seleccionar todos</span>
-                      </button>
-
-                      <button class="action-button ghost action-button--iconic" type="button" (click)="seleccionarCursosPorNivel('PRIMARIA')">
-                        <i class="fa-solid fa-shapes"></i>
-                        <span>Solo Primaria</span>
-                      </button>
-
-                      <button class="action-button ghost action-button--iconic" type="button" (click)="seleccionarCursosPorNivel('SECUNDARIA')">
-                        <i class="fa-solid fa-graduation-cap"></i>
-                        <span>Solo Secundaria</span>
-                      </button>
-
-                      <button class="action-button ghost action-button--iconic" type="button" (click)="limpiarSeleccionCursos()">
-                        <i class="fa-solid fa-rotate-left"></i>
-                        <span>Limpiar selección</span>
-                      </button>
-                    </div>
-
-                    <div class="courses-filter-row">
-                      <div class="courses-search-wrap">
-                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                        <input
-                          type="text"
-                          class="courses-search-input"
-                          [ngModel]="filtroCursos()"
-                          (ngModelChange)="actualizarFiltroCursos($event)"
-                          name="filtroCursosPeriodo"
-                          placeholder="Buscar curso por nombre o descripción..." />
-                        @if (filtroCursos()) {
-                          <button type="button" class="search-clear-btn" (click)="actualizarFiltroCursos('')">
-                            <i class="fa-solid fa-xmark"></i>
-                          </button>
                         }
-                      </div>
-
-                      <div class="level-filter-chips">
-                        <button
-                          type="button"
-                          class="level-chip"
-                          [class.active]="filtroNivelCurso() === 'TODOS'"
-                          (click)="cambiarFiltroNivel('TODOS')">
-                          <i class="fa-solid fa-border-all"></i>
-                          <span>Todos ({{ cursos().length }})</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          class="level-chip level-chip--primaria"
-                          [class.active]="filtroNivelCurso() === 'PRIMARIA'"
-                          (click)="cambiarFiltroNivel('PRIMARIA')">
-                          <i class="fa-solid fa-shapes"></i>
-                          <span>Primaria ({{ totalCursosPrimaria() }})</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          class="level-chip level-chip--secundaria"
-                          [class.active]="filtroNivelCurso() === 'SECUNDARIA'"
-                          (click)="cambiarFiltroNivel('SECUNDARIA')">
-                          <i class="fa-solid fa-graduation-cap"></i>
-                          <span>Secundaria ({{ totalCursosSecundaria() }})</span>
-                        </button>
-                      </div>
-                    </div>
+                      </tbody>
+                    </table>
                   </div>
-
-                  @if (cargandoCursos()) {
-                    <div class="courses-list">
-                      @for (row of [0, 1, 2, 3, 4, 5]; track row) {
-                        <article class="course-option skeleton-card">
-                          <span class="skeleton-line long"></span>
-                          <span class="skeleton-line medium"></span>
-                        </article>
-                      }
-                    </div>
-                  } @else if (!cursos().length) {
-                    <div class="table-state">
-                      <span class="table-state-icon"><i class="fa-solid fa-book"></i></span>
-                      <span>No hay cursos disponibles para asignar al período.</span>
-                    </div>
-                  } @else if (!cursosFiltrados().length) {
-                    <div class="table-state">
-                      <span class="table-state-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
-                      <span>No hay cursos que coincidan con la búsqueda o nivel seleccionado.</span>
-                    </div>
-                  } @else {
-                    <div class="courses-list">
-                      @for (curso of cursosFiltrados(); track curso.id) {
-                        <button
-                          class="course-option"
-                          type="button"
-                          [class.selected]="cursoSeleccionado(curso.id)"
-                          (click)="alternarCurso(curso.id)">
-                          <div class="course-option-check">
-                            @if (cursoSeleccionado(curso.id)) {
-                              <i class="fa-solid fa-circle-check"></i>
-                            } @else {
-                              <i class="fa-regular fa-circle"></i>
-                            }
-                          </div>
-                          <div class="course-option-main">
-                            <strong>{{ curso.nombre }}</strong>
-                            <small>{{ curso.descripcion || 'Sin descripción adicional.' }}</small>
-                          </div>
-                          <span
-                            class="course-option-level"
-                            [class.secundaria]="(curso.nivelNombre || '').toUpperCase().includes('SECUNDARIA')"
-                            [class.primaria]="!(curso.nivelNombre || '').toUpperCase().includes('SECUNDARIA')">
-                            @if ((curso.nivelNombre || '').toUpperCase().includes('SECUNDARIA')) {
-                              <i class="fa-solid fa-graduation-cap"></i>
-                            } @else {
-                              <i class="fa-solid fa-shapes"></i>
-                            }
-                            <span>{{ curso.nivelNombre }}</span>
-                          </span>
-                        </button>
-                      }
-                    </div>
-                  }
-                </section>
-              }
                 </div>
+              </div>
+              }
+            </section>
+            }
 
-                <div class="form-actions">
-                  <button class="action-button ghost" type="button" (click)="cerrarModalPeriodo()">
-                    Cancelar
+            @if (pasoModalPeriodo() === 5) {
+            <section class="courses-template step-panel">
+              <div class="draft-head">
+                <div>
+                  <strong>Cursos del período</strong>
+                  <p class="draft-head-sub">Selecciona las materias que formarán parte de la currícula de este período
+                    académico.</p>
+                </div>
+                <span class="draft-counter-badge">{{ cursosSeleccionadosIds().length }} de {{ cursos().length }}
+                  seleccionados</span>
+              </div>
+
+              <div class="courses-toolbar">
+                <div class="courses-toolbar-actions">
+                  <button class="action-button secondary" type="button" [disabled]="copiandoCursosAnteriores()"
+                    (click)="copiarCursosPeriodoAnterior()">
+                    <i class="fa-solid fa-copy"></i>
+                    {{ copiandoCursosAnteriores() ? 'Copiando cursos...' : 'Copiar del período anterior' }}
                   </button>
 
-                  <button class="action-button secondary" type="button" (click)="limpiarFormularioPeriodo()">Limpiar</button>
-
-                  <span class="form-actions-spacer" aria-hidden="true"></span>
-
-                  <button
-                    class="action-button ghost"
-                    type="button"
-                    [disabled]="pasoModalPeriodo() === 1"
-                    (click)="anteriorPasoModal()">
-                    Anterior
+                  <button class="action-button ghost action-button--iconic" type="button"
+                    (click)="seleccionarTodosLosCursos()">
+                    <i class="fa-solid fa-check-double"></i>
+                    <span>Seleccionar todos</span>
                   </button>
 
-                  @if (pasoModalPeriodo() < 5) {
-                    <button class="action-button primary" type="button" (click)="siguientePasoModal()">
-                      Siguiente
-                    </button>
-                  } @else {
-                    <button class="action-button primary" type="button" [disabled]="guardandoPeriodo()" (click)="guardarPeriodo()">
-                      {{ guardandoPeriodo() ? 'Guardando...' : (editandoPeriodoId() ? 'Guardar cambios' : 'Guardar periodo') }}
-                    </button>
-                  }
-                </div>
-              }
-            </form>
+                  <button class="action-button ghost action-button--iconic" type="button"
+                    (click)="seleccionarCursosPorNivel('PRIMARIA')">
+                    <i class="fa-solid fa-shapes"></i>
+                    <span>Solo Primaria</span>
+                  </button>
 
-            @if (mostrandoNuevoTipoEvaluacion()) {
-              <div class="new-type-overlay" (click)="cancelarNuevoTipoEvaluacion()">
-                <div class="new-type-popover" (click)="$event.stopPropagation()">
-                  <div class="new-type-popover-head">
-                    <strong>Nuevo tipo de evaluación</strong>
-                    <button class="popover-close" type="button" (click)="cancelarNuevoTipoEvaluacion()">
+                  <button class="action-button ghost action-button--iconic" type="button"
+                    (click)="seleccionarCursosPorNivel('SECUNDARIA')">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                    <span>Solo Secundaria</span>
+                  </button>
+
+                  <button class="action-button ghost action-button--iconic" type="button"
+                    (click)="limpiarSeleccionCursos()">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    <span>Limpiar selección</span>
+                  </button>
+                </div>
+
+                <div class="courses-filter-row">
+                  <div class="courses-search-wrap">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" class="courses-search-input" [ngModel]="filtroCursos()"
+                      (ngModelChange)="actualizarFiltroCursos($event)" name="filtroCursosPeriodo"
+                      placeholder="Buscar curso por nombre o descripción..." />
+                    @if (filtroCursos()) {
+                    <button type="button" class="search-clear-btn" (click)="actualizarFiltroCursos('')">
                       <i class="fa-solid fa-xmark"></i>
                     </button>
+                    }
                   </div>
 
-                  <label class="form-field">
-                    <span>Nombre</span>
-                    <input
-                      type="text"
-                      [ngModel]="nuevoTipoEvaluacionForm().nombre"
-                      (ngModelChange)="actualizarNuevoTipoEvaluacion('nombre', $event)"
-                      name="nuevo-tipo-nombre" />
-                  </label>
-
-                  <label class="form-field">
-                    <span>Descripción</span>
-                    <input
-                      type="text"
-                      [ngModel]="nuevoTipoEvaluacionForm().descripcion"
-                      (ngModelChange)="actualizarNuevoTipoEvaluacion('descripcion', $event)"
-                      name="nuevo-tipo-descripcion" />
-                  </label>
-
-                  <small class="new-type-hint">El orden se asignará automáticamente al final de la lista.</small>
-
-                  <div class="new-type-actions">
-                    <button class="action-button ghost" type="button" (click)="cancelarNuevoTipoEvaluacion()">
-                      Cancelar
+                  <div class="level-filter-chips">
+                    <button type="button" class="level-chip" [class.active]="filtroNivelCurso() === 'TODOS'"
+                      (click)="cambiarFiltroNivel('TODOS')">
+                      <i class="fa-solid fa-border-all"></i>
+                      <span>Todos ({{ cursos().length }})</span>
                     </button>
-                    <button class="action-button primary" type="button" [disabled]="guardandoNuevoTipoEvaluacion()" (click)="guardarNuevoTipoEvaluacion()">
-                      {{ guardandoNuevoTipoEvaluacion() ? 'Guardando...' : 'Crear y usar' }}
+
+                    <button type="button" class="level-chip level-chip--primaria"
+                      [class.active]="filtroNivelCurso() === 'PRIMARIA'" (click)="cambiarFiltroNivel('PRIMARIA')">
+                      <i class="fa-solid fa-shapes"></i>
+                      <span>Primaria ({{ totalCursosPrimaria() }})</span>
+                    </button>
+
+                    <button type="button" class="level-chip level-chip--secundaria"
+                      [class.active]="filtroNivelCurso() === 'SECUNDARIA'" (click)="cambiarFiltroNivel('SECUNDARIA')">
+                      <i class="fa-solid fa-graduation-cap"></i>
+                      <span>Secundaria ({{ totalCursosSecundaria() }})</span>
                     </button>
                   </div>
                 </div>
               </div>
+
+              @if (cargandoCursos()) {
+              <div class="courses-list">
+                @for (row of [0, 1, 2, 3, 4, 5]; track row) {
+                <article class="course-option skeleton-card">
+                  <span class="skeleton-line long"></span>
+                  <span class="skeleton-line medium"></span>
+                </article>
+                }
+              </div>
+              } @else if (!cursos().length) {
+              <div class="empty-state-card compact">
+                <div class="empty-state-badge"><i class="fa-solid fa-book"></i></div>
+                <strong class="empty-state-title">Sin cursos disponibles</strong>
+                <p class="empty-state-desc">No hay cursos disponibles para asignar al período.</p>
+              </div>
+              } @else if (!cursosFiltrados().length) {
+              <div class="empty-state-card compact">
+                <div class="empty-state-badge"><i class="fa-solid fa-magnifying-glass"></i></div>
+                <strong class="empty-state-title">No hay cursos que coincidan</strong>
+                <p class="empty-state-desc">No hay cursos que coincidan con la búsqueda o nivel seleccionado.</p>
+              </div>
+              } @else {
+              <div class="courses-list">
+                @for (curso of cursosFiltrados(); track curso.id) {
+                <button class="course-option" type="button" [class.selected]="cursoSeleccionado(curso.id)"
+                  (click)="alternarCurso(curso.id)">
+                  <div class="course-option-check">
+                    @if (cursoSeleccionado(curso.id)) {
+                    <i class="fa-solid fa-circle-check"></i>
+                    } @else {
+                    <i class="fa-regular fa-circle"></i>
+                    }
+                  </div>
+                  <div class="course-option-main">
+                    <strong>{{ curso.nombre }}</strong>
+                    <small>{{ curso.descripcion || 'Sin descripción adicional.' }}</small>
+                  </div>
+                  <span class="course-option-level"
+                    [class.secundaria]="(curso.nivelNombre || '').toUpperCase().includes('SECUNDARIA')"
+                    [class.primaria]="!(curso.nivelNombre || '').toUpperCase().includes('SECUNDARIA')">
+                    @if ((curso.nivelNombre || '').toUpperCase().includes('SECUNDARIA')) {
+                    <i class="fa-solid fa-graduation-cap"></i>
+                    } @else {
+                    <i class="fa-solid fa-shapes"></i>
+                    }
+                    <span>{{ curso.nivelNombre }}</span>
+                  </span>
+                </button>
+                }
+              </div>
+              }
+            </section>
             }
+          </div>
+
+          <div class="form-actions">
+            <button class="action-button ghost" type="button" (click)="cerrarModalPeriodo()">
+              Cancelar
+            </button>
+
+            <button class="action-button secondary" type="button" (click)="limpiarFormularioPeriodo()">Limpiar</button>
+
+            <span class="form-actions-spacer" aria-hidden="true"></span>
+
+            <button class="action-button ghost" type="button" [disabled]="pasoModalPeriodo() === 1"
+              (click)="anteriorPasoModal()">
+              Anterior
+            </button>
+
+            @if (pasoModalPeriodo() < 5) { <button class="action-button primary" type="button"
+              (click)="siguientePasoModal()">
+              Siguiente
+              </button>
+              } @else {
+              <button class="action-button primary" type="button" [disabled]="guardandoPeriodo()"
+                (click)="guardarPeriodo()">
+                {{ guardandoPeriodo() ? 'Guardando...' : (editandoPeriodoId() ? 'Guardar cambios' : 'Guardar periodo')
+                }}
+              </button>
+              }
+          </div>
+          }
+        </form>
+
+        @if (mostrandoNuevoTipoEvaluacion()) {
+        <div class="new-type-overlay" (click)="cancelarNuevoTipoEvaluacion()">
+          <div class="new-type-popover" (click)="$event.stopPropagation()">
+            <div class="new-type-popover-head">
+              <strong>Nuevo tipo de evaluación</strong>
+              <button class="popover-close" type="button" (click)="cancelarNuevoTipoEvaluacion()">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            <label class="form-field">
+              <span>Nombre</span>
+              <input type="text" [ngModel]="nuevoTipoEvaluacionForm().nombre"
+                (ngModelChange)="actualizarNuevoTipoEvaluacion('nombre', $event)" name="nuevo-tipo-nombre" />
+            </label>
+
+            <label class="form-field">
+              <span>Descripción</span>
+              <input type="text" [ngModel]="nuevoTipoEvaluacionForm().descripcion"
+                (ngModelChange)="actualizarNuevoTipoEvaluacion('descripcion', $event)" name="nuevo-tipo-descripcion" />
+            </label>
+
+            <small class="new-type-hint">El orden se asignará automáticamente al final de la lista.</small>
+
+            <div class="new-type-actions">
+              <button class="action-button ghost" type="button" (click)="cancelarNuevoTipoEvaluacion()">
+                Cancelar
+              </button>
+              <button class="action-button primary" type="button" [disabled]="guardandoNuevoTipoEvaluacion()"
+                (click)="guardarNuevoTipoEvaluacion()">
+                {{ guardandoNuevoTipoEvaluacion() ? 'Guardando...' : 'Crear y usar' }}
+              </button>
+            </div>
+          </div>
         </div>
+        }
       </div>
+    </div>
     }
   </section>
 </app-shell>

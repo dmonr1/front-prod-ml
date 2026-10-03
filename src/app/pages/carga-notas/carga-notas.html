@@ -2,40 +2,57 @@
   <section class="grades-page">
     <app-custom-alert [open]="alertState().open" [type]="alertState().type" [title]="alertState().title"
       [message]="alertState().message" [confirmText]="alertState().confirmText" [cancelText]="alertState().cancelText"
-      [autoCloseMs]="alertState().autoCloseMs" (confirm)="confirmarAlerta()" (cancel)="cerrarAlerta()"
+      [autoCloseMs]="alertState().autoCloseMs" (confirm)="confirmarAlerta()" (cancel)="cancelarAlerta()"
       (dismiss)="cerrarAlerta()" />
 
-    <div class="grades-toolbar card">
-      <div class="grades-toolbar-inline">
-        <a class="back-link-button" [routerLink]="['/mis-asignaciones']">
+    <header class="grades-toolbar card">
+      <div class="grades-toolbar-left">
+        <a class="action-button secondary section-back-button" [routerLink]="['/mis-asignaciones']" title="Volver a mis asignaciones">
           <i class="fa-solid fa-arrow-left"></i>
           <span>Volver</span>
         </a>
       </div>
     
-      <div class="tit">
+      <div class="grades-toolbar-center">
         <span class="eyebrow">Registro de notas</span>
-        <h2>{{ asignacion()?.curso || 'Curso asignado' }}</h2>
+        <h2 class="grades-course-title">{{ asignacion()?.curso || 'Curso asignado' }}</h2>
 
         <div class="subtitle-meta">
-          <p>{{ asignacion()?.grado || 'Grado' }} -</p>
-          <p>Sección {{ asignacion()?.seccion || '-' }} -</p>
-          <p>{{ resumenNotas().registradas }} de {{ resumenNotas().notasEsperadas }} notas ingresadas</p>
+          <span class="meta-chip grade-chip">
+            <i class="fa-solid fa-graduation-cap"></i>
+            <span>{{ asignacion()?.grado || 'Grado' }} · Sección {{ asignacion()?.seccion || '-' }}</span>
+          </span>
+          <span class="meta-chip notes-chip">
+            <i class="fa-solid fa-pen-to-square"></i>
+            <span>{{ resumenNotas().registradas }} de {{ resumenNotas().notasEsperadas }} notas ingresadas</span>
+          </span>
+          <span class="meta-chip avg-chip">
+            <i class="fa-solid fa-chart-line"></i>
+            <span>Promedio: {{ resumenNotas().promedio }}</span>
+          </span>
         </div>
       </div>
 
-      <div class="panel-head panel-head-row">
-        <button class="action-button tertiary notes-config-trigger" type="button"
-        (click)="alternarPanelConfiguracion()">
-        <i class="fa-regular fa-calendar-check"></i>
-        <span>Planificar evaluaciones</span>
-        @if (evaluacionesPendientesFecha().length) {
-          <span class="pending-date-count">{{ evaluacionesPendientesFecha().length }}</span>
+      <div class="grades-toolbar-right">
+        @if (evaluacionesPendientesFecha().length > 0) {
+          <div class="grades-notice-banner head-notice" title="Las notas solo se habilitan con fecha programada">
+            <i class="fa-solid fa-triangle-exclamation notice-head-icon"></i>
+            <span class="notice-head-text">
+              <strong>{{ evaluacionesPendientesFecha().length }} sin fecha:</strong> notas bloqueadas
+            </span>
+            <button type="button" class="notice-head-btn" (click)="navegarAPlanificacion()" title="Ir a la planificación completa">
+              <i class="fa-regular fa-calendar-check"></i>
+              <span>Planificar aquí</span>
+            </button>
+          </div>
+        } @else {
+          <button type="button" class="head-plan-btn" (click)="navegarAPlanificacion()" title="Editar o corregir fechas de evaluación">
+            <i class="fa-solid fa-pen-to-square"></i>
+            <span>Editar planificación</span>
+          </button>
         }
-      </button>
-        <span class="summary-pill">Promedio {{ resumenNotas().promedio }}</span>
       </div>
-    </div>
+    </header>
 
     @if (cargando()) {
     <section class="state-card card">
@@ -80,9 +97,10 @@
       </div>
 
       @if (!periodosEvaluacionPeriodo().length) {
-      <div class="table-state">
-        <span class="table-state-icon"><i class="fa-regular fa-folder-open"></i></span>
-        <span>No hay períodos registrados para esta asignación.</span>
+      <div class="empty-state-card">
+        <div class="empty-state-badge"><i class="fa-regular fa-calendar-xmark"></i></div>
+        <strong class="empty-state-title">No hay períodos de evaluación</strong>
+        <p class="empty-state-desc">No se encontraron períodos o bimestres registrados para esta asignación.</p>
       </div>
       } @else {
 
@@ -93,107 +111,135 @@
               <tr class="grades-weeks-row">
                 <th class="student-column" scope="col" rowspan="2">Alumno</th>
                 @for (grupo of planificacionPorSemana(); track grupo.clave) {
-                  <th scope="colgroup" [attr.colspan]="grupo.evaluaciones.length || 1">
-                    <strong>{{ grupo.semana === null ? 'Sin fecha' : 'Semana ' + grupo.semana }}</strong>
+                  <th scope="colgroup" [attr.colspan]="grupo.evaluaciones.length">
+                    <span class="week-title">{{ grupo.semana === null ? 'Sin fecha' : 'Semana ' + grupo.semana }}</span>
                     @if (grupo.inicio && grupo.fin) {
-                      <small>{{ rangoSemanaPlanificacion(grupo.inicio, grupo.fin) }}</small>
+                      <span class="week-range">{{ rangoSemanaPlanificacion(grupo.inicio, grupo.fin) }}</span>
                     }
                   </th>
                 }
               </tr>
               <tr class="grades-evaluations-row">
                 @for (grupo of planificacionPorSemana(); track grupo.clave) {
-                  @if (grupo.evaluaciones.length) {
-                    @for (evaluacion of grupo.evaluaciones; track evaluacion.id) {
-                      <th [title]="evaluacion.nombre" [class.pending-evaluation]="!evaluacion.fechaEvaluacion" scope="col">
-                        <span>{{ abreviaturaEvaluacion(evaluacion) }}</span>
+                  @for (evaluacion of grupo.evaluaciones; track evaluacion.id) {
+                    <th [title]="evaluacion.nombre"
+                      [class.pending-evaluation]="!evaluacion.fechaEvaluacion"
+                      [class.picker-open]="evaluacionDatePickerAbiertaId() === evaluacion.id"
+                      scope="col">
+                      <span class="eval-abbr">{{ abreviaturaEvaluacion(evaluacion) }}</span>
+                      <div class="eval-picker-wrap" [class.picker-align-right]="esColumnaDerecha(evaluacion.id)">
                         <button class="grade-evaluation-date grade-date-edit" type="button"
                           [title]="(evaluacion.fechaEvaluacion ? 'Editar fecha de ' : 'Programar ') + evaluacion.nombre"
                           [attr.aria-label]="(evaluacion.fechaEvaluacion ? 'Editar fecha de ' : 'Programar ') + evaluacion.nombre"
-                          (click)="abrirPlanificacionEvaluacion(evaluacion.id)">
+                          (click)="toggleDatePickerEvaluacion(evaluacion.id, $event)">
                           <i class="fa-regular" [class.fa-calendar]="!!evaluacion.fechaEvaluacion"
                             [class.fa-calendar-plus]="!evaluacion.fechaEvaluacion"></i>
-                          {{ evaluacion.fechaEvaluacion ? formatoFechaCorta(evaluacion.fechaEvaluacion) : 'Programar' }}
+                          <span>{{ evaluacion.fechaEvaluacion ? formatoFechaCorta(evaluacion.fechaEvaluacion) : 'Programar' }}</span>
                         </button>
-                      </th>
-                    }
-                  } @else {
-                    <th class="empty-week-header" scope="col">Sin evaluaciones</th>
+
+                        @if (evaluacionDatePickerAbiertaId() === evaluacion.id) {
+                          <div class="eval-popover-dropdown" (click)="$event.stopPropagation()">
+                            <app-date-picker
+                              [inline]="true"
+                              [value]="evaluacion.fechaEvaluacion || ''"
+                              [minDate]="periodoEvaluacionSeleccionado()?.fechaInicio?.slice(0, 10)"
+                              [maxDate]="periodoEvaluacionSeleccionado()?.fechaFin?.slice(0, 10)"
+                              (valueChange)="actualizarFechaRapida(evaluacion, $event)" />
+                          </div>
+                        }
+                      </div>
+                    </th>
                   }
                 }
               </tr>
             </thead>
             <tbody>
-              @for (fila of filasNotas(); track fila.matricula.id) {
+              @for (fila of filasNotas(); track fila.matricula.id; let rowIndex = $index) {
                 <tr>
                   <th class="student-cell" scope="row">{{ fila.matricula.alumnoNombreCompleto }}</th>
                   @for (grupo of planificacionPorSemana(); track grupo.clave) {
-                    @if (grupo.evaluaciones.length) {
-                      @for (evaluacion of grupo.evaluaciones; track evaluacion.id) {
-                        <td>
-                          @if (evaluacion.fechaEvaluacion) {
-                            <input class="grade-input" type="text" inputmode="decimal" autocomplete="off"
-                              [attr.aria-label]="'Nota de ' + fila.matricula.alumnoNombreCompleto + ' en ' + evaluacion.nombre"
-                              [value]="fila.notas[evaluacion.id] || ''"
-                              (input)="onNotaInput(fila.matricula.id, evaluacion.id, $event)"
-                              (wheel)="bloquearCambioNota($event)"
-                              (keydown.arrowUp)="bloquearCambioNota($event)"
-                              (keydown.arrowDown)="bloquearCambioNota($event)"
-                              (blur)="onNotaBlur(fila.matricula.id, evaluacion.id)" />
-                          } @else {
-                            <span class="grade-unavailable" title="Programa la fecha para registrar notas">—</span>
-                          }
-                        </td>
-                      }
-                    } @else {
-                      <td><span class="grade-unavailable">—</span></td>
+                    @for (evaluacion of grupo.evaluaciones; track evaluacion.id) {
+                      <td>
+                        @if (evaluacion.fechaEvaluacion) {
+                          <input class="grade-input" type="text" inputmode="decimal" autocomplete="off"
+                            [attr.data-row]="rowIndex"
+                            [attr.data-eval-id]="evaluacion.id"
+                            [attr.aria-label]="'Nota de ' + fila.matricula.alumnoNombreCompleto + ' en ' + evaluacion.nombre"
+                            [value]="fila.notas[evaluacion.id] || ''"
+                            (input)="onNotaInput(fila.matricula.id, evaluacion.id, $event)"
+                            (wheel)="bloquearCambioNota($event)"
+                            (keydown.arrowUp)="bloquearCambioNota($event)"
+                            (keydown.arrowDown)="bloquearCambioNota($event)"
+                            (keydown.enter)="navegarSiguienteNota(rowIndex, evaluacion.id, $event)"
+                            (blur)="onNotaBlur(fila.matricula.id, evaluacion.id)" />
+                        } @else {
+                          <span class="grade-unavailable" title="Programa la fecha para registrar notas">—</span>
+                        }
+                      </td>
                     }
                   }
                 </tr>
               } @empty {
-                <tr><td [attr.colspan]="totalColumnasNotas()" class="grades-week-empty">No hay alumnos matriculados.</td></tr>
+                <tr>
+                  <td [attr.colspan]="totalColumnasNotas()" class="table-empty-cell">
+                    <div class="table-empty-state">
+                      <div class="empty-state-badge">
+                        <i class="fa-solid fa-users-slash"></i>
+                      </div>
+                      <strong class="empty-state-title">No hay alumnos matriculados</strong>
+                      <p class="empty-state-desc">No se encontraron estudiantes para calificar en esta sección y período.</p>
+                    </div>
+                  </td>
+                </tr>
               }
             </tbody>
           </table>
         } @else {
-          <p class="grades-no-evaluations">No hay semanas disponibles para este período.</p>
+          <div class="empty-state-card">
+            <div class="empty-state-badge"><i class="fa-regular fa-calendar-xmark"></i></div>
+            <strong class="empty-state-title">No hay evaluaciones programadas</strong>
+            <p class="empty-state-desc">No se encontraron evaluaciones registradas en este período.</p>
+          </div>
         }
       </div>
 
-      <div class="notes-legend-row">
+      <footer class="notes-card-footer">
         @if (leyendaEvaluaciones().length) {
         <div class="notes-legend">
-          <span class="notes-legend-label">Leyenda:</span>
+          <span class="notes-legend-label">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>Leyenda:</span>
+          </span>
           <div class="notes-legend-list">
             @for (item of leyendaEvaluaciones(); track item.abreviatura) {
-            <span class="notes-legend-item">
-              <strong>{{ item.abreviatura }}</strong>
-              <small>{{ item.nombre }}</small>
+            <span class="notes-legend-chip" [title]="item.nombre">
+              <strong class="legend-code">{{ item.abreviatura }}</strong>
+              <span class="legend-name">{{ item.nombre }}</span>
             </span>
             }
           </div>
         </div>
         }
 
-  
-      </div>
-
-      <div class="form-actions footer-actions">
-        <span class="autosave-hint">Los cambios se guardan automáticamente.</span>
-      </div>
+        <div class="notes-footer-status">
+          <span class="autosave-hint">
+            <i class="fa-solid fa-cloud-check"></i>
+            <span>Autoguardado activado</span>
+          </span>
+        </div>
+      </footer>
       }
     </section>
     }
 
     @if (mostrarConfiguracionEvaluaciones()) {
     <div class="notes-config-modal-backdrop" (click)="alternarPanelConfiguracion()">
-      <section class="notes-config-modal" [class.is-date-mode]="panelConfiguracionEvaluaciones() === 'fechas'"
-        (click)="$event.stopPropagation()">
+      <section class="notes-config-modal" (click)="$event.stopPropagation()">
         <div class="notes-config-panel-head">
-          <div class="panel-head">
-            <span class="panel-kicker">Planificación académica</span>
-            <h3>{{ panelConfiguracionEvaluaciones() === 'fechas' ? (evaluacionFechaSeleccionada()?.fechaEvaluacion ? 'Editar fecha' : 'Programar evaluación') : 'Estructura de evaluaciones' }}</h3>
-            <p>{{ asignacion()?.curso || 'Curso' }} · {{ periodoEvaluacionSeleccionado()?.nombre || 'Período de evaluación' }}</p>
+          <div class="notes-config-title-line">
+            <h3>Planificar evaluaciones</h3>
+            <span class="notes-config-context-chip">{{ asignacion()?.curso || 'Curso' }}</span>
+            <span class="notes-config-context-chip">{{ periodoEvaluacionSeleccionado()?.nombre || 'Período' }}</span>
           </div>
 
           <div class="notes-config-panel-actions">
@@ -203,162 +249,87 @@
           </div>
         </div>
 
-        <div class="evaluation-config-tabs" role="tablist" aria-label="Configuración de evaluaciones">
-          <button type="button" role="tab" [attr.aria-selected]="panelConfiguracionEvaluaciones() === 'fechas'"
-            [class.is-active]="panelConfiguracionEvaluaciones() === 'fechas'" (click)="seleccionarPanelConfiguracion('fechas')">
-            <i class="fa-regular fa-calendar"></i> Fecha
-          </button>
-          <button type="button" role="tab" [attr.aria-selected]="panelConfiguracionEvaluaciones() === 'estructura'"
-            [class.is-active]="panelConfiguracionEvaluaciones() === 'estructura'" (click)="seleccionarPanelConfiguracion('estructura')">
-            <i class="fa-solid fa-sliders"></i> Estructura
-          </button>
-        </div>
-
-        @if (panelConfiguracionEvaluaciones() === 'fechas') {
-        <section class="evaluation-planning-section">
-          @if (!evaluaciones().length) {
-            <div class="table-state planning-empty">
-              <span class="table-state-icon"><i class="fa-regular fa-calendar"></i></span>
-              <span>No hay evaluaciones en este período. Configúralas en Estructura.</span>
-            </div>
-          } @else {
-            <label class="evaluation-chooser">
-              <span>Evaluación</span>
-              <select [value]="evaluacionFechaSeleccionada()?.id" (change)="seleccionarEvaluacionFecha($event)">
-                @for (evaluacion of evaluaciones(); track evaluacion.id) {
-                  <option [value]="evaluacion.id">
-                    {{ nombreTipoEvaluacionVisible(evaluacion.tipoEvaluacion) }} {{ evaluacion.numeroEvaluacion }}{{ evaluacion.fechaEvaluacion ? '' : ' · Pendiente' }}
-                  </option>
-                }
-              </select>
-            </label>
-            @if (evaluacionFechaSeleccionada(); as evaluacion) {
-              <div class="evaluation-planning-date">
-                <span>Fecha de evaluación <b aria-hidden="true">*</b></span>
-                <app-date-picker
-                  [value]="evaluacion.fechaEvaluacion || ''"
-                  [minDate]="periodoEvaluacionSeleccionado()?.fechaInicio"
-                  [maxDate]="periodoEvaluacionSeleccionado()?.fechaFin"
-                  [minYear]="obtenerAnio(periodoEvaluacionSeleccionado()?.fechaInicio)"
-                  [maxYear]="obtenerAnio(periodoEvaluacionSeleccionado()?.fechaFin)"
-                  [disabled]="guardandoFechaEvaluacion() === evaluacion.id"
-                  (valueChange)="actualizarFechaEvaluacion(evaluacion, $event)" />
-              </div>
-              <div class="evaluation-single-footer">
-                <span class="planning-status" [class.is-pending]="!evaluacion.fechaEvaluacion">
-                  <i class="fa-solid" [class.fa-circle-check]="evaluacion.fechaEvaluacion" [class.fa-circle-exclamation]="!evaluacion.fechaEvaluacion"></i>
-                  {{ evaluacion.fechaEvaluacion ? 'Programada' : 'Pendiente' }}
-                </span>
-                @if (evaluacionesPendientesFecha().length) {
-                  <span class="planning-progress">{{ evaluacionesPendientesFecha().length }} sin fecha</span>
-                }
-              </div>
-            }
-          }
-        </section>
-        } @else {
-        <div class="notes-config-layout">
-          <aside class="notes-config-overview">
-            <span class="notes-config-overview-title">Resumen actual</span>
-            <div class="notes-config-overview-list">
-              @for (item of resumenConfiguracionEvaluaciones(); track item.tipoEvaluacionId) {
-              <div class="notes-config-overview-row">
-                <span>{{ nombreTipoEvaluacionVisible(item.nombre) }}</span>
-                <strong>{{ item.cantidad }}</strong>
-              </div>
-              } @empty {
-              <div class="notes-config-overview-row is-empty">
-                <span>Sin tipos activos</span>
-                <strong>--</strong>
-              </div>
-              }
-            </div>
-
-            @if (hayNotasRegistradas()) {
+        <section class="notes-config-editor">
+          <div class="notes-config-warning">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>La estructura la define Dirección una sola vez y se replica en todos los períodos. Aquí solo se programan las fechas de {{ periodoEvaluacionSeleccionado()?.nombre || 'este período' }}.</span>
+          </div>
+          @if (hayNotasRegistradas()) {
             <div class="notes-config-warning">
               <i class="fa-solid fa-circle-info"></i>
-              <span>Ya existen notas registradas en este período. Si reduces tipos o cantidades, la grilla se
-                resincronizará.</span>
+              <span>Las notas ya registradas se conservarán. Esta planificación solo cambia evaluaciones y fechas.</span>
             </div>
-            }
-          </aside>
-
-          <section class="notes-config-editor">
-            @if (cargandoConfiguracion()) {
+          }
             <div class="notes-config-list">
-              @for (row of [0,1,2,3,4,5]; track row) {
-              <article class="config-row skeleton-card">
-                <span class="skeleton-line long"></span>
-                <span class="skeleton-line short"></span>
-              </article>
-              }
-            </div>
-            } @else if (errorConfiguracion()) {
-            <div class="table-state">
-              <span class="table-state-icon"><i class="fa-solid fa-server"></i></span>
-              <span>{{ errorConfiguracion() }}</span>
-            </div>
-            } @else {
-            <div class="notes-config-list">
-              <span class="notes-config-list-title">Estructura de evaluaciones</span>
               <div class="notes-config-table-wrap">
                 <table class="notes-config-table">
                   <thead>
                     <tr>
-                      <th>Tipo</th>
-                      <th>Cantidad</th>
-                      <th>Acción</th>
+                      <th>Evaluación</th>
+                      <th>Fecha obligatoria</th>
+                      <th class="audit-col-head">
+                        <div class="audit-head-title">
+                          <i class="fa-solid fa-clock-rotate-left"></i>
+                          <span>Auditoría de cambios</span>
+                        </div>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    @for (configuracion of configuracionesEditables(); track configuracion.tipoEvaluacionId) {
-                    <tr [class.is-disabled]="configuracion.cantidadActual === 0">
+                    @for (evaluacion of evaluaciones(); track evaluacion.id) {
+                    <tr>
                       <td>
                         <div class="config-row-copy">
-                          <strong>{{ nombreTipoEvaluacionVisible(configuracion.nombreTipoEvaluacion) }}</strong>
-                          <small>{{ configuracion.descripcionTipoEvaluacion || 'Sin descripción adicional.' }}</small>
+                          <strong>{{ evaluacion.nombre }}</strong>
+                          <small>{{ nombreTipoEvaluacionVisible(evaluacion.tipoEvaluacion) }}</small>
                         </div>
                       </td>
-                      <td>
-                        <label class="config-count-field">
-                          <input type="number" min="0" [ngModel]="configuracion.cantidadActual"
-                            (ngModelChange)="actualizarCantidadConfiguracion(configuracion.tipoEvaluacionId, $event)"
-                            [name]="'config-evaluacion-' + configuracion.tipoEvaluacionId" />
-                        </label>
+                      <td class="config-dates-cell">
+                        <input class="plan-date-input" type="date"
+                          [ngModel]="fechaEditable(evaluacion.id)"
+                          (ngModelChange)="actualizarFechaEditable(evaluacion.id, $event)"
+                          [name]="'fecha-evaluacion-' + evaluacion.id"
+                          [min]="periodoEvaluacionSeleccionado()?.fechaInicio"
+                          [max]="periodoEvaluacionSeleccionado()?.fechaFin"
+                          [disabled]="guardandoConfiguracion()" />
                       </td>
-                      <td>
-                        <button class="icon-action-button" type="button"
-                          [class.is-remove]="configuracion.cantidadActual > 0"
-                          [class.is-restore]="configuracion.cantidadActual === 0"
-                          (click)="alternarTipoConfiguracion(configuracion)">
-                          <i class="fa-solid" [class.fa-trash]="configuracion.cantidadActual > 0"
-                            [class.fa-rotate-left]="configuracion.cantidadActual === 0"></i>
-                        </button>
+                      <td class="audit-cell">
+                        <div class="audit-info-stack">
+                          <span class="audit-line audit-creator" [title]="'Registrado por: ' + obtenerCreadoPor(evaluacion)">
+                            <i class="fa-solid fa-user-pen"></i>
+                            <span class="audit-label">Registró:</span>
+                            <span class="audit-value">{{ obtenerCreadoPor(evaluacion) }}</span>
+                          </span>
+                          @if (obtenerModificadoPor(evaluacion)) {
+                            <span class="audit-line audit-modifier" [title]="'Modificado por: ' + obtenerModificadoPor(evaluacion)">
+                              <i class="fa-solid fa-clock-rotate-left"></i>
+                              <span class="audit-label">Modificó:</span>
+                              <strong class="audit-value highlight">{{ obtenerModificadoPor(evaluacion) }}</strong>
+                            </span>
+                          } @else {
+                            <span class="audit-line audit-clean" title="Sin modificaciones posteriores">
+                              <i class="fa-solid fa-check"></i>
+                              <span class="audit-value muted">Sin cambios posteriores</span>
+                            </span>
+                          }
+                        </div>
                       </td>
                     </tr>
+                    }
+                    @if (evaluaciones().length === 0) {
+                    <tr><td colspan="3" class="empty-evaluations">Aún no hay evaluaciones en este período.</td></tr>
                     }
                   </tbody>
                 </table>
               </div>
             </div>
-            }
-          </section>
-        </div>
-        }
+        </section>
 
         <div class="notes-config-modal-footer">
-          @if (panelConfiguracionEvaluaciones() === 'estructura') {
-          <button class="action-button tertiary" type="button" (click)="restaurarConfiguracionBase()"
-            [disabled]="guardandoConfiguracion() || cargandoConfiguracion()">
-            Restaurar base
-          </button>
           <button class="action-button primary" type="button" (click)="guardarConfiguracionEvaluaciones()"
-            [disabled]="guardandoConfiguracion() || cargandoConfiguracion()">
-            {{ guardandoConfiguracion() ? 'Guardando...' : 'Aplicar cambios' }}
+            [disabled]="guardandoConfiguracion()">
+            {{ guardandoConfiguracion() ? 'Guardando...' : 'Guardar planificación' }}
           </button>
-          } @else {
-          <button class="action-button tertiary" type="button" (click)="alternarPanelConfiguracion()">Cerrar</button>
-          }
         </div>
       </section>
     </div>
