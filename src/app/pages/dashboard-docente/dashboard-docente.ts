@@ -1,19 +1,23 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { SlicePipe } from '@angular/common';
 import { forkJoin, of } from 'rxjs';
 import { catchError, map, switchMap } from 'rxjs/operators';
 import { Shell } from '../../layouts/shell/shell';
-import { AlumnoService } from '../../services/academico/alumno.service';
-import { CursoPeriodoAcademicoService } from '../../services/academico/curso-periodo-academico.service';
-import { CursoService } from '../../services/academico/curso.service';
-import { DocenteService } from '../../services/academico/docente.service';
+import { AuthService } from '../../services/auth/auth.service';
 import { PeriodoAcademico } from '../../models/periodo-academico';
 import { PeriodoEvaluacion } from '../../models/periodo-evaluacion';
 import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
 import { PeriodoEvaluacionService } from '../../services/academico/periodo-evaluacion.service';
-import { Seccion } from '../../models/seccion';
-import { SeccionService } from '../../services/academico/seccion.service';
-import { PrediccionService, ResumenPrediccion } from '../../services/prediccion/prediccion.service';
+import { AsignacionAcademicaService } from '../../services/asignaciones/asignacion-academica.service';
+import { AsignacionDocente } from '../../models/asignacion';
+import { HorarioService } from '../../services/academico/horario.service';
+import { DiaSemana, HorarioSemanal } from '../../models/horario';
+import { TutoriaService } from '../../services/asignaciones/tutoria.service';
+import { Tutoria } from '../../models/tutoria';
+import { AlertaAcademicaService } from '../../services/alerta/alerta-academica.service';
+import { AlertaAcademica } from '../../models/alerta-academica';
+import { PrediccionService, PrediccionRiesgo } from '../../services/prediccion/prediccion.service';
 
 type KpiTone = 'blue' | 'violet' | 'sky' | 'mint' | 'amber' | 'rose';
 
@@ -25,64 +29,62 @@ interface DashboardKpi {
   detail: string;
 }
 
-interface DashboardProgress {
-  label: string;
-  value: string;
-  width: string;
-}
-
-interface DashboardActivity {
-  time: string;
-  title: string;
-  detail: string;
-  icon: string;
-}
-
-interface DashboardPending {
-  text: string;
-}
-
 @Component({
   selector: 'app-dashboard-docente',
-  imports: [Shell, RouterLink],
+  imports: [Shell, RouterLink, SlicePipe],
   templateUrl: './dashboard-docente.html',
   styleUrl: './dashboard-docente.scss'
 })
 export class DashboardDocente implements OnInit {
-  private readonly alumnoService = inject(AlumnoService);
-  private readonly docenteService = inject(DocenteService);
-  private readonly cursoService = inject(CursoService);
-  private readonly cursoPeriodoAcademicoService = inject(CursoPeriodoAcademicoService);
+  private readonly authService = inject(AuthService);
   private readonly periodoAcademicoService = inject(PeriodoAcademicoService);
   private readonly periodoEvaluacionService = inject(PeriodoEvaluacionService);
-  private readonly seccionService = inject(SeccionService);
+  private readonly asignacionService = inject(AsignacionAcademicaService);
+  private readonly horarioService = inject(HorarioService);
+  private readonly tutoriaService = inject(TutoriaService);
+  private readonly alertaService = inject(AlertaAcademicaService);
   private readonly prediccionService = inject(PrediccionService);
 
   readonly kpis = signal<DashboardKpi[]>([]);
-  readonly avances = signal<DashboardProgress[]>([]);
-  readonly actividad = signal<DashboardActivity[]>([]);
-  readonly pendientes = signal<DashboardPending[]>([]);
+  readonly asignaciones = signal<AsignacionDocente[]>([]);
+  readonly horariosMios = signal<HorarioSemanal[]>([]);
+  readonly clasesHoy = signal<HorarioSemanal[]>([]);
+  readonly proximaClase = signal<HorarioSemanal | null>(null);
+  readonly alertas = signal<AlertaAcademica[]>([]);
+  readonly tutorias = signal<Tutoria[]>([]);
+  readonly alumnosEnRiesgo = signal<PrediccionRiesgo[]>([]);
+  readonly periodoActivoLabel = signal<string>('--');
+  readonly periodoEvaluacionLabel = signal<string>('--');
+  readonly nombreUsuario = signal<string>('Docente');
+  readonly esTutor = signal<boolean>(false);
+  readonly diaHoyNombre = signal<string>('Lunes');
 
   readonly accesos = [
     { label: 'Mis cursos y notas', path: '/mis-asignaciones', icon: 'fa-solid fa-book-bookmark' },
-    { label: 'Mi sección tutorada', path: '/seccion-tutorada', icon: 'fa-solid fa-users-viewfinder' },
     { label: 'Control de asistencia', path: '/asistencias', icon: 'fa-solid fa-calendar-check' },
+    { label: 'Mi horario semanal', path: '/mi-horario', icon: 'fa-regular fa-calendar-days' },
+    { label: 'Mi sección tutorada', path: '/seccion-tutorada', icon: 'fa-solid fa-users-viewfinder' },
     { label: 'Predicción de riesgo', path: '/predicciones', icon: 'fa-solid fa-chart-line' },
-    { label: 'Hallazgos y recomendaciones', path: '/hallazgos', icon: 'fa-solid fa-magnifying-glass-chart' },
-    { label: 'Perfil del estudiante', path: '/predicciones', icon: 'fa-solid fa-id-badge' }
+    { label: 'Hallazgos y recomendaciones', path: '/hallazgos', icon: 'fa-solid fa-magnifying-glass-chart' }
   ] as const;
 
   ngOnInit(): void {
+    const user = this.authService.obtenerUsuario();
+    if (user) {
+      this.nombreUsuario.set(user.username);
+      this.esTutor.set(user.esTutor);
+    }
     this.cargarDashboard();
   }
 
   private cargarDashboard(): void {
+    const user = this.authService.obtenerUsuario();
+    const docenteId = user?.docenteId ?? 0;
+
     forkJoin({
       periodosAcademicos: this.periodoAcademicoService.listar().pipe(catchError(() => of([]))),
       periodosEvaluacion: this.periodoEvaluacionService.listar().pipe(catchError(() => of([]))),
-      alumnos: this.alumnoService.listar().pipe(catchError(() => of([]))),
-      docentes: this.docenteService.listar().pipe(catchError(() => of([]))),
-      cursosBase: this.cursoService.listar().pipe(catchError(() => of([])))
+      alertas: this.alertaService.listar('PENDIENTE').pipe(catchError(() => of([])))
     })
       .pipe(
         switchMap((base) => {
@@ -92,47 +94,56 @@ export class DashboardDocente implements OnInit {
             periodoActivo?.id ?? null
           );
 
-          if (!periodoActivo) {
+          if (!periodoActivo || !docenteId) {
             return of({
               ...base,
-              periodoActivo: null,
+              periodoActivo,
               periodoEvaluacionActivo,
-              secciones: [] as Seccion[],
-              cursosPeriodo: [],
-              resumenes: [] as Array<ResumenPrediccion | null>
+              asignaciones: [] as AsignacionDocente[],
+              horarios: [] as HorarioSemanal[],
+              tutorias: [] as Tutoria[],
+              predicciones: [] as PrediccionRiesgo[]
             });
           }
 
           return forkJoin({
-            secciones: this.seccionService.listar(periodoActivo.id).pipe(catchError(() => of([]))),
-            cursosPeriodo: this.cursoPeriodoAcademicoService
-              .listar(periodoActivo.id)
+            asignaciones: this.asignacionService
+              .listarAsignaciones(docenteId, periodoActivo.id)
+              .pipe(catchError(() => of([]))),
+            horarios: this.horarioService
+              .listarMios(periodoActivo.id)
+              .pipe(catchError(() => of([]))),
+            tutorias: this.tutoriaService
+              .listarPorDocente(docenteId, periodoActivo.id)
               .pipe(catchError(() => of([])))
           }).pipe(
             switchMap((extra) => {
-              if (!periodoEvaluacionActivo || !extra.secciones.length) {
+              const seccionIds = Array.from(new Set(extra.asignaciones.map((a) => a.seccionId)));
+
+              if (!periodoEvaluacionActivo || seccionIds.length === 0) {
                 return of({
                   ...base,
                   periodoActivo,
                   periodoEvaluacionActivo,
                   ...extra,
-                  resumenes: [] as Array<ResumenPrediccion | null>
+                  predicciones: [] as PrediccionRiesgo[]
                 });
               }
 
+              // Consultar predicciones de las secciones a su cargo
               return forkJoin(
-                extra.secciones.map((seccion) =>
+                seccionIds.map((seccionId) =>
                   this.prediccionService
-                    .obtenerResumen(periodoEvaluacionActivo.id, seccion.id)
-                    .pipe(catchError(() => of(null)))
+                    .listarCursos(periodoEvaluacionActivo.id, seccionId)
+                    .pipe(catchError(() => of([])))
                 )
               ).pipe(
-                map((resumenes) => ({
+                map((resultados) => ({
                   ...base,
                   periodoActivo,
                   periodoEvaluacionActivo,
                   ...extra,
-                  resumenes
+                  predicciones: resultados.flat()
                 }))
               );
             })
@@ -143,190 +154,132 @@ export class DashboardDocente implements OnInit {
   }
 
   private aplicarDashboard(data: {
-    periodosAcademicos: PeriodoAcademico[];
-    periodosEvaluacion: PeriodoEvaluacion[];
-    alumnos: { id: number }[];
-    docentes: { id: number }[];
-    cursosBase: { id: number }[];
     periodoActivo: PeriodoAcademico | null;
     periodoEvaluacionActivo: PeriodoEvaluacion | null;
-    secciones: Seccion[];
-    cursosPeriodo: { id: number }[];
-    resumenes: Array<ResumenPrediccion | null>;
+    alertas: AlertaAcademica[];
+    asignaciones: AsignacionDocente[];
+    horarios: HorarioSemanal[];
+    tutorias: Tutoria[];
+    predicciones: PrediccionRiesgo[];
   }): void {
-    const totalAlumnos = data.alumnos.length;
-    const totalDocentes = data.docentes.length;
-    const totalCursos = data.cursosBase.length;
-    const totalSecciones = data.secciones.length;
-    const totalCursosPeriodo = data.cursosPeriodo.length;
-    const resumenesValidos = data.resumenes.filter((item): item is ResumenPrediccion => item !== null);
-    const seccionesConPrediccion = resumenesValidos.filter((item) => item.totalPredicciones > 0).length;
-    const totalPredicciones = resumenesValidos.reduce((acc, item) => acc + (item.totalPredicciones ?? 0), 0);
-    const totalRiesgoAlto = resumenesValidos.reduce((acc, item) => acc + (item.totalRiesgoAlto ?? 0), 0);
-    const promedioRiesgo =
-      resumenesValidos.length > 0
-        ? resumenesValidos.reduce((acc, item) => acc + Number(item.promedioPuntajeRiesgo ?? 0), 0) /
-          resumenesValidos.length
-        : 0;
+    this.asignaciones.set(data.asignaciones);
+    this.horariosMios.set(data.horarios);
+    this.alertas.set(data.alertas);
+    this.tutorias.set(data.tutorias);
 
-    const coberturaSecciones = totalSecciones > 0 ? Math.round((seccionesConPrediccion / totalSecciones) * 100) : 0;
-    const coberturaAlumnos = totalAlumnos > 0 ? Math.round((totalPredicciones / totalAlumnos) * 100) : 0;
-    const coberturaCursos = totalCursos > 0 ? Math.round((totalCursosPeriodo / totalCursos) * 100) : 0;
-    const coberturaPeriodos =
-      data.periodoActivo
-        ? Math.round(
-            (data.periodosEvaluacion.filter((item) => item.periodoAcademicoId === data.periodoActivo!.id).length /
-              Math.max(
-                data.periodosEvaluacion.filter((item) => item.periodoAcademicoId === data.periodoActivo!.id).length,
-                1
-              )) *
-              100
-          )
-        : 0;
+    this.periodoActivoLabel.set(
+      data.periodoActivo ? `${data.periodoActivo.nombre} ${data.periodoActivo.anio}` : 'Sin período'
+    );
+    this.periodoEvaluacionLabel.set(
+      data.periodoEvaluacionActivo ? data.periodoEvaluacionActivo.nombre : 'Sin corte'
+    );
+
+    // Detección del día actual
+    const diasSemanaMap: Record<number, { dia: DiaSemana; label: string }> = {
+      1: { dia: 'LUNES', label: 'Lunes' },
+      2: { dia: 'MARTES', label: 'Martes' },
+      3: { dia: 'MIERCOLES', label: 'Miércoles' },
+      4: { dia: 'JUEVES', label: 'Jueves' },
+      5: { dia: 'VIERNES', label: 'Viernes' }
+    };
+    const diaIndex = new Date().getDay();
+    const configDia = diasSemanaMap[diaIndex] ?? { dia: 'LUNES', label: 'Lunes' };
+    this.diaHoyNombre.set(configDia.label);
+
+    // Clases del día de hoy
+    const clasesDeHoy = data.horarios
+      .filter((h) => h.diaSemana === configDia.dia)
+      .sort((a, b) => a.horaInicio.localeCompare(b.horaInicio));
+    this.clasesHoy.set(clasesDeHoy);
+
+    // Próxima clase
+    const ahoraMinutos = new Date().getHours() * 60 + new Date().getMinutes();
+    const proxima =
+      clasesDeHoy.find((c) => {
+        const finMinutos =
+          Number(c.horaFin.slice(0, 2)) * 60 + Number(c.horaFin.slice(3, 5));
+        return finMinutos >= ahoraMinutos;
+      }) ??
+      clasesDeHoy[0] ??
+      null;
+    this.proximaClase.set(proxima);
+
+    // Alumnos en riesgo en las secciones del docente
+    const alumnosRiesgoMap = new Map<number, PrediccionRiesgo>();
+    data.predicciones
+      .filter((p) => p.nivelRiesgo === 'ALTO' || p.nivelRiesgo === 'MEDIO')
+      .forEach((p) => {
+        const actual = alumnosRiesgoMap.get(p.alumnoId);
+        if (!actual || p.puntajeRiesgo > actual.puntajeRiesgo) {
+          alumnosRiesgoMap.set(p.alumnoId, p);
+        }
+      });
+
+    const listaRiesgo = Array.from(alumnosRiesgoMap.values()).sort(
+      (a, b) => b.puntajeRiesgo - a.puntajeRiesgo
+    );
+    this.alumnosEnRiesgo.set(listaRiesgo.slice(0, 5));
+
+    const totalRiesgoAlto = listaRiesgo.filter((p) => p.nivelRiesgo === 'ALTO').length;
+    const asistenciasPendientes = data.alertas.filter(
+      (a) => a.tipo === 'ASISTENCIA_PENDIENTE'
+    ).length;
+    const notasPendientes = data.alertas.filter(
+      (a) => a.tipo === 'NOTAS_PENDIENTES'
+    ).length;
+
+    const seccionesUnicas = new Set(data.asignaciones.map((a) => a.seccionId)).size;
 
     this.kpis.set([
       {
-        label: 'Período académico',
-        value: data.periodoActivo?.anio?.toString() ?? '--',
-        icon: 'fa-regular fa-calendar',
-        tone: 'blue',
-        detail: data.periodoActivo?.nombre ?? 'Sin período activo'
-      },
-      {
-        label: 'Período de evaluación',
-        value: data.periodoEvaluacionActivo?.nombre ?? '--',
-        icon: 'fa-regular fa-clock',
-        tone: 'violet',
-        detail: data.periodoEvaluacionActivo
-          ? `Corte ${data.periodoEvaluacionActivo.numero}`
-          : 'Sin corte activo'
-      },
-      {
-        label: 'Alumnos registrados',
-        value: `${totalAlumnos}`,
-        icon: 'fa-solid fa-user-graduate',
-        tone: 'sky',
-        detail: 'Alumnos visibles en el sistema'
-      },
-      {
-        label: 'Docentes activos',
-        value: `${totalDocentes}`,
+        label: 'Mis cursos activos',
+        value: `${data.asignaciones.length}`,
         icon: 'fa-solid fa-chalkboard-user',
+        tone: 'blue',
+        detail: `${seccionesUnicas} secciones a cargo`
+      },
+      {
+        label: 'Próxima clase hoy',
+        value: proxima ? proxima.horaInicio.slice(0, 5) : 'Completado',
+        icon: 'fa-regular fa-calendar-check',
         tone: 'mint',
-        detail: 'Docentes registrados'
+        detail: proxima ? `${proxima.curso} · ${proxima.seccion}` : 'Sin más clases hoy'
       },
       {
-        label: 'Secciones activas',
-        value: `${totalSecciones}`,
-        icon: 'fa-solid fa-layer-group',
-        tone: 'amber',
-        detail: 'Secciones del período activo'
-      },
-      {
-        label: 'Cursos configurados',
-        value: `${totalCursosPeriodo}`,
-        icon: 'fa-solid fa-book-open',
+        label: 'Alumnos en riesgo alto',
+        value: `${totalRiesgoAlto}`,
+        icon: 'fa-solid fa-triangle-exclamation',
         tone: 'rose',
-        detail: 'Cursos ligados al período actual'
+        detail: 'Requieren apoyo preventivo'
+      },
+      {
+        label: 'Asistencias por registrar',
+        value: `${asistenciasPendientes}`,
+        icon: 'fa-solid fa-user-clock',
+        tone: 'amber',
+        detail: 'Sesiones con registro pendiente'
+      },
+      {
+        label: 'Notas por calificar',
+        value: `${notasPendientes}`,
+        icon: 'fa-solid fa-pen-to-square',
+        tone: 'violet',
+        detail: 'Evaluaciones del corte activo'
       }
     ]);
-
-    this.avances.set([
-      {
-        label: 'Secciones con predicciones',
-        value: `${coberturaSecciones}%`,
-        width: `${coberturaSecciones}%`
-      },
-      {
-        label: 'Alumnos con ficha predictiva',
-        value: `${coberturaAlumnos}%`,
-        width: `${coberturaAlumnos}%`
-      },
-      {
-        label: 'Cursos configurados en el período',
-        value: `${coberturaCursos}%`,
-        width: `${coberturaCursos}%`
-      },
-      {
-        label: 'Períodos de evaluación listos',
-        value: `${coberturaPeriodos}%`,
-        width: `${coberturaPeriodos}%`
-      }
-    ]);
-
-    this.actividad.set([
-      {
-        time: data.periodoActivo?.fechaInicio?.slice(0, 10) ?? '--',
-        title: 'Período académico detectado',
-        detail: data.periodoActivo
-          ? `${data.periodoActivo.nombre} ${data.periodoActivo.anio} se encuentra disponible en el dashboard.`
-          : 'Aún no se detecta un período académico activo.',
-        icon: 'fa-regular fa-calendar'
-      },
-      {
-        time: data.periodoEvaluacionActivo?.fechaInicio?.slice(5, 10) ?? '--',
-        title: 'Período de evaluación activo',
-        detail: data.periodoEvaluacionActivo
-          ? `${data.periodoEvaluacionActivo.nombre} es el corte usado para la vista general.`
-          : 'No hay un período de evaluación activo para consolidar resúmenes.',
-        icon: 'fa-regular fa-clock'
-      },
-      {
-        time: `${seccionesConPrediccion}/${totalSecciones || 0}`,
-        title: 'Cobertura de secciones',
-        detail: 'Resume cuántas secciones ya tienen información suficiente para mostrar predicciones.',
-        icon: 'fa-solid fa-layer-group'
-      },
-      {
-        time: `${Math.round(promedioRiesgo)}%`,
-        title: 'Promedio de riesgo disponible',
-        detail: `Se consolidaron ${totalPredicciones} predicciones y ${totalRiesgoAlto} casos de riesgo alto en el corte actual.`,
-        icon: 'fa-solid fa-chart-line'
-      }
-    ]);
-
-    const pendientes: DashboardPending[] = [];
-    if (!data.periodoActivo) {
-      pendientes.push({ text: 'No se detecta un período académico activo para consolidar el tablero.' });
-    }
-    if (!data.periodoEvaluacionActivo) {
-      pendientes.push({ text: 'No hay un período de evaluación activo para calcular el resumen general.' });
-    }
-    if (totalSecciones > seccionesConPrediccion) {
-      pendientes.push({
-        text: `${totalSecciones - seccionesConPrediccion} secciones aún no cuentan con resumen predictivo disponible.`
-      });
-    }
-    if (totalAlumnos > totalPredicciones) {
-      pendientes.push({
-        text: `${Math.max(totalAlumnos - totalPredicciones, 0)} alumnos aún no tienen ficha predictiva del corte actual.`
-      });
-    }
-    if (totalCursosPeriodo === 0) {
-      pendientes.push({ text: 'El período activo aún no muestra cursos configurados para operar en el dashboard.' });
-    }
-    if (pendientes.length === 0) {
-      pendientes.push({ text: 'No hay pendientes críticos detectados con la información disponible actualmente.' });
-    }
-
-    this.pendientes.set(pendientes);
   }
 
   private resolverPeriodoActivo(periodos: PeriodoAcademico[]): PeriodoAcademico | null {
     const hoy = new Date();
     const porEstado = periodos.find((item) => (item.estado ?? '').toUpperCase() === 'ACTIVO');
-    if (porEstado) {
-      return porEstado;
-    }
+    if (porEstado) return porEstado;
 
     const porFecha = periodos.find((item) => {
       const inicio = new Date(item.fechaInicio);
       const fin = new Date(item.fechaFin);
       return inicio <= hoy && hoy <= fin;
     });
-    if (porFecha) {
-      return porFecha;
-    }
+    if (porFecha) return porFecha;
 
     return [...periodos].sort((a, b) => b.anio - a.anio)[0] ?? null;
   }
@@ -341,18 +294,14 @@ export class DashboardDocente implements OnInit {
       : periodos;
 
     const porEstado = base.find((item) => (item.estado ?? '').toUpperCase() === 'ACTIVO');
-    if (porEstado) {
-      return porEstado;
-    }
+    if (porEstado) return porEstado;
 
     const porFecha = base.find((item) => {
       const inicio = new Date(item.fechaInicio);
       const fin = new Date(item.fechaFin);
       return inicio <= hoy && hoy <= fin;
     });
-    if (porFecha) {
-      return porFecha;
-    }
+    if (porFecha) return porFecha;
 
     return [...base].sort((a, b) => a.numero - b.numero)[0] ?? null;
   }

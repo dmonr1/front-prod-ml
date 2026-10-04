@@ -342,13 +342,14 @@
 .nav-section {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
+  margin-bottom: 4px;
 }
 
-// Encabezado de categoría (Sección padre: pequeño, mayúsculas, color atenuado slate)
+// Encabezado de categoría (Sección padre: jerarquía visual clara, contraste y feedback)
 .nav-parent {
   display: flex;
   align-items: center;
@@ -357,27 +358,29 @@
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
-  min-height: 32px;
-  height: 32px;
-  margin-top: 10px;
-  padding: 0 10px;
+  min-height: 34px;
+  height: 34px;
+  margin-top: 8px;
+  padding: 0 10px 0 8px;
   border: none;
+  border-left: 3px solid transparent;
   border-radius: 8px;
   background: transparent;
-  color: #7e95b3; // Color atenuado para no competir con los links
+  color: #94a3b8;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.07em;
   cursor: pointer;
   outline: none;
-  transition: color 0.15s ease;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 
   .nav-icon {
-    font-size: 11px;
-    width: 16px;
-    flex: 0 0 16px;
-    color: #60799c;
+    font-size: 12px;
+    width: 18px;
+    flex: 0 0 18px;
+    color: #64748b;
+    transition: color 0.18s ease;
   }
 
   .nav-label {
@@ -387,31 +390,33 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: #7e95b3;
+    color: inherit;
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.07em;
+    transition: color 0.18s ease;
   }
 
   .nav-chevron {
     flex: 0 0 10px;
     margin-left: auto;
     font-size: 10px;
-    color: #60799c;
-    transition: transform 0.2s ease;
+    color: #64748b;
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), color 0.18s ease;
   }
 
   &:hover {
-    color: #9cb3d4;
+    color: #f1f5f9;
+    background: rgba(255, 255, 255, 0.06);
 
     .nav-label {
-      color: #9cb3d4;
+      color: #f1f5f9;
     }
 
     .nav-icon,
     .nav-chevron {
-      color: #9cb3d4;
+      color: #93c5fd;
     }
   }
 }
@@ -420,22 +425,70 @@
   margin-top: 0;
 }
 
-.nav-section.open .nav-chevron {
-  transform: rotate(180deg);
+// Estado GRUPO ABIERTO / EXPANDIDO
+.nav-section.open .nav-parent,
+.nav-parent.is-expanded {
+  background: rgba(59, 130, 246, 0.11);
+  border-left-color: #3b82f6;
+  color: #f8fafc;
+
+  .nav-label {
+    color: #f8fafc;
+    font-weight: 750;
+  }
+
+  .nav-icon {
+    color: #60a5fa;
+  }
+
+  .nav-chevron {
+    color: #60a5fa;
+    transform: rotate(180deg);
+  }
 }
 
+// Estado GRUPO CON HIJO ACTIVO (Ruta actual pertenece a este grupo)
+.nav-section.has-active-child .nav-parent,
+.nav-parent.is-active-parent {
+  background: rgba(59, 130, 246, 0.18);
+  border-left-color: #60a5fa;
+  color: #ffffff;
+
+  .nav-label {
+    color: #ffffff;
+    font-weight: 800;
+  }
+
+  .nav-icon {
+    color: #93c5fd;
+  }
+
+  .nav-chevron {
+    color: #93c5fd;
+  }
+}
+
+// Línea guía visual tipo árbol para subelementos
 .nav-children {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  padding-left: 5px;
-  width: 100%;
+  margin-top: 3px;
+  margin-left: 15px;
+  padding-left: 9px;
+  border-left: 2px solid rgba(255, 255, 255, 0.1);
+  width: calc(100% - 15px);
   min-width: 0;
   box-sizing: border-box;
+  transition: border-color 0.2s ease;
+}
+
+.nav-section.has-active-child .nav-children {
+  border-left-color: rgba(96, 165, 250, 0.38);
 }
 
 // ---------------------------------------------------------------------------
-// Items de Navegación (Pills suaves SIN saltos y SIN fondos en los íconos)
+// Items de Navegación (Pills suaves con jerarquía y feedback de hover/activo)
 // ---------------------------------------------------------------------------
 .nav-child,
 .nav-single {
@@ -448,27 +501,27 @@
   min-height: 38px;
   height: 38px;
   padding: 0 12px;
-  border: none;
-  border-radius: 12px; // Pastilla suave tipo My Camp
-  color: #cbd5e1; // Color de texto normal, claro y legible
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: #cbd5e1;
   font-size: 13.5px;
   font-weight: 500;
   text-decoration: none;
   background: transparent;
   outline: none;
   box-sizing: border-box;
-  // Solo animar color y background: NUNCA transforms ni height para evitar que salten
-  transition: color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  transition: color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 
   .nav-icon {
     flex: 0 0 20px;
     color: #94a3b8;
+    transition: color 0.15s ease;
   }
 
   .nav-label {
     flex: 1;
     min-width: 0;
-    color: #cbd5e1; // Texto legible en estado inactivo
+    color: inherit;
     font-size: 13.5px;
     font-weight: 500;
     white-space: nowrap;
@@ -489,12 +542,13 @@
     }
   }
 
-  // Activo: claramente diferenciado con pastilla azul y texto blanco brillante
+  // Activo: claramente diferenciado con gradiente azul y acento
   &.active {
     color: #ffffff !important;
-    background: #2563eb !important;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
     font-weight: 700;
-    box-shadow: 0 3px 12px rgba(37, 99, 235, 0.35);
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+    border-left: 3px solid #93c5fd;
 
     .nav-icon {
       color: #ffffff !important;
@@ -884,10 +938,14 @@
     min-height: 38px;
     height: 38px;
     border-radius: 10px;
+    border-left: none !important;
   }
 
   .nav-children {
+    margin-left: 0;
     padding-left: 0;
+    width: 100%;
+    border-left: none;
   }
 
   .sidebar-theme-bar {

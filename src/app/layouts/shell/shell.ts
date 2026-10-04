@@ -80,9 +80,7 @@ export class Shell {
           { label: 'Docentes y accesos', path: '/docentes-accesos', icon: 'fa-solid fa-user-gear' },
           { label: 'Asignaciones docentes', path: '/asignaciones-docente', icon: 'fa-solid fa-chalkboard-user' },
           { label: 'Tutorías por sección', path: '/tutorias-seccion', icon: 'fa-solid fa-people-roof' },
-          { label: 'Horarios y programación', path: '/horarios', icon: 'fa-regular fa-calendar-days' },
-          { label: 'Predictores y modelos ML', path: '/modelos-ml', icon: 'fa-solid fa-brain' },
-          { label: 'Auditoría del sistema', path: '/auditoria', icon: 'fa-solid fa-shield-halved' }
+          { label: 'Horarios y programación', path: '/horarios', icon: 'fa-regular fa-calendar-days' }
         ]
       });
     }
@@ -144,6 +142,27 @@ export class Shell {
         ]
       });
     }
+
+    if (esAdmin) {
+      items.push({
+        id: 'inteligencia-auditoria',
+        label: 'Inteligencia y auditoría',
+        icon: 'fa-solid fa-brain',
+        children: [
+          {
+            label: 'Predictores y modelos ML',
+            path: '/modelos-ml',
+            icon: 'fa-solid fa-microchip'
+          },
+          {
+            label: 'Auditoría del sistema',
+            path: '/auditoria',
+            icon: 'fa-solid fa-shield-halved'
+          }
+        ]
+      });
+    }
+
 
     return items;
   }

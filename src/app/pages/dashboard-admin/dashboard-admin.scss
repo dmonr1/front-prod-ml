@@ -440,6 +440,275 @@
   background: linear-gradient(135deg, var(--color-brand-primary) 0%, var(--color-brand-accent) 100%);
 }
 
+.section-action-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-brand-primary);
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    transform: translateX(2px);
+    color: var(--color-brand-accent);
+  }
+}
+
+.ml-insight-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.ml-model-badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: var(--color-bg-secondary);
+}
+
+.ml-model-info {
+  display: grid;
+  gap: 3px;
+
+  .ml-badge-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.64rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--color-brand-accent);
+    letter-spacing: 0.05em;
+  }
+
+  strong {
+    color: var(--color-text-primary);
+    font-size: 0.95rem;
+    font-weight: 800;
+  }
+
+  small {
+    color: var(--color-text-secondary);
+    font-size: 0.74rem;
+    font-weight: 600;
+  }
+}
+
+.ml-retrain-info {
+  display: grid;
+  text-align: right;
+  gap: 2px;
+
+  span {
+    color: var(--color-text-secondary);
+    font-size: 0.68rem;
+    font-weight: 600;
+  }
+
+  strong {
+    color: var(--color-text-primary);
+    font-size: 0.82rem;
+    font-weight: 700;
+  }
+}
+
+.risk-semaphore-wrapper {
+  display: grid;
+  gap: 12px;
+}
+
+.risk-bar-track {
+  display: flex;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--color-surface-secondary);
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.risk-bar-fill {
+  height: 100%;
+  transition: width 0.4s ease;
+
+  &.high {
+    background: #ef4444;
+  }
+
+  &.medium {
+    background: #f59e0b;
+  }
+
+  &.low {
+    background: #10b981;
+  }
+}
+
+.risk-tags-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.risk-tag-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--color-bg-secondary);
+
+  &.is-high {
+    border-left: 3px solid #ef4444;
+  }
+
+  &.is-medium {
+    border-left: 3px solid #f59e0b;
+  }
+
+  &.is-low {
+    border-left: 3px solid #10b981;
+  }
+}
+
+.risk-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 4px;
+  flex-shrink: 0;
+
+  &.high {
+    background: #ef4444;
+  }
+
+  &.medium {
+    background: #f59e0b;
+  }
+
+  &.low {
+    background: #10b981;
+  }
+}
+
+.risk-tag-data {
+  display: grid;
+  gap: 2px;
+
+  .risk-tag-label {
+    color: var(--color-text-secondary);
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  strong {
+    color: var(--color-text-primary);
+    font-size: 0.88rem;
+    font-weight: 800;
+  }
+
+  small {
+    color: var(--color-text-secondary);
+    font-size: 0.7rem;
+  }
+}
+
+.audit-feed-list {
+  display: grid;
+  gap: 10px;
+}
+
+.audit-feed-item {
+  display: grid;
+  gap: 5px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--color-bg-secondary);
+}
+
+.audit-feed-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.audit-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+
+  &.is-critico {
+    background: var(--color-risk-high-bg);
+    color: var(--color-risk-high-text);
+  }
+
+  &.is-advertencia {
+    background: var(--color-risk-medium-bg);
+    color: var(--color-risk-medium-text);
+  }
+
+  &.is-info {
+    background: var(--color-surface-secondary);
+    color: var(--color-brand-primary);
+  }
+}
+
+.audit-feed-time {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.audit-feed-title {
+  color: var(--color-text-primary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.audit-feed-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.68rem;
+  color: var(--color-text-secondary);
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+}
+
+.status-pill.is-alert {
+  background: var(--color-risk-high-bg);
+  color: var(--color-risk-high-text);
+  border-color: transparent;
+
+  i {
+    color: var(--color-risk-high-text);
+  }
+}
+
+.empty-state-copy {
+  margin: 0;
+  padding: 16px;
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+}
+
 @keyframes dashboard-enter {
   from {
     opacity: 0;

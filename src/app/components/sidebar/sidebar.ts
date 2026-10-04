@@ -247,11 +247,16 @@ export class Sidebar implements OnInit, OnDestroy {
       ruta.startsWith('/docentes-accesos') ||
       ruta.startsWith('/asignaciones-tutorias') ||
       ruta.startsWith('/asignaciones-docente') ||
-      ruta.startsWith('/horarios') ||
+      ruta.startsWith('/horarios')
+    ) {
+      secciones.add('configuracion-academica');
+    }
+
+    if (
       ruta.startsWith('/modelos-ml') ||
       ruta.startsWith('/auditoria')
     ) {
-      secciones.add('configuracion-academica');
+      secciones.add('inteligencia-auditoria');
     }
 
     if (

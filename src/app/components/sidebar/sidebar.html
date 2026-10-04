@@ -49,8 +49,10 @@
   <nav>
     @for (item of items(); track item.id) {
     @if (item.children?.length) {
-    <section class="nav-section" [class.open]="isExpanded(item)">
+    <section class="nav-section" [class.open]="isExpanded(item)" [class.has-active-child]="isParentActive(item)">
       <button class="nav-parent" type="button"
+        [class.is-expanded]="isExpanded(item)"
+        [class.is-active-parent]="isParentActive(item)"
         (mouseenter)="mostrarTooltipColapsado($event, item.label)"
         (mouseleave)="ocultarTooltipColapsado()"
         (focus)="mostrarTooltipColapsado($event, item.label)"

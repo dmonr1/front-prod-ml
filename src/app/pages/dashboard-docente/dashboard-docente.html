@@ -3,23 +3,38 @@
     <article class="dashboard-surface dashboard-slide dashboard-slide-top">
       <div class="dashboard-head">
         <div class="dashboard-copy">
-          <h1>Estado general del sistema académico</h1>
+          <span class="section-kicker">Panel docente</span>
+          <h1>Hola, {{ nombreUsuario() }}</h1>
         </div>
 
         <div class="dashboard-quick">
           <span class="status-pill is-live">
             <i class="fa-solid fa-circle"></i>
-            Sistema activo
+            Docente activo
+          </span>
+          <span class="status-pill">
+            <i class="fa-regular fa-calendar"></i>
+            Hoy: {{ diaHoyNombre() }}
+          </span>
+          <span class="status-pill">
+            <i class="fa-regular fa-calendar-days"></i>
+            {{ periodoActivoLabel() }}
           </span>
           <span class="status-pill">
             <i class="fa-regular fa-clock"></i>
-            Último corte hoy 11:26
+            {{ periodoEvaluacionLabel() }}
           </span>
+          @if (esTutor()) {
+            <span class="status-pill is-tutor">
+              <i class="fa-solid fa-shield-halved"></i>
+              Tutor de aula
+            </span>
+          }
         </div>
       </div>
     </article>
 
-    <section class="kpi-grid dashboard-slide dashboard-slide-mid">
+    <section class="kpi-grid dashboard-slide dashboard-slide-mid docente-kpis">
       @for (item of kpis(); track item.label) {
         <article class="dashboard-surface kpi-card">
           <div class="kpi-head">
@@ -38,34 +53,94 @@
 
     <section class="dashboard-layout dashboard-slide dashboard-slide-bottom">
       <div class="dashboard-main">
+        <!-- Tarjeta de Próxima Clase / Mi Jornada de Hoy -->
+        <article class="dashboard-surface section-card next-class-card">
+          <div class="section-head">
+            <div>
+              <span class="section-kicker">Mi jornada de hoy</span>
+              <h2>Próxima clase programada</h2>
+            </div>
+            <a class="section-action-link" routerLink="/mi-horario">
+              <span>Mi horario completo</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </a>
+          </div>
+
+          @if (proximaClase(); as clase) {
+            <div class="next-class-banner">
+              <div class="next-class-timebox">
+                <span class="next-class-time">{{ clase.horaInicio | slice:0:5 }}</span>
+                <span class="next-class-until">hasta {{ clase.horaFin | slice:0:5 }}</span>
+                <small class="next-class-block">{{ clase.bloque }}</small>
+              </div>
+
+              <div class="next-class-details">
+                <span class="next-class-grade-tag">{{ clase.grado }} {{ clase.seccion }} · {{ clase.nivel }}</span>
+                <h3>{{ clase.curso }}</h3>
+                <p>Sesión académica asignada para el día de hoy {{ diaHoyNombre() }}.</p>
+              </div>
+
+              <div class="next-class-action">
+                <a class="class-action-btn primary" routerLink="/asistencias">
+                  <i class="fa-solid fa-user-check"></i>
+                  <span>Registrar asistencia</span>
+                </a>
+              </div>
+            </div>
+          } @else {
+            <div class="no-class-banner">
+              <div class="no-class-icon"><i class="fa-regular fa-calendar-check"></i></div>
+              <div class="no-class-copy">
+                <strong>Sin clases pendientes para hoy</strong>
+                <p>Has completado tus bloques asignados para {{ diaHoyNombre() }} o no cuentas con horarios programados para este día.</p>
+              </div>
+              <a class="class-action-btn" routerLink="/mi-horario">Ver semana</a>
+            </div>
+          }
+        </article>
+
+        <!-- Radar de Intervención Temprana: Alumnos en Riesgo -->
         <article class="dashboard-surface section-card">
           <div class="section-head">
             <div>
-              <span class="section-kicker">Avance del sistema</span>
-              <h2>Cobertura operativa por módulo</h2>
+              <span class="section-kicker">Intervención temprana</span>
+              <h2>Alumnos en riesgo en mis secciones</h2>
             </div>
+            <a class="section-action-link" routerLink="/predicciones">
+              <span>Ver todas</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </a>
           </div>
 
-          <div class="progress-list">
-            @for (item of avances(); track item.label) {
-              <div class="progress-row">
-                <div class="progress-copy">
-                  <strong>{{ item.label }}</strong>
-                  <span>{{ item.value }}</span>
+          <div class="teacher-risk-list">
+            @for (alumno of alumnosEnRiesgo(); track alumno.alumnoId) {
+              <div class="teacher-risk-item">
+                <div class="risk-student-info">
+                  <strong>{{ alumno.alumnoNombreCompleto }}</strong>
+                  <small>{{ alumno.grado }} {{ alumno.seccion }} · {{ alumno.curso ?? 'General' }}</small>
                 </div>
-                <div class="progress-bar">
-                  <div class="progress-fill" [style.width]="item.width"></div>
+
+                <div class="risk-student-badge-wrap">
+                  <span class="risk-pill" [class]="'is-' + alumno.nivelRiesgo.toLowerCase()">
+                    {{ alumno.nivelRiesgo }} ({{ alumno.puntajeRiesgo }}%)
+                  </span>
+                  <a class="risk-detail-link" [routerLink]="['/alumno', alumno.alumnoId]" title="Ver perfil del alumno">
+                    <i class="fa-solid fa-arrow-right"></i>
+                  </a>
                 </div>
               </div>
+            } @empty {
+              <p class="empty-state-copy">No se registran alumnos en riesgo crítico en tus secciones asignadas.</p>
             }
           </div>
         </article>
 
+        <!-- Accesos rápidos del docente -->
         <article class="dashboard-surface section-card">
           <div class="section-head">
             <div>
               <span class="section-kicker">Accesos rápidos</span>
-              <h2>Rutas principales del flujo</h2>
+              <h2>Mis herramientas frecuentes</h2>
             </div>
           </div>
 
@@ -81,46 +156,58 @@
       </div>
 
       <aside class="dashboard-side">
+        <!-- Checklist Operativo de Alertas -->
         <article class="dashboard-surface side-card">
           <div class="section-head">
             <div>
-              <span class="section-kicker">Actividad reciente</span>
-              <h2>Movimiento del sistema</h2>
+              <span class="section-kicker">Checklist operativo</span>
+              <h2>Pendientes por resolver</h2>
             </div>
           </div>
 
-          <div class="activity-list">
-            @for (item of actividad(); track item.time + item.title) {
-              <div class="activity-row">
-                <span class="activity-icon"><i [class]="item.icon"></i></span>
-                <div class="activity-copy">
-                  <div class="activity-title">
-                    <strong>{{ item.title }}</strong>
-                    <span>{{ item.time }}</span>
-                  </div>
-                  <p>{{ item.detail }}</p>
+          <div class="teacher-alerts-feed">
+            @for (alerta of alertas(); track alerta.id) {
+              <div class="teacher-alert-card">
+                <div class="teacher-alert-icon" [class.is-attendance]="alerta.tipo === 'ASISTENCIA_PENDIENTE'">
+                  <i class="fa-solid" [class.fa-user-check]="alerta.tipo === 'ASISTENCIA_PENDIENTE'" [class.fa-pen-to-square]="alerta.tipo === 'NOTAS_PENDIENTES'"></i>
                 </div>
+                <div class="teacher-alert-copy">
+                  <strong>{{ alerta.titulo }}</strong>
+                  <small>{{ alerta.curso }} · {{ alerta.grado }} {{ alerta.seccion }}</small>
+                  <span>{{ alerta.cantidadPendiente }} registros pendientes</span>
+                </div>
+                <a class="alert-action-btn" [routerLink]="alerta.tipo === 'ASISTENCIA_PENDIENTE' ? '/asistencias' : '/mis-asignaciones'">
+                  <i class="fa-solid fa-arrow-right"></i>
+                </a>
               </div>
+            } @empty {
+              <p class="empty-state-copy">Excelente: estás al día con tus registros de asistencia y notas.</p>
             }
           </div>
         </article>
 
+        <!-- Agenda de Hoy -->
         <article class="dashboard-surface side-card">
           <div class="section-head">
             <div>
-              <span class="section-kicker">Pendientes clave</span>
-              <h2>Lo que requiere seguimiento</h2>
+              <span class="section-kicker">Agenda de hoy</span>
+              <h2>Mis clases del {{ diaHoyNombre() }}</h2>
             </div>
           </div>
 
-          <ul class="pending-list">
-            @for (item of pendientes(); track item.text) {
-              <li>
-                <span class="pending-dot"></span>
-                <p>{{ item.text }}</p>
-              </li>
+          <div class="today-schedule-list">
+            @for (clase of clasesHoy(); track clase.id) {
+              <div class="schedule-slot-item">
+                <span class="slot-time">{{ clase.horaInicio | slice:0:5 }}–{{ clase.horaFin | slice:0:5 }}</span>
+                <div class="slot-copy">
+                  <strong>{{ clase.curso }}</strong>
+                  <small>{{ clase.grado }} {{ clase.seccion }} · {{ clase.bloque }}</small>
+                </div>
+              </div>
+            } @empty {
+              <p class="empty-state-copy">Sin clases programadas para este día de la semana.</p>
             }
-          </ul>
+          </div>
         </article>
       </aside>
     </section>

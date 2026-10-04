@@ -440,6 +440,371 @@
   background: linear-gradient(135deg, var(--color-brand-primary) 0%, var(--color-brand-accent) 100%);
 }
 
+.kpi-grid.docente-kpis {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.status-pill.is-tutor {
+  background: var(--color-surface-secondary);
+  color: var(--color-brand-primary);
+  font-weight: 800;
+
+  i {
+    color: var(--color-brand-primary);
+  }
+}
+
+.section-action-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-brand-primary);
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    transform: translateX(2px);
+    color: var(--color-brand-accent);
+  }
+}
+
+// Banner de próxima clase
+.next-class-banner {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 20px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(79, 70, 229, 0.04) 100%);
+}
+
+.next-class-timebox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--color-surface-primary);
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+  min-width: 90px;
+
+  .next-class-time {
+    font-size: 1.25rem;
+    font-weight: 850;
+    color: var(--color-brand-primary);
+    line-height: 1;
+  }
+
+  .next-class-until {
+    font-size: 0.68rem;
+    color: var(--color-text-secondary);
+    font-weight: 600;
+    margin-top: 2px;
+  }
+
+  .next-class-block {
+    display: inline-block;
+    margin-top: 4px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+  }
+}
+
+.next-class-details {
+  display: grid;
+  gap: 3px;
+
+  .next-class-grade-tag {
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--color-brand-accent);
+    letter-spacing: 0.05em;
+  }
+
+  h3 {
+    margin: 0;
+    color: var(--color-text-primary);
+    font-size: 1.15rem;
+    font-weight: 800;
+  }
+
+  p {
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: 0.76rem;
+  }
+}
+
+.class-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  background: var(--color-surface-secondary);
+  color: var(--color-text-primary);
+  transition: all 0.18s ease;
+
+  &.primary {
+    background: var(--color-brand-primary);
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+
+    &:hover {
+      background: var(--color-brand-accent);
+      transform: translateY(-2px);
+    }
+  }
+
+  &:hover {
+    background: var(--color-border-subtle);
+  }
+}
+
+.no-class-banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--color-bg-secondary);
+
+  .no-class-icon {
+    font-size: 1.6rem;
+    color: var(--color-semantic-low);
+  }
+
+  .no-class-copy {
+    display: grid;
+    gap: 2px;
+    flex: 1;
+
+    strong {
+      color: var(--color-text-primary);
+      font-size: 0.88rem;
+    }
+
+    p {
+      margin: 0;
+      color: var(--color-text-secondary);
+      font-size: 0.74rem;
+    }
+  }
+}
+
+// Lista de alumnos en riesgo
+.teacher-risk-list {
+  display: grid;
+  gap: 10px;
+}
+
+.teacher-risk-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--color-bg-secondary);
+}
+
+.risk-student-info {
+  display: grid;
+  gap: 2px;
+
+  strong {
+    color: var(--color-text-primary);
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  small {
+    color: var(--color-text-secondary);
+    font-size: 0.72rem;
+  }
+}
+
+.risk-student-badge-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.risk-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+
+  &.is-alto {
+    background: var(--color-risk-high-bg);
+    color: var(--color-risk-high-text);
+  }
+
+  &.is-medio {
+    background: var(--color-risk-medium-bg);
+    color: var(--color-risk-medium-text);
+  }
+
+  &.is-bajo {
+    background: var(--color-risk-low-bg);
+    color: var(--color-risk-low-text);
+  }
+}
+
+.risk-detail-link {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--color-surface-primary);
+  color: var(--color-text-secondary);
+  font-size: 0.72rem;
+  text-decoration: none;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.15s ease;
+
+  &:hover {
+    color: var(--color-brand-primary);
+    transform: translateX(2px);
+  }
+}
+
+// Feed de alertas del docente
+.teacher-alerts-feed {
+  display: grid;
+  gap: 10px;
+}
+
+.teacher-alert-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--color-bg-secondary);
+}
+
+.teacher-alert-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  background: var(--color-risk-medium-bg);
+  color: var(--color-risk-medium-text);
+  flex-shrink: 0;
+
+  &.is-attendance {
+    background: var(--color-risk-high-bg);
+    color: var(--color-risk-high-text);
+  }
+}
+
+.teacher-alert-copy {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+
+  strong {
+    color: var(--color-text-primary);
+    font-size: 0.82rem;
+    font-weight: 700;
+  }
+
+  small {
+    color: var(--color-text-secondary);
+    font-size: 0.7rem;
+  }
+
+  span {
+    color: var(--color-brand-primary);
+    font-size: 0.68rem;
+    font-weight: 700;
+  }
+}
+
+.alert-action-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--color-surface-primary);
+  color: var(--color-text-secondary);
+  font-size: 0.72rem;
+  text-decoration: none;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.15s ease;
+
+  &:hover {
+    color: var(--color-brand-primary);
+    transform: translateX(2px);
+  }
+}
+
+// Agenda de hoy
+.today-schedule-list {
+  display: grid;
+  gap: 8px;
+}
+
+.schedule-slot-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--color-bg-secondary);
+
+  .slot-time {
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: var(--color-brand-primary);
+    min-width: 80px;
+  }
+
+  .slot-copy {
+    display: grid;
+    gap: 1px;
+
+    strong {
+      color: var(--color-text-primary);
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    small {
+      color: var(--color-text-secondary);
+      font-size: 0.68rem;
+    }
+  }
+}
+
+.empty-state-copy {
+  margin: 0;
+  padding: 16px;
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+}
+
 @keyframes dashboard-enter {
   from {
     opacity: 0;

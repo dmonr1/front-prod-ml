@@ -1,6 +1,6 @@
 import { Component, ElementRef, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { concatMap, forkJoin, from, toArray } from 'rxjs';
+import { concatMap, forkJoin, from, map, switchMap, toArray } from 'rxjs';
 import { CustomAlertComponent, CustomAlertType } from '../../components/custom-alert/custom-alert';
 import { Shell } from '../../layouts/shell/shell';
 import { AsignacionDocente } from '../../models/asignacion';
@@ -29,6 +29,17 @@ interface ResumenSeccion {
 }
 interface HuecoHorario { inicio: string; fin: string; minutos: number; }
 interface AlertState { open: boolean; type: CustomAlertType; title: string; message: string; confirmText: string | null; cancelText: string | null; autoCloseMs: number | null; }
+
+export interface DragItemData {
+  tipo: 'PENDIENTE' | 'HORARIO';
+  asignacionId: number;
+  curso: string;
+  docente: string;
+  cursoId: number;
+  horarioId?: number;
+  diaSemana?: DiaSemana;
+  bloqueId?: number;
+}
 
 @Component({
   selector: 'app-horarios',
@@ -79,6 +90,19 @@ export class Horarios implements OnInit {
   nuevoNombre = '';
   nuevaHoraInicio = '';
   nuevaHoraFin = '';
+
+  // Drag & drop signals
+  readonly dragItem = signal<DragItemData | null>(null);
+  readonly dropTargetSlot = signal<{ dia: DiaSemana; bloqueId: number } | null>(null);
+  readonly dropTargetClassId = signal<number | null>(null);
+  readonly dropTargetUnschedule = signal<boolean>(false);
+  readonly arrastrando = computed(() => this.dragItem() !== null);
+  readonly nombreCursoArrastrado = computed(() => this.dragItem()?.curso ?? '');
+  readonly tonoCursoArrastrado = computed(() => {
+    const data = this.dragItem();
+    return data ? this.tonoCursoPorId(data.cursoId) : '';
+  });
+
   readonly nivelAsignacion = computed(() => {
     const asignacion = this.asignaciones().find((item) => item.id === this.asignacionId());
     return this.cursos().find((curso) => curso.id === asignacion?.cursoId)?.nivelId ?? null;
@@ -201,7 +225,16 @@ export class Horarios implements OnInit {
       estado: !asignaciones.length ? 'SIN ASIGNACIONES' : pendientes ? 'PENDIENTE' : 'COMPLETO'
     };
   }));
-  readonly bloquesAsignacion = computed(() => this.bloques().filter((bloque) => bloque.nivelId === this.nivelAsignacion() && !bloque.esRecreo));
+  readonly bloquesAsignacion = computed(() => {
+    const targetNivelId = this.nivelAsignacion() ?? this.nivelId();
+    return this.bloques().filter((bloque) => bloque.nivelId === targetNivelId && !bloque.esRecreo);
+  });
+
+  bloquesVaciosPorDia(dia: DiaSemana): BloqueHorario[] {
+    const horariosDelDia = this.horariosPorDia(dia);
+    const bloquesOcupados = new Set(horariosDelDia.map((h) => h.bloqueHorarioId));
+    return this.bloquesAsignacion().filter((bloque) => !bloquesOcupados.has(bloque.id));
+  }
   readonly horariosOrdenados = computed(() => this.horarios().filter((item) => this.dias.some((dia) => dia.value === item.diaSemana)).sort((a, b) =>
     this.dias.findIndex((dia) => dia.value === a.diaSemana) - this.dias.findIndex((dia) => dia.value === b.diaSemana)
       || a.horaInicio.localeCompare(b.horaInicio)
@@ -546,6 +579,242 @@ export class Horarios implements OnInit {
       error: (e) => this.mostrarError(e, 'No se pudo retirar la clase.')
     });
   }
+
+  // ==========================================
+  // DRAG & DROP PROGRAMMING
+  // ==========================================
+
+  iniciarArrastrePendiente(event: DragEvent, asignacion: AsignacionDocente): void {
+    this.dragItem.set({
+      tipo: 'PENDIENTE',
+      asignacionId: asignacion.id,
+      curso: asignacion.curso,
+      docente: asignacion.docenteNombreCompleto,
+      cursoId: asignacion.cursoId
+    });
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'copyMove';
+      event.dataTransfer.setData('text/plain', JSON.stringify({ tipo: 'PENDIENTE', asignacionId: asignacion.id }));
+    }
+  }
+
+  iniciarArrastreHorario(event: DragEvent, item: HorarioSemanal): void {
+    this.dragItem.set({
+      tipo: 'HORARIO',
+      horarioId: item.id,
+      asignacionId: item.asignacionId,
+      curso: item.curso,
+      docente: item.docente,
+      cursoId: item.cursoId,
+      diaSemana: item.diaSemana,
+      bloqueId: item.bloqueHorarioId
+    });
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', JSON.stringify({ tipo: 'HORARIO', horarioId: item.id, asignacionId: item.asignacionId }));
+    }
+  }
+
+  finalizarArrastre(): void {
+    this.dragItem.set(null);
+    this.dropTargetSlot.set(null);
+    this.dropTargetClassId.set(null);
+    this.dropTargetUnschedule.set(false);
+  }
+
+  isDropTarget(dia: DiaSemana, bloqueId: number): boolean {
+    const t = this.dropTargetSlot();
+    return t !== null && t.dia === dia && t.bloqueId === bloqueId;
+  }
+
+  isDropTargetClass(horarioId: number): boolean {
+    return this.dropTargetClassId() === horarioId;
+  }
+
+  onDragOverSlot(event: DragEvent, dia: DiaSemana, bloqueId: number): void {
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+    const cur = this.dropTargetSlot();
+    if (!cur || cur.dia !== dia || cur.bloqueId !== bloqueId) {
+      this.dropTargetSlot.set({ dia, bloqueId });
+      this.dropTargetClassId.set(null);
+    }
+  }
+
+  onDragLeaveSlot(event: DragEvent, dia: DiaSemana, bloqueId: number): void {
+    const cur = this.dropTargetSlot();
+    if (cur && cur.dia === dia && cur.bloqueId === bloqueId) {
+      this.dropTargetSlot.set(null);
+    }
+  }
+
+  onDropOnSlot(event: DragEvent, dia: DiaSemana, bloqueId: number): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const data = this.dragItem();
+    this.finalizarArrastre();
+    if (!data) return;
+
+    if (data.tipo === 'PENDIENTE') {
+      this.programarAsignacionEnSlot(data.asignacionId, dia, bloqueId);
+    } else if (data.tipo === 'HORARIO' && data.horarioId) {
+      if (data.diaSemana === dia && data.bloqueId === bloqueId) return;
+      this.moverHorarioASlot(data.horarioId, data.asignacionId, dia, bloqueId);
+    }
+  }
+
+  onDragOverOccupied(event: DragEvent, item: HorarioSemanal): void {
+    const data = this.dragItem();
+    if (!data || (data.tipo === 'HORARIO' && data.horarioId === item.id)) return;
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+    if (this.dropTargetClassId() !== item.id) {
+      this.dropTargetClassId.set(item.id);
+      this.dropTargetSlot.set(null);
+    }
+  }
+
+  onDragLeaveOccupied(event: DragEvent, item: HorarioSemanal): void {
+    if (this.dropTargetClassId() === item.id) {
+      this.dropTargetClassId.set(null);
+    }
+  }
+
+  onDropOnOccupied(event: DragEvent, itemExistente: HorarioSemanal): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const data = this.dragItem();
+    this.finalizarArrastre();
+    if (!data) return;
+
+    if (data.tipo === 'HORARIO' && data.horarioId) {
+      if (data.horarioId === itemExistente.id) return;
+      this.intercambiarHorarios(data, itemExistente);
+    } else if (data.tipo === 'PENDIENTE') {
+      this.mostrarAlerta(
+        'warning',
+        'Horario ocupado',
+        `El bloque ya está asignado a "${itemExistente.curso}". Arrastra el curso a una celda disponible o retira primero la clase programada.`
+      );
+    }
+  }
+
+  onDragOverUnschedule(event: DragEvent): void {
+    if (this.dragItem()?.tipo !== 'HORARIO') return;
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+    this.dropTargetUnschedule.set(true);
+  }
+
+  onDragLeaveUnschedule(event: DragEvent): void {
+    this.dropTargetUnschedule.set(false);
+  }
+
+  onDropUnschedule(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const data = this.dragItem();
+    this.finalizarArrastre();
+    if (!data || data.tipo !== 'HORARIO' || !data.horarioId) return;
+
+    const itemAQuitar = this.horarios().find((h) => h.id === data.horarioId);
+    if (itemAQuitar) {
+      this.quitarHorario(itemAQuitar);
+    }
+  }
+
+  programarAsignacionEnSlot(asignacionId: number, diaSemana: DiaSemana, bloqueHorarioId: number): void {
+    const payload = { asignacionId, bloqueHorarioId, diaSemana };
+    this.guardando.set(true);
+    this.horarioService.crear(payload).subscribe({
+      next: (item) => {
+        this.horarios.update((items) => [...items, item]);
+        this.guardando.set(false);
+        this.mostrarAlerta(
+          'success',
+          'Clase programada',
+          `Se ubicó "${item.curso}" el ${this.etiquetaDia(diaSemana)} en ${item.bloque}.`
+        );
+      },
+      error: (e) => {
+        this.guardando.set(false);
+        this.mostrarError(e, 'No se pudo programar la clase en este bloque.');
+      }
+    });
+  }
+
+  moverHorarioASlot(horarioId: number, asignacionId: number, diaSemana: DiaSemana, bloqueHorarioId: number): void {
+    const payload = { asignacionId, bloqueHorarioId, diaSemana };
+    this.guardando.set(true);
+    this.horarioService.actualizar(horarioId, payload).subscribe({
+      next: (item) => {
+        this.horarios.update((items) => items.map((h) => h.id === item.id ? item : h));
+        this.guardando.set(false);
+        this.mostrarAlerta(
+          'success',
+          'Horario reubicado',
+          `Se trasladó "${item.curso}" a ${this.etiquetaDia(diaSemana)} en ${item.bloque}.`
+        );
+      },
+      error: (e) => {
+        this.guardando.set(false);
+        this.mostrarError(e, 'No se pudo mover la clase a este horario.');
+      }
+    });
+  }
+
+  intercambiarHorarios(itemA: DragItemData, itemB: HorarioSemanal): void {
+    if (!itemA.horarioId || !itemA.diaSemana || !itemA.bloqueId) return;
+    this.guardando.set(true);
+    this.horarioService.cambiarEstado(itemB.id, false).pipe(
+      switchMap(() =>
+        this.horarioService.actualizar(itemA.horarioId!, {
+          asignacionId: itemA.asignacionId,
+          diaSemana: itemB.diaSemana,
+          bloqueHorarioId: itemB.bloqueHorarioId
+        })
+      ),
+      switchMap((horarioAActualizado) =>
+        this.horarioService.crear({
+          asignacionId: itemB.asignacionId,
+          diaSemana: itemA.diaSemana!,
+          bloqueHorarioId: itemA.bloqueId!
+        }).pipe(
+          map((horarioBNuevo) => ({ horarioA: horarioAActualizado, horarioB: horarioBNuevo }))
+        )
+      )
+    ).subscribe({
+      next: ({ horarioA, horarioB }) => {
+        this.horarios.update((items) =>
+          items.filter((h) => h.id !== itemB.id && h.id !== itemA.horarioId)
+            .concat([horarioA, horarioB])
+        );
+        this.guardando.set(false);
+        this.mostrarAlerta(
+          'success',
+          'Clases intercambiadas',
+          `Se intercambió "${horarioA.curso}" con "${horarioB.curso}".`
+        );
+      },
+      error: (e) => {
+        this.guardando.set(false);
+        if (this.periodoId()) {
+          this.cargarAsignaciones(this.periodoId()!);
+        }
+        this.mostrarError(e, 'No se pudieron intercambiar los horarios.');
+      }
+    });
+  }
+
+  seleccionarCeldaVacia(dia: DiaSemana, bloqueId: number): void {
+    this.diaSemana.set(dia);
+    this.bloqueHorarioId.set(bloqueId);
+    const pendientes = this.asignacionesPendientes();
+    if (pendientes.length && (!this.asignacionId() || !pendientes.some((p) => p.id === this.asignacionId()))) {
+      this.asignacionId.set(pendientes[0].id);
+    }
+  }
+
 
   etiquetaDia(value: DiaSemana): string {
     return this.dias.find((dia) => dia.value === value)?.label ?? value;

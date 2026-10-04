@@ -12,9 +12,23 @@
             Sistema activo
           </span>
           <span class="status-pill">
-            <i class="fa-regular fa-clock"></i>
-            Último corte hoy 11:26
+            <i class="fa-solid fa-brain"></i>
+            ML: {{ mlStatus()?.algoritmoActivo ?? 'En línea' }}
           </span>
+          <span class="status-pill">
+            <i class="fa-regular fa-calendar"></i>
+            Período: {{ periodoActivoLabel() }}
+          </span>
+          <span class="status-pill">
+            <i class="fa-regular fa-clock"></i>
+            Corte: {{ periodoEvaluacionLabel() }}
+          </span>
+          @if (totalAlertasPendientes() > 0) {
+            <span class="status-pill is-alert">
+              <i class="fa-solid fa-bell"></i>
+              {{ totalAlertasPendientes() }} alertas
+            </span>
+          }
         </div>
       </div>
     </article>
@@ -38,6 +52,72 @@
 
     <section class="dashboard-layout dashboard-slide dashboard-slide-bottom">
       <div class="dashboard-main">
+        <!-- Tarjeta de Inteligencia Predictiva y Distribución de Riesgo -->
+        <article class="dashboard-surface section-card">
+          <div class="section-head">
+            <div>
+              <span class="section-kicker">Inteligencia predictiva</span>
+              <h2>Salud del modelo y semáforo institucional</h2>
+            </div>
+            <a class="section-action-link" routerLink="/modelos-ml">
+              <span>Configurar modelos</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </a>
+          </div>
+
+          <div class="ml-insight-panel">
+            <div class="ml-model-badge-row">
+              <div class="ml-model-info">
+                <span class="ml-badge-tag"><i class="fa-solid fa-microchip"></i> Producción</span>
+                <strong>{{ mlStatus()?.algoritmoActivo }}</strong>
+                <small>F1: {{ mlStatus()?.f1Score }}% · Precisión: {{ mlStatus()?.precision }}% · Recall: {{ mlStatus()?.recall }}%</small>
+              </div>
+              <div class="ml-retrain-info">
+                <span>Próximo reentrenamiento:</span>
+                <strong>{{ mlStatus()?.proximoReentrenamiento }}</strong>
+              </div>
+            </div>
+
+            <div class="risk-semaphore-wrapper">
+              <div class="risk-bar-track">
+                <div class="risk-bar-fill high" [style.width]="riesgoDistribucion().porcentajeAlto + '%'" [title]="'Riesgo Alto: ' + riesgoDistribucion().porcentajeAlto + '%'"></div>
+                <div class="risk-bar-fill medium" [style.width]="riesgoDistribucion().porcentajeMedio + '%'" [title]="'Riesgo Medio: ' + riesgoDistribucion().porcentajeMedio + '%'"></div>
+                <div class="risk-bar-fill low" [style.width]="riesgoDistribucion().porcentajeBajo + '%'" [title]="'Riesgo Bajo: ' + riesgoDistribucion().porcentajeBajo + '%'"></div>
+              </div>
+
+              <div class="risk-tags-grid">
+                <div class="risk-tag-card is-high">
+                  <span class="risk-dot high"></span>
+                  <div class="risk-tag-data">
+                    <span class="risk-tag-label">Riesgo Alto</span>
+                    <strong>{{ riesgoDistribucion().alto }} alumnos</strong>
+                    <small>{{ riesgoDistribucion().porcentajeAlto }}% de evaluados</small>
+                  </div>
+                </div>
+
+                <div class="risk-tag-card is-medium">
+                  <span class="risk-dot medium"></span>
+                  <div class="risk-tag-data">
+                    <span class="risk-tag-label">Riesgo Medio</span>
+                    <strong>{{ riesgoDistribucion().medio }} alumnos</strong>
+                    <small>{{ riesgoDistribucion().porcentajeMedio }}% de evaluados</small>
+                  </div>
+                </div>
+
+                <div class="risk-tag-card is-low">
+                  <span class="risk-dot low"></span>
+                  <div class="risk-tag-data">
+                    <span class="risk-tag-label">Riesgo Bajo</span>
+                    <strong>{{ riesgoDistribucion().bajo }} alumnos</strong>
+                    <small>{{ riesgoDistribucion().porcentajeBajo }}% de evaluados</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Cobertura operativa por módulo -->
         <article class="dashboard-surface section-card">
           <div class="section-head">
             <div>
@@ -61,6 +141,7 @@
           </div>
         </article>
 
+        <!-- Accesos rápidos -->
         <article class="dashboard-surface section-card">
           <div class="section-head">
             <div>
@@ -81,30 +162,41 @@
       </div>
 
       <aside class="dashboard-side">
+        <!-- Monitor de Seguridad y Auditoría -->
         <article class="dashboard-surface side-card">
           <div class="section-head">
             <div>
-              <span class="section-kicker">Actividad reciente</span>
-              <h2>Movimiento del sistema</h2>
+              <span class="section-kicker">Seguridad y trazabilidad</span>
+              <h2>Auditoría reciente</h2>
             </div>
+            <a class="section-action-link" routerLink="/auditoria">
+              <span>Ver visor</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </a>
           </div>
 
-          <div class="activity-list">
-            @for (item of actividad(); track item.time + item.title) {
-              <div class="activity-row">
-                <span class="activity-icon"><i [class]="item.icon"></i></span>
-                <div class="activity-copy">
-                  <div class="activity-title">
-                    <strong>{{ item.title }}</strong>
-                    <span>{{ item.time }}</span>
-                  </div>
-                  <p>{{ item.detail }}</p>
+          <div class="audit-feed-list">
+            @for (log of auditoriaReciente(); track log.id) {
+              <div class="audit-feed-item">
+                <div class="audit-feed-head">
+                  <span class="audit-pill" [class]="'is-' + log.nivelCriticidad.toLowerCase()">
+                    {{ log.nivelCriticidad }}
+                  </span>
+                  <span class="audit-feed-time">{{ log.fechaEvento | slice:11:16 }}</span>
+                </div>
+                <strong class="audit-feed-title">{{ log.descripcion }}</strong>
+                <div class="audit-feed-meta">
+                  <span><i class="fa-regular fa-user"></i> {{ log.usuarioUsername }}</span>
+                  <span><i class="fa-solid fa-cube"></i> {{ log.modulo }}</span>
                 </div>
               </div>
+            } @empty {
+              <p class="empty-state-copy">Sin incidentes recientes de seguridad registrados.</p>
             }
           </div>
         </article>
 
+        <!-- Pendientes Clave -->
         <article class="dashboard-surface side-card">
           <div class="section-head">
             <div>

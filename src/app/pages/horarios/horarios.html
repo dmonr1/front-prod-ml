@@ -173,12 +173,60 @@
               </article>
               }
               @for (dia of dias; track dia.value) {
-              <div class="timetable-day-lane" [style.height.px]="rangoProgramacion().alto">
+              <div class="timetable-day-lane" [class.has-dragging-active]="arrastrando()" [style.height.px]="rangoProgramacion().alto">
                 @for (marca of rangoProgramacion().marcas; track marca) { <span class="timetable-grid-mark"
                   [style.top.px]="posicionMarcaProgramacion(marca)"></span> }
+
+                <!-- Celdas disponibles para soltar (Drop Targets) -->
+                @for (bloque of bloquesVaciosPorDia(dia.value); track bloque.id) {
+                <div class="timetable-empty-slot"
+                  [class.is-drop-target]="isDropTarget(dia.value, bloque.id)"
+                  [class.is-drag-active]="arrastrando()"
+                  [style.top.px]="posicionBloque(bloque)"
+                  [style.height.px]="altoBloque(bloque)"
+                  (dragover)="onDragOverSlot($event, dia.value, bloque.id)"
+                  (dragleave)="onDragLeaveSlot($event, dia.value, bloque.id)"
+                  (drop)="onDropOnSlot($event, dia.value, bloque.id)"
+                  (click)="seleccionarCeldaVacia(dia.value, bloque.id)"
+                  title="Haz clic para seleccionar o arrastra un curso aquí">
+                  <div class="empty-slot-content">
+                    @if (isDropTarget(dia.value, bloque.id)) {
+                    <div class="drop-target-active-box">
+                      <i class="fa-solid fa-arrow-down-to-bracket drop-target-icon"></i>
+                      <strong class="drop-target-title">Soltar aquí</strong>
+                      <span class="drop-target-subtitle">{{ bloque.nombre }}</span>
+                    </div>
+                    } @else if (arrastrando()) {
+                    <div class="drop-hint-box">
+                      <i class="fa-solid fa-circle-plus"></i>
+                      <span>{{ bloque.nombre }}</span>
+                    </div>
+                    } @else {
+                    <div class="slot-idle-box">
+                      <span class="slot-idle-label">{{ bloque.nombre }}</span>
+                      <small class="slot-idle-time">{{ formatearHora(bloque.horaInicio) }}–{{ formatearHora(bloque.horaFin) }}</small>
+                    </div>
+                    }
+                  </div>
+                </div>
+                }
+
+                <!-- Clases programadas (draggable para mover/intercambiar) -->
                 @for (item of horariosPorDia(dia.value); track item.id) {
-                <article [class]="'timetable-class ' + tonoClase(item)" [style.top.px]="posicionProgramacion(item)"
-                  [style.height.px]="altoProgramacion(item)">
+                <article [class]="'timetable-class ' + tonoClase(item)"
+                  [class.is-class-dragging]="dragItem()?.tipo === 'HORARIO' && dragItem()?.horarioId === item.id"
+                  [class.is-drop-target-class]="isDropTargetClass(item.id)"
+                  [style.top.px]="posicionProgramacion(item)"
+                  [style.height.px]="altoProgramacion(item)"
+                  draggable="true"
+                  (dragstart)="iniciarArrastreHorario($event, item)"
+                  (dragend)="finalizarArrastre()"
+                  (dragover)="onDragOverOccupied($event, item)"
+                  (dragleave)="onDragLeaveOccupied($event, item)"
+                  (drop)="onDropOnOccupied($event, item)">
+                  <div class="timetable-class-drag-indicator" title="Arrastra para mover a otro día u horario">
+                    <i class="fa-solid fa-grip-vertical"></i>
+                  </div>
                   <div class="timetable-class-content">
                     <strong>{{ item.curso }}</strong><small>{{ item.docente }}</small>
                     <span>{{ formatearHora(item.horaInicio) }}–{{ formatearHora(item.horaFin) }} · {{ item.bloque
@@ -235,11 +283,45 @@
             (click)="abrirModalBloque()"><i class="fa-regular fa-clock"></i> Configurar bloques</button> }
           }
           @if (asignacionesPendientes().length) {
-          <div class="pending-assignment-list">
-            <h4>Cursos pendientes <span>{{ asignacionesPendientes().length }}</span></h4>
+          <div class="pending-assignment-list"
+            [class.is-drop-zone-unschedule]="dragItem()?.tipo === 'HORARIO'"
+            (dragover)="onDragOverUnschedule($event)"
+            (dragleave)="onDragLeaveUnschedule($event)"
+            (drop)="onDropUnschedule($event)">
+            <h4>
+              <span>Cursos pendientes</span>
+              <span class="pending-count-pill">{{ asignacionesPendientes().length }}</span>
+            </h4>
+            <p class="pending-drag-instruction">
+              <i class="fa-solid fa-hand-pointer"></i>
+              Arrastra un curso a la celda del horario o haz clic para seleccionarlo.
+            </p>
+            @if (dragItem()?.tipo === 'HORARIO' && dropTargetUnschedule()) {
+            <div class="drop-unschedule-box">
+              <i class="fa-solid fa-arrow-turn-up"></i>
+              <span>Soltar aquí para retirar clase del horario</span>
+            </div>
+            }
             @for (asignacion of asignacionesPendientes(); track asignacion.id) {
-            <button type="button" (click)="seleccionarAsignacionPendiente(asignacion.id)" [class]="'pending-course-item ' + tonoCursoPorId(asignacion.cursoId)">
-              <strong>{{ asignacion.curso }}</strong><small>{{ asignacion.docenteNombreCompleto }}</small>
+            <button type="button"
+              [class]="'pending-course-item ' + tonoCursoPorId(asignacion.cursoId)"
+              [class.is-dragging]="dragItem()?.tipo === 'PENDIENTE' && dragItem()?.asignacionId === asignacion.id"
+              [class.is-selected]="asignacionId() === asignacion.id"
+              draggable="true"
+              (dragstart)="iniciarArrastrePendiente($event, asignacion)"
+              (dragend)="finalizarArrastre()"
+              (click)="seleccionarAsignacionPendiente(asignacion.id)"
+              title="Arrastra este curso y suéltalo en cualquier celda libre del horario">
+              <div class="pending-course-drag-handle">
+                <i class="fa-solid fa-grip-vertical"></i>
+              </div>
+              <div class="pending-course-info">
+                <strong>{{ asignacion.curso }}</strong>
+                <small>{{ asignacion.docenteNombreCompleto }}</small>
+              </div>
+              <div class="pending-course-badge" title="Listo para ubicar">
+                <i class="fa-solid fa-calendar-plus"></i>
+              </div>
             </button>
             }
           </div>
