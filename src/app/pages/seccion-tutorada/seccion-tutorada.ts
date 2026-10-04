@@ -367,6 +367,12 @@ export class SeccionTutorada implements OnInit {
     });
   }
 
+  obtenerColorPortadaTutoria(tutoria: Tutoria): string {
+    const paleta = ['#0f766e', '#1d5fc4', '#1e40af', '#4338ca', '#0891b2', '#2563eb'];
+    const idx = Math.abs(tutoria.id || 0) % paleta.length;
+    return paleta[idx];
+  }
+
   toggleSelectorTutoria(): void {
     if (this.tutoriasDisponibles().length <= 1) {
       return;

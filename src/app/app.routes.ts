@@ -201,6 +201,14 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/alertas-academicas/alertas-academicas').then((m) => m.AlertasAcademicas)
       },
       {
+        path: 'auditoria',
+        loadComponent: () => import('./pages/auditoria-logs/auditoria-logs').then((m) => m.AuditoriaLogs)
+      },
+      {
+        path: 'modelos-ml',
+        loadComponent: () => import('./pages/modelos-ml/modelos-ml').then((m) => m.ModelosMl)
+      },
+      {
         path: 'reportes',
         redirectTo: 'hallazgos',
         pathMatch: 'full'

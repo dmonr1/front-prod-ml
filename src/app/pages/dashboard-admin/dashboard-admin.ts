@@ -70,7 +70,9 @@ export class DashboardAdmin implements OnInit {
     { label: 'Asignaciones docentes', path: '/asignaciones-docente', icon: 'fa-solid fa-chalkboard-user' },
     { label: 'Tutorías por sección', path: '/tutorias-seccion', icon: 'fa-solid fa-people-roof' },
     { label: 'Predicción de riesgo', path: '/predicciones', icon: 'fa-solid fa-chart-line' },
-    { label: 'Hallazgos y recomendaciones', path: '/hallazgos', icon: 'fa-solid fa-magnifying-glass-chart' }
+    { label: 'Hallazgos y recomendaciones', path: '/hallazgos', icon: 'fa-solid fa-magnifying-glass-chart' },
+    { label: 'Predictores y modelos ML', path: '/modelos-ml', icon: 'fa-solid fa-brain' },
+    { label: 'Auditoría del sistema', path: '/auditoria', icon: 'fa-solid fa-shield-halved' }
   ] as const;
 
   ngOnInit(): void {

@@ -1,0 +1,326 @@
+<app-shell>
+  <section class="page-card ml-admin-page">
+    <header class="page-header">
+      <div class="header-titles">
+        <span class="eyebrow"><i class="fa-solid fa-brain"></i> Machine Learning e Inteligencia Analítica</span>
+        <h1>Configuración de Predictores y Modelos Analíticos</h1>
+        <p class="subtitle">
+          Administración de variables predictoras (CP-34), comparador multialgoritmo (CP-81 / CP-83) y planificador de reentrenamiento continuo.
+        </p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-secondary" (click)="cargarDatos()" [disabled]="cargando()">
+          <i class="fa-solid fa-arrows-rotate" [class.fa-spin]="cargando()"></i> Sincronizar
+        </button>
+      </div>
+    </header>
+
+    <!-- Pestañas de Navegación -->
+    <nav class="nav-tabs">
+      <button
+        class="tab-btn"
+        [class.active]="tabActiva() === 'predictores'"
+        (click)="cambiarTab('predictores')"
+      >
+        <i class="fa-solid fa-sliders"></i>
+        <span>Variables Predictoras</span>
+      </button>
+
+      <button
+        class="tab-btn"
+        [class.active]="tabActiva() === 'comparador'"
+        (click)="cambiarTab('comparador')"
+      >
+        <i class="fa-solid fa-chart-simple"></i>
+        <span>Comparador Multialgoritmo</span>
+      </button>
+
+      <button
+        class="tab-btn"
+        [class.active]="tabActiva() === 'planificador'"
+        (click)="cambiarTab('planificador')"
+      >
+        <i class="fa-solid fa-calendar-check"></i>
+        <span>Planificador de Reentrenamiento</span>
+      </button>
+    </nav>
+
+    <!-- Alertas -->
+    @if (mensajeExito()) {
+      <div class="alert-box alert-success">
+        <i class="fa-solid fa-circle-check"></i>
+        <span>{{ mensajeExito() }}</span>
+      </div>
+    }
+    @if (error()) {
+      <div class="alert-box alert-error">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span>{{ error() }}</span>
+      </div>
+    }
+
+    <!-- TAB 1: VARIABLES PREDICTORAS (CP-34) -->
+    @if (tabActiva() === 'predictores') {
+      <section class="tab-content">
+        <div class="summary-cards-row">
+          <div class="mini-kpi">
+            <span class="label">Predictores Globales Activos</span>
+            <span class="val">{{ conteoActivos('GLOBAL') }} / {{ conteoTotal('GLOBAL') }}</span>
+            <span class="sub">FEATURES_GLOBALES en producción</span>
+          </div>
+
+          <div class="mini-kpi">
+            <span class="label">Predictores por Curso Activos</span>
+            <span class="val">{{ conteoActivos('CURSO') }} / {{ conteoTotal('CURSO') }}</span>
+            <span class="sub">FEATURES_CURSO en producción</span>
+          </div>
+
+          <div class="mini-kpi">
+            <span class="label">Estado del Pipeline</span>
+            <span class="val text-success"><i class="fa-solid fa-check"></i> Dinámico</span>
+            <span class="sub">Editable vía API & Web</span>
+          </div>
+        </div>
+
+        <div class="toolbar-box">
+          <div class="filter-controls">
+            <div class="filter-field">
+              <label for="filtroNivelPredictor">Ámbito</label>
+              <select id="filtroNivelPredictor" [(ngModel)]="tipoPredictorFiltro">
+                <option value="TODOS">Todos los ámbitos</option>
+                <option value="GLOBAL">Riesgo Global (Institucional)</option>
+                <option value="CURSO">Riesgo Específico por Curso</option>
+              </select>
+            </div>
+
+            <div class="filter-field">
+              <label for="filtroCategoriaPredictor">Categoría</label>
+              <select id="filtroCategoriaPredictor" [(ngModel)]="categoriaFiltro">
+                <option value="TODAS">Todas las categorías</option>
+                <option value="ACADEMICO">Académico</option>
+                <option value="ASISTENCIA">Asistencia</option>
+                <option value="EVALUATIVO">Evaluativo</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="action-buttons">
+            <button class="btn btn-secondary" (click)="restablecerPredictores()" [disabled]="guardando()">
+              <i class="fa-solid fa-rotate-left"></i> Restablecer todos
+            </button>
+            <button class="btn btn-primary" (click)="guardarConfiguracionPredictores()" [disabled]="guardando()">
+              <i class="fa-solid fa-floppy-disk" [class.fa-spin]="guardando()"></i> Guardar cambios
+            </button>
+          </div>
+        </div>
+
+        <!-- Lista de Predictores -->
+        <div class="predictors-grid">
+          @for (predictor of predictoresFiltrados(); track predictor.key + predictor.tipo) {
+            <div class="predictor-card" [class.inactive]="!predictor.activo">
+              <div class="card-header">
+                <div class="type-and-cat">
+                  <span class="scope-badge" [class.global]="predictor.tipo === 'GLOBAL'">
+                    {{ predictor.tipo === 'GLOBAL' ? 'Global' : 'Por Curso' }}
+                  </span>
+                  <span class="category-chip" [ngClass]="obtenerClaseCategoria(predictor.categoria)">
+                    <i [class]="obtenerIconoCategoria(predictor.categoria)"></i> {{ predictor.categoria }}
+                  </span>
+                </div>
+                <label class="switch-toggle" [title]="predictor.activo ? 'Desactivar predictor' : 'Activar predictor'">
+                  <input type="checkbox" [(ngModel)]="predictor.activo" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div class="card-body">
+                <h3 class="predictor-title">{{ predictor.label }}</h3>
+                <span class="predictor-key font-mono">{{ predictor.key }}</span>
+                <p class="predictor-desc">{{ predictor.descripcion }}</p>
+              </div>
+
+              <div class="card-footer">
+                <div class="weight-control">
+                  <label>Ponderación / Peso:</label>
+                  <input
+                    type="number"
+                    min="0.1"
+                    max="5.0"
+                    step="0.1"
+                    [(ngModel)]="predictor.peso"
+                    [disabled]="!predictor.activo"
+                  />
+                </div>
+                <span class="status-indicator" [class.active]="predictor.activo">
+                  <i class="fa-solid" [class.fa-check]="predictor.activo" [class.fa-ban]="!predictor.activo"></i>
+                  {{ predictor.activo ? 'Habilitado' : 'Retirado' }}
+                </span>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+    }
+
+    <!-- TAB 2: COMPARADOR MULTIALGORITMO (CP-81 / CP-83) -->
+    @if (tabActiva() === 'comparador') {
+      <section class="tab-content">
+        @if (comparativa(); as comp) {
+          <div class="comparison-banner">
+            <div class="banner-info">
+              <span class="badge-champion"><i class="fa-solid fa-trophy"></i> Modelo Recomendado</span>
+              <h2>{{ comp.modeloRecomendado }}</h2>
+              <p>
+                Optimizado mediante <strong>{{ comp.metricaOptimizada }}</strong> sobre un total de {{ comp.totalRegistrosEvaluados }} registros longitudinales agrupados por estudiante.
+              </p>
+            </div>
+            <div class="banner-meta">
+              <span>Evaluación: {{ comp.fechaEvaluacion }}</span>
+            </div>
+          </div>
+
+          <!-- Grid de Algoritmos -->
+          <div class="models-grid">
+            @for (alg of comp.algoritmos; track alg.id) {
+              <div class="model-card" [class.champion]="alg.ranking === 1">
+                <div class="model-header">
+                  <div class="rank-badge" [class.first]="alg.ranking === 1">
+                    #{{ alg.ranking }}
+                  </div>
+                  <div>
+                    <h3 class="model-name">{{ alg.nombre }}</h3>
+                    <span class="model-family">{{ alg.familia }}</span>
+                  </div>
+                  <span class="status-pill" [class.active]="alg.estado === 'ACTIVO'">
+                    {{ alg.estado }}
+                  </span>
+                </div>
+
+                <div class="metrics-grid">
+                  <div class="metric-item">
+                    <span class="metric-name">F1-Score</span>
+                    <span class="metric-val highlight">{{ (alg.f1Score * 100) | number:'1.2-2' }}%</span>
+                  </div>
+                  <div class="metric-item">
+                    <span class="metric-name">ROC-AUC</span>
+                    <span class="metric-val">{{ (alg.rocAuc * 100) | number:'1.2-2' }}%</span>
+                  </div>
+                  <div class="metric-item">
+                    <span class="metric-name">Accuracy</span>
+                    <span class="metric-val">{{ (alg.accuracy * 100) | number:'1.2-2' }}%</span>
+                  </div>
+                  <div class="metric-item">
+                    <span class="metric-name">Precision</span>
+                    <span class="metric-val">{{ (alg.precision * 100) | number:'1.2-2' }}%</span>
+                  </div>
+                  <div class="metric-item">
+                    <span class="metric-name">Recall</span>
+                    <span class="metric-val">{{ (alg.recall * 100) | number:'1.2-2' }}%</span>
+                  </div>
+                  <div class="metric-item">
+                    <span class="metric-name">Latencia</span>
+                    <span class="metric-val">{{ alg.latenciaMs }} ms</span>
+                  </div>
+                </div>
+
+                <div class="hyperparams-section">
+                  <span class="hyperparams-title"><i class="fa-solid fa-code"></i> Hiperparámetros Clave:</span>
+                  <div class="params-chips">
+                    @for (item of alg.hiperparametros | keyvalue; track item.key) {
+                      <span class="param-tag">{{ item.key }}: <strong>{{ item.value }}</strong></span>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="loading-state">
+            <i class="fa-solid fa-circle-notch fa-spin"></i>
+            <span>Cargando comparativa de modelos analíticos...</span>
+          </div>
+        }
+      </section>
+    }
+
+    <!-- TAB 3: PLANIFICADOR DE REENTRENAMIENTO (CP-31 / CP-83) -->
+    @if (tabActiva() === 'planificador') {
+      <section class="tab-content">
+        @if (planificador(); as plan) {
+          <div class="scheduler-card">
+            <div class="scheduler-header">
+              <div>
+                <span class="cadence-tag"><i class="fa-regular fa-clock"></i> {{ plan.cadencia }}</span>
+                <h2>Pipeline de Reentrenamiento Continuo</h2>
+                <p>{{ plan.mensaje }}</p>
+              </div>
+              <button
+                class="btn btn-primary btn-large"
+                (click)="ejecutarReentrenamientoManual()"
+                [disabled]="reentrenando()"
+              >
+                <i class="fa-solid fa-bolt" [class.fa-spin]="reentrenando()"></i>
+                {{ reentrenando() ? 'Reentrenando modelos...' : 'Ejecutar reentrenamiento ahora' }}
+              </button>
+            </div>
+
+            <div class="scheduler-details-grid">
+              <div class="detail-tile">
+                <span class="tile-icon"><i class="fa-solid fa-calendar-day"></i></span>
+                <div class="tile-body">
+                  <span class="tile-label">Próxima ejecución programada</span>
+                  <span class="tile-value">{{ plan.proximaEjecucionProgramada }}</span>
+                </div>
+              </div>
+
+              <div class="detail-tile">
+                <span class="tile-icon"><i class="fa-solid fa-history"></i></span>
+                <div class="tile-body">
+                  <span class="tile-label">Último reentrenamiento ejecutado</span>
+                  <span class="tile-value">{{ plan.ultimoReentrenamiento }}</span>
+                </div>
+              </div>
+
+              <div class="detail-tile">
+                <span class="tile-icon"><i class="fa-solid fa-circle-check text-success"></i></span>
+                <div class="tile-body">
+                  <span class="tile-label">Estado de la última ejecución</span>
+                  <span class="tile-value text-success">{{ plan.estadoUltimoReentrenamiento }}</span>
+                </div>
+              </div>
+
+              <div class="detail-tile">
+                <span class="tile-icon"><i class="fa-solid fa-database"></i></span>
+                <div class="tile-body">
+                  <span class="tile-label">Registros en set de entrenamiento</span>
+                  <span class="tile-value">{{ plan.registrosEntrenamiento }} instancias</span>
+                </div>
+              </div>
+
+              <div class="detail-tile">
+                <span class="tile-icon"><i class="fa-solid fa-code-branch"></i></span>
+                <div class="tile-body">
+                  <span class="tile-label">Versión de modelo en producción</span>
+                  <span class="tile-value font-mono">{{ plan.modeloActualVersion }}</span>
+                </div>
+              </div>
+
+              <div class="detail-tile">
+                <span class="tile-icon"><i class="fa-solid fa-gear"></i></span>
+                <div class="tile-body">
+                  <span class="tile-label">Modo de reentrenamiento</span>
+                  <span class="tile-value">{{ plan.modoReentrenamiento }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        } @else {
+          <div class="loading-state">
+            <i class="fa-solid fa-circle-notch fa-spin"></i>
+            <span>Cargando estado del planificador de reentrenamiento...</span>
+          </div>
+        }
+      </section>
+    }
+  </section>
+</app-shell>

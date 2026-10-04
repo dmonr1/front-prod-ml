@@ -97,23 +97,54 @@
       <div class="cards-surface">
         <section class="tutoria-section-grid" aria-label="Secciones tutoradas">
           @for (item of tutoriasDisponibles(); track item.id) {
-            <article class="tutoria-section-card">
-              <div class="tutoria-card-main">
-                <span class="tutoria-level-tag">{{ item.nivel }}</span>
-                <h3>{{ item.grado }} · Sección {{ item.seccion }}</h3>
-                <p>Período {{ item.periodoAcademico }}</p>
+            <article class="flow-card tutoria-flow-card">
+              <div class="course-cover" [style.--course-cover]="obtenerColorPortadaTutoria(item)">
+                <div class="course-cover-watermark">
+                  <i class="fa-solid fa-graduation-cap"></i>
+                </div>
+                <span class="course-cover-badge">{{ item.nivel }}</span>
               </div>
-              <div class="tutoria-card-actions">
-                <button type="button" class="section-action secondary" (click)="verHorarioTutoria(item)">
-                  <i class="fa-regular fa-calendar-days"></i><span>Ver horario</span>
-                </button>
-                <button type="button" class="section-action primary" (click)="verSeguimientoTutoria(item)">
-                  <i class="fa-solid fa-chart-line"></i><span>Notas y asistencia</span>
-                </button>
+
+              <div class="flow-card-body">
+                <div class="flow-card-top">
+                  <span class="flow-title">{{ item.grado }}</span>
+                  <span class="flow-title-icon" [title]="'Sección ' + item.seccion">
+                    <i class="fa-solid fa-chalkboard-user"></i>
+                    <span>Sección {{ item.seccion }}</span>
+                  </span>
+                </div>
+
+                <div class="flow-meta-row">
+                  <strong>{{ item.docenteNombreCompleto || 'Acompañamiento y tutoría' }}</strong>
+                  <span class="flow-meta-chip">Período {{ item.periodoAcademico || '2026' }}</span>
+                </div>
+              </div>
+
+              <div class="flow-card-footer">
+                <div class="flow-card-actions">
+                  <button type="button" class="flow-link-button btn-horario" (click)="verHorarioTutoria(item)"
+                    title="Ver horario de la sección">
+                    <i class="fa-regular fa-calendar-days"></i>
+                    <span>Ver horario</span>
+                  </button>
+                  <button type="button" class="flow-link-button secondary" (click)="verSeguimientoTutoria(item)"
+                    title="Ver notas y asistencia de la sección">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>Notas y asistencia</span>
+                  </button>
+                </div>
               </div>
             </article>
           }
         </section>
+      </div>
+    } @else if (!mostrarSkeleton() && !tutoriaIdRuta && !tutoriasDisponibles().length) {
+      <div class="cards-surface state-surface">
+        <div class="empty-state-card">
+          <div class="empty-state-badge"><i class="fa-solid fa-chalkboard-user"></i></div>
+          <strong class="empty-state-title">No tienes secciones tutoradas asignadas</strong>
+          <p class="empty-state-desc">No se encontraron tutorías asignadas a tu cuenta para el período académico actual.</p>
+        </div>
       </div>
     }
 

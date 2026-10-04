@@ -838,11 +838,20 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
       error: (error) => {
         this.recoveryLoading.set(false);
         this.recoveryError.set('');
+        const mensaje = formatearMensajeError(error, 'El código no pudo verificarse.');
         this.mostrarAlerta(
           'error',
           'Código no verificado',
-          formatearMensajeError(error, 'El código no pudo verificarse.')
+          mensaje
         );
+        if (
+          mensaje.toLowerCase().includes('superado') ||
+          mensaje.toLowerCase().includes('excedio') ||
+          mensaje.toLowerCase().includes('expir')
+        ) {
+          this.recoveryToken.set('');
+          this.reiniciarRecuperacion(false);
+        }
       }
     });
   }
@@ -908,11 +917,16 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
         error: (error) => {
           this.recoveryLoading.set(false);
           this.recoveryError.set('');
+          const mensaje = formatearMensajeError(error, 'No se pudo actualizar la contraseña.');
           this.mostrarAlerta(
             'error',
             'No se pudo actualizar',
-            formatearMensajeError(error, 'No se pudo actualizar la contraseña.')
+            mensaje
           );
+          if (mensaje.toLowerCase().includes('expir') || mensaje.toLowerCase().includes('invalido')) {
+            this.recoveryToken.set('');
+            this.reiniciarRecuperacion(false);
+          }
         }
       });
   }

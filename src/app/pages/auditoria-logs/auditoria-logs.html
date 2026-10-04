@@ -1,0 +1,250 @@
+<app-shell>
+  <section class="page-card audit-page">
+    <header class="page-header">
+      <div class="header-titles">
+        <span class="eyebrow"><i class="fa-solid fa-shield-halved"></i> Seguridad y Control Interno</span>
+        <h1>Visor de Logs de Auditoría</h1>
+        <p class="subtitle">
+          Supervisión de eventos críticos, trazabilidad de ediciones de asistencia y auditoría de importaciones masivas.
+        </p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-secondary" (click)="cargarLogs()" [disabled]="cargando()">
+          <i class="fa-solid fa-arrows-rotate" [class.fa-spin]="cargando()"></i> Actualizar
+        </button>
+      </div>
+    </header>
+
+    <!-- KPIs de Auditoría -->
+    @if (estadisticas(); as stats) {
+      <div class="kpi-grid">
+        <div class="kpi-card total">
+          <div class="kpi-icon"><i class="fa-solid fa-list-check"></i></div>
+          <div class="kpi-content">
+            <span class="kpi-value">{{ stats.totalEventos }}</span>
+            <span class="kpi-label">Eventos auditados</span>
+          </div>
+        </div>
+
+        <div class="kpi-card critical">
+          <div class="kpi-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+          <div class="kpi-content">
+            <span class="kpi-value">{{ stats.totalCriticos }}</span>
+            <span class="kpi-label">Eventos críticos</span>
+          </div>
+        </div>
+
+        <div class="kpi-card warning">
+          <div class="kpi-icon"><i class="fa-solid fa-file-excel"></i></div>
+          <div class="kpi-content">
+            <span class="kpi-value">{{ stats.totalCargasArchivos }}</span>
+            <span class="kpi-label">Cargas de Excel</span>
+          </div>
+        </div>
+
+        <div class="kpi-card info">
+          <div class="kpi-icon"><i class="fa-solid fa-user-clock"></i></div>
+          <div class="kpi-content">
+            <span class="kpi-value">{{ stats.totalEdicionesAsistencia }}</span>
+            <span class="kpi-label">Ediciones asistencia</span>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Barra de Filtros -->
+    <div class="filters-card">
+      <div class="filters-grid">
+        <div class="filter-group">
+          <label for="filtroBusqueda">Búsqueda rápida</label>
+          <div class="input-with-icon">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input
+              id="filtroBusqueda"
+              type="text"
+              [(ngModel)]="busquedaTexto"
+              placeholder="Buscar por usuario, alumno, motivo..."
+              (keyup.enter)="aplicarFiltros()"
+            />
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label for="filtroModulo">Módulo</label>
+          <select id="filtroModulo" [(ngModel)]="moduloFiltro" (change)="aplicarFiltros()">
+            <option value="">Todos los módulos</option>
+            <option value="ASISTENCIA">Edición de Asistencia</option>
+            <option value="CARGA_MASIVA">Cargas Masivas (Excel)</option>
+            <option value="EVALUACION">Evaluaciones</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="filtroCriticidad">Criticidad</label>
+          <select id="filtroCriticidad" [(ngModel)]="criticidadFiltro" (change)="aplicarFiltros()">
+            <option value="">Todas las criticidades</option>
+            <option value="CRITICO">Crítico</option>
+            <option value="ADVERTENCIA">Advertencia</option>
+            <option value="INFO">Informativo</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="filtroFechaInicio">Desde</label>
+          <input id="filtroFechaInicio" type="date" [(ngModel)]="fechaInicio" (change)="aplicarFiltros()" />
+        </div>
+
+        <div class="filter-group">
+          <label for="filtroFechaFin">Hasta</label>
+          <input id="filtroFechaFin" type="date" [(ngModel)]="fechaFin" (change)="aplicarFiltros()" />
+        </div>
+
+        <div class="filter-actions">
+          <button class="btn btn-primary" (click)="aplicarFiltros()">
+            <i class="fa-solid fa-filter"></i> Filtrar
+          </button>
+          <button class="btn btn-subtle" (click)="limpiarFiltros()" title="Limpiar filtros">
+            <i class="fa-solid fa-eraser"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mensajes de estado -->
+    @if (cargando()) {
+      <div class="loading-state">
+        <i class="fa-solid fa-circle-notch fa-spin"></i>
+        <span>Consultando bitácora de auditoría...</span>
+      </div>
+    } @else if (error()) {
+      <div class="alert-box alert-error">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span>{{ error() }}</span>
+      </div>
+    } @else if (logs().length === 0) {
+      <div class="empty-state">
+        <i class="fa-solid fa-magnifying-glass-chart"></i>
+        <h3>No se encontraron registros de auditoría</h3>
+        <p>Prueba ajustando los filtros de búsqueda o el rango de fechas.</p>
+      </div>
+    } @else {
+      <!-- Tabla de Logs -->
+      <div class="table-container">
+        <table class="audit-table">
+          <thead>
+            <tr>
+              <th>Fecha y Hora</th>
+              <th>Criticidad</th>
+              <th>Módulo</th>
+              <th>Acción / Evento</th>
+              <th>Entidad Afectada</th>
+              <th>Usuario Ejecutor</th>
+              <th class="text-right">Detalle</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (log of logs(); track log.id) {
+              <tr class="audit-row" (click)="abrirDetalle(log)">
+                <td class="cell-date">
+                  <span class="date-main">{{ log.fechaEvento | date:'dd/MM/yyyy' }}</span>
+                  <span class="date-time">{{ log.fechaEvento | date:'HH:mm:ss' }}</span>
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="obtenerClaseCriticidad(log.nivelCriticidad)">
+                    {{ log.nivelCriticidad }}
+                  </span>
+                </td>
+                <td>
+                  <span class="module-chip">
+                    <i [class]="obtenerIconoModulo(log.modulo)"></i> {{ log.modulo }}
+                  </span>
+                </td>
+                <td class="cell-desc">
+                  <strong>{{ log.tipoEvento }}</strong>
+                  <p class="desc-text">{{ log.descripcion }}</p>
+                </td>
+                <td class="cell-entity">
+                  <span>{{ log.entidadAfectada }}</span>
+                </td>
+                <td class="cell-user">
+                  <div class="user-info">
+                    <span class="user-name">{{ log.usuarioNombre || log.usuarioUsername }}</span>
+                    <span class="user-sub">&#64;{{ log.usuarioUsername }}</span>
+                  </div>
+                </td>
+                <td class="text-right">
+                  <button class="btn-icon" (click)="$event.stopPropagation(); abrirDetalle(log)" title="Ver detalle">
+                    <i class="fa-solid fa-eye"></i>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+
+  <!-- Modal de Detalle Extendido -->
+  @if (registroDetalle(); as log) {
+    <div class="modal-backdrop" (click)="cerrarDetalle()">
+      <div class="modal-dialog" (click)="$event.stopPropagation()">
+        <header class="modal-header">
+          <div class="modal-title-group">
+            <span class="badge" [ngClass]="obtenerClaseCriticidad(log.nivelCriticidad)">{{ log.nivelCriticidad }}</span>
+            <h2>Detalle de Evento de Auditoría</h2>
+          </div>
+          <button class="btn-close" (click)="cerrarDetalle()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </header>
+
+        <div class="modal-body">
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">Identificador</span>
+              <span class="detail-value font-mono">{{ log.id }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Timestamp</span>
+              <span class="detail-value">{{ log.fechaEvento | date:'dd/MM/yyyy HH:mm:ss' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Módulo</span>
+              <span class="detail-value">{{ log.modulo }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Tipo de Evento</span>
+              <span class="detail-value">{{ log.tipoEvento }}</span>
+            </div>
+            <div class="detail-item full-width">
+              <span class="detail-label">Usuario que Ejecutó la Acción</span>
+              <div class="user-badge">
+                <i class="fa-solid fa-user-shield"></i>
+                <strong>{{ log.usuarioNombre }}</strong> (&#64;{{ log.usuarioUsername }})
+              </div>
+            </div>
+            <div class="detail-item full-width">
+              <span class="detail-label">Entidad Afectada</span>
+              <span class="detail-value highlight">{{ log.entidadAfectada }}</span>
+            </div>
+            <div class="detail-item full-width">
+              <span class="detail-label">Descripción Operativa</span>
+              <div class="desc-box">{{ log.descripcion }}</div>
+            </div>
+            @if (log.detalleAdicional) {
+              <div class="detail-item full-width">
+                <span class="detail-label">Metadatos y Parámetros del Evento</span>
+                <pre class="metadata-box">{{ log.detalleAdicional }}</pre>
+              </div>
+            }
+          </div>
+        </div>
+
+        <footer class="modal-footer">
+          <button class="btn btn-secondary" (click)="cerrarDetalle()">Cerrar</button>
+        </footer>
+      </div>
+    </div>
+  }
+</app-shell>

@@ -64,6 +64,24 @@ export class ConfiguracionAcademica {
       icon: 'fa-solid fa-people-roof',
       status: 'operativo',
       helper: 'Seguimiento'
+    },
+    {
+      key: 'modelos-ml',
+      title: 'Predictores y modelos ML',
+      description: 'Configura variables predictoras dinámicas (CP-34), visualiza el comparador multialgoritmo y planifica el reentrenamiento.',
+      route: '/modelos-ml',
+      icon: 'fa-solid fa-brain',
+      status: 'prioridad',
+      helper: 'Inteligencia ML'
+    },
+    {
+      key: 'auditoria',
+      title: 'Visor de auditoría y control',
+      description: 'Audita eventos críticos, trazabilidad de ediciones de asistencia y autoría de importaciones masivas de Excel.',
+      route: '/auditoria',
+      icon: 'fa-solid fa-shield-halved',
+      status: 'operativo',
+      helper: 'Trazabilidad'
     }
   ];
 }
