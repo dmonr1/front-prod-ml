@@ -9,8 +9,12 @@ export class HorarioService {
   private readonly http = inject(HttpClient);
   private readonly api = `${environment.apiUrl}/horarios`;
 
-  listarBloques(periodoAcademicoId: number, nivelId: number): Observable<BloqueHorario[]> {
-    return this.http.get<BloqueHorario[]>(`${this.api}/bloques`, { params: { periodoAcademicoId, nivelId } });
+  listarBloques(periodoAcademicoId: number, nivelId?: number | null): Observable<BloqueHorario[]> {
+    const params: Record<string, any> = { periodoAcademicoId };
+    if (nivelId != null) {
+      params['nivelId'] = nivelId;
+    }
+    return this.http.get<BloqueHorario[]>(`${this.api}/bloques`, { params });
   }
 
   listarRecreos(periodoAcademicoId: number): Observable<BloqueHorario[]> {
