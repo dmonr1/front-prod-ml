@@ -362,7 +362,8 @@ export class SeccionTutorada implements OnInit {
     this.router.navigate(['/horario-seccion', tutoria.seccionId], {
       queryParams: {
         periodoAcademicoId: tutoria.periodoAcademicoId,
-        seccionLabel: `${tutoria.grado} · Sección ${tutoria.seccion} · ${tutoria.nivel}`
+        seccionLabel: `${tutoria.grado} · Sección ${tutoria.seccion} · ${tutoria.nivel}`,
+        nivelNombre: tutoria.nivel
       }
     });
   }

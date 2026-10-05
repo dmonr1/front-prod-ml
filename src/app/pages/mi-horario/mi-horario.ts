@@ -6,12 +6,14 @@ import { Shell } from '../../layouts/shell/shell';
 import { PeriodoAcademico } from '../../models/periodo-academico';
 import { PeriodoEvaluacion } from '../../models/periodo-evaluacion';
 import { BloqueHorario, DiaSemana, HorarioSemanal } from '../../models/horario';
+import { Seccion } from '../../models/seccion';
 import { Evaluacion } from '../../models/evaluacion';
 import { forkJoin, of } from 'rxjs';
 import { HorarioService } from '../../services/academico/horario.service';
 import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
 import { PeriodoEvaluacionService } from '../../services/academico/periodo-evaluacion.service';
 import { EvaluacionService } from '../../services/evaluacion/evaluacion.service';
+import { SeccionService } from '../../services/academico/seccion.service';
 import { formatearMensajeError } from '../../utils/error-formatter';
 
 interface AlertState {
@@ -29,6 +31,7 @@ interface DiaInfo {
   label: string;
   short: string;
   clases?: ClaseHorarioVisual[];
+  bloquesVacios?: BloqueHorario[];
 }
 
 interface ClaseHorarioVisual extends HorarioSemanal {
@@ -44,6 +47,7 @@ interface ClaseHorarioVisual extends HorarioSemanal {
 export class MiHorario implements OnInit, OnDestroy {
   private readonly periodosService = inject(PeriodoAcademicoService);
   private readonly horarioService = inject(HorarioService);
+  private readonly seccionService = inject(SeccionService);
   private readonly periodoEvaluacionService = inject(PeriodoEvaluacionService);
   private readonly evaluacionService = inject(EvaluacionService);
   private readonly router = inject(Router);
@@ -57,9 +61,13 @@ export class MiHorario implements OnInit, OnDestroy {
   readonly periodoId = signal<number | null>(null);
   readonly seccionIdVista = signal<number | null>(null);
   readonly etiquetaSeccionVista = signal<string | null>(null);
+  readonly seccionNivelId = signal<number | null>(null);
+  readonly seccionNivelNombre = signal<string | null>(null);
+  readonly nivelFiltroId = signal<number | null>(null);
   readonly periodosEvaluacion = signal<PeriodoEvaluacion[]>([]);
   readonly periodoEvaluacionId = signal<number | null>(null);
   readonly horarios = signal<HorarioSemanal[]>([]);
+  readonly bloques = signal<BloqueHorario[]>([]);
   readonly recreos = signal<BloqueHorario[]>([]);
   readonly evaluaciones = signal<Evaluacion[]>([]);
   readonly cargando = signal(true);
@@ -173,20 +181,116 @@ export class MiHorario implements OnInit, OnDestroy {
     return `${diaInicio} – ${diaFin} de ${mesInicio}, ${anioInicio}`;
   });
 
+  readonly nivelesDisponibles = computed(() => {
+    const map = new Map<number, { id: number; nombre: string }>();
+    for (const b of this.bloques()) {
+      if (!map.has(b.nivelId)) {
+        map.set(b.nivelId, { id: b.nivelId, nombre: b.nivel });
+      }
+    }
+    return [...map.values()].sort((a, b) => a.id - b.id);
+  });
+
+  readonly nivelActivoId = computed(() => {
+    if (this.seccionIdVista()) {
+      if (this.seccionNivelId()) return this.seccionNivelId();
+      const nom = this.seccionNivelNombre()?.trim().toUpperCase();
+      if (nom) {
+        const porNom = this.nivelesDisponibles().find((n) => n.nombre.trim().toUpperCase() === nom);
+        if (porNom) return porNom.id;
+      }
+    }
+
+    const seleccionado = this.nivelFiltroId();
+    if (seleccionado && this.nivelesDisponibles().some((n) => n.id === seleccionado)) {
+      return seleccionado;
+    }
+
+    if (this.horarios().length) {
+      const nivelDocente = this.horarios()[0].nivel?.trim().toUpperCase();
+      if (nivelDocente) {
+        const coincide = this.nivelesDisponibles().find((n) => n.nombre.trim().toUpperCase() === nivelDocente);
+        if (coincide) return coincide.id;
+      }
+    }
+
+    return this.nivelesDisponibles()[0]?.id ?? null;
+  });
+
+  readonly bloquesLectivosActivos = computed(() => {
+    const nivelId = this.nivelActivoId();
+    const noRecreos = this.bloques().filter((b) => !b.esRecreo);
+    if (!nivelId) {
+      return noRecreos.sort((a, b) => a.orden - b.orden || a.horaInicio.localeCompare(b.horaInicio));
+    }
+    return noRecreos
+      .filter((b) => b.nivelId === nivelId)
+      .sort((a, b) => a.orden - b.orden || a.horaInicio.localeCompare(b.horaInicio));
+  });
+
+  readonly recreosVisibles = computed(() => {
+    const nivelId = this.nivelActivoId();
+    const todosRecreos = this.recreos().length ? this.recreos() : this.bloques().filter((b) => b.esRecreo);
+    const filtrados = nivelId
+      ? todosRecreos.filter((r) => r.nivelId === nivelId)
+      : todosRecreos;
+
+    const unicos = new Map<string, BloqueHorario>();
+    for (const recreo of filtrados) {
+      const clave = `${recreo.horaInicio.slice(0, 5)}-${recreo.horaFin.slice(0, 5)}`;
+      if (!unicos.has(clave)) unicos.set(clave, recreo);
+    }
+    return [...unicos.values()].sort((a, b) => a.horaInicio.localeCompare(b.horaInicio));
+  });
+
+  readonly clasesVisibles = computed(() => {
+    if (this.seccionIdVista()) {
+      return this.horarios();
+    }
+    const nivelId = this.nivelActivoId();
+    if (!nivelId || this.nivelesDisponibles().length <= 1) {
+      return this.horarios();
+    }
+    const nivelObj = this.nivelesDisponibles().find((n) => n.id === nivelId);
+    if (!nivelObj) return this.horarios();
+    const nivelNom = nivelObj.nombre.trim().toUpperCase();
+    return this.horarios().filter((h) => !h.nivel || h.nivel.trim().toUpperCase() === nivelNom);
+  });
+
+  readonly tieneContenidoHorario = computed(() => {
+    return this.horarios().length > 0 || this.bloques().length > 0;
+  });
+
   readonly columnasDias = computed(() => {
     const lunes = this.lunesSemana();
     const limite = this.mostrarFinDeSemana() ? 7 : 5;
     const diasActivos = this.diasDefinicion.slice(0, limite);
     const hoyStr = this.fechaLocalHoy();
+    const bloquesLectivos = this.bloquesLectivosActivos();
 
     return diasActivos.map((diaDef, index) => {
       const fecha = new Date(lunes);
       fecha.setDate(lunes.getDate() + index);
       const fechaStr = this.fechaKey(fecha);
       const esHoy = fechaStr === hoyStr;
-      const clases = this.agruparClasesContinuas(this.horarios()
+
+      const clasesDelDia = this.clasesVisibles()
         .filter((item) => item.diaSemana === diaDef.value)
-        .sort((a, b) => a.horaInicio.localeCompare(b.horaInicio)));
+        .sort((a, b) => a.horaInicio.localeCompare(b.horaInicio));
+      const clases = this.agruparClasesContinuas(clasesDelDia);
+
+      const esFinDeSemana = diaDef.value === 'SABADO' || diaDef.value === 'DOMINGO';
+      const bloquesVacios = esFinDeSemana
+        ? []
+        : bloquesLectivos.filter((bloque) => {
+            const bInicio = this.minutos(bloque.horaInicio);
+            const bFin = this.minutos(bloque.horaFin);
+            return !clasesDelDia.some((c) => {
+              const cInicio = this.minutos(c.horaInicio);
+              const cFin = this.minutos(c.horaFin);
+              return cInicio < bFin && cFin > bInicio;
+            });
+          });
 
       return {
         ...diaDef,
@@ -195,7 +299,8 @@ export class MiHorario implements OnInit, OnDestroy {
         fechaStr,
         numero: fecha.getDate(),
         esHoy,
-        clases
+        clases,
+        bloquesVacios
       };
     });
   });
@@ -217,28 +322,38 @@ export class MiHorario implements OnInit, OnDestroy {
   });
 
   readonly rango = computed(() => {
-    const items = this.horarios();
-    if (!items.length) {
-      return {
-        inicioHora: 0,
-        finHora: 0,
-        inicio: 0,
-        fin: 0,
-        horasCount: 0,
-        marcas: []
-      };
-    }
-    const tiempos = [
-      ...items.flatMap((item) => [this.minutos(item.horaInicio), this.minutos(item.horaFin)]),
+    const tiempos: number[] = [
+      ...this.clasesVisibles().flatMap((item) => [this.minutos(item.horaInicio), this.minutos(item.horaFin)]),
+      ...this.bloquesLectivosActivos().flatMap((item) => [this.minutos(item.horaInicio), this.minutos(item.horaFin)]),
       ...this.recreosVisibles().flatMap((item) => [this.minutos(item.horaInicio), this.minutos(item.horaFin)])
     ];
-    const inicioHora = Math.floor(Math.min(...tiempos) / 60);
-    const finHora = tiempos.length
-      ? Math.max(inicioHora + 1, Math.ceil(Math.max(...tiempos) / 60))
-      : inicioHora + 1;
+
+    if (!tiempos.length) {
+      return {
+        inicioHora: 7,
+        finHora: 15,
+        inicio: 7 * 60,
+        fin: 15 * 60,
+        horasCount: 8,
+        marcas: [7 * 60, 8 * 60, 9 * 60, 10 * 60, 11 * 60, 12 * 60, 13 * 60, 14 * 60, 15 * 60]
+      };
+    }
+
+    const minMinutos = Math.min(...tiempos);
+    const maxMinutos = Math.max(...tiempos);
+    const inicioHora = Math.floor(minMinutos / 60);
+    const finHora = Math.max(inicioHora + 1, Math.ceil(maxMinutos / 60));
     const horasCount = finHora - inicioHora;
+
     const marcas = new Set<number>([inicioHora * 60, finHora * 60]);
-    for (const item of items) {
+    for (let h = inicioHora; h <= finHora; h++) {
+      marcas.add(h * 60);
+    }
+    for (const item of this.clasesVisibles()) {
+      marcas.add(this.minutos(item.horaInicio));
+      marcas.add(this.minutos(item.horaFin));
+    }
+    for (const item of this.bloquesLectivosActivos()) {
       marcas.add(this.minutos(item.horaInicio));
       marcas.add(this.minutos(item.horaFin));
     }
@@ -246,6 +361,7 @@ export class MiHorario implements OnInit, OnDestroy {
       marcas.add(this.minutos(item.horaInicio));
       marcas.add(this.minutos(item.horaFin));
     }
+
     return {
       inicioHora,
       finHora,
@@ -256,21 +372,18 @@ export class MiHorario implements OnInit, OnDestroy {
     };
   });
 
-  readonly recreosVisibles = computed(() => {
-    const niveles = new Set(this.horarios().map((horario) => horario.nivel.toLocaleUpperCase()));
-    const recreos = this.recreos().filter((recreo) => niveles.has(recreo.nivel.toLocaleUpperCase()));
-    const unicos = new Map<string, BloqueHorario>();
-    for (const recreo of recreos) {
-      const clave = `${recreo.horaInicio.slice(0, 5)}-${recreo.horaFin.slice(0, 5)}`;
-      if (!unicos.has(clave)) unicos.set(clave, recreo);
-    }
-    return [...unicos.values()].sort((a, b) => a.horaInicio.localeCompare(b.horaInicio));
-  });
-
   ngOnInit(): void {
     const seccionId = Number(this.route.snapshot.paramMap.get('seccionId')) || null;
     this.seccionIdVista.set(seccionId);
     this.etiquetaSeccionVista.set(this.route.snapshot.queryParamMap.get('seccionLabel'));
+    const nivelNombreParam = this.route.snapshot.queryParamMap.get('nivelNombre');
+    if (nivelNombreParam) {
+      this.seccionNivelNombre.set(nivelNombreParam);
+    }
+    const nivelIdParam = Number(this.route.snapshot.queryParamMap.get('nivelId')) || null;
+    if (nivelIdParam) {
+      this.seccionNivelId.set(nivelIdParam);
+    }
     const periodoSolicitadoId = Number(this.route.snapshot.queryParamMap.get('periodoAcademicoId')) || null;
     if (seccionId) this.mostrarFinDeSemana.set(false);
 
@@ -434,6 +547,21 @@ export class MiHorario implements OnInit, OnDestroy {
     return Math.max(22, (duracion / 60) * this.altoHora() - 4);
   }
 
+  seleccionarNivel(id: number): void {
+    this.nivelFiltroId.set(id);
+    setTimeout(() => this.ajustarAltoHorario(), 40);
+  }
+
+  posicionBloque(bloque: BloqueHorario): number {
+    const offsetMinutos = this.minutos(bloque.horaInicio) - this.rango().inicio;
+    return (offsetMinutos / 60) * this.altoHora() + 3;
+  }
+
+  altoBloque(bloque: BloqueHorario): number {
+    const duracionMinutos = this.minutos(bloque.horaFin) - this.minutos(bloque.horaInicio);
+    return Math.max(34, (duracionMinutos / 60) * this.altoHora() - 6);
+  }
+
   readonly mapaTonoCursos = computed(() => {
     const mapa = new Map<number, number>();
     const totalTonos = 16;
@@ -522,13 +650,37 @@ export class MiHorario implements OnInit, OnDestroy {
 
   private cargar(id: number): void {
     this.cargando.set(true);
-    const solicitud = this.seccionIdVista()
+    const solicitudHorarios = this.seccionIdVista()
       ? this.horarioService.listarPorSeccion(this.seccionIdVista()!, id)
       : this.horarioService.listarMios(id);
-    forkJoin({ horarios: solicitud, recreos: this.horarioService.listarRecreos(id) }).subscribe({
-      next: ({ horarios, recreos }) => {
+    const solicitudSecciones = this.seccionIdVista()
+      ? this.seccionService.listar(id)
+      : of([] as Seccion[]);
+
+    forkJoin({
+      horarios: solicitudHorarios,
+      recreos: this.horarioService.listarRecreos(id),
+      bloques: this.horarioService.listarBloques(id),
+      secciones: solicitudSecciones
+    }).subscribe({
+      next: ({ horarios, recreos, bloques, secciones }) => {
         this.horarios.set(horarios);
         this.recreos.set(recreos);
+        this.bloques.set(bloques);
+
+        if (this.seccionIdVista() && secciones.length) {
+          const sec = secciones.find((s) => s.id === this.seccionIdVista());
+          if (sec) {
+            if (sec.nivelId) this.seccionNivelId.set(sec.nivelId);
+            if (sec.nivelNombre) this.seccionNivelNombre.set(sec.nivelNombre);
+            if (!this.etiquetaSeccionVista()) {
+              this.etiquetaSeccionVista.set(
+                `${sec.gradoNombre ? sec.gradoNombre + ' · ' : ''}Sección ${sec.nombre}${sec.nivelNombre ? ' · ' + sec.nivelNombre : ''}`
+              );
+            }
+          }
+        }
+
         if (horarios.some((item) => item.diaSemana === 'SABADO' || item.diaSemana === 'DOMINGO')) {
           this.mostrarFinDeSemana.set(true);
         }

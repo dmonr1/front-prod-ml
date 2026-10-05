@@ -234,9 +234,47 @@
   }
 }
 
+.level-toggle-group {
+  display: inline-flex;
+  align-items: center;
+  background: var(--color-surface-primary);
+  border: 1px solid color-mix(in srgb, var(--color-brand-primary) 28%, var(--color-border-subtle)) !important;
+  border-radius: 9px;
+  padding: 2px;
+  gap: 2px;
+  height: 32px;
+  box-sizing: border-box;
+  box-shadow: var(--shadow-sm);
+
+  .level-toggle-btn {
+    border: none !important;
+    background: transparent;
+    padding: 0 10px;
+    height: 28px;
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all 150ms ease;
+
+    &:hover {
+      color: var(--color-brand-primary);
+      background: color-mix(in srgb, var(--color-brand-primary) 8%, var(--color-surface-primary));
+    }
+
+    &.active {
+      background: var(--color-brand-primary);
+      color: #fff;
+      box-shadow: var(--shadow-sm);
+    }
+  }
+}
+
 .clases-badge-chip,
 .periodo-badge-chip,
-.periodo-eval-badge-chip {
+.periodo-eval-badge-chip,
+.nivel-badge-chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -250,6 +288,16 @@
   box-shadow: var(--shadow-sm, 0 1px 2px rgba(15, 23, 42, 0.05));
   transition: all 140ms ease;
   box-sizing: border-box;
+}
+
+.nivel-badge-chip {
+  background: color-mix(in srgb, #6366f1 12%, transparent);
+  color: #4f46e5;
+
+  i {
+    color: #6366f1;
+    font-size: 11px;
+  }
 }
 
 .clases-badge-chip {
@@ -827,6 +875,83 @@
 }
 
 // ---------------------------------------------------------------------------
+// Ranuras / Celdas de Bloques Vacíos (sin clase asignada este día)
+// ---------------------------------------------------------------------------
+.empty-block-slot {
+  position: absolute;
+  right: 6px;
+  left: 6px;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  padding: 6px 10px;
+  border-radius: 12px;
+  border: 1.5px dashed color-mix(in srgb, var(--color-border-subtle) 75%, var(--color-brand-primary) 25%) !important;
+  background: color-mix(in srgb, var(--color-surface-primary) 80%, var(--color-bg-secondary));
+  transition: all 160ms ease;
+  user-select: none;
+  box-sizing: border-box;
+
+  &:hover {
+    z-index: 3;
+    border-color: color-mix(in srgb, var(--color-brand-primary) 45%, var(--color-border-subtle)) !important;
+    background: color-mix(in srgb, var(--color-brand-primary) 4%, var(--color-surface-primary));
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+  }
+
+  .empty-block-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  .empty-block-title {
+    font-size: 12px;
+    font-weight: 750;
+    color: var(--color-text-secondary);
+    letter-spacing: -0.01em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .empty-block-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 650;
+    background: color-mix(in srgb, var(--color-border-subtle) 60%, var(--color-bg-secondary));
+    color: var(--color-text-muted);
+    letter-spacing: 0.01em;
+    flex-shrink: 0;
+  }
+
+  .empty-block-time {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    i {
+      font-size: 10px;
+      opacity: 0.8;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Paleta de tonos armónicos inspirados en la referencia (Pastel + Acento sólido)
 // ---------------------------------------------------------------------------
 .tone-1 {
@@ -1095,6 +1220,38 @@
     --class-border: rgba(168, 85, 247, 0.35);
     --class-text: #e9d5ff;
     --class-muted: #d8b4fe;
+  }
+
+  .empty-block-slot {
+    border-color: rgba(148, 163, 184, 0.18) !important;
+    background: rgba(30, 41, 59, 0.45);
+
+    &:hover {
+      border-color: rgba(56, 189, 248, 0.35) !important;
+      background: rgba(30, 41, 59, 0.75);
+    }
+
+    .empty-block-title {
+      color: #94a3b8;
+    }
+
+    .empty-block-tag {
+      background: rgba(51, 65, 85, 0.6);
+      color: #cbd5e1;
+    }
+
+    .empty-block-time {
+      color: #64748b;
+    }
+  }
+
+  .nivel-badge-chip {
+    background: rgba(99, 102, 241, 0.2);
+    color: #a5b4fc;
+
+    i {
+      color: #818cf8;
+    }
   }
 }
 

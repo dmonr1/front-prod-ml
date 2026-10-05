@@ -15,7 +15,7 @@
         </button>
         }
         <div class="schedule-title-group">
-          <h2>{{ seccionIdVista() ? 'Horario de la sección' : 'Mi horario' }}</h2>
+          <h2>{{ seccionIdVista() ? (etiquetaSeccionVista() || 'Horario de la sección') : 'Mi horario' }}</h2>
         </div>
       </div>
 
@@ -32,6 +32,16 @@
               7 días
             </button>
           </div>
+          @if (nivelesDisponibles().length > 1) {
+          <div class="level-toggle-group" title="Filtrar horario por nivel académico">
+            @for (niv of nivelesDisponibles(); track niv.id) {
+            <button type="button" class="level-toggle-btn" [class.active]="nivelActivoId() === niv.id"
+              (click)="seleccionarNivel(niv.id)">
+              {{ niv.nombre }}
+            </button>
+            }
+          </div>
+          }
           }
 
           <div class="nav-buttons-group">
@@ -57,10 +67,15 @@
       </div>
 
       <div class="header-right-controls">
-        @if (horarios().length) {
         <span class="clases-badge-chip" title="Total de clases semanales programadas">
           <i class="fa-solid fa-chalkboard-user"></i>
-          {{ horarios().length }} {{ horarios().length === 1 ? 'clase' : 'clases' }}
+          {{ clasesVisibles().length }} {{ clasesVisibles().length === 1 ? 'clase' : 'clases' }}
+        </span>
+
+        @if (seccionIdVista() && seccionNivelNombre()) {
+        <span class="nivel-badge-chip" title="Nivel académico de la sección">
+          <i class="fa-solid fa-graduation-cap"></i>
+          {{ seccionNivelNombre() }}
         </span>
         }
 
@@ -91,7 +106,7 @@
       aria-label="Horario semanal de clases">
       <!-- Grid del calendario con horas grandes, fechas debajo de los días y tarjetas con atajos -->
       <div class="calendar-scroll">
-        <div class="calendar-grid" [class.seven-days]="mostrarFinDeSemana()" [class.is-empty]="!horarios().length"
+        <div class="calendar-grid" [class.seven-days]="mostrarFinDeSemana()" [class.is-empty]="!tieneContenidoHorario()"
           [style.--hour-count]="rango().horasCount" [style.--hour-height.px]="altoHora()">
           <!-- Esquina superior izquierda pegajosa -->
           <div class="calendar-corner"><i class="fa-regular fa-clock"></i></div>
@@ -110,7 +125,7 @@
           </div>
           }
 
-          @if (horarios().length) {
+          @if (tieneContenidoHorario()) {
           <!-- Eje de tiempo a la izquierda con horas legibles y destacadas -->
           <div class="time-axis" [style.grid-row]="'2 / span ' + rango().horasCount">
             @for (marca of rango().marcas; track marca; let first = $first; let last = $last) {
@@ -126,7 +141,7 @@
             }
           </div>
 
-          <!-- Carriles de cada día con tarjetas altas y atajos para Asistencias y Notas -->
+          <!-- Carriles de cada día con tarjetas de clases y bloques libres -->
           @for (dia of columnasDias(); track dia.value; let i = $index) {
           <div class="day-lane" [class.is-today]="dia.esHoy" [style.grid-column]="obtenerColumnaDia(i)"
             [style.grid-row]="'2 / span ' + rango().horasCount">
@@ -141,12 +156,34 @@
             </div>
             }
 
+            <!-- Bloques configurados vacíos (sin clase este día) -->
+            @for (bloque of dia.bloquesVacios; track bloque.id) {
+            <div class="empty-block-slot" [style.top.px]="posicionBloque(bloque)" [style.height.px]="altoBloque(bloque)"
+              [title]="bloque.nombre + ' · ' + limpiarHora(bloque.horaInicio) + '–' + limpiarHora(bloque.horaFin) + ' (Sin clase programada)'">
+              <div class="empty-block-header">
+                <span class="empty-block-title">{{ bloque.nombre }}</span>
+                <span class="empty-block-tag">Libre</span>
+              </div>
+              <span class="empty-block-time">
+                <i class="fa-regular fa-clock"></i>
+                {{ limpiarHora(bloque.horaInicio) }} – {{ limpiarHora(bloque.horaFin) }}
+              </span>
+            </div>
+            }
+
+            <!-- Clases programadas -->
             @for (clase of dia.clases; track clase.id) {
             <div [class]="'class-block ' + tonoClase(clase)" [class.has-eval]="!!evaluacionDeClase(clase, dia.fechaStr)"
               [style.top.px]="posicionClase(clase)" [style.height.px]="altoClase(clase)">
               <div class="class-header-text">
                 <strong class="class-title" [title]="clase.curso">{{ clase.curso }}</strong>
-                <span class="class-details">{{ clase.grado }} · Sec. {{ clase.seccion }}</span>
+                <span class="class-details">
+                  @if (seccionIdVista()) {
+                    Prof. {{ clase.docente }}
+                  } @else {
+                    {{ clase.grado }} · Sec. {{ clase.seccion }}
+                  }
+                </span>
               </div>
 
               @if (evaluacionDeClase(clase, dia.fechaStr); as ev) {
@@ -206,11 +243,11 @@
             }
           </div>
           } @else {
-          <!-- Estado vacío dentro del calendario (mantiene los días arriba y no renderiza horas 8-9) -->
+          <!-- Estado vacío dentro del calendario (cuando no hay bloques ni horarios configurados en el período) -->
           <div class="schedule-calendar-empty">
             <div class="empty-icon"><i class="fa-regular fa-calendar-xmark"></i></div>
-            <h4>No tienes clases programadas</h4>
-            <p>No se encontraron clases para el período académico activo.</p>
+            <h4>No se encontraron bloques ni clases</h4>
+            <p>No se han configurado bloques de horario para el período académico activo.</p>
           </div>
           }
         </div>
