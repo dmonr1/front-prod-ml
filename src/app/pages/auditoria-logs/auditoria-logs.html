@@ -187,8 +187,8 @@
 
   <!-- Modal de Detalle Extendido -->
   @if (registroDetalle(); as log) {
-    <div class="modal-backdrop" (click)="cerrarDetalle()">
-      <div class="modal-dialog" (click)="$event.stopPropagation()">
+    <div class="modal-backdrop">
+      <div class="modal-dialog">
         <header class="modal-header">
           <div class="modal-title-group">
             <span class="badge" [ngClass]="obtenerClaseCriticidad(log.nivelCriticidad)">{{ log.nivelCriticidad }}</span>

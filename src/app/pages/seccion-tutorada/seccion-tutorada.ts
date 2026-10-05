@@ -519,6 +519,35 @@ export class SeccionTutorada implements OnInit {
     return porcentaje === null ? '--' : `${porcentaje.toFixed(0)}%`;
   }
 
+  obtenerInasistenciasCurso(curso: CursoAlumnoTutoriaResumen | undefined): number {
+    if (!curso) return 0;
+    if (curso.inasistencias !== undefined && curso.inasistencias !== null) {
+      return curso.inasistencias;
+    }
+    if (curso.clasesProgramadas !== undefined && curso.clasesAsistidas !== undefined) {
+      return Math.max(0, curso.clasesProgramadas - curso.clasesAsistidas);
+    }
+    return 0;
+  }
+
+  obtenerAsistenciaCursoTexto(curso: CursoAlumnoTutoriaResumen | undefined): string {
+    if (!curso || !curso.clasesProgramadas) return '0/0';
+    return `${curso.clasesAsistidas ?? 0}/${curso.clasesProgramadas}`;
+  }
+
+  obtenerDetalleCursoTooltip(curso: CursoAlumnoTutoriaResumen | undefined, cursoNombre: string): string {
+    if (!curso) return `${cursoNombre}: Sin notas ni asistencias registradas`;
+    const notaTexto = curso.promedio !== null && !isNaN(curso.promedio) ? `Promedio: ${curso.promedio.toFixed(2)}` : 'Sin notas';
+    const evTexto = `${curso.evaluacionesRegistradas || 0} evaluaci${(curso.evaluacionesRegistradas || 0) === 1 ? 'ón' : 'ones'}`;
+    const inasist = this.obtenerInasistenciasCurso(curso);
+    const asistTexto = curso.clasesProgramadas
+      ? `Asistencia: ${curso.porcentajeAsistencia !== null && curso.porcentajeAsistencia !== undefined ? curso.porcentajeAsistencia.toFixed(0) : '--'}% (${curso.clasesAsistidas ?? 0}/${curso.clasesProgramadas} clases)`
+      : 'Asistencia: Sin clases registradas';
+    const faltasTexto = inasist > 0 ? ` · ${inasist} inasistencia${inasist > 1 ? 's' : ''}` : '';
+    const tardTexto = (curso.tardanzas ?? 0) > 0 ? ` · ${curso.tardanzas} tardanza${(curso.tardanzas ?? 0) > 1 ? 's' : ''}` : '';
+    return `${cursoNombre} (${curso.docenteNombreCompleto})\n${notaTexto} · ${evTexto}\n${asistTexto}${faltasTexto}${tardTexto}`;
+  }
+
   obtenerIniciales(nombre: string): string {
     if (!nombre) return 'AL';
     const partes = nombre.trim().split(/\s+/);

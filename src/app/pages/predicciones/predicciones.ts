@@ -756,7 +756,7 @@ export class Predicciones {
     this.prediccionSeleccionadaId.set(id);
   }
 
-  verFichaAlumno(alumnoId: number): void {
+  verFichaAlumno(alumnoId: number, item?: PrediccionVista | PrediccionRiesgo | null): void {
     this.persistirFiltros();
     void this.router.navigate(['/alumno', alumnoId], {
       queryParams: {
@@ -764,7 +764,9 @@ export class Predicciones {
         periodoEvaluacionIdTermino: this.periodoEvaluacionSeleccionadoIdTermino(),
         corteSeguimientoId: this.periodoEvaluacionSeleccionadoId(),
         seccionId: this.seccionSeleccionadaId(),
-        vista: this.vistaActiva()
+        vista: this.vistaActiva(),
+        cursoId: item?.cursoId ?? (this.vistaActiva() === 'curso' ? this.cursoSeleccionadoId() : null),
+        prediccionId: item?.id ?? null
       }
     });
   }

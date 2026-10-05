@@ -458,6 +458,7 @@
                         </td>
                         @for (cursoHeader of resumenAcademico()!.cursos; track cursoHeader.asignacionId) {
                           @let cursoAlumno = obtenerNotaCurso(alumno, cursoHeader.asignacionId);
+                          @let inasistCurso = obtenerInasistenciasCurso(cursoAlumno);
                           <td class="col-course">
                             <div
                               class="grade-pill-cell"
@@ -465,12 +466,26 @@
                               [class.grade-mid]="obtenerColorNota(cursoAlumno?.promedio ?? null) === 'regular'"
                               [class.grade-low]="obtenerColorNota(cursoAlumno?.promedio ?? null) === 'desaprobado'"
                               [class.grade-none]="obtenerColorNota(cursoAlumno?.promedio ?? null) === 'vacio'"
-                              [title]="cursoAlumno?.detalleNotas?.length ? 'Evaluaciones registradas' : 'Sin notas registradas'"
+                              [title]="obtenerDetalleCursoTooltip(cursoAlumno, cursoHeader.curso)"
                             >
-                              <strong class="grade-score">{{ formatearPromedio(cursoAlumno?.promedio ?? null) }}</strong>
-                              @if (cursoAlumno?.evaluacionesRegistradas) {
-                                <span class="grade-eval-count">{{ cursoAlumno?.evaluacionesRegistradas }} ev.</span>
-                              }
+                              <div class="grade-main-line">
+                                <strong class="grade-score">{{ formatearPromedio(cursoAlumno?.promedio ?? null) }}</strong>
+                                @if (inasistCurso > 0) {
+                                  <span class="course-absence-tag" [title]="inasistCurso + ' falta(s) en este curso'">
+                                    {{ inasistCurso }}F
+                                  </span>
+                                }
+                              </div>
+                              <div class="grade-meta-line">
+                                @if (cursoAlumno?.evaluacionesRegistradas) {
+                                  <span class="grade-eval-count">{{ cursoAlumno?.evaluacionesRegistradas }} ev.</span>
+                                }
+                                @if (cursoAlumno?.porcentajeAsistencia !== null && cursoAlumno?.porcentajeAsistencia !== undefined && (cursoAlumno?.clasesProgramadas ?? 0) > 0) {
+                                  <span class="grade-att-mini" [class.att-low]="cursoAlumno!.porcentajeAsistencia! < 80">
+                                    {{ cursoAlumno?.porcentajeAsistencia?.toFixed(0) }}%
+                                  </span>
+                                }
+                              </div>
                             </div>
                           </td>
                         }
@@ -514,28 +529,68 @@
                   </tbody>
                   <tfoot>
                     <tr class="footer-summary-row">
-                      <td colspan="3" class="footer-label">
+                      <td class="col-num footer-col-num" title="Resumen global de la sección">
                         <i class="fa-solid fa-chart-column"></i>
-                        <span>Promedio del Aula por Curso:</span>
+                      </td>
+                      <td class="col-student footer-col-student">
+                        <div class="footer-student-inner">
+                          <strong class="footer-title-text">Promedio del Aula</strong>
+                          <span class="footer-sub-text">{{ resumenAcademico()?.alumnos?.length || 0 }} estudiantes</span>
+                        </div>
+                      </td>
+                      <td class="col-attendance footer-col-att">
+                        <div class="attendance-cell">
+                          <span class="attendance-pct-pill"
+                                [class.pct-emerald]="(kpisAula().asistenciaAula ?? 0) >= 85"
+                                [class.pct-amber]="(kpisAula().asistenciaAula ?? 0) >= 75 && (kpisAula().asistenciaAula ?? 0) < 85"
+                                [class.pct-rose]="(kpisAula().asistenciaAula ?? 0) < 75">
+                            {{ kpisAula().asistenciaAula !== null ? kpisAula().asistenciaAula + '%' : '--' }}
+                          </span>
+                          <small class="attendance-fraction">Promedio aula</small>
+                        </div>
                       </td>
                       @for (curso of resumenAcademico()!.cursos; track curso.asignacionId) {
                         @let avg = promediosPorCurso().get(curso.asignacionId);
-                        <td class="col-course footer-avg">
-                          <span class="footer-score-pill"
-                                [class.grade-high]="obtenerColorNota(avg ?? null) === 'aprobado'"
-                                [class.grade-mid]="obtenerColorNota(avg ?? null) === 'regular'"
-                                [class.grade-low]="obtenerColorNota(avg ?? null) === 'desaprobado'">
-                            {{ formatearPromedio(avg ?? null) }}
-                          </span>
+                        <td class="col-course footer-col-course">
+                          <div class="footer-course-cell">
+                            <span class="footer-score-pill"
+                                  [class.grade-high]="obtenerColorNota(avg ?? null) === 'aprobado'"
+                                  [class.grade-mid]="obtenerColorNota(avg ?? null) === 'regular'"
+                                  [class.grade-low]="obtenerColorNota(avg ?? null) === 'desaprobado'">
+                              {{ formatearPromedio(avg ?? null) }}
+                            </span>
+                            <small class="footer-course-label">Prom. curso</small>
+                          </div>
                         </td>
                       }
-                      <td class="footer-status-avg">
-                        <small>{{ kpisAula().alumnosEnRiesgo }} alertas</small>
+                      <td class="col-status footer-col-status">
+                        @if (kpisAula().alumnosEnRiesgo > 0) {
+                          <span class="status-chip-alert" title="{{ kpisAula().alumnosEnRiesgo }} estudiante(s) en riesgo">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            <span>{{ kpisAula().alumnosEnRiesgo }} alertas</span>
+                          </span>
+                        } @else {
+                          <span class="status-chip-clean" title="Sin estudiantes en riesgo">
+                            <i class="fa-solid fa-check"></i>
+                            <span>Al día</span>
+                          </span>
+                        }
                       </td>
-                      <td class="col-gpa footer-avg-total">
-                        <strong>{{ formatearPromedio(kpisAula().promedioAula) }}</strong>
+                      <td class="col-gpa footer-col-gpa">
+                        <span
+                          class="gpa-badge"
+                          [class.badge-emerald]="obtenerColorNota(kpisAula().promedioAula) === 'aprobado'"
+                          [class.badge-amber]="obtenerColorNota(kpisAula().promedioAula) === 'regular'"
+                          [class.badge-rose]="obtenerColorNota(kpisAula().promedioAula) === 'desaprobado'"
+                          [class.badge-gray]="obtenerColorNota(kpisAula().promedioAula) === 'vacio'"
+                          title="Promedio general del aula"
+                        >
+                          {{ formatearPromedio(kpisAula().promedioAula) }}
+                        </span>
                       </td>
-                      <td></td>
+                      <td class="col-actions footer-col-actions">
+                        <span class="footer-summary-tag" title="Consolidado de sección">Aula 360°</span>
+                      </td>
                     </tr>
                   </tfoot>
                 </table>
@@ -625,17 +680,32 @@
 
                     <!-- Mini Panorama de todos los cursos en la tarjeta -->
                     <div class="card-mini-courses">
-                      <span class="mini-courses-title">Rendimiento por curso:</span>
+                      <span class="mini-courses-title">Rendimiento y faltas por curso:</span>
                       <div class="mini-courses-grid">
                         @for (curso of alumno.cursos; track curso.asignacionId) {
+                          @let inasist = obtenerInasistenciasCurso(curso);
                           <div class="mini-course-item"
                                [class.mini-high]="obtenerColorNota(curso.promedio) === 'aprobado'"
                                [class.mini-mid]="obtenerColorNota(curso.promedio) === 'regular'"
                                [class.mini-low]="obtenerColorNota(curso.promedio) === 'desaprobado'"
                                [class.mini-none]="obtenerColorNota(curso.promedio) === 'vacio'"
-                               [title]="curso.curso + ': ' + formatearPromedio(curso.promedio)">
-                            <span class="mini-c-name">{{ curso.curso }}</span>
-                            <strong class="mini-c-score">{{ formatearPromedio(curso.promedio) }}</strong>
+                               [title]="obtenerDetalleCursoTooltip(curso, curso.curso)">
+                            <div class="mini-c-head">
+                              <span class="mini-c-name">{{ curso.curso }}</span>
+                              @if (inasist > 0) {
+                                <span class="mini-c-absence-chip" [title]="inasist + ' inasistencia(s)'">
+                                  <i class="fa-solid fa-user-xmark"></i> {{ inasist }}F
+                                </span>
+                              }
+                            </div>
+                            <div class="mini-c-foot">
+                              <strong class="mini-c-score">{{ formatearPromedio(curso.promedio) }}</strong>
+                              @if (curso.porcentajeAsistencia !== null && curso.porcentajeAsistencia !== undefined && (curso.clasesProgramadas ?? 0) > 0) {
+                                <small class="mini-c-att" [class.att-low]="curso.porcentajeAsistencia! < 80">
+                                  {{ curso.porcentajeAsistencia.toFixed(0) }}% asist.
+                                </small>
+                              }
+                            </div>
                           </div>
                         }
                       </div>
@@ -708,7 +778,7 @@
             </div>
 
             <div class="exp-kpi">
-              <span class="exp-kpi-lbl">Asistencia</span>
+              <span class="exp-kpi-lbl">Asistencia General</span>
               <strong class="exp-kpi-val">{{ obtenerAsistenciaPorcentaje(alumno.porcentajeAsistencia) }}</strong>
               <small>{{ alumno.clasesAsistidas }} de {{ alumno.clasesProgramadas }} clases</small>
             </div>
@@ -720,15 +790,16 @@
             </div>
           </div>
 
-          <!-- Desglose por curso con docentes y detalle de notas -->
+          <!-- Desglose por curso con docentes, notas y asistencias -->
           <div class="expediente-body">
             <h4 class="section-title">
               <i class="fa-solid fa-graduation-cap"></i>
-              Desglose de calificaciones por curso
+              Desglose de calificaciones y asistencias por curso
             </h4>
 
             <div class="course-breakdown-list">
               @for (curso of alumno.cursos; track curso.asignacionId) {
+                @let inasistCurso = obtenerInasistenciasCurso(curso);
                 <div class="course-detail-card" [class.course-failed]="curso.promedio !== null && curso.promedio < 11">
                   <div class="course-detail-header">
                     <div>
@@ -745,6 +816,35 @@
                          [class.badge-gray]="obtenerColorNota(curso.promedio) === 'vacio'">
                       <small>Promedio</small>
                       <strong>{{ formatearPromedio(curso.promedio) }}</strong>
+                    </div>
+                  </div>
+
+                  <!-- Franja de Asistencia del Curso -->
+                  <div class="course-att-summary-strip">
+                    <div class="att-strip-metric">
+                      <i class="fa-regular fa-calendar-check"></i>
+                      <span>Asistencia en el curso:</span>
+                      <strong>{{ obtenerAsistenciaPorcentaje(curso.porcentajeAsistencia ?? null) }}</strong>
+                      <small class="att-fraction">({{ curso.clasesAsistidas ?? 0 }}/{{ curso.clasesProgramadas ?? 0 }} clases)</small>
+                    </div>
+                    <div class="att-strip-badges">
+                      @if (inasistCurso > 0) {
+                        <span class="att-strip-badge badge-absence">
+                          <i class="fa-solid fa-triangle-exclamation"></i>
+                          <span>{{ inasistCurso }} inasistencia{{ inasistCurso > 1 ? 's' : '' }}</span>
+                        </span>
+                      } @else if ((curso.clasesProgramadas ?? 0) > 0) {
+                        <span class="att-strip-badge badge-ok">
+                          <i class="fa-solid fa-circle-check"></i>
+                          <span>0 inasistencias</span>
+                        </span>
+                      }
+                      @if ((curso.tardanzas ?? 0) > 0) {
+                        <span class="att-strip-badge badge-tardy">
+                          <i class="fa-regular fa-clock"></i>
+                          <span>{{ curso.tardanzas }} tardanza{{ (curso.tardanzas ?? 0) > 1 ? 's' : '' }}</span>
+                        </span>
+                      }
                     </div>
                   </div>
 

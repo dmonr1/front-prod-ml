@@ -31,6 +31,12 @@ export interface CursoAlumnoTutoriaResumen {
     etiqueta: string;
     nota: number;
   }>;
+  clasesProgramadas?: number;
+  clasesAsistidas?: number;
+  inasistencias?: number;
+  tardanzas?: number;
+  justificaciones?: number;
+  porcentajeAsistencia?: number | null;
 }
 
 export interface AlumnoTutoriaResumen {
@@ -40,6 +46,9 @@ export interface AlumnoTutoriaResumen {
   alumnoNombreCompleto: string;
   clasesProgramadas: number;
   clasesAsistidas: number;
+  inasistencias?: number;
+  tardanzas?: number;
+  justificaciones?: number;
   porcentajeAsistencia: number | null;
   promedioGeneral: number | null;
   cursos: CursoAlumnoTutoriaResumen[];

@@ -1,7 +1,7 @@
 <app-shell>
   <section class="student-profile-page">
     <div class="profile-card">
-      <!-- Cabecera institucional con botón volver y chip de período -->
+      <!-- Cabecera institucional con botón volver, chip de período y tag de modo -->
       <header class="profile-head profile-slide-in profile-slide-in-top">
         <div class="head-left-col">
           <a class="action-button secondary section-back-button" [routerLink]="enlaceVolver()" [queryParams]="queryParamsVolver()" [title]="textoVolver()">
@@ -18,7 +18,12 @@
           </span>
         </div>
 
-        <div class="head-right-col"></div>
+        <div class="head-right-col">
+          <span class="view-tag-chip" [class.is-course]="esVistaCurso()">
+            <i [class]="esVistaCurso() ? 'fa-solid fa-book-bookmark' : 'fa-solid fa-shield-halved'"></i>
+            {{ esVistaCurso() ? 'Ficha por Curso' : 'Ficha Panorámica' }}
+          </span>
+        </div>
       </header>
 
       @if (cargando()) {
@@ -60,7 +65,7 @@
               </div>
             </article>
 
-            <!-- Casos Detectados Sin Repetición y con Chips de Riesgo -->
+            <!-- Casos Detectados Organizados y Agrupados -->
             <article class="cases-card">
               <div class="section-head">
                 <span class="eyebrow">Diagnósticos</span>
@@ -69,30 +74,70 @@
               </div>
 
               <div class="case-list">
-                @for (item of prediccionesUnicas(); track item.id) {
-                  <button type="button" class="case-row" [class.active]="seleccionadaId() === item.id"
-                    (click)="seleccionarPrediccion(item.id)">
-                    <div class="case-icon-box" [class.is-course]="!!item.curso">
-                      <i [class]="item.curso ? 'fa-solid fa-book-bookmark' : 'fa-solid fa-shield-halved'"></i>
-                    </div>
+                @if (casosGlobales().length > 0) {
+                  <div class="case-group-heading">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <span>Diagnósticos Generales ({{ casosGlobales().length }})</span>
+                  </div>
+                  @for (item of casosGlobales(); track item.clave) {
+                    <button type="button" class="case-row"
+                      [class.active]="(seleccionadaClave() ? seleccionadaClave() === item.clave : seleccionadaId() === item.id)"
+                      (click)="seleccionarPrediccion(item)">
+                      <div class="case-icon-box" [class.is-corte]="item.corteSeguimientoId != null">
+                        <i [class]="item.corteSeguimientoId != null ? 'fa-solid fa-clock-rotate-left' : 'fa-solid fa-shield-halved'"></i>
+                      </div>
 
-                    <div class="case-main">
-                      <strong>{{ item.curso ? item.curso : 'Diagnóstico General' }}</strong>
-                      <span class="case-period-label">
-                        <i class="fa-regular fa-calendar"></i>
-                        {{ item.nombrePeriodoEvaluacion }}
+                      <div class="case-main">
+                        <strong>{{ item.tipoEvaluacionTitulo || 'Diagnóstico General' }}</strong>
+                        <span class="case-period-label">
+                          <i class="fa-regular fa-calendar"></i>
+                          {{ item.nombrePeriodoEvaluacion }}
+                        </span>
+                      </div>
+
+                      <span class="risk-badge-chip" [class.high]="item.nivelRiesgoNormalizado === 'ALTO'"
+                        [class.medium]="item.nivelRiesgoNormalizado === 'MEDIO'"
+                        [class.low]="item.nivelRiesgoNormalizado === 'BAJO'">
+                        <i class="fa-solid" [class.fa-triangle-exclamation]="item.nivelRiesgoNormalizado === 'ALTO'"
+                          [class.fa-circle-exclamation]="item.nivelRiesgoNormalizado === 'MEDIO'"
+                          [class.fa-circle-check]="item.nivelRiesgoNormalizado === 'BAJO'" aria-hidden="true"></i>
+                        {{ item.puntaje | number:'1.0-0' }}%
                       </span>
-                    </div>
+                    </button>
+                  }
+                }
 
-                    <span class="risk-badge-chip" [class.high]="item.nivelRiesgoNormalizado === 'ALTO'"
-                      [class.medium]="item.nivelRiesgoNormalizado === 'MEDIO'"
-                      [class.low]="item.nivelRiesgoNormalizado === 'BAJO'">
-                      <i class="fa-solid" [class.fa-triangle-exclamation]="item.nivelRiesgoNormalizado === 'ALTO'"
-                        [class.fa-circle-exclamation]="item.nivelRiesgoNormalizado === 'MEDIO'"
-                        [class.fa-circle-check]="item.nivelRiesgoNormalizado === 'BAJO'" aria-hidden="true"></i>
-                      {{ item.puntaje | number:'1.0-0' }}%
-                    </span>
-                  </button>
+                @if (casosCursos().length > 0) {
+                  <div class="case-group-heading course">
+                    <i class="fa-solid fa-book-bookmark"></i>
+                    <span>Cursos evaluados ({{ casosCursos().length }})</span>
+                  </div>
+                  @for (item of casosCursos(); track item.clave) {
+                    <button type="button" class="case-row"
+                      [class.active]="(seleccionadaClave() ? seleccionadaClave() === item.clave : seleccionadaId() === item.id)"
+                      (click)="seleccionarPrediccion(item)">
+                      <div class="case-icon-box is-course">
+                        <i class="fa-solid fa-book-bookmark"></i>
+                      </div>
+
+                      <div class="case-main">
+                        <strong>{{ item.curso }}</strong>
+                        <span class="case-period-label">
+                          <i class="fa-regular fa-calendar"></i>
+                          {{ item.nombrePeriodoEvaluacion }}
+                        </span>
+                      </div>
+
+                      <span class="risk-badge-chip" [class.high]="item.nivelRiesgoNormalizado === 'ALTO'"
+                        [class.medium]="item.nivelRiesgoNormalizado === 'MEDIO'"
+                        [class.low]="item.nivelRiesgoNormalizado === 'BAJO'">
+                        <i class="fa-solid" [class.fa-triangle-exclamation]="item.nivelRiesgoNormalizado === 'ALTO'"
+                          [class.fa-circle-exclamation]="item.nivelRiesgoNormalizado === 'MEDIO'"
+                          [class.fa-circle-check]="item.nivelRiesgoNormalizado === 'BAJO'" aria-hidden="true"></i>
+                        {{ item.puntaje | number:'1.0-0' }}%
+                      </span>
+                    </button>
+                  }
                 }
               </div>
             </article>
@@ -100,7 +145,78 @@
 
           <!-- Columna Principal: Métricas, Análisis y Recomendaciones -->
           <section class="analytics-column">
-            <!-- 1. Tarjetas KPI Superiores sin bordes con íconos e información relevante -->
+
+            <!-- Banner de Contexto de la Ficha (Diferenciado para Global y Curso) -->
+            <article class="context-banner profile-slide-in profile-slide-in-top" [class.is-course]="esVistaCurso()">
+              <div class="banner-top">
+                <div class="banner-identity">
+                  <div class="banner-icon-badge" [class.is-course]="esVistaCurso()">
+                    <i [class]="esVistaCurso() ? 'fa-solid fa-book-bookmark' : 'fa-solid fa-shield-halved'"></i>
+                  </div>
+                  <div class="banner-titles">
+                    <div class="banner-tag-row">
+                      <span class="banner-type-tag" [class.is-course]="esVistaCurso()">
+                        {{ esVistaCurso() ? 'Diagnóstico de Asignatura' : 'Visión Panorámica Institucional' }}
+                      </span>
+                      <span class="banner-sub-tag">
+                        {{ detalle.grado }} · Sec. {{ detalle.seccion }}
+                      </span>
+                      @if (detalle.semanaCorte != null) {
+                        <span class="banner-sub-tag corte-tag">
+                          <i class="fa-solid fa-clock-rotate-left"></i> Semana {{ detalle.semanaCorte }}
+                        </span>
+                      } @else {
+                        <span class="banner-sub-tag consolidado-tag">
+                          <i class="fa-solid fa-shield-halved"></i> Consolidado
+                        </span>
+                      }
+                    </div>
+                    <h3>
+                      {{ detalle.curso ? detalle.curso : (detalle.semanaCorte != null ? 'Diagnóstico General · Semana ' + detalle.semanaCorte : 'Diagnóstico General Consolidado') }}
+                    </h3>
+                    <p>
+                      {{ esVistaCurso()
+                          ? 'Evaluación predictiva focalizada en el desempeño académico y asistencia de este curso.'
+                          : (detalle.semanaCorte != null
+                              ? 'Evaluación predictiva temprana registrada en el corte de seguimiento de la semana ' + detalle.semanaCorte + '.'
+                              : 'Evaluación integral consolidada del alumno en todas sus asignaturas y asistencia institucional.') }}
+                    </p>
+                  </div>
+                </div>
+
+                <div class="banner-risk-badge" [class.high]="detalle.nivelRiesgoNormalizado === 'ALTO'"
+                  [class.medium]="detalle.nivelRiesgoNormalizado === 'MEDIO'"
+                  [class.low]="detalle.nivelRiesgoNormalizado === 'BAJO'">
+                  <div class="risk-badge-top">
+                    <i class="fa-solid" [class.fa-triangle-exclamation]="detalle.nivelRiesgoNormalizado === 'ALTO'"
+                      [class.fa-circle-exclamation]="detalle.nivelRiesgoNormalizado === 'MEDIO'"
+                      [class.fa-circle-check]="detalle.nivelRiesgoNormalizado === 'BAJO'" aria-hidden="true"></i>
+                    <span>Riesgo {{ detalle.nivelRiesgoNormalizado | lowercase }}</span>
+                  </div>
+                  <strong class="risk-badge-value">{{ detalle.puntaje | number:'1.0-0' }}%</strong>
+                  <span class="risk-badge-sub">Probabilidad de fracaso</span>
+                </div>
+              </div>
+
+              <!-- Selector de Períodos Integrado -->
+              @if (periodosDisponiblesPerfil().length) {
+                <div class="banner-periods-bar">
+                  <span class="periods-bar-label"><i class="fa-regular fa-calendar"></i> Período evaluativo:</span>
+                  <div class="period-chip-row">
+                    @for (periodo of periodosDisponiblesPerfil(); track periodo.id) {
+                      <button type="button" class="period-chip-btn"
+                        [class.active]="detalle.periodoEvaluacionId === periodo.id"
+                        [class.empty]="!tieneDatosPeriodo(periodo.id)"
+                        (click)="seleccionarPeriodoPerfil(periodo.id)">
+                        <span>{{ periodo.nombre }}</span>
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+            </article>
+
+            <!-- 1. Tarjetas KPI Superiores sin bordes con sombras limpias -->
             <div class="summary-grid profile-slide-in profile-slide-in-top">
               @for (item of metricasKpi(); track item.etiqueta) {
                 <article class="summary-tile" [class.tone-high]="item.tono === 'high'"
@@ -109,10 +225,12 @@
                     <span class="tile-label">{{ item.etiqueta }}</span>
                     <div class="tile-icon" [class.tone-high]="item.tono === 'high'"
                       [class.tone-medium]="item.tono === 'medium'" [class.tone-low]="item.tono === 'low'">
-                      @if (item.etiqueta.includes('Promedio')) {
+                      @if (item.etiqueta.includes('Nota') || item.etiqueta.includes('Promedio')) {
                         <i class="fa-solid fa-award"></i>
                       } @else if (item.etiqueta.includes('Riesgo')) {
                         <i class="fa-solid fa-triangle-exclamation"></i>
+                      } @else if (item.etiqueta.includes('Examen') || item.etiqueta.includes('mínima')) {
+                        <i class="fa-solid fa-file-signature"></i>
                       } @else if (item.etiqueta.includes('Tendencia')) {
                         <i class="fa-solid fa-arrow-trend-up"></i>
                       } @else {
@@ -128,95 +246,115 @@
               }
             </div>
 
-            <!-- 2. Grilla de Análisis Central: Indicador de Riesgo, Factores y Evolución -->
-            <div class="analysis-grid profile-slide-in profile-slide-in-middle">
-              <!-- Card 1: Indicador de Riesgo Moderno con Anillo de Progreso (reemplazo del medidor roto) -->
-              <article class="analysis-card hero-analytics-card">
-                <div class="analysis-head">
-                  <div class="head-card">
-                    <div>
-                      <span class="eyebrow">Predicción de riesgo académico</span>
-                      <h3>{{ detalle.curso || 'Vista global del alumno' }}</h3>
-                    </div>
-
-                    <span class="risk-badge-chip tit" [class.high]="detalle.nivelRiesgoNormalizado === 'ALTO'"
-                      [class.medium]="detalle.nivelRiesgoNormalizado === 'MEDIO'"
-                      [class.low]="detalle.nivelRiesgoNormalizado === 'BAJO'">
-                      <i class="fa-solid" [class.fa-triangle-exclamation]="detalle.nivelRiesgoNormalizado === 'ALTO'"
-                        [class.fa-circle-exclamation]="detalle.nivelRiesgoNormalizado === 'MEDIO'"
-                        [class.fa-circle-check]="detalle.nivelRiesgoNormalizado === 'BAJO'" aria-hidden="true"></i>
-                      {{ detalle.nivelRiesgoNormalizado }}
-                    </span>
+            <!-- 2. Grilla Central Balanceada de 2 Columnas (Sin espacios de sobra) -->
+            <div class="analysis-grid-balanced profile-slide-in profile-slide-in-middle">
+              <!-- Card 1: Diagnóstico Académico y Anillo de Riesgo -->
+              <article class="analysis-card diagnosis-card">
+                <div class="analysis-card-head">
+                  <div class="head-titles">
+                    <span class="eyebrow">DIAGNÓSTICO ACADÉMICO</span>
+                    <h3>{{ esVistaCurso() ? 'Estado en ' + detalle.curso : 'Evaluación institucional del caso' }}</h3>
                   </div>
-
-                  <!-- Chips de selección de período evaluativo -->
-                  @if (periodosDisponiblesPerfil().length) {
-                    <div class="period-chip-row">
-                      @for (periodo of periodosDisponiblesPerfil(); track periodo.id) {
-                        <button type="button" class="period-chip-btn"
-                          [class.active]="detalle.periodoEvaluacionId === periodo.id"
-                          [class.empty]="!prediccionesGlobales().some(item => item.periodoEvaluacionId === periodo.id)"
-                          (click)="seleccionarPeriodoPerfil(periodo.id)">
-                          <i class="fa-regular fa-calendar"></i>
-                          <span>{{ periodo.nombre }}</span>
-                        </button>
-                      }
-                    </div>
-                  }
-                </div>
-
-                <!-- Anillo de Riesgo Circular Moderno y Fiable -->
-                <div class="risk-circle-wrapper">
-                  <div class="risk-progress-ring" [class.high]="detalle.nivelRiesgoNormalizado === 'ALTO'"
+                  <span class="risk-badge-chip" [class.high]="detalle.nivelRiesgoNormalizado === 'ALTO'"
                     [class.medium]="detalle.nivelRiesgoNormalizado === 'MEDIO'"
                     [class.low]="detalle.nivelRiesgoNormalizado === 'BAJO'">
-                    <svg class="ring-svg" viewBox="0 0 140 140">
-                      <circle class="ring-track" cx="70" cy="70" r="54" />
-                      <circle class="ring-progress" cx="70" cy="70" r="54"
-                        [style.strokeDashoffset]="calcularOffsetCirculo(detalle.puntaje)" />
-                    </svg>
-                    <div class="ring-data">
-                      <span class="ring-score">{{ detalle.puntaje | number:'1.0-0' }}%</span>
-                      <span class="ring-label" [class.high]="detalle.nivelRiesgoNormalizado === 'ALTO'"
-                        [class.medium]="detalle.nivelRiesgoNormalizado === 'MEDIO'"
-                        [class.low]="detalle.nivelRiesgoNormalizado === 'BAJO'">
-                        Riesgo {{ detalle.nivelRiesgoNormalizado | lowercase }}
+                    {{ detalle.nivelRiesgoNormalizado }}
+                  </span>
+                </div>
+
+                <div class="diagnosis-score-section">
+                  <div class="risk-circle-wrapper">
+                    <div class="risk-progress-ring" [class.high]="detalle.nivelRiesgoNormalizado === 'ALTO'"
+                      [class.medium]="detalle.nivelRiesgoNormalizado === 'MEDIO'"
+                      [class.low]="detalle.nivelRiesgoNormalizado === 'BAJO'">
+                      <svg class="ring-svg" viewBox="0 0 140 140">
+                        <circle class="ring-track" cx="70" cy="70" r="54" />
+                        <circle class="ring-progress" cx="70" cy="70" r="54"
+                          [style.strokeDashoffset]="calcularOffsetCirculo(detalle.puntaje)" />
+                      </svg>
+                      <div class="ring-data">
+                        <span class="ring-score">{{ detalle.puntaje | number:'1.0-0' }}%</span>
+                        <span class="ring-label" [class.high]="detalle.nivelRiesgoNormalizado === 'ALTO'"
+                          [class.medium]="detalle.nivelRiesgoNormalizado === 'MEDIO'"
+                          [class.low]="detalle.nivelRiesgoNormalizado === 'BAJO'">
+                          Riesgo {{ detalle.nivelRiesgoNormalizado | lowercase }}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div class="risk-scale-row">
+                      <span class="scale-chip low" [class.active]="detalle.nivelRiesgoNormalizado === 'BAJO'">
+                        Bajo 0–30%
+                      </span>
+                      <span class="scale-chip medium" [class.active]="detalle.nivelRiesgoNormalizado === 'MEDIO'">
+                        Medio 31–70%
+                      </span>
+                      <span class="scale-chip high" [class.active]="detalle.nivelRiesgoNormalizado === 'ALTO'">
+                        Alto 71–100%
                       </span>
                     </div>
                   </div>
 
-                  <!-- Escala de severidad explicativa en chips -->
-                  <div class="risk-scale-row">
-                    <span class="scale-chip low" [class.active]="detalle.nivelRiesgoNormalizado === 'BAJO'">
-                      Bajo 0–30%
-                    </span>
-                    <span class="scale-chip medium" [class.active]="detalle.nivelRiesgoNormalizado === 'MEDIO'">
-                      Medio 31–70%
-                    </span>
-                    <span class="scale-chip high" [class.active]="detalle.nivelRiesgoNormalizado === 'ALTO'">
-                      Alto 71–100%
-                    </span>
+                  <!-- Mini Métricas Clave de Desglose -->
+                  <div class="quick-kpi-strip">
+                    @if (esVistaCurso()) {
+                      <div class="quick-kpi-cell">
+                        <span class="qk-label">Nota curso</span>
+                        <strong class="qk-value">{{ notaCurso() !== null ? (notaCurso() | number:'1.1-1') : '--' }}</strong>
+                      </div>
+                      <div class="quick-kpi-cell">
+                        <span class="qk-label">Examen</span>
+                        <strong class="qk-value">{{ notaExamenPrincipal() !== null ? (notaExamenPrincipal() | number:'1.1-1') : '--' }}</strong>
+                      </div>
+                      <div class="quick-kpi-cell">
+                        <span class="qk-label">Nota mínima</span>
+                        <strong class="qk-value">{{ notaMinimaCurso() !== null ? (notaMinimaCurso() | number:'1.1-1') : '--' }}</strong>
+                      </div>
+                      <div class="quick-kpi-cell">
+                        <span class="qk-label">Asistencia</span>
+                        <strong class="qk-value">{{ porcentajeAsistencia() !== null ? (porcentajeAsistencia() | number:'1.0-0') + '%' : '--' }}</strong>
+                      </div>
+                    } @else {
+                      <div class="quick-kpi-cell">
+                        <span class="qk-label">Promedio</span>
+                        <strong class="qk-value">{{ promedioGeneral() !== null ? (promedioGeneral() | number:'1.1-1') : '--' }}</strong>
+                      </div>
+                      <div class="quick-kpi-cell">
+                        <span class="qk-label">Desaprobados</span>
+                        <strong class="qk-value" [class.danger]="conteoCursosDesaprobados() > 0">{{ conteoCursosDesaprobados() }} cursos</strong>
+                      </div>
+                      <div class="quick-kpi-cell">
+                        <span class="qk-label">Asistencia</span>
+                        <strong class="qk-value">{{ porcentajeAsistencia() !== null ? (porcentajeAsistencia() | number:'1.0-0') + '%' : '--' }}</strong>
+                      </div>
+                      <div class="quick-kpi-cell">
+                        <span class="qk-label">Tendencia</span>
+                        <strong class="qk-value">{{ tendenciaRiesgo().titulo }}</strong>
+                      </div>
+                    }
                   </div>
                 </div>
 
+                <!-- Caja de Diagnóstico Interpretativo -->
                 <div class="interpretation-box" [class.high]="detalle.nivelRiesgoNormalizado === 'ALTO'"
                   [class.medium]="detalle.nivelRiesgoNormalizado === 'MEDIO'"
                   [class.low]="detalle.nivelRiesgoNormalizado === 'BAJO'">
                   <div class="interpretation-header">
                     <i class="fa-solid fa-file-waveform"></i>
-                    <strong>Diagnóstico del período</strong>
+                    <strong>Diagnóstico {{ detalle.curso ? 'de la materia' : 'institucional' }}</strong>
                   </div>
                   <p>{{ detalle.alertaPrincipal }}</p>
                 </div>
               </article>
 
-              <!-- Card 2: Factores que influyen con diseño de barras limpias y chips -->
+              <!-- Card 2: Factores Determinantes que Influyen -->
               <article class="analysis-card factors-card">
-                <div class="analysis-head">
-                  <div>
-                    <span class="eyebrow">Factores que influyen</span>
-                    <h3>Lectura del caso actual</h3>
+                <div class="analysis-card-head">
+                  <div class="head-titles">
+                    <span class="eyebrow">FACTORES DETERMINANTES</span>
+                    <h3>{{ esVistaCurso() ? 'Variables de ' + detalle.curso : 'Lectura de factores analíticos' }}</h3>
                   </div>
+                  <span class="factors-counter-badge">{{ factoresAnaliticos().length }} variables</span>
                 </div>
 
                 <div class="factor-bars">
@@ -242,14 +380,18 @@
                   }
                 </div>
               </article>
+            </div>
 
-              <!-- Card 3: Evolución del riesgo por períodos con resumen de chips -->
+            <!-- 3. Grilla Inferior Balanceada de 2 Columnas: Evolución y Recomendaciones -->
+            <div class="bottom-grid-balanced profile-slide-in profile-slide-in-bottom">
+              <!-- Card 1: Evolución del Riesgo -->
               <article class="analysis-card evolution-card">
-                <div class="analysis-head">
-                  <div>
-                    <span class="eyebrow">Evolución del riesgo</span>
-                    <h3>Por períodos de evaluación</h3>
+                <div class="analysis-card-head">
+                  <div class="head-titles">
+                    <span class="eyebrow">HISTÓRICO ACADÉMICO</span>
+                    <h3>{{ detalle.curso ? 'Evolución en ' + detalle.curso : 'Por períodos de evaluación' }}</h3>
                   </div>
+                  <span class="evolution-subtag">Seguimiento periódico</span>
                 </div>
 
                 @if (svgEvolucion().points.length > 0) {
@@ -306,7 +448,6 @@
                       </div>
                     </div>
 
-                    <!-- Mini-resumen de chips para cada período -->
                     <div class="evolution-period-chips">
                       @for (p of evolucionRiesgo(); track p.etiqueta) {
                         <div class="period-status-chip" [class.has-data]="p.valor !== null">
@@ -330,52 +471,55 @@
                   </div>
                 }
               </article>
-            </div>
 
-            <!-- 3. Panel de Recomendaciones Personalizadas con Tarjetas Modernas sin bordes oscuros -->
-            <section class="recommendations-panel profile-slide-in profile-slide-in-bottom">
-              <div class="analysis-head">
-                <div>
-                  <span class="eyebrow">Recomendaciones personalizadas</span>
-                  <h3>Acciones sugeridas para el alumno</h3>
-                </div>
-              </div>
-
-              <div class="recommendations-grid">
-                @for (recomendacion of recomendacionesPersonalizadas(); track recomendacion.titulo) {
-                  <article class="recommendation-card" [class.high]="recomendacion.tono === 'high'"
-                    [class.medium]="recomendacion.tono === 'medium'" [class.low]="recomendacion.tono === 'low'">
-                    <div class="rec-top-row">
-                      <div class="recommendation-icon" [class.high]="recomendacion.tono === 'high'"
-                        [class.medium]="recomendacion.tono === 'medium'" [class.low]="recomendacion.tono === 'low'">
-                        <i [class]="recomendacion.icono"></i>
-                      </div>
-                      <span class="rec-badge" [class.high]="recomendacion.tono === 'high'"
-                        [class.medium]="recomendacion.tono === 'medium'" [class.low]="recomendacion.tono === 'low'">
-                        {{ recomendacion.tono === 'high' ? 'Prioridad alta' : recomendacion.tono === 'medium' ? 'Recomendado' : 'Seguimiento' }}
-                      </span>
-                    </div>
-
-                    <div class="recommendation-copy">
-                      <h4>{{ recomendacion.titulo }}</h4>
-                      <p>{{ recomendacion.descripcion }}</p>
-                      <button type="button" class="rec-action-chip">
-                        <span>{{ recomendacion.accion }}</span>
-                        <i class="fa-solid fa-arrow-right"></i>
-                      </button>
-                    </div>
-                  </article>
-                } @empty {
-                  <div class="empty-state-card" style="grid-column: 1 / -1;">
-                    <div class="empty-state-badge">
-                      <i class="fa-solid fa-lightbulb"></i>
-                    </div>
-                    <strong class="empty-state-title">Sin recomendaciones pendientes</strong>
-                    <p class="empty-state-desc">El estudiante no presenta indicadores de riesgo ni acciones prioritarias pendientes para este período.</p>
+              <!-- Card 2: Recomendaciones Personalizadas (Organizadas en lista compacta de acciones) -->
+              <article class="analysis-card recommendations-panel">
+                <div class="analysis-card-head">
+                  <div class="head-titles">
+                    <span class="eyebrow">PLAN DE ACOMPAÑAMIENTO</span>
+                    <h3>{{ esVistaCurso() ? 'Sugerencias para ' + detalle.curso : 'Acciones sugeridas para el alumno' }}</h3>
                   </div>
-                }
-              </div>
-            </section>
+                  <span class="recommendations-badge">{{ recomendacionesPersonalizadas().length }} acciones</span>
+                </div>
+
+                <div class="recommendations-stack">
+                  @for (recomendacion of recomendacionesPersonalizadas(); track recomendacion.titulo) {
+                    <article class="recommendation-card" [class.high]="recomendacion.tono === 'high'"
+                      [class.medium]="recomendacion.tono === 'medium'" [class.low]="recomendacion.tono === 'low'">
+                      <div class="rec-top-row">
+                        <div class="recommendation-icon" [class.high]="recomendacion.tono === 'high'"
+                          [class.medium]="recomendacion.tono === 'medium'" [class.low]="recomendacion.tono === 'low'">
+                          <i [class]="recomendacion.icono"></i>
+                        </div>
+                        <div class="rec-title-block">
+                          <h4>{{ recomendacion.titulo }}</h4>
+                          <span class="rec-badge" [class.high]="recomendacion.tono === 'high'"
+                            [class.medium]="recomendacion.tono === 'medium'" [class.low]="recomendacion.tono === 'low'">
+                            {{ recomendacion.tono === 'high' ? 'Prioridad alta' : recomendacion.tono === 'medium' ? 'Recomendado' : 'Seguimiento' }}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div class="recommendation-copy">
+                        <p>{{ recomendacion.descripcion }}</p>
+                        <button type="button" class="rec-action-chip">
+                          <span>{{ recomendacion.accion }}</span>
+                          <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                      </div>
+                    </article>
+                  } @empty {
+                    <div class="empty-state-card">
+                      <div class="empty-state-badge">
+                        <i class="fa-solid fa-lightbulb"></i>
+                      </div>
+                      <strong class="empty-state-title">Sin recomendaciones pendientes</strong>
+                      <p class="empty-state-desc">El estudiante no presenta indicadores de riesgo ni acciones prioritarias pendientes para este período.</p>
+                    </div>
+                  }
+                </div>
+              </article>
+            </div>
           </section>
         </div>
       }

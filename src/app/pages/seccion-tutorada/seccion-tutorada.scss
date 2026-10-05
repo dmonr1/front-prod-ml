@@ -729,12 +729,17 @@
     bottom: 0;
     z-index: 20;
     background: var(--color-bg-secondary);
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
+
+    tr {
+      background: var(--color-bg-secondary);
+    }
 
     td {
-      padding: 11px 14px;
+      padding: 9px 12px;
       border: none !important;
-      font-weight: 700;
-      color: var(--color-text-primary);
+      vertical-align: middle;
+      background: var(--color-bg-secondary);
     }
   }
 }
@@ -900,11 +905,52 @@
 .grade-score {
   font-size: 12.5px;
   font-weight: 800;
+  line-height: 1.1;
+}
+
+.grade-main-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.course-absence-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+.grade-meta-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 1px;
 }
 
 .grade-eval-count {
   font-size: 8.5px;
   opacity: 0.85;
+}
+
+.grade-att-mini {
+  font-size: 8.5px;
+  font-weight: 700;
+  color: #059669;
+
+  &.att-low {
+    color: #dc2626;
+    font-weight: 800;
+  }
 }
 
 .col-status {
@@ -995,31 +1041,120 @@
 }
 
 .footer-summary-row {
-  .footer-label {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    font-size: 11.5px;
-    color: var(--color-text-secondary);
-  }
-
-  .footer-score-pill {
-    display: inline-block;
-    padding: 3px 8px;
-    border-radius: 6px;
-    font-size: 11.5px;
-    font-weight: 800;
-  }
-
-  .footer-status-avg {
+  .footer-col-num {
+    width: 38px;
     text-align: center;
-    font-size: 10.5px;
-    color: var(--color-text-secondary);
+    color: var(--color-brand-primary);
+    font-size: 13px;
   }
 
-  .footer-avg-total {
-    font-size: 13px;
-    color: var(--color-brand-primary);
+  .footer-col-student {
+    position: sticky;
+    left: 0;
+    z-index: 22;
+    background: var(--color-bg-secondary) !important;
+    min-width: 230px;
+    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.02);
+
+    .footer-student-inner {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .footer-title-text {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--color-text-primary);
+      white-space: nowrap;
+    }
+
+    .footer-sub-text {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      white-space: nowrap;
+    }
+  }
+
+  .footer-col-att {
+    min-width: 120px;
+    text-align: center;
+  }
+
+  .footer-col-course {
+    min-width: 130px;
+    text-align: center;
+
+    .footer-course-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+    }
+
+    .footer-score-pill {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 800;
+      min-width: 48px;
+      text-align: center;
+      line-height: 1.2;
+
+      &.grade-high {
+        background: rgba(16, 185, 129, 0.15);
+        color: #047857;
+      }
+
+      &.grade-mid {
+        background: rgba(245, 158, 11, 0.15);
+        color: #b45309;
+      }
+
+      &.grade-low {
+        background: rgba(239, 68, 68, 0.16);
+        color: #be123c;
+      }
+    }
+
+    .footer-course-label {
+      font-size: 9px;
+      color: var(--color-text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+  }
+
+  .footer-col-status {
+    width: 95px;
+    text-align: center;
+  }
+
+  .footer-col-gpa {
+    width: 85px;
+    text-align: center;
+  }
+
+  .footer-col-actions {
+    width: 95px;
+    text-align: center;
+
+    .footer-summary-tag {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: color-mix(in srgb, var(--color-brand-primary) 10%, transparent);
+      color: var(--color-brand-primary);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
   }
 }
 
@@ -1240,18 +1375,17 @@
 
 .mini-courses-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));
-  gap: 5px;
+  grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
+  gap: 6px;
 }
 
 .mini-course-item {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4px;
-  padding: 3px 6px;
-  border-radius: 6px;
-  font-size: 10.5px;
+  flex-direction: column;
+  gap: 2px;
+  padding: 5px 7px;
+  border-radius: 7px;
+  font-size: 11px;
 
   &.mini-high {
     background: rgba(16, 185, 129, 0.1);
@@ -1272,15 +1406,57 @@
   }
 }
 
+.mini-c-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
 .mini-c-name {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 70px;
+  font-size: 10.5px;
+  font-weight: 600;
+  max-width: 80px;
+}
+
+.mini-c-absence-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 8.5px;
+  font-weight: 800;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.mini-c-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px;
 }
 
 .mini-c-score {
+  font-size: 12px;
   font-weight: 800;
+}
+
+.mini-c-att {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+
+  &.att-low {
+    color: #dc2626;
+    font-weight: 700;
+  }
 }
 
 .card-footer-actions {
@@ -1570,6 +1746,72 @@
     font-size: 14px;
     font-weight: 800;
     line-height: 1.1;
+  }
+}
+
+.course-att-summary-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--color-surface-primary);
+  border: 1px solid var(--color-border-subtle);
+  font-size: 11px;
+}
+
+.att-strip-metric {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-secondary);
+
+  i {
+    color: var(--color-brand-primary);
+    font-size: 11.5px;
+  }
+
+  strong {
+    color: var(--color-text-primary);
+    font-weight: 800;
+  }
+
+  .att-fraction {
+    color: var(--color-text-muted);
+    font-size: 10px;
+  }
+}
+
+.att-strip-badges {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.att-strip-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+
+  &.badge-absence {
+    background: #fee2e2;
+    color: #b91c1c;
+  }
+
+  &.badge-ok {
+    background: #ecfdf5;
+    color: #047857;
+  }
+
+  &.badge-tardy {
+    background: #fef3c7;
+    color: #b45309;
   }
 }
 

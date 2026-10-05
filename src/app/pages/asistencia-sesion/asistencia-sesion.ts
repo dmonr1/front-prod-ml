@@ -675,8 +675,7 @@ export class AsistenciaSesionPage implements OnInit {
   }
 
   puedeRegistrarSesion(sesion: SesionProgramada): boolean {
-    return !!sesion.periodo && sesion.esHoy && !this.tieneAsistencia(sesion)
-      && (this.resumenSesion(sesion)?.total ?? 0) > 0;
+    return !!sesion.periodo && sesion.esHoy && !this.tieneAsistencia(sesion);
   }
 
   estadoSesion(sesion: SesionProgramada): string {

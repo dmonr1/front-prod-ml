@@ -17,11 +17,13 @@ type NivelRiesgo = 'ALTO' | 'MEDIO' | 'BAJO';
 type TonoFactor = 'high' | 'medium' | 'low';
 
 interface PrediccionDetalleVista extends PrediccionRiesgo {
+  clave: string;
   nivelRiesgoNormalizado: NivelRiesgo;
   puntaje: number;
   factores: string[];
   alertaPrincipal: string;
   recomendacionPrincipal: string;
+  tipoEvaluacionTitulo?: string;
 }
 
 interface FactorAnalitico {
@@ -75,6 +77,8 @@ export class PerfilAlumno {
     null;
   readonly seccionId = Number(this.route.snapshot.queryParamMap.get('seccionId'));
   readonly vista = this.route.snapshot.queryParamMap.get('vista');
+  readonly cursoId = Number(this.route.snapshot.queryParamMap.get('cursoId')) || null;
+  readonly prediccionId = Number(this.route.snapshot.queryParamMap.get('prediccionId')) || null;
 
   readonly enlaceVolver = computed(() => {
     if (this.from === 'seccion-tutorada') {
@@ -107,12 +111,21 @@ export class PerfilAlumno {
   readonly periodosEvaluacion = signal<PeriodoEvaluacion[]>([]);
   readonly recomendacionesCargadas = signal<RecomendacionSeguimiento[]>([]);
   readonly seleccionadaId = signal<number | null>(null);
+  readonly seleccionadaClave = signal<string | null>(null);
 
   constructor() {
     this.cargarPerfil();
   }
 
   readonly prediccionSeleccionada = computed(() => {
+    const clave = this.seleccionadaClave();
+    if (clave) {
+      const encontrada = this.predicciones().find((item) => item.clave === clave);
+      if (encontrada) {
+        return encontrada;
+      }
+    }
+
     const actual =
       this.predicciones().find((item) => item.id === this.seleccionadaId()) ??
       this.predicciones()[0] ??
@@ -137,15 +150,31 @@ export class PerfilAlumno {
 
     for (const item of list) {
       const periodoObj = periodos.find((p) => p.id === item.periodoEvaluacionId);
-      let periodoNombre = item.nombrePeriodoEvaluacion
+      const basePeriodoNombre = item.nombrePeriodoEvaluacion
         || periodoObj?.nombre
         || (item.numeroPeriodoEvaluacion ? `Período ${item.numeroPeriodoEvaluacion}` : 'General');
 
+      let periodoNombre = basePeriodoNombre;
+      let tipoTitulo = item.curso ? item.curso : 'Diagnóstico General';
+
       if (item.corteSeguimientoId != null) {
         if (item.semanaCorte != null) {
-          periodoNombre = `${periodoNombre} · Semana ${item.semanaCorte}`;
+          periodoNombre = `${basePeriodoNombre} · Semana ${item.semanaCorte}`;
+          if (!item.curso) {
+            tipoTitulo = `Seguimiento Semana ${item.semanaCorte}`;
+          }
         } else {
-          periodoNombre = `${periodoNombre} · Corte`;
+          periodoNombre = `${basePeriodoNombre} · Corte`;
+          if (!item.curso) {
+            tipoTitulo = 'Corte de Seguimiento';
+          }
+        }
+      } else {
+        if (!item.curso) {
+          tipoTitulo = 'Consolidado del Período';
+          periodoNombre = `${basePeriodoNombre} · Consolidado`;
+        } else {
+          periodoNombre = `${basePeriodoNombre} · Consolidado`;
         }
       }
 
@@ -154,6 +183,7 @@ export class PerfilAlumno {
         seen.add(key);
         unicas.push({
           ...item,
+          tipoEvaluacionTitulo: tipoTitulo,
           nombrePeriodoEvaluacion: periodoNombre
         });
       }
@@ -161,6 +191,19 @@ export class PerfilAlumno {
 
     return unicas;
   });
+
+  readonly esVistaCurso = computed(() => !!this.prediccionSeleccionada()?.curso);
+  readonly cursoNombre = computed(() => this.prediccionSeleccionada()?.curso ?? null);
+  readonly casosGlobales = computed(() => this.prediccionesUnicas().filter((p) => !p.curso));
+  readonly casosCursos = computed(() => this.prediccionesUnicas().filter((p) => !!p.curso));
+  readonly conteoCursosDesaprobados = computed(() =>
+    this.obtenerNumero(this.variablesSeleccionadas()['cantidad_cursos_desaprobados']) ?? 0
+  );
+  readonly conteoNotasDesaprobadas = computed(() =>
+    this.obtenerNumero(this.variablesSeleccionadas()['cantidad_notas_desaprobadas_total']) ??
+    this.obtenerNumero(this.variablesSeleccionadas()['cantidad_notas_desaprobadas']) ??
+    0
+  );
 
   readonly prediccionesGlobales = computed(() =>
     this.predicciones()
@@ -227,6 +270,28 @@ export class PerfilAlumno {
     return promedio ?? null;
   });
 
+  readonly notaCurso = computed(() => {
+    const variables = this.variablesSeleccionadas();
+    const nota =
+      this.obtenerNumero(variables['nota_curso']) ??
+      this.obtenerNumero(variables['promedio_general']);
+    return nota ?? null;
+  });
+
+  readonly notaExamenPrincipal = computed(() => {
+    const nota = this.obtenerNumero(this.variablesSeleccionadas()['nota_examen_principal']);
+    return nota ?? null;
+  });
+
+  readonly notaMinimaCurso = computed(() => {
+    const variables = this.variablesSeleccionadas();
+    const nota =
+      this.obtenerNumero(variables['nota_minima_curso']) ??
+      this.obtenerNumero(variables['peor_nota_periodo']) ??
+      this.obtenerNumero(variables['nota_minima']);
+    return nota ?? null;
+  });
+
   readonly porcentajeAsistencia = computed(() => {
     const variables = this.variablesSeleccionadas();
     const asistencia = this.obtenerNumero(variables['porcentaje_asistencia']);
@@ -238,14 +303,25 @@ export class PerfilAlumno {
   });
 
   readonly tendenciaRiesgo = computed(() => {
-    const serie = this.prediccionesGlobales()
+    let serie = this.prediccionesGlobales()
       .filter((item) => item.corteSeguimientoId == null && item.periodoEvaluacionId != null)
       .sort((a, b) => (a.numeroPeriodoEvaluacion ?? 0) - (b.numeroPeriodoEvaluacion ?? 0));
+
+    let comparacionContexto = 'primer período';
+    if (serie.length < 2) {
+      const cortes = this.prediccionesGlobales()
+        .filter((item) => item.corteSeguimientoId != null)
+        .sort((a, b) => (a.semanaCorte ?? 0) - (b.semanaCorte ?? 0));
+      if (cortes.length >= 2) {
+        serie = cortes;
+        comparacionContexto = 'corte anterior';
+      }
+    }
 
     if (serie.length < 2) {
       return {
         titulo: 'En observación',
-        detalle: 'Aún no hay suficientes períodos para comparar',
+        detalle: 'Aún no hay suficientes períodos o cortes para comparar',
         tono: 'medium' as TonoFactor
       };
     }
@@ -257,7 +333,7 @@ export class PerfilAlumno {
     if (diferencia <= -5) {
       return {
         titulo: 'En descenso',
-        detalle: `Bajó ${Math.abs(diferencia).toFixed(1)} pts frente al primer período`,
+        detalle: `Bajó ${Math.abs(diferencia).toFixed(1)} pts frente al ${comparacionContexto}`,
         tono: 'low' as TonoFactor
       };
     }
@@ -265,14 +341,14 @@ export class PerfilAlumno {
     if (diferencia >= 5) {
       return {
         titulo: 'En aumento',
-        detalle: `Subió ${diferencia.toFixed(1)} pts frente al primer período`,
+        detalle: `Subió ${diferencia.toFixed(1)} pts frente al ${comparacionContexto}`,
         tono: 'high' as TonoFactor
       };
     }
 
     return {
       titulo: 'Estable',
-      detalle: 'Sin variación importante entre períodos',
+      detalle: 'Sin variación importante en el seguimiento',
       tono: 'medium' as TonoFactor
     };
   });
@@ -281,6 +357,56 @@ export class PerfilAlumno {
     const detalle = this.prediccionSeleccionada();
     if (!detalle) {
       return [];
+    }
+
+    if (detalle.curso) {
+      const nota = this.notaCurso();
+      const examen = this.notaExamenPrincipal();
+      const notaMinima = this.notaMinimaCurso();
+      const asistencia = this.porcentajeAsistencia();
+
+      const itemEvaluacion = examen != null
+        ? {
+            etiqueta: 'Examen principal',
+            valor: this.formatearNumero(examen, 1),
+            ayuda: examen >= 11 ? 'Examen aprobado' : 'Examen desaprobado',
+            tono: (examen >= 14 ? 'low' : examen >= 11 ? 'medium' : 'high') as TonoFactor
+          }
+        : notaMinima != null
+        ? {
+            etiqueta: 'Nota mínima',
+            valor: this.formatearNumero(notaMinima, 1),
+            ayuda: notaMinima >= 11 ? 'Evaluaciones aprobadas' : 'Evaluación desaprobada',
+            tono: (notaMinima >= 14 ? 'low' : notaMinima >= 11 ? 'medium' : 'high') as TonoFactor
+          }
+        : {
+            etiqueta: 'Tendencia',
+            valor: this.tendenciaRiesgo().titulo,
+            ayuda: this.tendenciaRiesgo().detalle,
+            tono: this.tendenciaRiesgo().tono
+          };
+
+      return [
+        {
+          etiqueta: `Nota en ${detalle.curso}`,
+          valor: nota == null ? '--' : this.formatearNumero(nota, 1),
+          ayuda: nota != null && nota >= 14 ? 'Buen rendimiento en curso' : nota != null && nota >= 11 ? 'Rendimiento en riesgo' : 'Rendimiento desaprobado',
+          tono: (nota != null && nota >= 14 ? 'low' : nota != null && nota >= 11 ? 'medium' : 'high') as TonoFactor
+        },
+        {
+          etiqueta: 'Riesgo del curso',
+          valor: `${detalle.puntaje.toFixed(0)}%`,
+          ayuda: detalle.nivelRiesgoNormalizado === 'ALTO' ? `Alto riesgo en ${detalle.curso}` : detalle.nivelRiesgoNormalizado === 'MEDIO' ? 'Seguimiento preventivo' : 'Riesgo controlado',
+          tono: this.mapearNivelATono(detalle.nivelRiesgoNormalizado)
+        },
+        itemEvaluacion,
+        {
+          etiqueta: 'Asistencia',
+          valor: asistencia == null ? '--' : `${this.formatearNumero(asistencia, 0)}%`,
+          ayuda: asistencia == null ? 'Sin registros de clase' : asistencia >= 85 ? 'Asistencia adecuada' : 'Requiere seguimiento',
+          tono: (asistencia == null ? 'low' : asistencia >= 85 ? 'low' : asistencia >= 70 ? 'medium' : 'high') as TonoFactor
+        }
+      ];
     }
 
     return [
@@ -313,16 +439,29 @@ export class PerfilAlumno {
 
   readonly factoresAnaliticos = computed<FactorAnalitico[]>(() => {
     const variables = this.variablesSeleccionadas();
+    const detalle = this.prediccionSeleccionada();
 
     const promedio = this.obtenerNumero(variables['promedio_general']);
+    const notaCurso = this.obtenerNumero(variables['nota_curso']);
     const asistencia = this.obtenerNumero(variables['porcentaje_asistencia']);
     const programadas = this.obtenerNumero(variables['clases_programadas']);
-    const notaMinima = this.obtenerNumero(variables['nota_minima']);
+    const notaMinima = this.obtenerNumero(variables['nota_minima']) ?? this.obtenerNumero(variables['nota_minima_curso']);
+    const notaExamen = this.obtenerNumero(variables['nota_examen_principal']);
     const desaprobados = this.obtenerNumero(variables['cantidad_cursos_desaprobados']);
+    const notasDesaprobadas = this.obtenerNumero(variables['cantidad_notas_desaprobadas_total'])
+      ?? this.obtenerNumero(variables['cantidad_notas_desaprobadas']);
 
     const factores: FactorAnalitico[] = [];
 
-    if (promedio != null) {
+    if (detalle?.curso && notaCurso != null) {
+      factores.push({
+        titulo: `Nota actual en ${detalle.curso}`,
+        subtitulo: `Calificación acumulada ${this.formatearNumero(notaCurso, 1)}`,
+        valor: Math.max(0, Math.min(100, (notaCurso / 20) * 100)),
+        tono: notaCurso >= 14 ? 'low' : notaCurso >= 11 ? 'medium' : 'high',
+        etiqueta: notaCurso >= 14 ? 'Bajo' : notaCurso >= 11 ? 'Medio' : 'Alto'
+      });
+    } else if (promedio != null) {
       factores.push({
         titulo: 'Promedio general actual',
         subtitulo: `Promedio ${this.formatearNumero(promedio, 1)}`,
@@ -332,10 +471,20 @@ export class PerfilAlumno {
       });
     }
 
+    if (detalle?.curso && notaExamen != null) {
+      factores.push({
+        titulo: 'Examen principal del curso',
+        subtitulo: `Nota de examen ${this.formatearNumero(notaExamen, 1)}`,
+        valor: Math.max(0, Math.min(100, (notaExamen / 20) * 100)),
+        tono: notaExamen >= 14 ? 'low' : notaExamen >= 11 ? 'medium' : 'high',
+        etiqueta: notaExamen >= 14 ? 'Bajo' : notaExamen >= 11 ? 'Medio' : 'Alto'
+      });
+    }
+
     const tieneAsistencia = programadas == null || programadas > 0;
     if (tieneAsistencia && asistencia != null) {
       factores.push({
-        titulo: 'Asistencia del período',
+        titulo: detalle?.curso ? `Asistencia en ${detalle.curso}` : 'Asistencia del período',
         subtitulo: `${this.formatearNumero(asistencia, 0)}% de asistencia`,
         valor: Math.max(0, Math.min(100, asistencia)),
         tono: asistencia >= 85 ? 'low' : asistencia >= 70 ? 'medium' : 'high',
@@ -345,7 +494,7 @@ export class PerfilAlumno {
 
     if (notaMinima != null) {
       factores.push({
-        titulo: 'Nota mínima registrada',
+        titulo: detalle?.curso ? 'Nota mínima en el curso' : 'Nota mínima registrada',
         subtitulo: `Nota mínima ${this.formatearNumero(notaMinima, 1)}`,
         valor: Math.max(0, Math.min(100, (notaMinima / 20) * 100)),
         tono: notaMinima >= 14 ? 'low' : notaMinima >= 11 ? 'medium' : 'high',
@@ -353,7 +502,16 @@ export class PerfilAlumno {
       });
     }
 
-    if (desaprobados != null) {
+    if (detalle?.curso && notasDesaprobadas != null) {
+      const riesgoNotas = notasDesaprobadas <= 0 ? 'low' : notasDesaprobadas === 1 ? 'medium' : 'high';
+      factores.push({
+        titulo: 'Evaluaciones desaprobadas',
+        subtitulo: `${notasDesaprobadas} evaluación(es) con nota menor a 11`,
+        valor: Math.max(8, Math.min(100, notasDesaprobadas * 35)),
+        tono: riesgoNotas,
+        etiqueta: riesgoNotas === 'low' ? 'Bajo' : riesgoNotas === 'medium' ? 'Medio' : 'Alto'
+      });
+    } else if (desaprobados != null) {
       const riesgoCursos = desaprobados <= 0 ? 'low' : desaprobados === 1 ? 'medium' : 'high';
       factores.push({
         titulo: 'Cursos desaprobados',
@@ -369,9 +527,21 @@ export class PerfilAlumno {
 
   readonly evolucionRiesgo = computed<PuntoEvolucion[]>(() =>
     this.periodosDisponiblesPerfil().map((periodo) => {
-      const prediccion = this.prediccionesGlobales().find(
-        (item) => item.periodoEvaluacionId === periodo.id
-      );
+      const actual = this.prediccionSeleccionada();
+      const cursoIdActual = actual?.cursoId;
+      const prediccion = cursoIdActual
+        ? this.predicciones().find(
+            (item) => item.cursoId === cursoIdActual && item.periodoEvaluacionId === periodo.id && item.corteSeguimientoId == null
+          ) ??
+          this.predicciones().find(
+            (item) => item.cursoId === cursoIdActual && item.periodoEvaluacionId === periodo.id
+          )
+        : this.prediccionesGlobales().find(
+            (item) => item.periodoEvaluacionId === periodo.id && item.corteSeguimientoId == null
+          ) ??
+          this.prediccionesGlobales().find(
+            (item) => item.periodoEvaluacionId === periodo.id
+          );
 
       return {
         etiqueta: periodo.nombre,
@@ -417,15 +587,21 @@ export class PerfilAlumno {
 
   readonly recomendacionesPersonalizadas = computed<RecomendacionPersonalizada[]>(() => {
     const detalle = this.prediccionSeleccionada();
+    const cursoIdActual = detalle?.cursoId;
+    const cursoNombre = detalle?.curso;
+
     const actuales: RecomendacionPersonalizada[] = this.recomendacionesCargadas()
-      .filter((entry) => entry.alumnoId === this.alumnoId)
+      .filter((entry) =>
+        entry.alumnoId === this.alumnoId &&
+        (cursoIdActual ? entry.cursoId === cursoIdActual : true)
+      )
       .slice(0, 3)
       .map((entry, index) => ({
         titulo: entry.titulo || `Recomendación ${index + 1}`,
         descripcion: entry.descripcion,
         accion: 'Ver sugerencias',
         icono: index === 0 ? 'fa-solid fa-user-check' : index === 1 ? 'fa-solid fa-calendar-check' : 'fa-solid fa-book-open-reader',
-        tono: index === 0 ? 'high' as TonoFactor : index === 1 ? 'medium' as TonoFactor : 'low' as TonoFactor
+        tono: (index === 0 ? 'high' : index === 1 ? 'medium' : 'low') as TonoFactor
       }));
 
     if (actuales.length) {
@@ -433,14 +609,16 @@ export class PerfilAlumno {
     }
 
     const asistencia = this.porcentajeAsistencia();
-    const promedio = this.promedioGeneral();
+    const promedio = this.notaCurso() ?? this.promedioGeneral();
     const riesgo = detalle?.nivelRiesgoNormalizado ?? 'BAJO';
     const recomendaciones: RecomendacionPersonalizada[] = [];
 
     if (asistencia != null && asistencia < 85) {
       recomendaciones.push({
         titulo: 'Mejora tu asistencia',
-        descripcion: 'Tu porcentaje de asistencia está por debajo del nivel recomendado para sostener el avance del período.',
+        descripcion: cursoNombre
+          ? `Tu asistencia en ${cursoNombre} está por debajo del nivel recomendado para este corte.`
+          : 'Tu porcentaje de asistencia está por debajo del nivel recomendado para sostener el avance del período.',
         accion: 'Ver sugerencias',
         icono: 'fa-solid fa-user-check',
         tono: asistencia < 70 ? 'high' : 'medium'
@@ -449,8 +627,10 @@ export class PerfilAlumno {
 
     if (promedio != null && promedio < 14) {
       recomendaciones.push({
-        titulo: 'Refuerza tus bases',
-        descripcion: 'Organiza repasos sobre los cursos donde el rendimiento actual necesita consolidarse.',
+        titulo: cursoNombre ? `Refuerza ${cursoNombre}` : 'Refuerza tus bases',
+        descripcion: cursoNombre
+          ? `Prioriza el repaso y la resolución de ejercicios de ${cursoNombre} para elevar la calificación antes del próximo examen.`
+          : 'Organiza repasos sobre los cursos donde el rendimiento actual necesita consolidarse.',
         accion: 'Ver sugerencias',
         icono: 'fa-solid fa-book-open-reader',
         tono: promedio < 11 ? 'high' : 'medium'
@@ -460,7 +640,9 @@ export class PerfilAlumno {
     if (riesgo !== 'BAJO') {
       recomendaciones.push({
         titulo: 'Organiza tu tiempo',
-        descripcion: 'Planifica una rutina de estudio semanal y prioriza tareas cercanas para evitar acumulación.',
+        descripcion: cursoNombre
+          ? `Planifica sesiones dedicadas a ${cursoNombre} y solicita apoyo docente en los temas con menor calificación.`
+          : 'Planifica una rutina de estudio semanal y prioriza tareas cercanas para evitar acumulación.',
         accion: 'Ver sugerencias',
         icono: 'fa-solid fa-calendar-check',
         tono: 'medium'
@@ -471,14 +653,18 @@ export class PerfilAlumno {
       recomendaciones.push(
         {
           titulo: 'Mantiene tu ritmo',
-          descripcion: 'Tus indicadores actuales están controlados. Conserva constancia en asistencia y estudio.',
+          descripcion: cursoNombre
+            ? `Tu desempeño en ${cursoNombre} está dentro de los rangos esperados. Continúa con la misma constancia.`
+            : 'Tus indicadores actuales están controlados. Conserva constancia en asistencia y estudio.',
           accion: 'Ver seguimiento',
           icono: 'fa-solid fa-shield-heart',
           tono: 'low'
         },
         {
           titulo: 'Sostiene tus avances',
-          descripcion: 'Sigue reforzando tus cursos principales para conservar un riesgo académico bajo.',
+          descripcion: cursoNombre
+            ? `Sigue participando y repasando las clases de ${cursoNombre} para asegurar un cierre de período exitoso.`
+            : 'Sigue reforzando tus cursos principales para conservar un riesgo académico bajo.',
           accion: 'Ver sugerencias',
           icono: 'fa-solid fa-book-open',
           tono: 'low'
@@ -506,12 +692,40 @@ export class PerfilAlumno {
       .join('');
   });
 
-  seleccionarPrediccion(id: number): void {
-    this.seleccionadaId.set(id);
+  seleccionarPrediccion(item: PrediccionDetalleVista | number): void {
+    if (typeof item === 'object') {
+      this.seleccionadaClave.set(item.clave);
+      this.seleccionadaId.set(item.id);
+    } else {
+      const encontrada = this.predicciones().find((p) => p.id === item);
+      this.seleccionadaId.set(item);
+      if (encontrada) {
+        this.seleccionadaClave.set(encontrada.clave);
+      }
+    }
+  }
+
+  tieneDatosPeriodo(periodoId: number): boolean {
+    const cursoId = this.prediccionSeleccionada()?.cursoId;
+    if (cursoId != null) {
+      return this.predicciones().some((item) => item.cursoId === cursoId && item.periodoEvaluacionId === periodoId);
+    }
+    return this.prediccionesGlobales().some((item) => item.periodoEvaluacionId === periodoId);
   }
 
   seleccionarPeriodoPerfil(periodoId: number): void {
+    const actual = this.prediccionSeleccionada();
+    const cursoActualId = actual?.cursoId ?? this.cursoId;
+
     const candidato =
+      (cursoActualId != null
+        ? this.predicciones().find(
+            (item) => item.cursoId === cursoActualId && item.periodoEvaluacionId === periodoId && item.corteSeguimientoId == null
+          ) ??
+          this.predicciones().find(
+            (item) => item.cursoId === cursoActualId && item.periodoEvaluacionId === periodoId
+          )
+        : null) ??
       this.predicciones().find((item) => {
         const coincidePeriodo = item.periodoEvaluacionId === periodoId;
         const coincideVista = this.vista === 'curso' ? item.cursoId != null : item.cursoId == null;
@@ -526,7 +740,7 @@ export class PerfilAlumno {
       null;
 
     if (candidato) {
-      this.seleccionadaId.set(candidato.id);
+      this.seleccionarPrediccion(candidato);
     }
   }
 
@@ -597,9 +811,26 @@ export class PerfilAlumno {
         this.predicciones.set(detalle);
         this.periodosEvaluacion.set(periodosEvaluacion);
         this.recomendacionesCargadas.set(recomendaciones);
+
         const seleccionInicial =
+          (this.prediccionId
+            ? (this.cursoId
+                ? detalle.find((item) => item.id === this.prediccionId && item.cursoId === this.cursoId)
+                : null) ??
+              detalle.find((item) => item.id === this.prediccionId)
+            : null) ??
+          (this.cursoId
+            ? (this.corteSeguimientoId
+                ? detalle.find((item) => item.cursoId === this.cursoId && item.corteSeguimientoId === this.corteSeguimientoId)
+                : null) ??
+              (this.periodoEvaluacionId
+                ? detalle.find((item) => item.cursoId === this.cursoId && item.periodoEvaluacionId === this.periodoEvaluacionId)
+                : null) ??
+              detalle.find((item) => item.cursoId === this.cursoId)
+            : null) ??
           (this.corteSeguimientoId
-            ? detalle.find((item) => item.corteSeguimientoId === this.corteSeguimientoId)
+            ? detalle.find((item) => item.corteSeguimientoId === this.corteSeguimientoId && (this.vista === 'curso' ? item.cursoId != null : item.cursoId == null)) ??
+              detalle.find((item) => item.corteSeguimientoId === this.corteSeguimientoId)
             : null) ??
           detalle.find((item) => {
             const coincidePeriodo = this.periodoEvaluacionId
@@ -612,7 +843,10 @@ export class PerfilAlumno {
           detalle[0] ??
           null;
 
-        this.seleccionadaId.set(seleccionInicial?.id ?? null);
+        if (seleccionInicial) {
+          this.seleccionadaId.set(seleccionInicial.id);
+          this.seleccionadaClave.set(seleccionInicial.clave);
+        }
         this.cargando.set(false);
 
         if (!detalle.length) {
@@ -645,14 +879,22 @@ export class PerfilAlumno {
         (item.cursoId == null ? entry.cursoId == null : entry.cursoId === item.cursoId)
     );
 
+    const tipoTitulo = item.curso
+      ? item.curso
+      : item.corteSeguimientoId != null
+      ? (item.semanaCorte != null ? `Seguimiento Semana ${item.semanaCorte}` : 'Corte de Seguimiento')
+      : 'Consolidado del Período';
+
     return {
       ...item,
+      clave: `${item.cursoId ? 'c' + item.cursoId : 'global'}-${item.id}`,
       puntaje: Number(item.puntajeRiesgo ?? 0),
       nivelRiesgoNormalizado: nivel,
       factores: this.extraerFactores(item.variablesEntrada),
       alertaPrincipal: alerta?.mensaje ?? this.construirJustificacionRiesgo(nivel, variables),
       recomendacionPrincipal:
-        recomendacion?.descripcion ?? 'Sin recomendación registrada para este caso.'
+        recomendacion?.descripcion ?? 'Sin recomendación registrada para este caso.',
+      tipoEvaluacionTitulo: tipoTitulo
     };
   }
 
@@ -692,8 +934,10 @@ export class PerfilAlumno {
   ): string {
     const asistencia = this.obtenerNumero(variables['porcentaje_asistencia']);
     const programadas = this.obtenerNumero(variables['clases_programadas']);
-    const promedio = this.obtenerNumero(variables['promedio_general']);
-    const notaMinima = this.obtenerNumero(variables['nota_minima']);
+    const promedio = this.obtenerNumero(variables['promedio_general'])
+      ?? this.obtenerNumero(variables['nota_curso']);
+    const notaMinima = this.obtenerNumero(variables['nota_minima'])
+      ?? this.obtenerNumero(variables['nota_minima_curso']);
     const cursosDesaprobados = this.obtenerNumero(variables['cantidad_cursos_desaprobados']);
     const notasDesaprobadas = this.obtenerNumero(variables['cantidad_notas_desaprobadas_total'])
       ?? this.obtenerNumero(variables['cantidad_notas_desaprobadas']);
