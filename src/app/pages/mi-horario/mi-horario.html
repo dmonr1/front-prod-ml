@@ -156,21 +156,6 @@
             </div>
             }
 
-            <!-- Bloques configurados vacíos (sin clase este día) -->
-            @for (bloque of dia.bloquesVacios; track bloque.id) {
-            <div class="empty-block-slot" [style.top.px]="posicionBloque(bloque)" [style.height.px]="altoBloque(bloque)"
-              [title]="bloque.nombre + ' · ' + limpiarHora(bloque.horaInicio) + '–' + limpiarHora(bloque.horaFin) + ' (Sin clase programada)'">
-              <div class="empty-block-header">
-                <span class="empty-block-title">{{ bloque.nombre }}</span>
-                <span class="empty-block-tag">Libre</span>
-              </div>
-              <span class="empty-block-time">
-                <i class="fa-regular fa-clock"></i>
-                {{ limpiarHora(bloque.horaInicio) }} – {{ limpiarHora(bloque.horaFin) }}
-              </span>
-            </div>
-            }
-
             <!-- Clases programadas -->
             @for (clase of dia.clases; track clase.id) {
             <div [class]="'class-block ' + tonoClase(clase)" [class.has-eval]="!!evaluacionDeClase(clase, dia.fechaStr)"

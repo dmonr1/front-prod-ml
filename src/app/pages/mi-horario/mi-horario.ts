@@ -31,7 +31,6 @@ interface DiaInfo {
   label: string;
   short: string;
   clases?: ClaseHorarioVisual[];
-  bloquesVacios?: BloqueHorario[];
 }
 
 interface ClaseHorarioVisual extends HorarioSemanal {
@@ -266,7 +265,6 @@ export class MiHorario implements OnInit, OnDestroy {
     const limite = this.mostrarFinDeSemana() ? 7 : 5;
     const diasActivos = this.diasDefinicion.slice(0, limite);
     const hoyStr = this.fechaLocalHoy();
-    const bloquesLectivos = this.bloquesLectivosActivos();
 
     return diasActivos.map((diaDef, index) => {
       const fecha = new Date(lunes);
@@ -279,19 +277,6 @@ export class MiHorario implements OnInit, OnDestroy {
         .sort((a, b) => a.horaInicio.localeCompare(b.horaInicio));
       const clases = this.agruparClasesContinuas(clasesDelDia);
 
-      const esFinDeSemana = diaDef.value === 'SABADO' || diaDef.value === 'DOMINGO';
-      const bloquesVacios = esFinDeSemana
-        ? []
-        : bloquesLectivos.filter((bloque) => {
-            const bInicio = this.minutos(bloque.horaInicio);
-            const bFin = this.minutos(bloque.horaFin);
-            return !clasesDelDia.some((c) => {
-              const cInicio = this.minutos(c.horaInicio);
-              const cFin = this.minutos(c.horaFin);
-              return cInicio < bFin && cFin > bInicio;
-            });
-          });
-
       return {
         ...diaDef,
         indice: index,
@@ -299,8 +284,7 @@ export class MiHorario implements OnInit, OnDestroy {
         fechaStr,
         numero: fecha.getDate(),
         esHoy,
-        clases,
-        bloquesVacios
+        clases
       };
     });
   });
@@ -345,14 +329,7 @@ export class MiHorario implements OnInit, OnDestroy {
     const finHora = Math.max(inicioHora + 1, Math.ceil(maxMinutos / 60));
     const horasCount = finHora - inicioHora;
 
-    const marcas = new Set<number>([inicioHora * 60, finHora * 60]);
-    for (let h = inicioHora; h <= finHora; h++) {
-      marcas.add(h * 60);
-    }
-    for (const item of this.clasesVisibles()) {
-      marcas.add(this.minutos(item.horaInicio));
-      marcas.add(this.minutos(item.horaFin));
-    }
+    const marcas = new Set<number>();
     for (const item of this.bloquesLectivosActivos()) {
       marcas.add(this.minutos(item.horaInicio));
       marcas.add(this.minutos(item.horaFin));
@@ -360,6 +337,14 @@ export class MiHorario implements OnInit, OnDestroy {
     for (const item of this.recreosVisibles()) {
       marcas.add(this.minutos(item.horaInicio));
       marcas.add(this.minutos(item.horaFin));
+    }
+    for (const item of this.clasesVisibles()) {
+      marcas.add(this.minutos(item.horaInicio));
+      marcas.add(this.minutos(item.horaFin));
+    }
+    if (!marcas.size) {
+      marcas.add(inicioHora * 60);
+      marcas.add(finHora * 60);
     }
 
     return {
@@ -550,16 +535,6 @@ export class MiHorario implements OnInit, OnDestroy {
   seleccionarNivel(id: number): void {
     this.nivelFiltroId.set(id);
     setTimeout(() => this.ajustarAltoHorario(), 40);
-  }
-
-  posicionBloque(bloque: BloqueHorario): number {
-    const offsetMinutos = this.minutos(bloque.horaInicio) - this.rango().inicio;
-    return (offsetMinutos / 60) * this.altoHora() + 3;
-  }
-
-  altoBloque(bloque: BloqueHorario): number {
-    const duracionMinutos = this.minutos(bloque.horaFin) - this.minutos(bloque.horaInicio);
-    return Math.max(34, (duracionMinutos / 60) * this.altoHora() - 6);
   }
 
   readonly mapaTonoCursos = computed(() => {
