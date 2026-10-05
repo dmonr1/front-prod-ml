@@ -82,9 +82,13 @@ export class PrediccionService {
     });
   }
 
-  recalcular(corteSeguimientoId: number, seccionId: number): Observable<RecalculoPrediccionesRespuesta> {
+  recalcular(corteSeguimientoId: number, seccionId: number, periodoEvaluacionId?: number | null): Observable<RecalculoPrediccionesRespuesta> {
+    const params: Record<string, string | number> = { corteSeguimientoId, seccionId };
+    if (periodoEvaluacionId != null) {
+      params['periodoEvaluacionId'] = periodoEvaluacionId;
+    }
     return this.http.post<RecalculoPrediccionesRespuesta>(`${this.api}/recalcular`, null, {
-      params: { corteSeguimientoId, seccionId }
+      params
     });
   }
 }

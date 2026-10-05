@@ -67,13 +67,12 @@ export class PerfilAlumno {
   readonly alumnoId = Number(this.route.snapshot.paramMap.get('alumnoId'));
   readonly from = this.route.snapshot.queryParamMap.get('from');
   readonly tutoriaId = this.route.snapshot.queryParamMap.get('tutoriaId');
-  readonly periodoEvaluacionIdTermino = this.route.snapshot.queryParamMap.get('periodoEvaluacionIdTermino');
-  readonly corteSeguimientoId = this.route.snapshot.queryParamMap.get('corteSeguimientoId');
+  readonly periodoEvaluacionIdTermino = Number(this.route.snapshot.queryParamMap.get('periodoEvaluacionIdTermino')) || null;
+  readonly corteSeguimientoId = Number(this.route.snapshot.queryParamMap.get('corteSeguimientoId')) || null;
   readonly periodoEvaluacionId =
     Number(this.route.snapshot.queryParamMap.get('periodoEvaluacionId')) ||
-    Number(this.route.snapshot.queryParamMap.get('corteSeguimientoId')) ||
-    Number(this.route.snapshot.queryParamMap.get('periodoEvaluacionIdTermino')) ||
-    0;
+    this.periodoEvaluacionIdTermino ||
+    null;
   readonly seccionId = Number(this.route.snapshot.queryParamMap.get('seccionId'));
   readonly vista = this.route.snapshot.queryParamMap.get('vista');
 
@@ -138,11 +137,19 @@ export class PerfilAlumno {
 
     for (const item of list) {
       const periodoObj = periodos.find((p) => p.id === item.periodoEvaluacionId);
-      const periodoNombre = item.nombrePeriodoEvaluacion
+      let periodoNombre = item.nombrePeriodoEvaluacion
         || periodoObj?.nombre
         || (item.numeroPeriodoEvaluacion ? `Período ${item.numeroPeriodoEvaluacion}` : 'General');
 
-      const key = `${item.cursoId ?? 'global'}-${item.periodoEvaluacionId ?? 'sin_periodo'}`;
+      if (item.corteSeguimientoId != null) {
+        if (item.semanaCorte != null) {
+          periodoNombre = `${periodoNombre} · Semana ${item.semanaCorte}`;
+        } else {
+          periodoNombre = `${periodoNombre} · Corte`;
+        }
+      }
+
+      const key = `${item.cursoId ?? 'global'}-${item.periodoEvaluacionId ?? 'p'}-${item.corteSeguimientoId ?? 'c'}`;
       if (!seen.has(key)) {
         seen.add(key);
         unicas.push({
@@ -221,12 +228,20 @@ export class PerfilAlumno {
   });
 
   readonly porcentajeAsistencia = computed(() => {
-    const asistencia = this.obtenerNumero(this.variablesSeleccionadas()['porcentaje_asistencia']);
+    const variables = this.variablesSeleccionadas();
+    const asistencia = this.obtenerNumero(variables['porcentaje_asistencia']);
+    const programadas = this.obtenerNumero(variables['clases_programadas']);
+    if (programadas === 0) {
+      return null;
+    }
     return asistencia ?? null;
   });
 
   readonly tendenciaRiesgo = computed(() => {
-    const serie = this.prediccionesGlobales();
+    const serie = this.prediccionesGlobales()
+      .filter((item) => item.corteSeguimientoId == null && item.periodoEvaluacionId != null)
+      .sort((a, b) => (a.numeroPeriodoEvaluacion ?? 0) - (b.numeroPeriodoEvaluacion ?? 0));
+
     if (serie.length < 2) {
       return {
         titulo: 'En observación',
@@ -290,8 +305,8 @@ export class PerfilAlumno {
       {
         etiqueta: 'Asistencia',
         valor: this.porcentajeAsistencia() == null ? '--' : `${this.formatearNumero(this.porcentajeAsistencia(), 0)}%`,
-        ayuda: this.porcentajeAsistencia() != null && this.porcentajeAsistencia()! >= 85 ? 'Asistencia adecuada' : 'Requiere seguimiento',
-        tono: this.porcentajeAsistencia() != null && this.porcentajeAsistencia()! >= 85 ? 'low' : this.porcentajeAsistencia() != null && this.porcentajeAsistencia()! >= 70 ? 'medium' : 'high'
+        ayuda: this.porcentajeAsistencia() == null ? 'Sin registros de clase' : this.porcentajeAsistencia()! >= 85 ? 'Asistencia adecuada' : 'Requiere seguimiento',
+        tono: this.porcentajeAsistencia() == null ? 'low' : this.porcentajeAsistencia()! >= 85 ? 'low' : this.porcentajeAsistencia()! >= 70 ? 'medium' : 'high'
       }
     ];
   });
@@ -301,6 +316,7 @@ export class PerfilAlumno {
 
     const promedio = this.obtenerNumero(variables['promedio_general']);
     const asistencia = this.obtenerNumero(variables['porcentaje_asistencia']);
+    const programadas = this.obtenerNumero(variables['clases_programadas']);
     const notaMinima = this.obtenerNumero(variables['nota_minima']);
     const desaprobados = this.obtenerNumero(variables['cantidad_cursos_desaprobados']);
 
@@ -316,7 +332,8 @@ export class PerfilAlumno {
       });
     }
 
-    if (asistencia != null) {
+    const tieneAsistencia = programadas == null || programadas > 0;
+    if (tieneAsistencia && asistencia != null) {
       factores.push({
         titulo: 'Asistencia del período',
         subtitulo: `${this.formatearNumero(asistencia, 0)}% de asistencia`,
@@ -498,6 +515,11 @@ export class PerfilAlumno {
       this.predicciones().find((item) => {
         const coincidePeriodo = item.periodoEvaluacionId === periodoId;
         const coincideVista = this.vista === 'curso' ? item.cursoId != null : item.cursoId == null;
+        return coincidePeriodo && coincideVista && item.corteSeguimientoId == null;
+      }) ??
+      this.predicciones().find((item) => {
+        const coincidePeriodo = item.periodoEvaluacionId === periodoId;
+        const coincideVista = this.vista === 'curso' ? item.cursoId != null : item.cursoId == null;
         return coincidePeriodo && coincideVista;
       }) ??
       this.predicciones().find((item) => item.periodoEvaluacionId === periodoId) ??
@@ -576,6 +598,9 @@ export class PerfilAlumno {
         this.periodosEvaluacion.set(periodosEvaluacion);
         this.recomendacionesCargadas.set(recomendaciones);
         const seleccionInicial =
+          (this.corteSeguimientoId
+            ? detalle.find((item) => item.corteSeguimientoId === this.corteSeguimientoId)
+            : null) ??
           detalle.find((item) => {
             const coincidePeriodo = this.periodoEvaluacionId
               ? item.periodoEvaluacionId === this.periodoEvaluacionId
@@ -666,6 +691,7 @@ export class PerfilAlumno {
     variables: Record<string, unknown>
   ): string {
     const asistencia = this.obtenerNumero(variables['porcentaje_asistencia']);
+    const programadas = this.obtenerNumero(variables['clases_programadas']);
     const promedio = this.obtenerNumero(variables['promedio_general']);
     const notaMinima = this.obtenerNumero(variables['nota_minima']);
     const cursosDesaprobados = this.obtenerNumero(variables['cantidad_cursos_desaprobados']);
@@ -678,7 +704,8 @@ export class PerfilAlumno {
       ?? notaMinima;
     const notaExamen = this.obtenerNumero(variables['nota_examen_principal']);
 
-    const hayAsistenciaAlta = asistencia != null && asistencia >= 85;
+    const tieneAsistenciaRegistrada = programadas == null || programadas > 0;
+    const hayAsistenciaAlta = tieneAsistenciaRegistrada && asistencia != null && asistencia >= 85;
     const hayRendimientoFragil =
       (promedio != null && promedio < 12.5) ||
       (peorNota != null && peorNota <= 10.5) ||
@@ -699,7 +726,7 @@ export class PerfilAlumno {
         : `Aunque mantiene buena asistencia (${this.formatearNumero(asistencia, 0)}%), sus resultados académicos aún son inestables${piezas.length ? `: ${piezas.join(', ')}` : ''}. Conviene reforzar el aprendizaje antes del siguiente corte.`;
     }
 
-    if (asistencia != null && asistencia < 60) {
+    if (tieneAsistenciaRegistrada && asistencia != null && asistencia < 60) {
       return nivel === 'ALTO'
         ? `Alto riesgo de fracaso por asistencia crítica (${this.formatearNumero(asistencia, 0)}%).`
         : `Seguimiento por asistencia baja (${this.formatearNumero(asistencia, 0)}%).`;
@@ -727,7 +754,7 @@ export class PerfilAlumno {
         : `Seguimiento por rendimiento académico vulnerable${detallePromedio ? `: ${detallePromedio}` : ''}.`;
     }
 
-    if (asistencia != null && asistencia < 80 && promedio != null && promedio < 14) {
+    if (tieneAsistenciaRegistrada && asistencia != null && asistencia < 80 && promedio != null && promedio < 14) {
       return `Riesgo ${nivel.toLowerCase()} de fracaso por combinación de asistencia (${this.formatearNumero(asistencia, 0)}%) y rendimiento (${this.formatearNumero(promedio, 1)}).`;
     }
 

@@ -635,7 +635,11 @@ export class Predicciones {
     this.error.set(null);
     this.alertaConexionAbierta.set(false);
 
-    this.prediccionService.recalcular(periodoEvaluacionId, seccionId).subscribe({
+    this.prediccionService.recalcular(
+      periodoEvaluacionId,
+      seccionId,
+      this.periodoEvaluacionSeleccionadoIdTermino()
+    ).subscribe({
       next: (respuesta) => {
         this.recalculando.set(false);
         this.mensajeRecalculo.set(
@@ -1042,6 +1046,7 @@ export class Predicciones {
     nivel: NivelRiesgo,
     variables: Record<string, unknown>
   ): string {
+    const programadas = this.obtenerNumero(variables['clases_programadas']);
     const asistencia = this.obtenerNumero(variables['porcentaje_asistencia']);
     const promedio = this.obtenerNumero(variables['promedio_general']);
     const notaMinima = this.obtenerNumero(variables['nota_minima']);
@@ -1055,7 +1060,8 @@ export class Predicciones {
       ?? notaMinima;
     const notaExamen = this.obtenerNumero(variables['nota_examen_principal']);
 
-    const hayAsistenciaAlta = asistencia != null && asistencia >= 85;
+    const tieneAsistenciaRegistrada = programadas == null || programadas > 0;
+    const hayAsistenciaAlta = tieneAsistenciaRegistrada && asistencia != null && asistencia >= 85;
     const hayRendimientoFragil =
       (promedio != null && promedio < 12.5) ||
       (peorNota != null && peorNota <= 10.5) ||
@@ -1076,7 +1082,7 @@ export class Predicciones {
         : `Mantiene buena asistencia (${this.formatearNumero(asistencia)}%), pero aún presenta fragilidad académica${piezas.length ? `: ${piezas.join(', ')}` : ''}.`;
     }
 
-    if (asistencia != null && asistencia < 60) {
+    if (tieneAsistenciaRegistrada && asistencia != null && asistencia < 60) {
       return nivel === 'ALTO'
         ? `Alto riesgo de fracaso por asistencia crítica (${this.formatearNumero(asistencia)}%).`
         : `Seguimiento por asistencia baja (${this.formatearNumero(asistencia)}%).`;
