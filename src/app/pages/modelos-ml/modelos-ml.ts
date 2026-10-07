@@ -34,6 +34,8 @@ export class ModelosMl implements OnInit {
   readonly configuracion = signal<ConfiguracionPredictores | null>(null);
   readonly comparativa = signal<ComparativaModelos | null>(null);
   readonly planificador = signal<PlanificadorReentrenamiento | null>(null);
+  readonly cargandoComparativa = signal(false);
+  tipoComparativa: 'GLOBAL' | 'CURSO' = 'GLOBAL';
 
   // Filtros internos en pestaña de predictores
   tipoPredictorFiltro = 'TODOS'; // TODOS, GLOBAL, CURSO
@@ -64,14 +66,32 @@ export class ModelosMl implements OnInit {
       }
     });
 
-    this.mlAdminService.obtenerComparativaModelos().subscribe({
-      next: (comp) => this.comparativa.set(comp),
-      error: () => undefined
-    });
+    this.cargarComparativa();
 
     this.mlAdminService.obtenerPlanificadorReentrenamiento().subscribe({
       next: (plan) => this.planificador.set(plan),
-      error: () => undefined
+      error: () => {
+        this.planificador.set(null);
+        this.error.set('No se pudo consultar el estado de entrenamiento del servicio ML.');
+      }
+    });
+  }
+
+  cargarComparativa(): void {
+    const tipo = this.tipoComparativa;
+    this.comparativa.set(null);
+    this.cargandoComparativa.set(true);
+    this.mlAdminService.obtenerComparativaModelos(tipo).subscribe({
+      next: (comp) => {
+        if (tipo !== this.tipoComparativa) return;
+        this.comparativa.set(comp);
+        this.cargandoComparativa.set(false);
+      },
+      error: () => {
+        if (tipo !== this.tipoComparativa) return;
+        this.cargandoComparativa.set(false);
+        this.error.set('No hay evaluación disponible. Comprueba el servicio ML y ejecuta el reentrenamiento.');
+      }
     });
   }
 
@@ -115,15 +135,23 @@ export class ModelosMl implements OnInit {
       next: (res) => {
         this.planificador.set(res);
         this.reentrenando.set(false);
-        this.mensajeExito.set('Reentrenamiento multialgoritmo completado. Se actualizaron los pesos y métricas del modelo activo.');
-        this.mlAdminService.obtenerComparativaModelos().subscribe({
-          next: (comp) => this.comparativa.set(comp),
-          error: () => undefined
-        });
+        if (res.estadoUltimoReentrenamiento === 'COMPLETADO_EXITOSO') {
+          this.mensajeExito.set('Entrenamiento completado. Los dos modelos y sus evaluaciones están actualizados.');
+          this.cargarComparativa();
+          this.mlAdminService.obtenerConfiguracionPredictores().subscribe({
+            next: (cfg) => this.configuracion.set(cfg),
+            error: () => this.error.set('Entrenamiento completado; no se pudieron actualizar los predictores en pantalla.')
+          });
+        } else {
+          this.error.set(res.mensaje ?? 'El entrenamiento no ha finalizado correctamente.');
+        }
       },
       error: () => {
         this.reentrenando.set(false);
-        this.error.set('Ocurrió un error al ejecutar el reentrenamiento del pipeline.');
+        this.error.set('No se confirmó el entrenamiento. Consulta su estado antes de volver a ejecutarlo.');
+        this.mlAdminService.obtenerPlanificadorReentrenamiento().subscribe({
+          next: (plan) => this.planificador.set(plan), error: () => this.planificador.set(null)
+        });
       }
     });
   }

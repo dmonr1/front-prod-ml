@@ -429,7 +429,6 @@
 .nav-section.open .nav-parent,
 .nav-parent.is-expanded {
   background: rgba(59, 130, 246, 0.11);
-  border-left-color: #3b82f6;
   color: #f8fafc;
 
   .nav-label {
@@ -451,7 +450,6 @@
 .nav-section.has-active-child .nav-parent,
 .nav-parent.is-active-parent {
   background: rgba(59, 130, 246, 0.18);
-  border-left-color: #60a5fa;
   color: #ffffff;
 
   .nav-label {
@@ -483,9 +481,6 @@
   transition: border-color 0.2s ease;
 }
 
-.nav-section.has-active-child .nav-children {
-  border-left-color: rgba(96, 165, 250, 0.38);
-}
 
 // ---------------------------------------------------------------------------
 // Items de Navegación (Pills suaves con jerarquía y feedback de hover/activo)
@@ -548,7 +543,6 @@
     background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
     font-weight: 700;
     box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
-    border-left: 3px solid #93c5fd;
 
     .nav-icon {
       color: #ffffff !important;

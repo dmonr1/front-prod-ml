@@ -79,10 +79,23 @@
         </span>
         }
 
+        @if (!seccionIdVista()) {
+        <label class="periodo-badge-chip period-select-chip">
+          <i class="fa-solid fa-calendar-check"></i>
+          <span>Período</span>
+          <select aria-label="Seleccionar período académico del horario"
+            [value]="periodoId() ?? ''" (change)="cambiarPeriodoAcademico($any($event.target).value)">
+            @for (periodo of periodos(); track periodo.id) {
+            <option [value]="periodo.id">{{ periodo.anio }}</option>
+            }
+          </select>
+        </label>
+        } @else {
         <span class="periodo-badge-chip">
           <i class="fa-solid fa-calendar-check"></i>
           {{ periodoSeleccionado()?.nombre }}
         </span>
+        }
 
         @if (!seccionIdVista() && periodoEvaluacionSeleccionado()) {
         <span class="periodo-eval-badge-chip">
@@ -220,9 +233,10 @@
           <div class="recess-week-lane" [style.grid-column]="'2 / span 5'"
             [style.grid-row]="'2 / span ' + rango().horasCount" aria-label="Recreos de lunes a viernes">
             @for (recreo of recreosVisibles(); track recreo.id) {
-            <div class="recess-week-band" [style.top.px]="posicionRecreo(recreo)" [style.height.px]="altoRecreo(recreo)"
-              [title]="'Recreo · ' + limpiarHora(recreo.horaInicio) + '–' + limpiarHora(recreo.horaFin)">
-              <strong>Recreo</strong>
+            <div class="recess-week-band" [class.tutorial-week-band]="recreo.tipoBloque === 'TUTORIA'"
+              [style.top.px]="posicionRecreo(recreo)" [style.height.px]="altoRecreo(recreo)"
+              [title]="(recreo.tipoBloque === 'TUTORIA' ? 'Tutoría - salida' : 'Recreo') + ' · ' + limpiarHora(recreo.horaInicio) + '–' + limpiarHora(recreo.horaFin)">
+              <strong>{{ recreo.tipoBloque === 'TUTORIA' ? 'Tutoría - salida' : 'Recreo' }}</strong>
               <small>{{ limpiarHora(recreo.horaInicio) }}–{{ limpiarHora(recreo.horaFin) }}</small>
             </div>
             }

@@ -69,7 +69,16 @@
     @if (!cargando() && asignacion()) {
     <section class="panel-card notes-card">
       <div class="panel-head panel-head-row notes-card-head">
-
+        <label class="academic-period-selector">
+          <span>Período académico</span>
+          <select aria-label="Seleccionar período académico de notas"
+            [value]="periodoAcademicoId() ?? ''"
+            (change)="cambiarPeriodoAcademico($any($event.target).value)">
+            @for (periodo of periodosAcademicos(); track periodo.id) {
+            <option [value]="periodo.id">{{ periodo.anio }}</option>
+            }
+          </select>
+        </label>
 
         @if (periodosEvaluacionPeriodo().length) {
         <div class="period-switcher">

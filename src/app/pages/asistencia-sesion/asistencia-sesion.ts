@@ -85,6 +85,7 @@ export class AsistenciaSesionPage implements OnInit {
   readonly periodos = signal<PeriodoAcademico[]>([]);
   readonly periodoAcademico = signal<PeriodoAcademico | null>(null);
   readonly periodosEvaluacion = signal<PeriodoEvaluacion[]>([]);
+  private periodosEvaluacionAcademicos: PeriodoEvaluacion[] = [];
   readonly asignaciones = signal<AsignacionDocente[]>([]);
   readonly horarios = signal<HorarioSemanal[]>([]);
   readonly resumenAsistencia = signal<Map<string, EstadoAsistenciaSesionResumen>>(new Map());
@@ -146,9 +147,7 @@ export class AsistenciaSesionPage implements OnInit {
   });
 
   readonly periodosEvaluacionDisponibles = computed(() => {
-    const hoy = this.fechaLocalHoy();
-    const disponibles = this.periodosEvaluacion().filter((item) => item.fechaFin >= hoy);
-    return disponibles.length ? disponibles : this.periodosEvaluacion().slice(-1);
+    return this.periodosEvaluacion();
   });
 
   readonly sesiones = computed(() => {
@@ -323,7 +322,11 @@ export class AsistenciaSesionPage implements OnInit {
       evaluaciones: this.periodosEvaluacionService.listar()
     }).subscribe({
       next: ({ periodos, evaluaciones }) => {
-        const periodo = periodos.find((item) => item.estado === 'ACTIVO')
+        this.periodos.set(periodos);
+        this.periodosEvaluacionAcademicos = evaluaciones;
+        const periodoSolicitadoId = Number(this.route.snapshot.queryParamMap.get('periodoAcademicoId')) || null;
+        const periodo = periodos.find((item) => item.id === periodoSolicitadoId)
+          ?? periodos.find((item) => item.estado === 'ACTIVO')
           ?? periodos.find((item) => item.anio === new Date().getFullYear())
           ?? periodos[0];
 
@@ -333,55 +336,83 @@ export class AsistenciaSesionPage implements OnInit {
           return;
         }
 
-        this.periodos.set(periodos);
-        this.periodoAcademico.set(periodo);
-        const evaluacionesDelPeriodo = evaluaciones
-          .filter((item) => item.periodoAcademicoId === periodo.id)
-          .sort((a, b) => a.fechaInicio.localeCompare(b.fechaInicio));
-        this.periodosEvaluacion.set(evaluacionesDelPeriodo);
-
-        // Periodo de evaluación por defecto
-        const hoy = this.fechaLocalHoy();
-        const evalActual = evaluacionesDelPeriodo.find((e) => hoy >= e.fechaInicio && hoy <= e.fechaFin)
-          ?? evaluacionesDelPeriodo.find((e) => e.fechaFin >= hoy)
-          ?? evaluacionesDelPeriodo.at(-1)
-          ?? null;
-        if (evalActual) {
-          this.periodoEvaluacionFiltroId.set(evalActual.id);
-        }
-
-        this.semanaInicio.set(this.lunesDe(this.fechaDentroDelPeriodo(periodo.fechaInicio, periodo.fechaFin)));
-
-        forkJoin({
-          asignaciones: puedeVerTodas
-            ? this.asignacionesService.listarPorPeriodo(periodo.id)
-            : this.asignacionesService.listarAsignaciones(docenteId!, periodo.id),
-          horarios: puedeVerTodas
-            ? this.horariosService.listar(periodo.id)
-            : this.horariosService.listarMios(periodo.id)
-        }).subscribe({
-          next: ({ asignaciones, horarios }) => {
-            const activas = asignaciones.filter((item) => (item.estado ?? 'ACTIVO') === 'ACTIVO');
-            const ids = new Set(activas.map((item) => item.id));
-            this.asignaciones.set(activas);
-            this.horarios.set(horarios.filter((item) => ids.has(item.asignacionId)));
-            this.resumenAsistencia.set(new Map());
-            if (!activas.length) {
-              this.terminarCargaInicial();
-              return;
-            }
-            this.asistenciaService.resumir(activas.map((item) => item.id), periodo.fechaInicio, periodo.fechaFin).subscribe({
-              next: (resumen) => {
-                this.resumenAsistencia.set(new Map(resumen.map((item) => [this.claveSesion(item.asignacionId, item.horarioSemanalId, item.fechaClase), item])));
-                this.terminarCargaInicial();
-              },
-              error: () => this.terminarCargaInicial()
-            });
-          },
-          error: (error) => this.mostrarError(error, 'No se pudieron cargar tus clases programadas.')
-        });
+        this.cargarPeriodoAcademico(periodo, docenteId ?? null, puedeVerTodas);
       },
       error: (error) => this.mostrarError(error, 'No se pudo cargar el período académico vigente.')
+    });
+  }
+
+  cambiarPeriodoAcademico(valor: string | number): void {
+    const periodoId = Number(valor);
+    const periodo = this.periodos().find((item) => item.id === periodoId);
+    if (!periodo || periodo.id === this.periodoAcademico()?.id) return;
+
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { periodoAcademicoId: periodo.id, asignacionId: null, fecha: null, horarioId: null, editar: null },
+      replaceUrl: true
+    });
+    const usuario = this.auth.obtenerUsuario();
+    this.cargarPeriodoAcademico(periodo, usuario?.docenteId ?? null, this.auth.tieneGestionAdministrativa());
+  }
+
+  private cargarPeriodoAcademico(
+    periodo: PeriodoAcademico,
+    docenteId: number | null,
+    puedeVerTodas: boolean
+  ): void {
+    this.cargando.set(true);
+    this.vista.set('agenda');
+    this.periodoAcademico.set(periodo);
+    this.asignacionId.set(null);
+    this.horarioSemanalId.set(null);
+    this.periodoId.set(null);
+    this.asistenciaExistente.set(false);
+    this.edicionHistorica.set(false);
+    this.filas.set([]);
+    this.fecha.set('');
+    this.busquedaEstudiante.set('');
+    const evaluacionesDelPeriodo = this.periodosEvaluacionAcademicos
+      .filter((item) => item.periodoAcademicoId === periodo.id)
+      .sort((a, b) => a.fechaInicio.localeCompare(b.fechaInicio));
+    this.periodosEvaluacion.set(evaluacionesDelPeriodo);
+    const hoy = this.fechaLocalHoy();
+    const evalActual = evaluacionesDelPeriodo.find((item) => hoy >= item.fechaInicio && hoy <= item.fechaFin)
+      ?? evaluacionesDelPeriodo.find((item) => item.fechaFin >= hoy)
+      ?? evaluacionesDelPeriodo.at(-1)
+      ?? null;
+    this.periodoEvaluacionFiltroId.set(evalActual?.id ?? null);
+    this.semanaInicio.set(this.lunesDe(this.fechaDentroDelPeriodo(periodo.fechaInicio, periodo.fechaFin)));
+
+    forkJoin({
+      asignaciones: puedeVerTodas
+        ? this.asignacionesService.listarPorPeriodo(periodo.id)
+        : docenteId
+          ? this.asignacionesService.listarAsignaciones(docenteId, periodo.id)
+          : this.asignacionesService.listarPorPeriodo(periodo.id),
+      horarios: puedeVerTodas
+        ? this.horariosService.listar(periodo.id)
+        : this.horariosService.listarMios(periodo.id)
+    }).subscribe({
+      next: ({ asignaciones, horarios }) => {
+        const activas = asignaciones.filter((item) => (item.estado ?? 'ACTIVO') === 'ACTIVO');
+        const ids = new Set(activas.map((item) => item.id));
+        this.asignaciones.set(activas);
+        this.horarios.set(horarios.filter((item) => ids.has(item.asignacionId)));
+        this.resumenAsistencia.set(new Map());
+        if (!activas.length) {
+          this.terminarCargaInicial();
+          return;
+        }
+        this.asistenciaService.resumir(activas.map((item) => item.id), periodo.fechaInicio, periodo.fechaFin).subscribe({
+          next: (resumen) => {
+            this.resumenAsistencia.set(new Map(resumen.map((item) => [this.claveSesion(item.asignacionId, item.horarioSemanalId, item.fechaClase), item])));
+            this.terminarCargaInicial();
+          },
+          error: () => this.terminarCargaInicial()
+        });
+      },
+      error: (error) => this.mostrarError(error, 'No se pudieron cargar tus clases programadas.')
     });
   }
 

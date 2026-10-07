@@ -642,6 +642,13 @@
   }
 }
 
+.recess-week-band.tutorial-week-band {
+  border-color: color-mix(in srgb, #2563eb 45%, transparent);
+  border-left-color: #2563eb;
+  background: color-mix(in srgb, #3b82f6 13%, var(--color-surface-primary));
+  color: #1e3a8a;
+}
+
 // Línea indicadora de hora actual ("Now" line como en la referencia)
 .now-indicator {
   position: absolute;

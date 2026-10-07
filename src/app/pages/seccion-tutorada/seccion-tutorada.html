@@ -3,7 +3,7 @@
     <!-- Cabecera Institucional Superior -->
     <header class="card-head detail-card-head">
       <div class="head-left-col">
-        @if (tutoriaIdRuta) {
+        @if (tutoriaIdRuta()) {
           <a class="action-button secondary section-back-button" routerLink="/seccion-tutorada" title="Volver a mis secciones tutoradas">
             <i class="fa-solid fa-arrow-left"></i><span>Volver</span>
           </a>
@@ -22,7 +22,7 @@
             <span class="badge-level">{{ tut.nivel }}</span>
             <span class="meta-badge-chip">
               <i class="fa-regular fa-calendar-check"></i>
-              <span>Período {{ tut.periodoAcademico || '2026' }}</span>
+              <span>Período {{ tut.periodoAcademico || periodoAcademicoSeleccionado()?.anio || currentYear }}</span>
             </span>
           } @else {
             <span class="meta-badge-chip">
@@ -38,7 +38,17 @@
       </div>
 
       <div class="head-controls">
-        @if (!mostrarSkeleton() && tutoriaIdRuta && tutoriasDisponibles().length > 1) {
+        <label class="academic-period-selector">
+          <span>Período académico</span>
+          <select aria-label="Seleccionar período académico de tutoría"
+            [value]="periodoAcademicoId() ?? ''"
+            (change)="cambiarPeriodoAcademico($any($event.target).value)">
+            @for (periodo of periodosAcademicos(); track periodo.id) {
+            <option [value]="periodo.id">{{ periodo.anio }}</option>
+            }
+          </select>
+        </label>
+        @if (!mostrarSkeleton() && tutoriaIdRuta() && tutoriasDisponibles().length > 1) {
           <div class="tutoria-dropdown">
             <button class="section-picker-btn" type="button" (click)="toggleSelectorTutoria()">
               <i class="fa-solid fa-layer-group"></i>
@@ -93,7 +103,7 @@
       </div>
     }
 
-    @if (!mostrarSkeleton() && !tutoriaIdRuta && tutoriasDisponibles().length) {
+    @if (!mostrarSkeleton() && !tutoriaIdRuta() && tutoriasDisponibles().length) {
       <div class="cards-surface">
         <section class="tutoria-section-grid" aria-label="Secciones tutoradas">
           @for (item of tutoriasDisponibles(); track item.id) {
@@ -116,7 +126,7 @@
 
                 <div class="flow-meta-row">
                   <strong>{{ item.docenteNombreCompleto || 'Acompañamiento y tutoría' }}</strong>
-                  <span class="flow-meta-chip">Período {{ item.periodoAcademico || '2026' }}</span>
+                  <span class="flow-meta-chip">Período {{ item.periodoAcademico || item.anioAcademico }}</span>
                 </div>
               </div>
 
@@ -138,7 +148,7 @@
           }
         </section>
       </div>
-    } @else if (!mostrarSkeleton() && !tutoriaIdRuta && !tutoriasDisponibles().length) {
+    } @else if (!mostrarSkeleton() && !tutoriaIdRuta() && !tutoriasDisponibles().length) {
       <div class="cards-surface state-surface">
         <div class="empty-state-card">
           <div class="empty-state-badge"><i class="fa-solid fa-chalkboard-user"></i></div>

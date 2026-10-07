@@ -218,7 +218,7 @@ export class MiHorario implements OnInit, OnDestroy {
 
   readonly bloquesLectivosActivos = computed(() => {
     const nivelId = this.nivelActivoId();
-    const noRecreos = this.bloques().filter((b) => !b.esRecreo);
+    const noRecreos = this.bloques().filter((b) => (b.tipoBloque ?? (b.esRecreo ? 'RECREO' : 'CLASE')) === 'CLASE');
     if (!nivelId) {
       return noRecreos.sort((a, b) => a.orden - b.orden || a.horaInicio.localeCompare(b.horaInicio));
     }
@@ -229,7 +229,9 @@ export class MiHorario implements OnInit, OnDestroy {
 
   readonly recreosVisibles = computed(() => {
     const nivelId = this.nivelActivoId();
-    const todosRecreos = this.recreos().length ? this.recreos() : this.bloques().filter((b) => b.esRecreo);
+    const todosRecreos = this.recreos().length
+      ? this.recreos()
+      : this.bloques().filter((b) => (b.tipoBloque ?? (b.esRecreo ? 'RECREO' : 'CLASE')) !== 'CLASE');
     const filtrados = nivelId
       ? todosRecreos.filter((r) => r.nivelId === nivelId)
       : todosRecreos;
@@ -441,9 +443,29 @@ export class MiHorario implements OnInit, OnDestroy {
     this.mostrarFinDeSemana.update((val) => !val);
   }
 
+  cambiarPeriodoAcademico(valor: string | number): void {
+    const periodoId = Number(valor);
+    const periodo = this.periodos().find((item) => item.id === periodoId);
+    if (!periodo || periodo.id === this.periodoId()) return;
+
+    this.periodoId.set(periodo.id);
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { periodoAcademicoId: periodo.id },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
+    this.periodoEvaluacionId.set(null);
+    this.fechaReferencia.set(this.parseFecha(periodo.fechaInicio));
+    this.seleccionarPeriodoEvaluacion(false);
+    this.cargar(periodo.id);
+    this.animarCambioCalendario();
+  }
+
   abrirAsistencia(clase: HorarioSemanal, fechaDia?: string): void {
     if (this.seccionIdVista()) return;
     const academico = this.periodoSeleccionado();
+    if (!academico) return;
     const evaluacion = this.periodoEvaluacionSeleccionado();
     const fechaInicio = evaluacion?.fechaInicio ?? academico?.fechaInicio;
     const fechaFin = evaluacion?.fechaFin ?? academico?.fechaFin;
@@ -460,7 +482,14 @@ export class MiHorario implements OnInit, OnDestroy {
       this.mostrarAlerta('warning', 'Sin sesiones disponibles', 'No quedan sesiones de esta clase dentro del período seleccionado.');
       return;
     }
-    this.router.navigate(['/asistencias'], { queryParams: { asignacionId: clase.asignacionId, fecha, horarioId: clase.id } });
+    this.router.navigate(['/asistencias'], {
+      queryParams: {
+        asignacionId: clase.asignacionId,
+        fecha,
+        horarioId: clase.id,
+        periodoAcademicoId: academico.id
+      }
+    });
   }
 
   abrirNotas(clase: HorarioSemanal): void {
@@ -634,7 +663,7 @@ export class MiHorario implements OnInit, OnDestroy {
 
     forkJoin({
       horarios: solicitudHorarios,
-      recreos: this.horarioService.listarRecreos(id),
+      recreos: this.horarioService.listarBloquesNoLectivos(id),
       bloques: this.horarioService.listarBloques(id),
       secciones: solicitudSecciones
     }).subscribe({
@@ -687,7 +716,7 @@ export class MiHorario implements OnInit, OnDestroy {
     return agrupadas;
   }
 
-  private seleccionarPeriodoEvaluacion(): void {
+  private seleccionarPeriodoEvaluacion(cargar = true): void {
     const evaluaciones = this.periodosEvaluacionDelPeriodo();
     if (!evaluaciones.length) {
       this.periodoEvaluacionId.set(null);
@@ -699,7 +728,7 @@ export class MiHorario implements OnInit, OnDestroy {
       ?? evaluaciones.find((item) => hoy < item.fechaInicio)
       ?? evaluaciones[evaluaciones.length - 1];
     this.periodoEvaluacionId.set(seleccionada.id);
-    this.cargarEvaluaciones();
+    if (cargar) this.cargarEvaluaciones();
   }
 
   private animarCambioCalendario(): void {

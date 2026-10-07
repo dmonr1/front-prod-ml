@@ -17,7 +17,16 @@
             </div>
 
             <div class="head-actions">
-              <span class="records-chip">Período {{ periodoAcademicoAnio() || currentYear }}</span>
+              <label class="records-chip period-select-chip">
+                <span>Período</span>
+                <select aria-label="Seleccionar período académico de mis cursos"
+                  [value]="periodoAcademicoId() ?? ''"
+                  (change)="cambiarPeriodoAcademico($any($event.target).value)">
+                  @for (periodo of periodos(); track periodo.id) {
+                  <option [value]="periodo.id">{{ periodo.anio }}</option>
+                  }
+                </select>
+              </label>
             </div>
           </div>
 
@@ -98,6 +107,7 @@
                       <span>Planificar</span>
                     </a>
                     <a class="flow-link-button secondary" [routerLink]="['/mis-asignaciones', asignacion.id, 'notas']"
+                      [queryParams]="{ periodoAcademicoId: asignacion.periodoAcademicoId }"
                       title="Registrar notas de este curso">
                       <i class="fa-solid fa-pen-to-square"></i>
                       <span>Registrar Notas</span>

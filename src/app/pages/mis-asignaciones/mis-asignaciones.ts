@@ -1,12 +1,13 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Shell } from '../../layouts/shell/shell';
 import { CustomAlertComponent, CustomAlertType } from '../../components/custom-alert/custom-alert';
 import { AsignacionDocente } from '../../models/asignacion';
 import { Curso } from '../../models/curso';
 import { Seccion } from '../../models/seccion';
 import { Tutoria } from '../../models/tutoria';
+import { PeriodoAcademico } from '../../models/periodo-academico';
 import { AuthService } from '../../services/auth/auth.service';
 import { CursoService } from '../../services/academico/curso.service';
 import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
@@ -25,6 +26,8 @@ import { formatearMensajeError } from '../../utils/error-formatter';
 })
 export class MisAsignaciones implements OnInit {
   private readonly authService = inject(AuthService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly asignacionService = inject(AsignacionAcademicaService);
   private readonly cursoService = inject(CursoService);
   private readonly periodoAcademicoService = inject(PeriodoAcademicoService);
@@ -38,6 +41,7 @@ export class MisAsignaciones implements OnInit {
   readonly mostrarError = signal(true);
   readonly currentYear = new Date().getFullYear();
   readonly periodoAcademicoId = signal<number | null>(null);
+  readonly periodos = signal<PeriodoAcademico[]>([]);
   readonly asignaciones = signal<AsignacionDocente[]>([]);
   readonly cursosCatalogo = signal<Curso[]>([]);
   readonly secciones = signal<Seccion[]>([]);
@@ -85,7 +89,9 @@ export class MisAsignaciones implements OnInit {
 
     this.periodoAcademicoService.listar().subscribe({
       next: (periodos) => {
-        const periodoActual =
+        this.periodos.set(periodos);
+        const periodoSolicitadoId = Number(this.route.snapshot.queryParamMap.get('periodoAcademicoId')) || null;
+        const periodoActual = periodos.find((periodo) => periodo.id === periodoSolicitadoId) ??
           periodos.find((periodo) => periodo.anio === this.currentYear) ??
           [...periodos].sort((a, b) => b.anio - a.anio)[0] ??
           null;
@@ -108,6 +114,19 @@ export class MisAsignaciones implements OnInit {
         this.mostrarError.set(true);
       }
     });
+  }
+
+  cambiarPeriodoAcademico(valor: string | number): void {
+    const periodoId = Number(valor);
+    if (!this.periodos().some((periodo) => periodo.id === periodoId) || periodoId === this.periodoAcademicoId()) return;
+    this.periodoAcademicoId.set(periodoId);
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { periodoAcademicoId: periodoId },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
+    this.cargarAsignaciones();
   }
 
   cargarAsignaciones(): void {

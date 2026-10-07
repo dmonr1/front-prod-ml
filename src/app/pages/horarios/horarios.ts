@@ -7,7 +7,7 @@ import { AsignacionDocente } from '../../models/asignacion';
 import { Curso } from '../../models/curso';
 import { PeriodoAcademico } from '../../models/periodo-academico';
 import { Seccion } from '../../models/seccion';
-import { BloqueHorario, BloqueHorarioPayload, DiaSemana, HorarioSemanal } from '../../models/horario';
+import { BloqueHorario, BloqueHorarioPayload, DiaSemana, HorarioSemanal, TipoBloqueHorario } from '../../models/horario';
 import { CursoService } from '../../services/academico/curso.service';
 import { HorarioService } from '../../services/academico/horario.service';
 import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
@@ -29,6 +29,7 @@ interface ResumenSeccion {
 }
 interface HuecoHorario { inicio: string; fin: string; minutos: number; }
 interface AlertState { open: boolean; type: CustomAlertType; title: string; message: string; confirmText: string | null; cancelText: string | null; autoCloseMs: number | null; }
+interface CursoPendiente { key: string; asignacion: AsignacionDocente; horarioPendienteId?: number; }
 
 export interface DragItemData {
   tipo: 'PENDIENTE' | 'HORARIO';
@@ -37,6 +38,7 @@ export interface DragItemData {
   docente: string;
   cursoId: number;
   horarioId?: number;
+  horarioPendienteId?: number;
   diaSemana?: DiaSemana;
   bloqueId?: number;
 }
@@ -64,6 +66,10 @@ export class Horarios implements OnInit {
   readonly periodos = signal<PeriodoAcademico[]>([]);
   readonly periodoId = signal<number | null>(null);
   readonly periodoSeleccionado = computed(() => this.periodos().find((item) => item.id === this.periodoId()) ?? null);
+  readonly periodoEditableId = computed(() => this.periodos()
+    .filter((item) => item.estado === 'ACTIVO')
+    .sort((a, b) => b.anio - a.anio)[0]?.id ?? null);
+  readonly esPeriodoEditable = computed(() => this.periodoId() !== null && this.periodoId() === this.periodoEditableId());
   readonly niveles = signal<NivelOpcion[]>([]);
   readonly nivelId = signal<number | null>(null);
   readonly nivelSeleccionado = computed(() => this.niveles().find((nivel) => nivel.id === this.nivelId()) ?? null);
@@ -71,8 +77,9 @@ export class Horarios implements OnInit {
   readonly secciones = signal<Seccion[]>([]);
   readonly cursos = signal<Curso[]>([]);
   readonly bloques = signal<BloqueHorario[]>([]);
-  readonly recreosNivel = computed(() => this.bloques().filter((bloque) => bloque.nivelId === this.nivelId() && bloque.esRecreo));
+  readonly bloquesNoLectivosNivel = computed(() => this.bloques().filter((bloque) => bloque.nivelId === this.nivelId() && this.tipoDeBloque(bloque) !== 'CLASE'));
   readonly horarios = signal<HorarioSemanal[]>([]);
+  readonly horariosPendientesReprogramacion = signal<HorarioSemanal[]>([]);
   readonly vista = signal<'secciones' | 'semanal'>('secciones');
   readonly categoriaNivel = signal<'PRIMARIA' | 'SECUNDARIA'>('PRIMARIA');
   readonly seccionIdActual = signal<number | null>(null);
@@ -86,7 +93,8 @@ export class Horarios implements OnInit {
   readonly diaSemana = signal<DiaSemana>('LUNES');
   readonly bloqueHorarioId = signal<number | null>(null);
   readonly horarioEditandoId = signal<number | null>(null);
-  readonly nuevoEsRecreo = signal(false);
+  readonly horarioPendienteSeleccionadoId = signal<number | null>(null);
+  readonly nuevoTipoBloque = signal<TipoBloqueHorario>('CLASE');
   nuevoNombre = '';
   nuevaHoraInicio = '';
   nuevaHoraFin = '';
@@ -120,7 +128,7 @@ export class Horarios implements OnInit {
     return { inicio, fin, alto: ((fin - inicio) / 60) * this.altoHora(), marcas: [...marcas].sort((a, b) => a - b) };
   });
   readonly duracionBloqueNuevo = computed(() => {
-    return this.duracionConfigurada(this.nivelId(), this.nuevoEsRecreo());
+    return this.duracionConfigurada(this.nivelId(), this.nuevoTipoBloque());
   });
   readonly jornadaConfigurada = computed(() => this.limitesJornada(this.nivelId()));
   readonly opcionesInicioBloque = computed(() => {
@@ -198,6 +206,18 @@ export class Horarios implements OnInit {
     const programadas = new Set(this.horariosSeccion().map((horario) => horario.asignacionId));
     return this.asignacionesSeccion().filter((asignacion) => !programadas.has(asignacion.id));
   });
+  readonly cursosPendientes = computed<CursoPendiente[]>(() => {
+    const pendientesRetirados: CursoPendiente[] = this.horariosPendientesReprogramacion().flatMap((horario) => {
+      if (horario.seccionId !== this.seccionIdActual()) return [];
+      const asignacion = this.asignaciones().find((item) => item.id === horario.asignacionId);
+      return asignacion ? [{ key: `retirado-${horario.id}`, horarioPendienteId: horario.id, asignacion }] : [];
+    });
+    const asignacionesConRetiro = new Set(pendientesRetirados.map((item) => item.asignacion.id));
+    const asignacionesSinHorario = this.asignacionesPendientes()
+      .filter((asignacion) => !asignacionesConRetiro.has(asignacion.id))
+      .map((asignacion) => ({ key: `asignacion-${asignacion.id}`, asignacion }));
+    return [...pendientesRetirados, ...asignacionesSinHorario];
+  });
   readonly asignacionesSeccion = computed(() => this.asignaciones().filter((asignacion) =>
     asignacion.seccionId === this.seccionIdActual()
     && this.cursos().some((curso) => curso.id === asignacion.cursoId && curso.nivelId === this.nivelId())
@@ -227,7 +247,7 @@ export class Horarios implements OnInit {
   }));
   readonly bloquesAsignacion = computed(() => {
     const targetNivelId = this.nivelAsignacion() ?? this.nivelId();
-    return this.bloques().filter((bloque) => bloque.nivelId === targetNivelId && !bloque.esRecreo);
+    return this.bloques().filter((bloque) => bloque.nivelId === targetNivelId && this.tipoDeBloque(bloque) === 'CLASE');
   });
 
   bloquesVaciosPorDia(dia: DiaSemana): BloqueHorario[] {
@@ -246,7 +266,7 @@ export class Horarios implements OnInit {
       next: ({ periodos, cursos }) => {
         this.periodos.set(periodos);
         this.cursos.set(cursos);
-        const actual = periodos.find((item) => item.estado === 'ACTIVO')
+        const actual = periodos.filter((item) => item.estado === 'ACTIVO').sort((a, b) => b.anio - a.anio)[0]
           ?? periodos.find((item) => item.anio === new Date().getFullYear())
           ?? periodos[0];
         if (!actual) {
@@ -261,10 +281,15 @@ export class Horarios implements OnInit {
     });
   }
 
-  cambiarPeriodo(value: string): void {
+  cambiarPeriodo(value: string | number): void {
     const id = Number(value) || null;
     this.periodoId.set(id);
     this.horarioEditandoId.set(null);
+    this.seccionIdActual.set(null);
+    this.vista.set('secciones');
+    this.modalBloqueAbierto.set(false);
+    this.submodalBloqueAbierto.set(false);
+    this.dragItem.set(null);
     if (id) this.cargarAsignaciones(id);
   }
 
@@ -319,6 +344,7 @@ export class Horarios implements OnInit {
   }
 
   abrirModalBloque(): void {
+    if (!this.esPeriodoEditable()) return;
     const nivel = this.nivelesCategoria().find((item) => item.id === this.nivelId()) ?? this.nivelesCategoria()[0];
     if (!nivel) {
       this.mostrarAlerta('warning', 'Nivel sin cursos', `No hay cursos activos de ${this.categoriaNivel().toLowerCase()} para configurar bloques.`);
@@ -326,7 +352,7 @@ export class Horarios implements OnInit {
     }
     this.nivelId.set(nivel.id);
     this.nuevoNombre = '';
-    this.nuevoEsRecreo.set(false);
+    this.nuevoTipoBloque.set('CLASE');
     this.nuevaHoraInicio = '';
     this.nuevaHoraFin = '';
     this.modalBloqueAbierto.set(true);
@@ -341,8 +367,9 @@ export class Horarios implements OnInit {
   }
 
   abrirSubmodalBloque(): void {
+    if (!this.esPeriodoEditable()) return;
     this.nuevoNombre = '';
-    this.nuevoEsRecreo.set(false);
+    this.nuevoTipoBloque.set('CLASE');
     this.nuevaHoraInicio = this.opcionesInicioBloque()[0] ?? '';
     this.nuevaHoraFin = this.calcularFinBloque(this.nuevaHoraInicio);
     this.submodalBloqueAbierto.set(true);
@@ -352,12 +379,14 @@ export class Horarios implements OnInit {
     if (!this.guardando()) this.submodalBloqueAbierto.set(false);
   }
 
-  alternarNuevoEsRecreo(): void {
-    this.nuevoEsRecreo.update((value) => !value);
-    if (this.nuevoEsRecreo()) {
-      this.nuevoNombre = 'Recreo';
-    } else if (this.nuevoNombre === 'Recreo') {
-      this.nuevoNombre = '';
+  cambiarTipoNuevoBloque(tipo: TipoBloqueHorario): void {
+    const tipoAnterior = this.nuevoTipoBloque();
+    this.nuevoTipoBloque.set(tipo);
+    const nombresPredeterminados: Record<TipoBloqueHorario, string> = {
+      CLASE: 'Clase', RECREO: 'Recreo', TUTORIA: 'Tutoría - salida'
+    };
+    if (!this.nuevoNombre || this.nuevoNombre === nombresPredeterminados[tipoAnterior]) {
+      this.nuevoNombre = nombresPredeterminados[tipo];
     }
     if (!this.opcionesInicioBloque().includes(this.nuevaHoraInicio)) {
       this.nuevaHoraInicio = this.opcionesInicioBloque()[0] ?? '';
@@ -365,10 +394,15 @@ export class Horarios implements OnInit {
     this.nuevaHoraFin = this.calcularFinBloque(this.nuevaHoraInicio);
   }
 
-  duracionConfigurada(nivelId: number | null, esRecreo: boolean): number {
+  tipoDeBloque(bloque: Pick<BloqueHorario, 'tipoBloque' | 'esRecreo'>): TipoBloqueHorario {
+    return bloque.tipoBloque ?? (bloque.esRecreo ? 'RECREO' : 'CLASE');
+  }
+
+  duracionConfigurada(nivelId: number | null, tipo: TipoBloqueHorario | boolean): number {
     const periodo = this.periodoSeleccionado();
     const secundaria = this.niveles().find((nivel) => nivel.id === nivelId)?.nombre.toUpperCase().includes('SECUNDARIA') ?? false;
-    if (esRecreo) {
+    const tipoBloque = typeof tipo === 'boolean' ? (tipo ? 'RECREO' : 'CLASE') : tipo;
+    if (tipoBloque !== 'CLASE') {
       return secundaria ? periodo?.duracionRecreoSecundariaMinutos ?? 20 : periodo?.duracionRecreoPrimariaMinutos ?? 20;
     }
     return secundaria ? periodo?.duracionHoraSecundariaMinutos ?? 90 : periodo?.duracionHoraPrimariaMinutos ?? 50;
@@ -382,12 +416,12 @@ export class Horarios implements OnInit {
     return { inicio: this.minutos(inicio ?? '07:00'), fin: this.minutos(fin ?? '18:00') };
   }
 
-  calcularFinHorario(inicio: string, nivelId: number, esRecreo: boolean): string {
-    return inicio ? this.formatearMinuto(this.minutos(inicio) + this.duracionConfigurada(nivelId, esRecreo)) : '';
+  calcularFinHorario(inicio: string, nivelId: number, tipo: TipoBloqueHorario | boolean): string {
+    return inicio ? this.formatearMinuto(this.minutos(inicio) + this.duracionConfigurada(nivelId, tipo)) : '';
   }
 
   opcionesInicioEdicion(bloque: BloqueHorario): string[] {
-    const duracion = this.duracionConfigurada(bloque.nivelId, bloque.esRecreo);
+    const duracion = this.duracionConfigurada(bloque.nivelId, this.tipoDeBloque(bloque));
     const { inicio: limiteInicio, fin: limiteFin } = this.limitesJornada(bloque.nivelId);
     const otros = this.bloques().filter((item) => item.nivelId === bloque.nivelId && item.id !== bloque.id);
     const valores = new Set<number>([limiteInicio, this.minutos(bloque.horaInicio)]);
@@ -402,14 +436,14 @@ export class Horarios implements OnInit {
 
   cambiarInicioEdicion(bloqueId: number, horaInicio: string): void {
     this.bloques.update((items) => items.map((item) => item.id === bloqueId
-      ? { ...item, horaInicio, horaFin: this.calcularFinHorario(horaInicio, item.nivelId, item.esRecreo) }
+      ? { ...item, horaInicio, horaFin: this.calcularFinHorario(horaInicio, item.nivelId, this.tipoDeBloque(item)) }
       : item));
   }
 
   bloqueHorarioValido(bloque: BloqueHorario): boolean {
     const { fin: limiteFin } = this.limitesJornada(bloque.nivelId);
     return this.opcionesInicioEdicion(bloque).includes(bloque.horaInicio.slice(0, 5))
-      && this.minutos(bloque.horaFin) - this.minutos(bloque.horaInicio) === this.duracionConfigurada(bloque.nivelId, bloque.esRecreo)
+      && this.minutos(bloque.horaFin) - this.minutos(bloque.horaInicio) === this.duracionConfigurada(bloque.nivelId, this.tipoDeBloque(bloque))
       && this.minutos(bloque.horaFin) <= limiteFin;
   }
 
@@ -446,6 +480,7 @@ export class Horarios implements OnInit {
 
   cambiarAsignacion(value: string): void {
     this.asignacionId.set(Number(value) || null);
+    this.horarioPendienteSeleccionadoId.set(null);
     this.bloqueHorarioId.set(null);
     const bloque = this.bloquesAsignacion()[0];
     this.bloqueHorarioId.set(bloque?.id ?? null);
@@ -455,11 +490,17 @@ export class Horarios implements OnInit {
     this.cambiarAsignacion(String(asignacionId));
   }
 
+  seleccionarCursoPendiente(pendiente: CursoPendiente): void {
+    this.cambiarAsignacion(String(pendiente.asignacion.id));
+    this.horarioPendienteSeleccionadoId.set(pendiente.horarioPendienteId ?? null);
+  }
+
   cambiarBloque(value: string): void {
     this.bloqueHorarioId.set(Number(value) || null);
   }
 
   guardarBloque(): void {
+    if (!this.esPeriodoEditable()) return;
     const periodoAcademicoId = this.periodoId();
     const nivelId = this.nivelId();
     if (!periodoAcademicoId || !nivelId) {
@@ -476,7 +517,8 @@ export class Horarios implements OnInit {
     }
     const orden = Math.max(0, ...this.bloques().map((item) => item.orden)) + 1;
     this.guardando.set(true);
-    this.horarioService.crearBloque({ periodoAcademicoId, nivelId, nombre: this.nuevoNombre.trim(), orden, horaInicio: this.nuevaHoraInicio, horaFin: this.nuevaHoraFin, esRecreo: this.nuevoEsRecreo() })
+    const tipoBloque = this.nuevoTipoBloque();
+    this.horarioService.crearBloque({ periodoAcademicoId, nivelId, nombre: this.nuevoNombre.trim(), orden, horaInicio: this.nuevaHoraInicio, horaFin: this.nuevaHoraFin, tipoBloque, esRecreo: tipoBloque === 'RECREO' })
       .subscribe({
         next: (creado) => {
           this.bloques.update((items) => [...items, creado].sort((a, b) => a.orden - b.orden));
@@ -494,12 +536,14 @@ export class Horarios implements OnInit {
   }
 
   guardarEdicion(bloque: BloqueHorario): void {
+    if (!this.esPeriodoEditable()) return;
     const periodoAcademicoId = this.periodoId();
     if (!periodoAcademicoId) return;
     this.guardando.set(true);
     this.horarioService.actualizarBloque(bloque.id, {
       periodoAcademicoId, nivelId: bloque.nivelId, nombre: bloque.nombre.trim(), orden: bloque.orden,
-      horaInicio: bloque.horaInicio, horaFin: bloque.horaFin, esRecreo: bloque.esRecreo
+      horaInicio: bloque.horaInicio, horaFin: bloque.horaFin,
+      tipoBloque: this.tipoDeBloque(bloque), esRecreo: this.tipoDeBloque(bloque) === 'RECREO'
     }).subscribe({
       next: (actualizado) => {
         this.bloques.update((items) => items.map((item) => item.id === actualizado.id ? actualizado : item));
@@ -511,6 +555,7 @@ export class Horarios implements OnInit {
   }
 
   desactivarBloque(bloque: BloqueHorario): void {
+    if (!this.esPeriodoEditable()) return;
     this.horarioService.cambiarEstadoBloque(bloque.id, false).subscribe({
       next: () => { this.mostrarAlerta('success', 'Bloque desactivado', 'El bloque ya no estará disponible para programar clases.'); this.cargarBloques(); },
       error: (e) => this.mostrarError(e, 'No se pudo desactivar el bloque.')
@@ -518,6 +563,7 @@ export class Horarios implements OnInit {
   }
 
   cargarPlantillaSanMarcos(): void {
+    if (!this.esPeriodoEditable()) return;
     const nivelId = this.nivelId();
     const periodoAcademicoId = this.periodoId();
     const nivel = this.niveles().find((item) => item.id === nivelId)?.nombre.toUpperCase();
@@ -526,7 +572,7 @@ export class Horarios implements OnInit {
       ? [['Bloque 1', '07:45', '09:15'], ['Bloque 2', '09:30', '11:00'], ['Bloque 3', '11:00', '12:30'], ['Bloque 4', '12:45', '14:15']]
       : [['Bloque 1', '08:00', '08:50'], ['Bloque 2', '08:50', '09:40'], ['Bloque 3', '10:00', '10:50'], ['Bloque 4', '10:50', '11:40'], ['Bloque 5', '12:00', '12:50'], ['Bloque 6', '12:50', '13:40']];
     const payloads: BloqueHorarioPayload[] = horarios.map(([nombre, horaInicio, horaFin], index) => ({
-      periodoAcademicoId, nivelId, nombre, horaInicio, horaFin, orden: index + 1, esRecreo: false
+      periodoAcademicoId, nivelId, nombre, horaInicio, horaFin, orden: index + 1, esRecreo: false, tipoBloque: 'CLASE'
     }));
     this.guardando.set(true);
     from(payloads).pipe(concatMap((payload) => this.horarioService.crearBloque(payload)), toArray()).subscribe({
@@ -537,10 +583,12 @@ export class Horarios implements OnInit {
   }
 
   guardarHorario(): void {
+    if (!this.esPeriodoEditable()) return;
     const asignacionId = this.asignacionId();
     const bloqueHorarioId = this.bloqueHorarioId();
     if (!asignacionId || !bloqueHorarioId) return;
-    const payload = { asignacionId, bloqueHorarioId, diaSemana: this.diaSemana() };
+    const horarioPendienteId = !this.horarioEditandoId() ? this.horarioPendienteSeleccionadoId() : null;
+    const payload = { asignacionId, bloqueHorarioId, diaSemana: this.diaSemana(), ...(horarioPendienteId ? { horarioPendienteId } : {}) };
     const horarioId = this.horarioEditandoId();
     this.guardando.set(true);
     const operacion = horarioId
@@ -552,6 +600,10 @@ export class Horarios implements OnInit {
           ? items.map((horario) => horario.id === item.id ? item : horario)
           : [...items, item]);
         this.horarioEditandoId.set(null);
+        if (horarioPendienteId) {
+          this.horariosPendientesReprogramacion.update((items) => items.filter((pendiente) => pendiente.id !== horarioPendienteId));
+          this.horarioPendienteSeleccionadoId.set(null);
+        }
         this.mostrarAlerta('success', horarioId ? 'Programación actualizada' : 'Clase programada', horarioId
           ? 'Los cambios de la clase se guardaron correctamente.'
           : 'La clase se repetirá según el día y bloque asignados durante el período académico.');
@@ -562,6 +614,7 @@ export class Horarios implements OnInit {
   }
 
   iniciarEdicionHorario(item: HorarioSemanal): void {
+    if (!this.esPeriodoEditable()) return;
     this.horarioEditandoId.set(item.id);
     this.asignacionId.set(item.asignacionId);
     this.diaSemana.set(item.diaSemana);
@@ -574,8 +627,13 @@ export class Horarios implements OnInit {
   }
 
   quitarHorario(item: HorarioSemanal): void {
-    this.horarioService.cambiarEstado(item.id, false).subscribe({
-      next: () => { this.horarios.update((items) => items.filter((horario) => horario.id !== item.id)); this.mostrarAlerta('success', 'Clase retirada', 'La clase se quitó de la programación del período.'); },
+    if (!this.esPeriodoEditable()) return;
+    this.horarioService.cambiarEstado(item.id, false, true).subscribe({
+      next: () => {
+        this.horarios.update((items) => items.filter((horario) => horario.id !== item.id));
+        this.horariosPendientesReprogramacion.update((items) => [...items.filter((horario) => horario.id !== item.id), item]);
+        this.mostrarAlerta('success', 'Clase retirada', 'La clase quedó disponible en Cursos pendientes para programarla nuevamente.');
+      },
       error: (e) => this.mostrarError(e, 'No se pudo retirar la clase.')
     });
   }
@@ -584,21 +642,25 @@ export class Horarios implements OnInit {
   // DRAG & DROP PROGRAMMING
   // ==========================================
 
-  iniciarArrastrePendiente(event: DragEvent, asignacion: AsignacionDocente): void {
+  iniciarArrastrePendiente(event: DragEvent, pendiente: CursoPendiente): void {
+    if (!this.esPeriodoEditable()) { event.preventDefault(); return; }
+    const asignacion = pendiente.asignacion;
     this.dragItem.set({
       tipo: 'PENDIENTE',
       asignacionId: asignacion.id,
       curso: asignacion.curso,
       docente: asignacion.docenteNombreCompleto,
-      cursoId: asignacion.cursoId
+      cursoId: asignacion.cursoId,
+      horarioPendienteId: pendiente.horarioPendienteId
     });
     if (event.dataTransfer) {
       event.dataTransfer.effectAllowed = 'copyMove';
-      event.dataTransfer.setData('text/plain', JSON.stringify({ tipo: 'PENDIENTE', asignacionId: asignacion.id }));
+      event.dataTransfer.setData('text/plain', JSON.stringify({ tipo: 'PENDIENTE', asignacionId: asignacion.id, horarioPendienteId: pendiente.horarioPendienteId }));
     }
   }
 
   iniciarArrastreHorario(event: DragEvent, item: HorarioSemanal): void {
+    if (!this.esPeriodoEditable()) { event.preventDefault(); return; }
     this.dragItem.set({
       tipo: 'HORARIO',
       horarioId: item.id,
@@ -651,12 +713,13 @@ export class Horarios implements OnInit {
   onDropOnSlot(event: DragEvent, dia: DiaSemana, bloqueId: number): void {
     event.preventDefault();
     event.stopPropagation();
+    if (!this.esPeriodoEditable()) return;
     const data = this.dragItem();
     this.finalizarArrastre();
     if (!data) return;
 
     if (data.tipo === 'PENDIENTE') {
-      this.programarAsignacionEnSlot(data.asignacionId, dia, bloqueId);
+      this.programarAsignacionEnSlot(data.asignacionId, dia, bloqueId, data.horarioPendienteId);
     } else if (data.tipo === 'HORARIO' && data.horarioId) {
       if (data.diaSemana === dia && data.bloqueId === bloqueId) return;
       this.moverHorarioASlot(data.horarioId, data.asignacionId, dia, bloqueId);
@@ -683,6 +746,7 @@ export class Horarios implements OnInit {
   onDropOnOccupied(event: DragEvent, itemExistente: HorarioSemanal): void {
     event.preventDefault();
     event.stopPropagation();
+    if (!this.esPeriodoEditable()) return;
     const data = this.dragItem();
     this.finalizarArrastre();
     if (!data) return;
@@ -713,6 +777,7 @@ export class Horarios implements OnInit {
   onDropUnschedule(event: DragEvent): void {
     event.preventDefault();
     event.stopPropagation();
+    if (!this.esPeriodoEditable()) return;
     const data = this.dragItem();
     this.finalizarArrastre();
     if (!data || data.tipo !== 'HORARIO' || !data.horarioId) return;
@@ -723,12 +788,16 @@ export class Horarios implements OnInit {
     }
   }
 
-  programarAsignacionEnSlot(asignacionId: number, diaSemana: DiaSemana, bloqueHorarioId: number): void {
-    const payload = { asignacionId, bloqueHorarioId, diaSemana };
+  programarAsignacionEnSlot(asignacionId: number, diaSemana: DiaSemana, bloqueHorarioId: number, horarioPendienteId?: number): void {
+    if (!this.esPeriodoEditable()) return;
+    const payload = { asignacionId, bloqueHorarioId, diaSemana, ...(horarioPendienteId ? { horarioPendienteId } : {}) };
     this.guardando.set(true);
     this.horarioService.crear(payload).subscribe({
       next: (item) => {
         this.horarios.update((items) => [...items, item]);
+        if (horarioPendienteId) {
+          this.horariosPendientesReprogramacion.update((items) => items.filter((pendiente) => pendiente.id !== horarioPendienteId));
+        }
         this.guardando.set(false);
         this.mostrarAlerta(
           'success',
@@ -744,6 +813,7 @@ export class Horarios implements OnInit {
   }
 
   moverHorarioASlot(horarioId: number, asignacionId: number, diaSemana: DiaSemana, bloqueHorarioId: number): void {
+    if (!this.esPeriodoEditable()) return;
     const payload = { asignacionId, bloqueHorarioId, diaSemana };
     this.guardando.set(true);
     this.horarioService.actualizar(horarioId, payload).subscribe({
@@ -764,6 +834,7 @@ export class Horarios implements OnInit {
   }
 
   intercambiarHorarios(itemA: DragItemData, itemB: HorarioSemanal): void {
+    if (!this.esPeriodoEditable()) return;
     if (!itemA.horarioId || !itemA.diaSemana || !itemA.bloqueId) return;
     this.guardando.set(true);
     this.horarioService.cambiarEstado(itemB.id, false).pipe(
@@ -930,13 +1001,15 @@ export class Horarios implements OnInit {
     forkJoin({
       asignaciones: this.asignacionesService.listarPorPeriodo(periodoId),
       horarios: this.horarioService.listar(periodoId),
+      horariosPendientesReprogramacion: this.horarioService.listarPendientesReprogramacion(periodoId),
       secciones: this.seccionesService.listar(periodoId)
     }).subscribe({
-      next: ({ asignaciones, horarios, secciones }) => {
+      next: ({ asignaciones, horarios, horariosPendientesReprogramacion, secciones }) => {
         const activas = asignaciones.filter((item) => (item.estado ?? 'ACTIVO') === 'ACTIVO');
         this.asignaciones.set(activas);
         this.secciones.set(secciones);
         this.horarios.set(horarios);
+        this.horariosPendientesReprogramacion.set(horariosPendientesReprogramacion);
         const niveles = new Map<number, string>();
         this.cursos()
           .filter((curso) => (curso.estado ?? 'ACTIVO') === 'ACTIVO')
@@ -969,7 +1042,7 @@ export class Horarios implements OnInit {
     this.horarioService.listarBloques(periodoId, nivelId).subscribe({
       next: (items) => {
         this.bloques.set(items);
-        const bloquesDeClase = items.filter((item) => !item.esRecreo);
+        const bloquesDeClase = items.filter((item) => this.tipoDeBloque(item) === 'CLASE');
         if (!this.bloqueHorarioId() || !bloquesDeClase.some((item) => item.id === this.bloqueHorarioId())) {
           this.bloqueHorarioId.set(bloquesDeClase[0]?.id ?? null);
         }

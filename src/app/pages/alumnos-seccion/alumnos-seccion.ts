@@ -52,6 +52,7 @@ export class AlumnosSeccion {
 
   readonly periodos = signal<PeriodoAcademico[]>([]);
   readonly periodo = signal<PeriodoAcademico | null>(null);
+  readonly grados = signal<Grado[]>([]);
   readonly grado = signal<Grado | null>(null);
   readonly seccion = signal<Seccion | null>(null);
   readonly secciones = signal<Seccion[]>([]);
@@ -145,13 +146,26 @@ export class AlumnosSeccion {
       return null;
     }
 
-    return [...this.periodos()]
-      .filter((periodo) => periodo.anio < actual.anio)
-      .sort((a, b) => b.anio - a.anio)[0] ?? null;
+    return this.periodos().find((periodo) => periodo.anio === actual.anio - 1) ?? null;
+  });
+
+  readonly gradoAnterior = computed(() => {
+    const actual = this.grado();
+    if (!actual || actual.orden <= 1) {
+      return null;
+    }
+
+    return this.grados().find((grado) => grado.orden === actual.orden - 1) ?? null;
+  });
+
+  readonly cuposDisponibles = computed(() => {
+    const capacidad = this.seccion()?.capacidad ?? 30;
+    const ocupados = this.matriculasSeccion().filter((matricula) => matricula.estado !== 'INACTIVO').length;
+    return Math.max(0, capacidad - ocupados);
   });
 
   readonly todosLosAlumnosAnterioresSeleccionados = computed(() => {
-    const alumnos = this.alumnosPeriodoAnterior();
+    const alumnos = this.alumnosPeriodoAnterior().slice(0, this.cuposDisponibles());
     return alumnos.length > 0 && alumnos.every((alumno) => this.alumnosAnterioresSeleccionados().has(alumno.alumnoId));
   });
 
@@ -187,6 +201,7 @@ export class AlumnosSeccion {
 
         this.gradoService.listar().subscribe({
           next: (grados) => {
+            this.grados.set(grados);
             this.seccionService.listar().subscribe({
               next: (secciones) => {
                 this.secciones.set(secciones);
@@ -232,7 +247,7 @@ export class AlumnosSeccion {
 
   cargarAlumnosPeriodoAnterior(): void {
     const periodoAnterior = this.periodoAnterior();
-    const seccionActual = this.seccion();
+    const gradoAnterior = this.gradoAnterior();
 
     if (!periodoAnterior) {
       this.mostrarAlerta(
@@ -243,53 +258,59 @@ export class AlumnosSeccion {
       return;
     }
 
-    const seccionAnterior = this.secciones().find(
-      (seccion) =>
-        seccion.periodoAcademicoId === periodoAnterior.id &&
-        seccion.gradoId === seccionActual?.gradoId &&
-        seccion.nombre.trim().toUpperCase() === seccionActual?.nombre.trim().toUpperCase()
-    );
-
-    if (!seccionAnterior) {
+    if (!gradoAnterior) {
       this.mostrarAlerta(
         'warning',
-        'Sección anterior no encontrada',
-        'No existe una sección equivalente del mismo grado y nombre en el período anterior.'
+        'Sin grado anterior',
+        'El primer grado de primaria no tiene un grado previo para promover alumnos.'
       );
+      return;
+    }
+
+    if (!this.cuposDisponibles()) {
+      this.mostrarAlerta('warning', 'Sección completa', 'Esta sección ya alcanzó su capacidad.');
       return;
     }
 
     this.cargandoPeriodoAnterior.set(true);
 
-    this.matriculaService.listar(periodoAnterior.id, seccionAnterior.id).subscribe({
-      next: (matriculasAnteriores) => {
-        if (!matriculasAnteriores.length) {
+    forkJoin({
+      matriculasAnteriores: this.matriculaService.listar(periodoAnterior.id),
+      matriculasActuales: this.matriculaService.listar(this.periodoId)
+    }).subscribe({
+      next: ({ matriculasAnteriores, matriculasActuales }) => {
+        const alumnosGradoAnterior = matriculasAnteriores.filter(
+          (matricula) => matricula.gradoId === gradoAnterior.id && matricula.estado !== 'INACTIVO'
+        );
+        if (!alumnosGradoAnterior.length) {
           this.cargandoPeriodoAnterior.set(false);
           this.mostrarAlerta(
             'warning',
             'Sin alumnos previos',
-            'La sección no tiene alumnos cargados en el período anterior.'
+            `No hay alumnos de ${gradoAnterior.nombre} matriculados en el período anterior.`
           );
           return;
         }
 
-        const alumnosActuales = new Set(this.matriculasSeccion().map((matricula) => matricula.alumnoId));
-        const pendientes = matriculasAnteriores.filter(
-          (matricula) => !alumnosActuales.has(matricula.alumnoId)
-        );
+        const alumnosYaMatriculados = new Set(matriculasActuales.map((matricula) => matricula.alumnoId));
+        const pendientes = alumnosGradoAnterior
+          .filter((matricula) => !alumnosYaMatriculados.has(matricula.alumnoId))
+          .sort((a, b) => a.alumnoNombreCompleto.localeCompare(b.alumnoNombreCompleto, 'es'));
 
         if (!pendientes.length) {
           this.cargandoPeriodoAnterior.set(false);
           this.mostrarAlerta(
             'info',
             'Sin cambios',
-            'Los alumnos del período anterior ya fueron cargados en esta sección.'
+            'Los alumnos del grado anterior ya tienen matrícula en este período.'
           );
           return;
         }
 
         this.alumnosPeriodoAnterior.set(pendientes);
-        this.alumnosAnterioresSeleccionados.set(new Set(pendientes.map((matricula) => matricula.alumnoId)));
+        this.alumnosAnterioresSeleccionados.set(new Set(
+          pendientes.slice(0, this.cuposDisponibles()).map((matricula) => matricula.alumnoId)
+        ));
         this.cargandoPeriodoAnterior.set(false);
         this.modalAlumnosAnterioresAbierto.set(true);
       },
@@ -305,6 +326,10 @@ export class AlumnosSeccion {
   }
 
   alternarSeleccionAlumnoAnterior(alumnoId: number, seleccionado: boolean): void {
+    if (seleccionado && this.alumnosAnterioresSeleccionados().size >= this.cuposDisponibles()) {
+      this.mostrarAlerta('warning', 'Cupos completos', 'No puedes seleccionar más alumnos que cupos disponibles.');
+      return;
+    }
     this.alumnosAnterioresSeleccionados.update((actual) => {
       const siguiente = new Set(actual);
       if (seleccionado) {
@@ -318,7 +343,9 @@ export class AlumnosSeccion {
 
   seleccionarTodosAlumnosAnteriores(seleccionar: boolean): void {
     this.alumnosAnterioresSeleccionados.set(
-      seleccionar ? new Set(this.alumnosPeriodoAnterior().map((matricula) => matricula.alumnoId)) : new Set()
+      seleccionar
+        ? new Set(this.alumnosPeriodoAnterior().slice(0, this.cuposDisponibles()).map((matricula) => matricula.alumnoId))
+        : new Set()
     );
   }
 
@@ -346,6 +373,11 @@ export class AlumnosSeccion {
       return;
     }
 
+    if (seleccionados.length > this.cuposDisponibles()) {
+      this.mostrarAlerta('warning', 'Cupos insuficientes', 'Reduce la selección según los cupos disponibles.');
+      return;
+    }
+
     this.cargandoAlumnosSeleccionados.set(true);
 
     forkJoin(
@@ -369,6 +401,7 @@ export class AlumnosSeccion {
       },
       error: (error) => {
         this.cargandoAlumnosSeleccionados.set(false);
+        this.cargarMatriculas();
         this.mostrarAlerta(
           'error',
           'No se pudieron cargar',

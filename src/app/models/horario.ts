@@ -1,4 +1,5 @@
 export type DiaSemana = 'LUNES' | 'MARTES' | 'MIERCOLES' | 'JUEVES' | 'VIERNES' | 'SABADO' | 'DOMINGO';
+export type TipoBloqueHorario = 'CLASE' | 'RECREO' | 'TUTORIA';
 
 export interface BloqueHorario {
   id: number;
@@ -10,6 +11,7 @@ export interface BloqueHorario {
   horaInicio: string;
   horaFin: string;
   esRecreo: boolean;
+  tipoBloque: TipoBloqueHorario;
 }
 
 export interface HorarioSemanal {
@@ -40,10 +42,12 @@ export interface BloqueHorarioPayload {
   horaInicio: string;
   horaFin: string;
   esRecreo: boolean;
+  tipoBloque: TipoBloqueHorario;
 }
 
 export interface HorarioSemanalPayload {
   asignacionId: number;
   bloqueHorarioId: number;
   diaSemana: DiaSemana;
+  horarioPendienteId?: number;
 }

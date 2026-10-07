@@ -9,6 +9,7 @@ import { AsignacionDocente } from '../../models/asignacion';
 import { PeriodoEvaluacion } from '../../models/periodo-evaluacion';
 import { DetalleNotaEvaluacion, Evaluacion } from '../../models/evaluacion';
 import { Matricula } from '../../models/matricula';
+import { PeriodoAcademico } from '../../models/periodo-academico';
 import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
 import { AuthService } from '../../services/auth/auth.service';
 import { AsignacionAcademicaService } from '../../services/asignaciones/asignacion-academica.service';
@@ -57,7 +58,7 @@ export class CargaNotas implements OnInit {
   private readonly matriculaService = inject(MatriculaService);
   private readonly evaluacionService = inject(EvaluacionService);
 
-  readonly asignacionId = Number(this.route.snapshot.paramMap.get('asignacionId'));
+  readonly asignacionId = signal(Number(this.route.snapshot.paramMap.get('asignacionId')) || null);
   readonly currentYear = new Date().getFullYear();
   readonly cargando = signal(true);
   readonly guardandoNotas = signal(false);
@@ -74,6 +75,11 @@ export class CargaNotas implements OnInit {
   });
 
   readonly asignacion = signal<AsignacionDocente | null>(null);
+  readonly periodosAcademicos = signal<PeriodoAcademico[]>([]);
+  readonly periodoAcademicoId = signal<number | null>(null);
+  readonly periodoAcademicoSeleccionado = computed(() =>
+    this.periodosAcademicos().find((periodo) => periodo.id === this.periodoAcademicoId()) ?? null
+  );
   readonly periodosEvaluacion = signal<PeriodoEvaluacion[]>([]);
   readonly periodoEvaluacionSeleccionadoId = signal<number | null>(null);
   readonly evaluaciones = signal<Evaluacion[]>([]);
@@ -310,7 +316,11 @@ export class CargaNotas implements OnInit {
   }
 
   ngOnInit(): void {
-    this.cargarBase();
+    this.route.paramMap.subscribe((params) => {
+      const asignacionId = Number(params.get('asignacionId')) || null;
+      this.asignacionId.set(asignacionId);
+      this.cargarBase();
+    });
   }
 
   cargarBase(): void {
@@ -327,7 +337,9 @@ export class CargaNotas implements OnInit {
 
     this.periodoAcademicoService.listar().subscribe({
       next: (periodos) => {
-        const periodoActual =
+        this.periodosAcademicos.set(periodos);
+        const periodoSolicitadoId = Number(this.route.snapshot.queryParamMap.get('periodoAcademicoId')) || null;
+        const periodoActual = periodos.find((periodo) => periodo.id === periodoSolicitadoId) ??
           periodos.find((periodo) => periodo.anio === this.currentYear) ??
           [...periodos].sort((a, b) => b.anio - a.anio)[0] ??
           null;
@@ -343,8 +355,9 @@ export class CargaNotas implements OnInit {
           periodosEvaluacion: this.periodoEvaluacionService.listar()
         }).subscribe({
           next: ({ asignaciones, periodosEvaluacion }) => {
-            const asignacion = asignaciones.find((item) => item.id === this.asignacionId) ?? null;
+            const asignacion = asignaciones.find((item) => item.id === this.asignacionId()) ?? null;
             this.asignacion.set(asignacion);
+            this.periodoAcademicoId.set(periodoActual.id);
             this.periodosEvaluacion.set(periodosEvaluacion);
             this.cargando.set(false);
 
@@ -388,6 +401,41 @@ export class CargaNotas implements OnInit {
         this.error.set(
           formatearMensajeError(error, 'No se pudo resolver el período académico actual.')
         );
+      }
+    });
+  }
+
+  cambiarPeriodoAcademico(valor: string | number): void {
+    const periodoId = Number(valor);
+    const periodo = this.periodosAcademicos().find((item) => item.id === periodoId);
+    const asignacionActual = this.asignacion();
+    const docenteId = this.authService.obtenerUsuario()?.docenteId;
+    if (!periodo || !asignacionActual || !docenteId || periodo.id === this.periodoAcademicoId()) return;
+
+    this.cargando.set(true);
+    this.error.set(null);
+    this.asignacionService.listarAsignaciones(docenteId, periodo.id).subscribe({
+      next: (asignaciones) => {
+        const equivalente = asignaciones.find((item) =>
+          item.cursoId === asignacionActual.cursoId && item.seccionId === asignacionActual.seccionId
+        );
+        if (!equivalente) {
+          this.cargando.set(false);
+          this.error.set(`Este curso no tiene una asignación para la misma sección en ${periodo.anio}.`);
+          this.periodoAcademicoId.set(asignacionActual.periodoAcademicoId);
+          this.asignacion.set(null);
+          this.evaluaciones.set([]);
+          this.filasNotas.set([]);
+          return;
+        }
+        void this.router.navigate(['/mis-asignaciones', equivalente.id, 'notas'], {
+          queryParams: { periodoAcademicoId: periodo.id }
+        });
+      },
+      error: (error) => {
+        this.cargando.set(false);
+        this.error.set(formatearMensajeError(error, 'No se pudo cargar el período seleccionado.'));
+        this.periodoAcademicoId.set(asignacionActual.periodoAcademicoId);
       }
     });
   }

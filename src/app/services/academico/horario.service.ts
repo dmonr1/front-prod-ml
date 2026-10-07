@@ -21,6 +21,10 @@ export class HorarioService {
     return this.http.get<BloqueHorario[]>(`${this.api}/bloques/recreos`, { params: { periodoAcademicoId } });
   }
 
+  listarBloquesNoLectivos(periodoAcademicoId: number): Observable<BloqueHorario[]> {
+    return this.http.get<BloqueHorario[]>(`${this.api}/bloques/no-lectivos`, { params: { periodoAcademicoId } });
+  }
+
   crearBloque(payload: BloqueHorarioPayload): Observable<BloqueHorario> {
     return this.http.post<BloqueHorario>(`${this.api}/bloques`, payload);
   }
@@ -35,6 +39,10 @@ export class HorarioService {
 
   listar(periodoAcademicoId: number): Observable<HorarioSemanal[]> {
     return this.http.get<HorarioSemanal[]>(this.api, { params: { periodoAcademicoId } });
+  }
+
+  listarPendientesReprogramacion(periodoAcademicoId: number): Observable<HorarioSemanal[]> {
+    return this.http.get<HorarioSemanal[]>(`${this.api}/pendientes-reprogramacion`, { params: { periodoAcademicoId } });
   }
 
   listarMios(periodoAcademicoId: number): Observable<HorarioSemanal[]> {
@@ -55,7 +63,7 @@ export class HorarioService {
     return this.http.put<HorarioSemanal>(`${this.api}/${id}`, payload);
   }
 
-  cambiarEstado(id: number, activo: boolean): Observable<void> {
-    return this.http.patch<void>(`${this.api}/${id}/estado`, null, { params: { activo } });
+  cambiarEstado(id: number, activo: boolean, devolverAPendientes = false): Observable<void> {
+    return this.http.patch<void>(`${this.api}/${id}/estado`, null, { params: { activo, devolverAPendientes } });
   }
 }

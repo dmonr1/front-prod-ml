@@ -49,9 +49,9 @@ interface DashboardPending {
 
 export interface DashboardMlStatus {
   algoritmoActivo: string;
-  f1Score: number;
-  precision: number;
-  recall: number;
+  f1Score: number | null;
+  precision: number | null;
+  recall: number | null;
   totalModelos: number;
   proximoReentrenamiento: string;
   cadencia: string;
@@ -259,19 +259,19 @@ export class DashboardAdmin implements OnInit {
       data.comparativaMl?.algoritmos[0] ??
       null;
 
-    const f1ScoreVal = activeAlgo ? Math.round(activeAlgo.f1Score > 1 ? activeAlgo.f1Score : activeAlgo.f1Score * 100) : 92;
-    const precisionVal = activeAlgo ? Math.round(activeAlgo.precision > 1 ? activeAlgo.precision : activeAlgo.precision * 100) : 91;
-    const recallVal = activeAlgo ? Math.round(activeAlgo.recall > 1 ? activeAlgo.recall : activeAlgo.recall * 100) : 89;
+    const f1ScoreVal = activeAlgo ? Math.round(activeAlgo.f1Score * 100) : null;
+    const precisionVal = activeAlgo ? Math.round(activeAlgo.precision * 100) : null;
+    const recallVal = activeAlgo ? Math.round(activeAlgo.recall * 100) : null;
 
     this.mlStatus.set({
-      algoritmoActivo: activeAlgo?.nombre ?? 'Random Forest (Optimizado)',
+      algoritmoActivo: activeAlgo?.nombre ?? 'Evaluación no disponible',
       f1Score: f1ScoreVal,
       precision: precisionVal,
       recall: recallVal,
-      totalModelos: data.comparativaMl?.algoritmos.length ?? 4,
-      proximoReentrenamiento: data.planificadorMl?.proximaEjecucionProgramada ?? 'En 7 días (Automático)',
-      cadencia: data.planificadorMl?.cadencia ?? 'Semanal',
-      estado: activeAlgo?.estado ?? 'ACTIVO'
+      totalModelos: data.comparativaMl?.algoritmos.length ?? 0,
+      proximoReentrenamiento: data.planificadorMl?.proximaEjecucionProgramada ?? 'No disponible',
+      cadencia: data.planificadorMl?.cadencia ?? 'No disponible',
+      estado: activeAlgo?.estado ?? 'NO_DISPONIBLE'
     });
 
     this.auditoriaReciente.set(data.auditoriaLogs.slice(0, 4));

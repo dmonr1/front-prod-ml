@@ -224,11 +224,12 @@
               } @else {
               <div class="quick-actions">
                 <button class="load-previous-btn full-button" type="button"
-                  [disabled]="!periodoAnterior() || cargandoPeriodoAnterior()" (click)="cargarAlumnosPeriodoAnterior()">
+                  [disabled]="!periodoAnterior() || !gradoAnterior() || !cuposDisponibles() || seccion()?.estado === 'INACTIVO' || cargandoPeriodoAnterior()"
+                  (click)="cargarAlumnosPeriodoAnterior()">
                   <i class="fa-solid" [class.fa-clock-rotate-left]="!cargandoPeriodoAnterior()"
                     [class.fa-spinner]="cargandoPeriodoAnterior()"
                     [class.fa-spin]="cargandoPeriodoAnterior()"></i>
-                  <span>{{ cargandoPeriodoAnterior() ? 'Cargando alumnos...' : 'Cargar alumnos del período anterior' }}</span>
+                  <span>{{ cargandoPeriodoAnterior() ? 'Cargando alumnos...' : 'Promover alumnos del período anterior' }}</span>
                 </button>
               </div>
               }
@@ -376,7 +377,8 @@
           <div class="panel-head">
             <span class="panel-kicker">Período anterior</span>
             <h3 id="copy-students-title">Seleccionar alumnos</h3>
-            <p>Elige los alumnos que deseas matricular en esta sección.</p>
+            <p>Elige alumnos de {{ gradoAnterior()?.nombre }} para matricularlos en {{ grado()?.nombre }}.
+              Quedan {{ cuposDisponibles() }} cupos en esta sección.</p>
           </div>
           <button class="student-copy-close" type="button" aria-label="Cerrar"
             [disabled]="cargandoAlumnosSeleccionados()" (click)="cerrarModalAlumnosAnteriores()">
@@ -391,7 +393,7 @@
                 (change)="seleccionarTodosAlumnosAnteriores($any($event.target).checked)" />
               <span class="student-copy-check" aria-hidden="true"></span>
             </span>
-            <span>Seleccionar todos</span>
+            <span>Seleccionar hasta {{ cuposDisponibles() }} cupos</span>
             <span>Código</span>
             <span>Sección anterior</span>
           </label>

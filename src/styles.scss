@@ -1244,3 +1244,33 @@ body.dark-mode {
 .new-type-modal {
   cursor: default;
 }
+/* Selector reutilizable del período académico en las vistas docentes. */
+.academic-period-selector {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 5px 10px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 10px;
+  background: var(--color-surface-primary);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.academic-period-selector select,
+.period-select-chip select {
+  min-width: 72px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.period-select-chip {
+  cursor: pointer;
+}

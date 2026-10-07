@@ -44,10 +44,18 @@
       </div>
 
       <div class="head-controls">
-        @if (periodoAcademico(); as per) {
-        <span class="period-informative-chip">
-          <i class="fa-solid fa-calendar-check"></i> Período {{ per.anio }}
-        </span>
+        @if (periodoAcademico()) {
+        <label class="period-informative-chip period-select-chip">
+          <i class="fa-solid fa-calendar-check"></i>
+          <span>Período</span>
+          <select aria-label="Seleccionar período académico para asistencia"
+            [value]="periodoAcademico()?.id ?? ''"
+            (change)="cambiarPeriodoAcademico($any($event.target).value)">
+            @for (periodo of periodos(); track periodo.id) {
+            <option [value]="periodo.id">{{ periodo.anio }}</option>
+            }
+          </select>
+        </label>
         }
       </div>
     </header>

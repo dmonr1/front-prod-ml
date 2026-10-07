@@ -5,7 +5,7 @@
         <span class="eyebrow"><i class="fa-solid fa-brain"></i> Machine Learning e Inteligencia Analítica</span>
         <h1>Configuración de Predictores y Modelos Analíticos</h1>
         <p class="subtitle">
-          Administración de variables predictoras (CP-34), comparador multialgoritmo (CP-81 / CP-83) y planificador de reentrenamiento continuo.
+          Variables del modelo activo, evaluaciones por ámbito y entrenamiento manual con datos sintéticos.
         </p>
       </div>
       <div class="header-actions">
@@ -66,19 +66,19 @@
           <div class="mini-kpi">
             <span class="label">Predictores Globales Activos</span>
             <span class="val">{{ conteoActivos('GLOBAL') }} / {{ conteoTotal('GLOBAL') }}</span>
-            <span class="sub">FEATURES_GLOBALES en producción</span>
+            <span class="sub">Variables del modelo global entrenado</span>
           </div>
 
           <div class="mini-kpi">
             <span class="label">Predictores por Curso Activos</span>
             <span class="val">{{ conteoActivos('CURSO') }} / {{ conteoTotal('CURSO') }}</span>
-            <span class="sub">FEATURES_CURSO en producción</span>
+            <span class="sub">Variables del modelo por curso entrenado</span>
           </div>
 
           <div class="mini-kpi">
             <span class="label">Estado del Pipeline</span>
-            <span class="val text-success"><i class="fa-solid fa-check"></i> Dinámico</span>
-            <span class="sub">Editable vía API & Web</span>
+            <span class="val">Contrato del modelo</span>
+            <span class="sub">Se actualiza al completar un entrenamiento</span>
           </div>
         </div>
 
@@ -104,14 +104,7 @@
             </div>
           </div>
 
-          <div class="action-buttons">
-            <button class="btn btn-secondary" (click)="restablecerPredictores()" [disabled]="guardando()">
-              <i class="fa-solid fa-rotate-left"></i> Restablecer todos
-            </button>
-            <button class="btn btn-primary" (click)="guardarConfiguracionPredictores()" [disabled]="guardando()">
-              <i class="fa-solid fa-floppy-disk" [class.fa-spin]="guardando()"></i> Guardar cambios
-            </button>
-          </div>
+          <p>Variables del contrato actual. Cambiar su definición requiere actualizar los datos y reentrenar.</p>
         </div>
 
         <!-- Lista de Predictores -->
@@ -127,8 +120,8 @@
                     <i [class]="obtenerIconoCategoria(predictor.categoria)"></i> {{ predictor.categoria }}
                   </span>
                 </div>
-                <label class="switch-toggle" [title]="predictor.activo ? 'Desactivar predictor' : 'Activar predictor'">
-                  <input type="checkbox" [(ngModel)]="predictor.activo" />
+                <label class="switch-toggle" title="Incluido en el modelo entrenado">
+                  <input type="checkbox" [checked]="predictor.activo" disabled />
                   <span class="slider"></span>
                 </label>
               </div>
@@ -141,15 +134,7 @@
 
               <div class="card-footer">
                 <div class="weight-control">
-                  <label>Ponderación / Peso:</label>
-                  <input
-                    type="number"
-                    min="0.1"
-                    max="5.0"
-                    step="0.1"
-                    [(ngModel)]="predictor.peso"
-                    [disabled]="!predictor.activo"
-                  />
+                  <span>Importancia por ganancia (evaluación): {{ predictor.peso * 100 | number:'1.1-1' }}%</span>
                 </div>
                 <span class="status-indicator" [class.active]="predictor.activo">
                   <i class="fa-solid" [class.fa-check]="predictor.activo" [class.fa-ban]="!predictor.activo"></i>
@@ -165,14 +150,24 @@
     <!-- TAB 2: COMPARADOR MULTIALGORITMO (CP-81 / CP-83) -->
     @if (tabActiva() === 'comparador') {
       <section class="tab-content">
+        <div class="filter-field">
+          <label for="tipoComparativa">Modelo evaluado</label>
+          <select id="tipoComparativa" [(ngModel)]="tipoComparativa" (ngModelChange)="cargarComparativa()">
+            <option value="GLOBAL">Riesgo global</option>
+            <option value="CURSO">Riesgo por curso</option>
+          </select>
+        </div>
         @if (comparativa(); as comp) {
           <div class="comparison-banner">
             <div class="banner-info">
-              <span class="badge-champion"><i class="fa-solid fa-trophy"></i> Modelo Recomendado</span>
+              <span class="badge-champion"><i class="fa-solid fa-trophy"></i> Mayor F1 en esta prueba</span>
               <h2>{{ comp.modeloRecomendado }}</h2>
               <p>
-                Optimizado mediante <strong>{{ comp.metricaOptimizada }}</strong> sobre un total de {{ comp.totalRegistrosEvaluados }} registros longitudinales agrupados por estudiante.
+                {{ comp.totalRegistrosEvaluados }} registros de prueba correspondientes a {{ comp.alumnosPrueba }} alumnos simulados,
+                separados de los {{ comp.registrosEntrenamiento }} registros de entrenamiento.
               </p>
+              <p>{{ comp.alcanceMetricas }}</p>
+              <p>{{ comp.metricaOptimizada }}</p>
             </div>
             <div class="banner-meta">
               <span>Evaluación: {{ comp.fechaEvaluacion }}</span>
@@ -218,8 +213,8 @@
                     <span class="metric-val">{{ (alg.recall * 100) | number:'1.2-2' }}%</span>
                   </div>
                   <div class="metric-item">
-                    <span class="metric-name">Latencia</span>
-                    <span class="metric-val">{{ alg.latenciaMs }} ms</span>
+                    <span class="metric-name">Tiempo por fila en lote</span>
+                    <span class="metric-val">{{ alg.latenciaMs | number:'1.4-4' }} ms</span>
                   </div>
                 </div>
 
@@ -236,8 +231,12 @@
           </div>
         } @else {
           <div class="loading-state">
-            <i class="fa-solid fa-circle-notch fa-spin"></i>
-            <span>Cargando comparativa de modelos analíticos...</span>
+            @if (cargandoComparativa()) {
+              <i class="fa-solid fa-circle-notch fa-spin"></i>
+              <span>Cargando evaluación...</span>
+            } @else {
+              <span>Evaluación no disponible. Ejecuta el entrenamiento o vuelve a sincronizar.</span>
+            }
           </div>
         }
       </section>
@@ -251,13 +250,13 @@
             <div class="scheduler-header">
               <div>
                 <span class="cadence-tag"><i class="fa-regular fa-clock"></i> {{ plan.cadencia }}</span>
-                <h2>Pipeline de Reentrenamiento Continuo</h2>
+                <h2>Entrenamiento de los modelos actuales</h2>
                 <p>{{ plan.mensaje }}</p>
               </div>
               <button
                 class="btn btn-primary btn-large"
                 (click)="ejecutarReentrenamientoManual()"
-                [disabled]="reentrenando()"
+                [disabled]="reentrenando() || plan.estadoUltimoReentrenamiento === 'EN_EJECUCION'"
               >
                 <i class="fa-solid fa-bolt" [class.fa-spin]="reentrenando()"></i>
                 {{ reentrenando() ? 'Reentrenando modelos...' : 'Ejecutar reentrenamiento ahora' }}
@@ -292,7 +291,7 @@
               <div class="detail-tile">
                 <span class="tile-icon"><i class="fa-solid fa-database"></i></span>
                 <div class="tile-body">
-                  <span class="tile-label">Registros en set de entrenamiento</span>
+                  <span class="tile-label">Filas usadas para ajustar los dos modelos finales</span>
                   <span class="tile-value">{{ plan.registrosEntrenamiento }} instancias</span>
                 </div>
               </div>
@@ -300,7 +299,7 @@
               <div class="detail-tile">
                 <span class="tile-icon"><i class="fa-solid fa-code-branch"></i></span>
                 <div class="tile-body">
-                  <span class="tile-label">Versión de modelo en producción</span>
+                  <span class="tile-label">Versión activa</span>
                   <span class="tile-value font-mono">{{ plan.modeloActualVersion }}</span>
                 </div>
               </div>
@@ -317,7 +316,7 @@
         } @else {
           <div class="loading-state">
             <i class="fa-solid fa-circle-notch fa-spin"></i>
-            <span>Cargando estado del planificador de reentrenamiento...</span>
+            <span>Estado de entrenamiento no disponible. Usa Sincronizar para consultar otra vez.</span>
           </div>
         }
       </section>

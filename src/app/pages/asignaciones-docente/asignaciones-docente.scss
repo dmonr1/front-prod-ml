@@ -173,9 +173,47 @@
   justify-items: center;
 }
 
-.assignment-main-head>.period-chip {
+.assignment-main-head>.period-selector {
   grid-column: 3;
   justify-self: end;
+}
+
+.period-selector {
+  display: grid;
+  gap: 4px;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.period-selector select {
+  min-width: 175px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1.5px solid var(--color-brand-primary);
+  border-radius: 999px;
+  background: var(--color-surface-primary);
+  color: var(--color-brand-primary);
+  font-weight: 700;
+}
+
+.period-selector small {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.audit-dates {
+  display: grid;
+  gap: 3px;
+  min-width: 160px;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+
+.historical-state {
+  font-weight: 700;
+  color: var(--color-text-secondary);
 }
 
 .panel-head {
@@ -1481,7 +1519,7 @@ select:focus {
   }
 
   .assignment-main-head>.panel-head,
-  .assignment-main-head>.period-chip {
+  .assignment-main-head>.period-selector {
     grid-column: 1;
     grid-row: auto;
     justify-self: center;

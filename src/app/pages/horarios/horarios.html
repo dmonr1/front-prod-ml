@@ -17,8 +17,20 @@
         <div class="section-title-badges"><span>{{ seccionSeleccionada()?.nivel }}</span><span>{{
             horariosSeccion().length }} clases programadas</span></div>
       </div>
-      <span class="period-informative-chip"><i class="fa-solid fa-calendar-check"></i>Período {{
-        periodoSeleccionado()?.nombre || '2026' }}</span>
+      <div class="period-header-controls">
+        <label class="period-select-control">
+          <span>Período</span>
+          <select [ngModel]="periodoId()" (ngModelChange)="cambiarPeriodo($event)" aria-label="Seleccionar período">
+            @for (periodo of periodos(); track periodo.id) {
+            <option [ngValue]="periodo.id">{{ periodo.nombre }}</option>
+            }
+          </select>
+        </label>
+        <span class="period-informative-chip" [class.is-readonly-period]="!esPeriodoEditable()">
+          <i class="fa-solid" [class.fa-lock]="!esPeriodoEditable()" [class.fa-pen-to-square]="esPeriodoEditable()"></i>
+          {{ esPeriodoEditable() ? 'Editable' : 'Solo consulta' }}
+        </span>
+      </div>
     </header>
     } @else {
     <header class="card-head">
@@ -33,11 +45,20 @@
           <button type="button" [class.active]="categoriaNivel() === 'SECUNDARIA'"
             (click)="cambiarCategoriaNivel('SECUNDARIA')">Secundaria</button>
         </div>
-        <button class="action-button secondary block-config-trigger" type="button" (click)="abrirModalBloque()">
+        @if (esPeriodoEditable()) { <button class="action-button secondary block-config-trigger" type="button" (click)="abrirModalBloque()">
           <i class="fa-regular fa-clock"></i><span>Programar bloques</span>
-        </button>
-        <span class="period-informative-chip">
-          <i class="fa-solid fa-calendar-check"></i>Período 2026
+        </button> }
+        <label class="period-select-control">
+          <span>Período</span>
+          <select [ngModel]="periodoId()" (ngModelChange)="cambiarPeriodo($event)" aria-label="Seleccionar período">
+            @for (periodo of periodos(); track periodo.id) {
+            <option [ngValue]="periodo.id">{{ periodo.nombre }}</option>
+            }
+          </select>
+        </label>
+        <span class="period-informative-chip" [class.is-readonly-period]="!esPeriodoEditable()">
+          <i class="fa-solid" [class.fa-lock]="!esPeriodoEditable()" [class.fa-pen-to-square]="esPeriodoEditable()"></i>
+          {{ esPeriodoEditable() ? 'Editable' : 'Solo consulta' }}
         </span>
       </div>
     </header>
@@ -60,7 +81,7 @@
       <header class="section-picker-heading">
         <div class="heading-title-box">
           <h2>Secciones de {{ categoriaNivel() === 'PRIMARIA' ? 'primaria' : 'secundaria' }}</h2>
-          <p>Elige una sección para consultar y programar sus clases semanales.</p>
+          <p>{{ esPeriodoEditable() ? 'Elige una sección para consultar y programar sus clases semanales.' : 'Elige una sección para consultar el horario histórico.' }}</p>
         </div>
         <span class="section-count-badge">
           <i class="fa-solid fa-shapes"></i>
@@ -165,10 +186,11 @@
                   [style.top.px]="posicionMarcaProgramacion(marca)">{{ formatearMinuto(marca) }}</span>
                 }
               </div>
-              @for (recreo of recreosNivel(); track recreo.id) {
-              <article class="timetable-recess" [style.top.px]="posicionBloque(recreo)"
-                [style.height.px]="altoBloque(recreo)">
-                <strong>RECREO</strong><span>{{ formatearHora(recreo.horaInicio) }}–{{ formatearHora(recreo.horaFin)
+              @for (bloqueNoLectivo of bloquesNoLectivosNivel(); track bloqueNoLectivo.id) {
+              <article class="timetable-recess" [class.timetable-tutorial]="tipoDeBloque(bloqueNoLectivo) === 'TUTORIA'"
+                [style.top.px]="posicionBloque(bloqueNoLectivo)" [style.height.px]="altoBloque(bloqueNoLectivo)">
+                <strong>{{ tipoDeBloque(bloqueNoLectivo) === 'TUTORIA' ? 'TUTORÍA - SALIDA' : 'RECREO' }}</strong>
+                <span>{{ formatearHora(bloqueNoLectivo.horaInicio) }}–{{ formatearHora(bloqueNoLectivo.horaFin)
                   }}</span>
               </article>
               }
@@ -178,7 +200,7 @@
                   [style.top.px]="posicionMarcaProgramacion(marca)"></span> }
 
                 <!-- Celdas disponibles para soltar (Drop Targets) -->
-                @for (bloque of bloquesVaciosPorDia(dia.value); track bloque.id) {
+                @for (bloque of (esPeriodoEditable() ? bloquesVaciosPorDia(dia.value) : []); track bloque.id) {
                 <div class="timetable-empty-slot"
                   [class.is-drop-target]="isDropTarget(dia.value, bloque.id)"
                   [class.is-drag-active]="arrastrando()"
@@ -214,30 +236,31 @@
                 <!-- Clases programadas (draggable para mover/intercambiar) -->
                 @for (item of horariosPorDia(dia.value); track item.id) {
                 <article [class]="'timetable-class ' + tonoClase(item)"
+                  [class.is-readonly-class]="!esPeriodoEditable()"
                   [class.is-class-dragging]="dragItem()?.tipo === 'HORARIO' && dragItem()?.horarioId === item.id"
                   [class.is-drop-target-class]="isDropTargetClass(item.id)"
                   [style.top.px]="posicionProgramacion(item)"
                   [style.height.px]="altoProgramacion(item)"
-                  draggable="true"
+                  [draggable]="esPeriodoEditable()"
                   (dragstart)="iniciarArrastreHorario($event, item)"
                   (dragend)="finalizarArrastre()"
                   (dragover)="onDragOverOccupied($event, item)"
                   (dragleave)="onDragLeaveOccupied($event, item)"
                   (drop)="onDropOnOccupied($event, item)">
-                  <div class="timetable-class-drag-indicator" title="Arrastra para mover a otro día u horario">
+                  @if (esPeriodoEditable()) { <div class="timetable-class-drag-indicator" title="Arrastra para mover a otro día u horario">
                     <i class="fa-solid fa-grip-vertical"></i>
-                  </div>
+                  </div> }
                   <div class="timetable-class-content">
                     <strong>{{ item.curso }}</strong><small>{{ item.docente }}</small>
                     <span>{{ formatearHora(item.horaInicio) }}–{{ formatearHora(item.horaFin) }} · {{ item.bloque
                       }}</span>
                   </div>
-                  <div class="timetable-class-actions">
+                  @if (esPeriodoEditable()) { <div class="timetable-class-actions">
                     <button class="icon-button" type="button" title="Editar bloque" aria-label="Editar bloque"
                       (click)="iniciarEdicionHorario(item)"><i class="fa-solid fa-pen"></i></button>
                     <button class="icon-button danger" type="button" title="Retirar bloque" aria-label="Retirar bloque"
                       (click)="quitarHorario(item)"><i class="fa-solid fa-trash-can"></i></button>
-                  </div>
+                  </div> }
                 </article>
                 }
               </div>
@@ -246,7 +269,7 @@
           </div>
         </div>
 
-        <aside class="programming-side-panel">
+        @if (esPeriodoEditable()) { <aside class="programming-side-panel">
           <header><span class="panel-kicker">{{ horarioEditandoId() ? 'Edición' : 'Nueva clase' }}</span>
             <h3>{{ horarioEditandoId() ? 'Editar programación' : 'Programar bloque' }}</h3>
           </header>
@@ -282,7 +305,6 @@
           @if (!bloquesAsignacion().length) { <button class="action-button secondary" type="button"
             (click)="abrirModalBloque()"><i class="fa-regular fa-clock"></i> Configurar bloques</button> }
           }
-          @if (asignacionesPendientes().length) {
           <div class="pending-assignment-list"
             [class.is-drop-zone-unschedule]="dragItem()?.tipo === 'HORARIO'"
             (dragover)="onDragOverUnschedule($event)"
@@ -290,11 +312,11 @@
             (drop)="onDropUnschedule($event)">
             <h4>
               <span>Cursos pendientes</span>
-              <span class="pending-count-pill">{{ asignacionesPendientes().length }}</span>
+              <span class="pending-count-pill">{{ cursosPendientes().length }}</span>
             </h4>
             <p class="pending-drag-instruction">
               <i class="fa-solid fa-hand-pointer"></i>
-              Arrastra un curso a la celda del horario o haz clic para seleccionarlo.
+              Lleva un curso pendiente al horario o arrastra aquí una clase programada para devolverla.
             </p>
             @if (dragItem()?.tipo === 'HORARIO' && dropTargetUnschedule()) {
             <div class="drop-unschedule-box">
@@ -302,31 +324,43 @@
               <span>Soltar aquí para retirar clase del horario</span>
             </div>
             }
-            @for (asignacion of asignacionesPendientes(); track asignacion.id) {
+            @for (pendiente of cursosPendientes(); track pendiente.key) {
             <button type="button"
-              [class]="'pending-course-item ' + tonoCursoPorId(asignacion.cursoId)"
-              [class.is-dragging]="dragItem()?.tipo === 'PENDIENTE' && dragItem()?.asignacionId === asignacion.id"
-              [class.is-selected]="asignacionId() === asignacion.id"
+              [class]="'pending-course-item ' + tonoCursoPorId(pendiente.asignacion.cursoId)"
+              [class.is-dragging]="dragItem()?.tipo === 'PENDIENTE' && dragItem()?.horarioPendienteId === pendiente.horarioPendienteId && dragItem()?.asignacionId === pendiente.asignacion.id"
+              [class.is-selected]="asignacionId() === pendiente.asignacion.id"
               draggable="true"
-              (dragstart)="iniciarArrastrePendiente($event, asignacion)"
+              (dragstart)="iniciarArrastrePendiente($event, pendiente)"
               (dragend)="finalizarArrastre()"
-              (click)="seleccionarAsignacionPendiente(asignacion.id)"
+              (click)="seleccionarCursoPendiente(pendiente)"
               title="Arrastra este curso y suéltalo en cualquier celda libre del horario">
               <div class="pending-course-drag-handle">
                 <i class="fa-solid fa-grip-vertical"></i>
               </div>
               <div class="pending-course-info">
-                <strong>{{ asignacion.curso }}</strong>
-                <small>{{ asignacion.docenteNombreCompleto }}</small>
+                <strong>{{ pendiente.asignacion.curso }}</strong>
+                <small>{{ pendiente.asignacion.docenteNombreCompleto }}{{ pendiente.horarioPendienteId ? ' · Hora retirada' : '' }}</small>
               </div>
               <div class="pending-course-badge" title="Listo para ubicar">
                 <i class="fa-solid fa-calendar-plus"></i>
               </div>
             </button>
             }
+            @if (!cursosPendientes().length && !(dragItem()?.tipo === 'HORARIO' && dropTargetUnschedule())) {
+            <p class="pending-empty-state">
+              <i class="fa-solid fa-circle-check"></i>
+              No hay cursos pendientes. Arrastra una clase del horario aquí para devolverla a esta lista.
+            </p>
+            }
           </div>
-          }
+        </aside> } @else {
+        <aside class="programming-side-panel historical-readonly-panel">
+          <div class="readonly-panel-icon"><i class="fa-solid fa-lock"></i></div>
+          <span class="panel-kicker">Registro histórico</span>
+          <h3>Horario de {{ periodoSeleccionado()?.nombre }}</h3>
+          <p>Este horario se conserva para consulta. Puedes revisar las clases y sus docentes, pero no cambiar la programación.</p>
         </aside>
+        }
       </div>
     </section>
     }
@@ -380,7 +414,7 @@
                   <td><select [ngModel]="bloque.horaInicio.slice(0, 5)" [name]="'inicio-' + bloque.id"
                       aria-label="Rango del bloque" (ngModelChange)="cambiarInicioEdicion(bloque.id, $event)">
                       @for (inicio of opcionesInicioEdicion(bloque); track inicio) { <option [value]="inicio">{{ inicio
-                        }}–{{ calcularFinHorario(inicio, bloque.nivelId, bloque.esRecreo) }}</option> }
+                        }}–{{ calcularFinHorario(inicio, bloque.nivelId, tipoDeBloque(bloque)) }}</option> }
                     </select></td>
                   <td><span class="block-end-time">{{ bloque.horaFin.slice(0, 5) }}</span></td>
                   <td class="row-actions"><button class="icon-button" type="button" title="Guardar bloque"
@@ -410,8 +444,17 @@
               (click)="cerrarSubmodalBloque()"><i class="fa-solid fa-xmark"></i></button>
           </header>
           <form class="block-modal-form" (ngSubmit)="guardarBloque()">
-            <label><span>Nombre</span><input name="nombre" required maxlength="60" [readonly]="nuevoEsRecreo()"
-                [placeholder]="nuevoEsRecreo() ? 'Recreo' : 'Ej. Bloque 1'" [(ngModel)]="nuevoNombre" /></label>
+            <label><span>Tipo de bloque</span>
+              <select name="tipoBloque" [ngModel]="nuevoTipoBloque()" (ngModelChange)="cambiarTipoNuevoBloque($event)">
+                <option value="CLASE">Clase</option>
+                <option value="RECREO">Recreo</option>
+                <option value="TUTORIA">Tutoría - salida</option>
+              </select>
+            </label>
+            <label><span>Nombre</span><input name="nombre" required maxlength="60"
+                [readonly]="nuevoTipoBloque() !== 'CLASE'"
+                [placeholder]="nuevoTipoBloque() === 'CLASE' ? 'Ej. Clase 1' : nuevoTipoBloque() === 'TUTORIA' ? 'Tutoría - salida' : 'Recreo'"
+                [(ngModel)]="nuevoNombre" /></label>
             <div class="block-time-fields">
               <label><span>Rango · {{ duracionBloqueNuevo() }} min</span>
                 <select name="inicio" required [ngModel]="nuevaHoraInicio"
@@ -436,11 +479,6 @@
               </div>
             </div>
             }
-            <button class="recess-toggle" type="button" role="checkbox" [attr.aria-checked]="nuevoEsRecreo()"
-              [class.selected]="nuevoEsRecreo()" (click)="alternarNuevoEsRecreo()">
-              <span class="recess-toggle-indicator"><i class="fa-solid fa-check" aria-hidden="true"></i></span>
-              <span>Es recreo</span>
-            </button>
             <div class="block-modal-actions">
               <button class="action-button secondary" type="button" [disabled]="guardando()"
                 (click)="cerrarSubmodalBloque()">Cancelar</button>

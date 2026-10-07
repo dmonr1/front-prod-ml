@@ -35,6 +35,8 @@ interface AlertState {
   styleUrl: './asignaciones-docente.scss'
 })
 export class AsignacionesTutorias {
+  private readonly periodoAsignacionesStorageKey = 'asignaciones-docente-periodo-listado';
+  private readonly periodoTutoriasStorageKey = 'tutorias-seccion-periodo-listado';
   private readonly route = inject(ActivatedRoute);
   private readonly docenteService = inject(DocenteService);
   private readonly cursoService = inject(CursoService);
@@ -274,8 +276,21 @@ export class AsignacionesTutorias {
 
   readonly esTutoriaEditable = computed(() => {
     const periodo = this.tutoriaPeriodo();
-    return periodo ? periodo.anio >= this.currentYear || this.authService.esAdministrador() : false;
+    return periodo ? periodo.anio >= this.currentYear : false;
   });
+
+  readonly esAsignacionEditable = computed(() => {
+    const periodo = this.asignacionPeriodo();
+    return periodo ? periodo.anio >= this.currentYear : false;
+  });
+
+  formatearFechaAuditoria(valor?: string | null): string {
+    if (!valor) return 'Sin fecha';
+    const fecha = new Date(valor);
+    return Number.isNaN(fecha.getTime())
+      ? valor
+      : new Intl.DateTimeFormat('es-PE', { dateStyle: 'short', timeStyle: 'short' }).format(fecha);
+  }
 
   constructor() {
     this.vistaActiva.set(this.route.snapshot.data['vista'] === 'tutorias' ? 'tutorias' : 'asignaciones');
@@ -386,21 +401,23 @@ export class AsignacionesTutorias {
         this.periodos.set(periodosOrdenados);
         this.cargandoPeriodos.set(false);
 
-        if ((!this.tutoriaPeriodo() || !this.asignacionPeriodo()) && periodosOrdenados.length) {
-          const periodoActual =
-            periodosOrdenados.find((periodo) => periodo.anio === this.currentYear) ??
-            [...periodosOrdenados].sort((a, b) => b.anio - a.anio)[0];
+        const periodoActual =
+          periodosOrdenados.find((periodo) => periodo.anio === this.currentYear) ??
+          periodosOrdenados.at(-1) ?? null;
+        const restaurar = (clave: string) =>
+          periodosOrdenados.find((periodo) => periodo.id === Number(sessionStorage.getItem(clave))) ??
+          periodoActual;
 
-          if (periodoActual) {
-            if (!this.asignacionPeriodo()) {
-              this.seleccionarPeriodo('asignacion', periodoActual);
-            }
-            this.seleccionarPeriodo('tutoria', periodoActual);
-          }
-          return;
-        }
+        const periodoAsignaciones = this.asignacionPeriodo() ?? restaurar(this.periodoAsignacionesStorageKey);
+        const periodoTutorias = this.tutoriaPeriodo() ?? restaurar(this.periodoTutoriasStorageKey);
+        this.asignacionPeriodo.set(periodoAsignaciones);
+        this.tutoriaPeriodo.set(periodoTutorias);
+        this.asignacionPeriodoQuery.set(periodoAsignaciones ? this.formatearPeriodo(periodoAsignaciones) : '');
+        this.tutoriaPeriodoQuery.set(periodoTutorias ? this.formatearPeriodo(periodoTutorias) : '');
 
-        this.cargarSecciones(this.tutoriaPeriodo()?.id ?? null);
+        this.cargarSecciones(
+          this.vistaActiva() === 'asignaciones' ? periodoAsignaciones?.id : periodoTutorias?.id
+        );
         this.cargarCursos();
         this.cargarAsignaciones();
         this.cargarTutorias();
@@ -441,10 +458,12 @@ export class AsignacionesTutorias {
 
     this.asignacionAcademicaService.listarPorPeriodo(periodo.id).subscribe({
       next: (response) => {
+        if (this.asignacionPeriodo()?.id !== periodo.id) return;
         this.asignaciones.set(response);
         this.cargandoAsignaciones.set(false);
       },
       error: (error) => {
+        if (this.asignacionPeriodo()?.id !== periodo.id) return;
         this.errorAsignaciones.set(
           formatearMensajeError(error, 'No se pudieron cargar las asignaciones del periodo.')
         );
@@ -495,10 +514,12 @@ export class AsignacionesTutorias {
 
     this.tutoriaService.listarPorPeriodo(periodo.id).subscribe({
       next: (response) => {
+        if (this.tutoriaPeriodo()?.id !== periodo.id) return;
         this.tutorias.set(response);
         this.cargandoTutorias.set(false);
       },
       error: (error) => {
+        if (this.tutoriaPeriodo()?.id !== periodo.id) return;
         this.errorTutorias.set(
           formatearMensajeError(error, 'No se pudieron cargar las tutorias del periodo.')
         );
@@ -690,6 +711,31 @@ export class AsignacionesTutorias {
     this.periodoModalContexto.set(null);
   }
 
+  cambiarPeriodoListado(valor: string): void {
+    const periodo = this.periodos().find((item) => item.id === Number(valor));
+    if (!periodo) return;
+
+    if (this.vistaActiva() === 'asignaciones') {
+      sessionStorage.setItem(this.periodoAsignacionesStorageKey, String(periodo.id));
+      this.asignacionPeriodo.set(periodo);
+      this.asignacionPeriodoQuery.set(this.formatearPeriodo(periodo));
+      this.limpiarFiltrosAsignaciones();
+      this.limpiarSeccionesAsignacion();
+      this.cargarSecciones(periodo.id);
+      this.cargarCursos();
+      this.cargarAsignaciones();
+    } else {
+      sessionStorage.setItem(this.periodoTutoriasStorageKey, String(periodo.id));
+      this.tutoriaPeriodo.set(periodo);
+      this.tutoriaPeriodoQuery.set(this.formatearPeriodo(periodo));
+      this.limpiarFiltrosTutorias();
+      this.tutoriaSeccion.set(null);
+      this.tutoriaSeccionQuery.set('');
+      this.cargarSecciones(periodo.id);
+      this.cargarTutorias();
+    }
+  }
+
   seleccionarPeriodo(contexto: 'asignacion' | 'tutoria', periodo: PeriodoAcademico): void {
     if (!this.esPeriodoSeleccionable(periodo)) {
       return;
@@ -717,7 +763,7 @@ export class AsignacionesTutorias {
   }
 
   esPeriodoSeleccionable(periodo: PeriodoAcademico): boolean {
-    return periodo.anio >= this.currentYear || this.authService.esAdministrador();
+    return periodo.anio >= this.currentYear;
   }
 
   abrirModalCreacion(tipo: 'asignacion' | 'tutoria'): void {
@@ -749,7 +795,7 @@ export class AsignacionesTutorias {
     const secciones = this.asignacionSecciones();
     const periodo = this.asignacionPeriodo();
 
-    if (!periodo || (periodo.anio < this.currentYear && !this.authService.esAdministrador())) {
+    if (!periodo || !this.esAsignacionEditable()) {
       this.mostrarAlerta(
         'warning',
         'Período histórico',
@@ -942,7 +988,7 @@ export class AsignacionesTutorias {
     if (!asignacion) return;
 
     const periodo = this.asignacionPeriodo();
-    if (!periodo || (periodo.anio < this.currentYear && !this.authService.esAdministrador())) {
+    if (!periodo || !this.esAsignacionEditable()) {
       this.mostrarAlerta(
         'warning',
         'Período histórico',
@@ -1144,6 +1190,7 @@ export class AsignacionesTutorias {
   }
 
   toggleEstadoAsignacion(asignacion: AsignacionDocente): void {
+    if (!this.esAsignacionEditable()) return;
     const activa = (asignacion.estado ?? 'ACTIVO') === 'ACTIVO';
 
     if (activa) {
@@ -1225,6 +1272,7 @@ export class AsignacionesTutorias {
   }
 
   private actualizarEstadoAsignacion(asignacionId: number, activa: boolean): void {
+    if (!this.esAsignacionEditable()) return;
     this.actualizandoEstadoAsignacionId.set(asignacionId);
 
     this.asignacionAcademicaService.actualizarEstado(asignacionId, activa).subscribe({
@@ -1260,6 +1308,7 @@ export class AsignacionesTutorias {
   }
 
   private actualizarEstadoTutoria(tutoriaId: number, activa: boolean): void {
+    if (!this.esTutoriaEditable()) return;
     this.actualizandoEstadoTutoriaId.set(tutoriaId);
 
     this.tutoriaService.actualizarEstado(tutoriaId, activa).subscribe({

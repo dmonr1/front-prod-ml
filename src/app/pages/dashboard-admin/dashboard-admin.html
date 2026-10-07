@@ -68,9 +68,13 @@
           <div class="ml-insight-panel">
             <div class="ml-model-badge-row">
               <div class="ml-model-info">
-                <span class="ml-badge-tag"><i class="fa-solid fa-microchip"></i> Producción</span>
+                <span class="ml-badge-tag"><i class="fa-solid fa-microchip"></i> Modelo global · datos sintéticos</span>
                 <strong>{{ mlStatus()?.algoritmoActivo }}</strong>
-                <small>F1: {{ mlStatus()?.f1Score }}% · Precisión: {{ mlStatus()?.precision }}% · Recall: {{ mlStatus()?.recall }}%</small>
+                @if (mlStatus()?.f1Score != null) {
+                  <small>F1: {{ mlStatus()?.f1Score }}% · Precisión: {{ mlStatus()?.precision }}% · Recall: {{ mlStatus()?.recall }}%</small>
+                } @else {
+                  <small>Métricas no disponibles</small>
+                }
               </div>
               <div class="ml-retrain-info">
                 <span>Próximo reentrenamiento:</span>

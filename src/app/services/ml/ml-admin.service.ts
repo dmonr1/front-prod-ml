@@ -41,6 +41,12 @@ export interface ComparativaModelos {
   metricaOptimizada: string;
   fechaEvaluacion: string;
   totalRegistrosEvaluados: number;
+  tipoModelo: 'GLOBAL' | 'CURSO';
+  origenDatos: string;
+  variables: string[];
+  registrosEntrenamiento: number;
+  alumnosPrueba: number;
+  alcanceMetricas: string;
 }
 
 export interface PlanificadorReentrenamiento {
@@ -67,8 +73,8 @@ export class MlAdminService {
     return this.http.put<ConfiguracionPredictores>(`${this.api}/configuracion-predictores`, config);
   }
 
-  obtenerComparativaModelos(): Observable<ComparativaModelos> {
-    return this.http.get<ComparativaModelos>(`${this.api}/modelos-comparativa`);
+  obtenerComparativaModelos(tipo: 'GLOBAL' | 'CURSO' = 'GLOBAL'): Observable<ComparativaModelos> {
+    return this.http.get<ComparativaModelos>(`${this.api}/modelos-comparativa`, { params: { tipo } });
   }
 
   obtenerPlanificadorReentrenamiento(): Observable<PlanificadorReentrenamiento> {

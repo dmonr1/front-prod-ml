@@ -3,6 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { PeriodoEvaluacion } from '../../models/periodo-evaluacion';
+import { PeriodoAcademico } from '../../models/periodo-academico';
 import { Tutoria } from '../../models/tutoria';
 import { Shell } from '../../layouts/shell/shell';
 import { PeriodoAcademicoService } from '../../services/academico/periodo-academico.service';
@@ -37,8 +38,13 @@ export class SeccionTutorada implements OnInit {
   private readonly periodoEvaluacionService = inject(PeriodoEvaluacionService);
   private readonly tutoriaService = inject(TutoriaService);
 
-  readonly tutoriaIdRuta = Number(this.route.snapshot.paramMap.get('tutoriaId'));
+  readonly tutoriaIdRuta = signal(Number(this.route.snapshot.paramMap.get('tutoriaId')) || null);
   readonly currentYear = new Date().getFullYear();
+  readonly periodosAcademicos = signal<PeriodoAcademico[]>([]);
+  readonly periodoAcademicoId = signal<number | null>(null);
+  readonly periodoAcademicoSeleccionado = computed(() =>
+    this.periodosAcademicos().find((periodo) => periodo.id === this.periodoAcademicoId()) ?? null
+  );
   readonly cargando = signal(true);
   readonly cargandoTabla = signal(false);
   readonly mantenerSkeletonPorError = signal(false);
@@ -205,7 +211,9 @@ export class SeccionTutorada implements OnInit {
 
     this.periodoAcademicoService.listar().subscribe({
       next: (periodos) => {
-        const periodoActual =
+        this.periodosAcademicos.set(periodos);
+        const periodoSolicitadoId = Number(this.route.snapshot.queryParamMap.get('periodoAcademicoId')) || null;
+        const periodoActual = periodos.find((periodo) => periodo.id === periodoSolicitadoId) ??
           periodos.find((periodo) => periodo.anio === this.currentYear) ??
           [...periodos].sort((a, b) => b.anio - a.anio)[0] ??
           null;
@@ -218,38 +226,100 @@ export class SeccionTutorada implements OnInit {
           return;
         }
 
-        forkJoin({
-          tutorias: this.tutoriaService.listarPorDocente(docenteId, periodoActual.id),
-          periodosEvaluacion: this.periodoEvaluacionService.listar()
-        }).subscribe({
+        this.periodoAcademicoId.set(periodoActual.id);
+        this.cargarTutoriasPeriodo(docenteId, periodoActual, null, true);
+      },
+      error: (error) => {
+        this.cargando.set(false);
+        this.error.set(
+          formatearMensajeError(error, 'No se pudo resolver el período académico actual.')
+        );
+        this.resumenAcademico.set(null);
+        this.mostrarError.set(true);
+        this.mantenerSkeletonPorError.set(true);
+      }
+    });
+  }
+
+  cambiarPeriodoAcademico(valor: string | number): void {
+    const periodoId = Number(valor);
+    const periodo = this.periodosAcademicos().find((item) => item.id === periodoId);
+    if (!periodo || periodo.id === this.periodoAcademicoId()) return;
+    const docenteId = this.authService.obtenerUsuario()?.docenteId;
+    if (!docenteId) return;
+    const tutoriaAnterior = this.tutoria();
+    this.periodoAcademicoId.set(periodo.id);
+    if (!tutoriaAnterior) {
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { periodoAcademicoId: periodo.id },
+        queryParamsHandling: 'merge',
+        replaceUrl: true
+      });
+    }
+    this.cargarTutoriasPeriodo(docenteId, periodo, tutoriaAnterior, false);
+  }
+
+  private cargarTutoriasPeriodo(
+    docenteId: number,
+    periodo: PeriodoAcademico,
+    tutoriaAnterior: Tutoria | null,
+    cargaCompleta: boolean
+  ): void {
+    this.cargando.set(true);
+    this.error.set(null);
+    this.mostrarError.set(false);
+    this.mantenerSkeletonPorError.set(false);
+    forkJoin({
+      tutorias: this.tutoriaService.listarPorDocente(docenteId, periodo.id),
+      periodosEvaluacion: this.periodoEvaluacionService.listar()
+    }).subscribe({
           next: ({ tutorias, periodosEvaluacion }) => {
             const tutoriasActivas = tutorias.filter((item) => (item.estado ?? 'ACTIVO') === 'ACTIVO');
             this.tutoriasDisponibles.set(tutoriasActivas);
             this.periodosEvaluacion.set(periodosEvaluacion);
 
-            if (!this.tutoriaIdRuta) {
+            if (!this.tutoriaIdRuta()) {
               this.cargando.set(false);
               this.tutoria.set(null);
               this.tutoriaIdActiva.set(null);
               if (!tutoriasActivas.length) {
-                this.error.set('No tienes una sección tutorada activa en el período actual.');
+                this.error.set(`No tienes una sección tutorada activa en ${periodo.anio}.`);
                 this.mostrarError.set(true);
               }
               return;
             }
 
-            const tutoria = tutoriasActivas.find((item) => item.id === this.tutoriaIdRuta) ?? null;
+            const tutoria = tutoriaAnterior
+              ? tutoriasActivas.find((item) => item.grado === tutoriaAnterior.grado
+                && item.seccion === tutoriaAnterior.seccion && item.nivel === tutoriaAnterior.nivel) ?? null
+              : tutoriasActivas.find((item) => item.id === this.tutoriaIdRuta()) ?? null;
             if (!tutoria) {
               this.cargando.set(false);
-              this.error.set('La sección solicitada no está asignada como tutoría activa en el período actual.');
+              this.tutoria.set(null);
+              this.tutoriaIdActiva.set(null);
+              this.resumenAcademico.set(null);
+              this.error.set(`La sección no tiene una tutoría activa en ${periodo.anio}.`);
               this.mostrarError.set(true);
+              this.tutoriaIdRuta.set(null);
+              void this.router.navigate(['/seccion-tutorada'], {
+                queryParams: { periodoAcademicoId: periodo.id },
+                replaceUrl: true
+              });
               return;
             }
 
             this.tutoria.set(tutoria);
             this.tutoriaIdActiva.set(tutoria.id);
+            this.tutoriaIdRuta.set(tutoria.id);
+            if (tutoriaAnterior && tutoriaAnterior.id !== tutoria.id) {
+              void this.router.navigate(['/mis-asignaciones/tutorias', tutoria.id], {
+                queryParams: { periodoAcademicoId: periodo.id, periodoEvaluacionId: null },
+                replaceUrl: true
+              });
+            }
             this.mantenerSkeletonPorError.set(false);
-            this.cargarPrimerPeriodoDisponible(true);
+            this.cargarPrimerPeriodoDisponible(cargaCompleta);
           },
           error: (error) => {
             this.error.set(
@@ -265,17 +335,6 @@ export class SeccionTutorada implements OnInit {
             this.mantenerSkeletonPorError.set(true);
           }
         });
-      },
-      error: (error) => {
-        this.cargando.set(false);
-        this.error.set(
-          formatearMensajeError(error, 'No se pudo resolver el período académico actual.')
-        );
-        this.resumenAcademico.set(null);
-        this.mostrarError.set(true);
-        this.mantenerSkeletonPorError.set(true);
-      }
-    });
   }
 
   reintentarCarga(): void {
@@ -355,7 +414,9 @@ export class SeccionTutorada implements OnInit {
   }
 
   verSeguimientoTutoria(tutoria: Tutoria): void {
-    this.router.navigate(['/mis-asignaciones/tutorias', tutoria.id]);
+    this.router.navigate(['/mis-asignaciones/tutorias', tutoria.id], {
+      queryParams: { periodoAcademicoId: tutoria.periodoAcademicoId }
+    });
   }
 
   verHorarioTutoria(tutoria: Tutoria): void {

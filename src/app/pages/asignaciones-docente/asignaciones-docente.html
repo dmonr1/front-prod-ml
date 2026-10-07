@@ -12,10 +12,20 @@
           <h2>{{ vistaActiva() === 'asignaciones' ? 'Asignaciones docentes' : 'Tutorías por sección' }}</h2>
 
         </div>
-        <span class="period-chip">
-          {{ (vistaActiva() === 'asignaciones' ? asignacionPeriodo()?.nombre : tutoriaPeriodo()?.nombre) || 'Sin
-          período' }}
-        </span>
+        <label class="period-selector">
+          <span>Período académico</span>
+          <select aria-label="Ver asignaciones o tutorías de un período académico"
+            [value]="(vistaActiva() === 'asignaciones' ? asignacionPeriodo()?.id : tutoriaPeriodo()?.id) ?? ''"
+            (change)="cambiarPeriodoListado($any($event.target).value)">
+            @for (periodo of periodos(); track periodo.id) {
+            <option [value]="periodo.id"
+              [selected]="periodo.id === (vistaActiva() === 'asignaciones' ? asignacionPeriodo()?.id : tutoriaPeriodo()?.id)">{{ periodo.nombre }} ({{ periodo.anio }})</option>
+            }
+          </select>
+          @if (((vistaActiva() === 'asignaciones' ? asignacionPeriodo()?.anio : tutoriaPeriodo()?.anio) ?? currentYear) < currentYear) {
+          <small>Histórico · solo lectura</small>
+          }
+        </label>
       </div>
 
       @if (vistaActiva() === 'asignaciones') {
@@ -58,9 +68,11 @@
               }
             </select>
           </label>
+          @if (esAsignacionEditable()) {
           <button class="action-button primary create-trigger" type="button" (click)="abrirModalCreacion('asignacion')">
             <i class="fa-solid fa-plus"></i> Nueva asignación
           </button>
+          }
         </div>
         <div class="content">
           <div class="table-cont">
@@ -73,7 +85,7 @@
                     <th>Curso</th>
                     <th>Sección</th>
                     <th>Estado</th>
-                    <th>Acciones</th>
+                    <th>{{ esAsignacionEditable() ? 'Acciones' : 'Auditoría' }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -98,7 +110,7 @@
                     <th>Curso</th>
                     <th>Sección</th>
                     <th>Estado</th>
-                    <th>Acciones</th>
+                    <th>{{ esAsignacionEditable() ? 'Acciones' : 'Auditoría' }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -133,6 +145,7 @@
                       <div class="cell-help">{{ obtenerResumenAsignacion(asignacion) }}</div>
                     </td>
                     <td>
+                      @if (esAsignacionEditable()) {
                       <button class="state-switch" type="button" role="switch"
                         [class.is-active]="(asignacion.estado ?? 'ACTIVO') === 'ACTIVO'"
                         [attr.aria-checked]="(asignacion.estado ?? 'ACTIVO') === 'ACTIVO'"
@@ -146,8 +159,12 @@
                           ((asignacion.estado ?? 'ACTIVO') === 'ACTIVO' ? 'Activo' : 'Inactivo') }}
                         </span>
                       </button>
+                      } @else {
+                      <span class="historical-state">{{ (asignacion.estado ?? 'ACTIVO') === 'ACTIVO' ? 'Activo' : 'Inactivo' }}</span>
+                      }
                     </td>
                     <td>
+                      @if (esAsignacionEditable()) {
                       <div class="row-actions">
                         <button class="row-action row-action-edit" type="button" [disabled]="!esAdmin()"
                           (click)="abrirModalEdicionAsignacion(asignacion)" title="Editar asignación">
@@ -155,6 +172,12 @@
                           <span>Editar</span>
                         </button>
                       </div>
+                      } @else {
+                      <div class="audit-dates">
+                        <span>Registro: {{ formatearFechaAuditoria(asignacion.fechaRegistro) }}</span>
+                        <span>Modificación: {{ formatearFechaAuditoria(asignacion.fechaModificacion) }}</span>
+                      </div>
+                      }
                     </td>
                   </tr>
                   }
@@ -205,9 +228,11 @@
               <option value="INACTIVO">Inactivo</option>
             </select>
           </label>
+          @if (esTutoriaEditable()) {
           <button class="action-button primary create-trigger" type="button" (click)="abrirModalCreacion('tutoria')">
             <i class="fa-solid fa-plus"></i> Nueva tutoría
           </button>
+          }
         </div>
         <div class="content">
           @if (modalCreacion() === 'tutoria') {
@@ -285,7 +310,7 @@
                     <th>Sección</th>
                     <th>Período</th>
                     <th>Estado</th>
-                    <th>Acciones</th>
+                    <th>{{ esTutoriaEditable() ? 'Acciones' : 'Auditoría' }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -310,7 +335,7 @@
                     <th>Sección</th>
                     <th>Período</th>
                     <th>Estado</th>
-                    <th>Acciones</th>
+                    <th>{{ esTutoriaEditable() ? 'Acciones' : 'Auditoría' }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -342,6 +367,7 @@
                     </td>
                     <td>{{ tutoria.periodoAcademico }}</td>
                     <td>
+                      @if (esTutoriaEditable()) {
                       <button class="state-switch" type="button" role="switch"
                         [class.is-active]="(tutoria.estado ?? 'ACTIVO') === 'ACTIVO'"
                         [attr.aria-checked]="(tutoria.estado ?? 'ACTIVO') === 'ACTIVO'"
@@ -355,8 +381,12 @@
                           'ACTIVO') === 'ACTIVO' ? 'Activo' : 'Inactivo') }}
                         </span>
                       </button>
+                      } @else {
+                      <span class="historical-state">{{ (tutoria.estado ?? 'ACTIVO') === 'ACTIVO' ? 'Activo' : 'Inactivo' }}</span>
+                      }
                     </td>
                     <td>
+                      @if (esTutoriaEditable()) {
                       <div class="row-actions">
                         <button class="row-action row-action-edit" type="button" [disabled]="!esAdmin()"
                           (click)="abrirModalEdicionTutoria(tutoria)" title="Editar tutoría">
@@ -364,6 +394,12 @@
                           <span>Editar</span>
                         </button>
                       </div>
+                      } @else {
+                      <div class="audit-dates">
+                        <span>Registro: {{ formatearFechaAuditoria(tutoria.fechaRegistro) }}</span>
+                        <span>Modificación: {{ formatearFechaAuditoria(tutoria.fechaModificacion) }}</span>
+                      </div>
+                      }
                     </td>
                   </tr>
                   }
