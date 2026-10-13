@@ -42,6 +42,7 @@ export interface ResumenPrediccion {
   totalRiesgoAlto: number;
   totalRiesgoMedio: number;
   totalRiesgoBajo: number;
+  diasConClases?: number;
   promedioPuntajeRiesgo: number | null;
 }
 
@@ -91,4 +92,5 @@ export class PrediccionService {
       params
     });
   }
+
 }

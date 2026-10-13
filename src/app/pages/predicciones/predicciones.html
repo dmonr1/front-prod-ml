@@ -1,4 +1,33 @@
 <app-shell>
+  @if (completandoFaltantes()) {
+    <div class="recalculation-overlay" role="status" aria-live="polite">
+      <article class="recalculation-progress-card">
+        <span class="recalculation-progress-icon"><i class="fa-solid fa-arrows-rotate fa-spin"></i></span>
+        <h2>Generando predicciones faltantes</h2>
+        <p class="recalculation-progress-caption">
+          @if (corteFaltanteEnCurso() && seccionFaltanteEnCurso()) {
+            Semana {{ corteFaltanteEnCurso() }} · {{ seccionFaltanteEnCurso() }}
+          } @else {
+            Preparando recálculo del período
+          }
+        </p>
+        <p class="recalculation-progress-note">Solo se crean predicciones que faltan; las ya guardadas se conservan.</p>
+        <strong class="recalculation-progress-percent">{{ progresoFaltantes() }}%</strong>
+        <progress class="recalculation-progress-bar" [value]="progresoFaltantes()" max="100">
+          {{ progresoFaltantes() }}%
+        </progress>
+        <div class="recalculation-progress-details">
+          <span>{{ combinacionesFaltantesProcesadas() }} de {{ totalCombinacionesFaltantes() }} cortes y secciones</span>
+          <span>{{ matriculasFaltantesProcesadas() }} nuevas predicciones</span>
+        </div>
+        @if (totalAlumnosCombinacionActual() > 0) {
+          <small class="recalculation-progress-student">
+            Procesando matrícula {{ alumnoFaltanteEnCurso() }} de {{ totalAlumnosCombinacionActual() }} en esta sección
+          </small>
+        }
+      </article>
+    </div>
+  }
   <section class="predictions-shell">
     <div class="dashboard-card">
       <div class="card-head predictions-slide-in predictions-slide-in-top">

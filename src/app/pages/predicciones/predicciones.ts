@@ -1,7 +1,7 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, ElementRef, HostListener, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { catchError, forkJoin, of } from 'rxjs';
+import { catchError, concatMap, finalize, forkJoin, from, map, of, switchMap, takeLast, takeWhile, tap, timer } from 'rxjs';
 import { CustomAlertComponent } from '../../components/custom-alert/custom-alert';
 import { Shell } from '../../layouts/shell/shell';
 import { CorteSeguimiento, EvaluacionPendienteFecha, PreparacionCorte } from '../../models/corte-seguimiento';
@@ -68,6 +68,15 @@ export class Predicciones {
   readonly cargandoFiltros = signal(true);
   readonly cargandoVista = signal(false);
   readonly recalculando = signal(false);
+  readonly completandoFaltantes = signal(false);
+  readonly progresoFaltantes = signal(0);
+  readonly totalCombinacionesFaltantes = signal(0);
+  readonly combinacionesFaltantesProcesadas = signal(0);
+  readonly matriculasFaltantesProcesadas = signal(0);
+  readonly alumnoFaltanteEnCurso = signal(0);
+  readonly totalAlumnosCombinacionActual = signal(0);
+  readonly corteFaltanteEnCurso = signal<number | null>(null);
+  readonly seccionFaltanteEnCurso = signal<string | null>(null);
   readonly error = signal<string | null>(null);
   readonly alertaConexionAbierta = signal(false);
   readonly alertaRecalculoAbierta = signal(false);
@@ -408,8 +417,8 @@ export class Predicciones {
         value: `${asistencia.faltas}`
       },
       {
-        label: 'Clases programadas',
-        value: `${asistencia.programadas}`
+        label: 'Días de clase transcurridos hasta el corte',
+        value: `${this.resumenApi()?.diasConClases ?? 0}`
       }
     ] as const;
   });
@@ -661,12 +670,110 @@ export class Predicciones {
     });
   }
 
+  private completarPrediccionesFaltantesAlAbrir(): void {
+    const periodoAcademicoId = this.periodoAcademicoActual()?.id;
+    const corteId = this.periodoEvaluacionSeleccionadoId();
+    const seccionId = this.seccionSeleccionadaId();
+    const roles = this.authService.obtenerUsuario()?.roles ?? [];
+    const esDocente = roles.includes('DOCENTE') || roles.includes('DOCENTE_TUTOR');
+    if (!periodoAcademicoId || !corteId || !seccionId || (!this.puedeRecalcular() && !esDocente)
+        || this.completandoFaltantes() || this.recalculando()) {
+      this.cargarVista();
+      return;
+    }
+
+    const claveVerificacion = `periodo:${periodoAcademicoId}:corte:${corteId}:seccion:${seccionId}`;
+    if (!this.corteSeguimientoService.iniciarVerificacionFaltantes(claveVerificacion)) {
+      this.cargarVista();
+      return;
+    }
+
+    this.completandoFaltantes.set(true);
+    this.cargandoVista.set(true);
+    this.error.set(null);
+    this.alertaConexionAbierta.set(false);
+    const corteSeleccionado = this.periodosEvaluacion().find((corte) => corte.id === corteId);
+    const combinaciones = corteSeleccionado && corteSeleccionado.fechaCorte <= this.fechaLocalHoy()
+      ? [{ corteId, seccionId }]
+      : [];
+
+    this.progresoFaltantes.set(0);
+    this.totalCombinacionesFaltantes.set(combinaciones.length);
+    this.combinacionesFaltantesProcesadas.set(0);
+    this.matriculasFaltantesProcesadas.set(0);
+    this.alumnoFaltanteEnCurso.set(0);
+    if (!combinaciones.length) {
+      this.completandoFaltantes.set(false);
+      this.corteSeguimientoService.marcarFaltantesVerificados(claveVerificacion);
+      this.cargarVista();
+      return;
+    }
+
+    let errores = 0;
+    from(combinaciones).pipe(
+      concatMap(({ corteId: idCorte, seccionId: idSeccion }) => {
+        const trabajoId = crypto.randomUUID();
+        this.corteFaltanteEnCurso.set(this.periodosEvaluacion().find((corte) => corte.id === idCorte)?.semana ?? null);
+        this.seccionFaltanteEnCurso.set(this.etiquetaSeccion(this.secciones().find((seccion) => seccion.id === idSeccion) ?? null));
+        this.alumnoFaltanteEnCurso.set(0);
+        this.totalAlumnosCombinacionActual.set(0);
+        const progreso$ = timer(0, 500).pipe(
+          switchMap(() => this.corteSeguimientoService.progresoRecalculoFaltantes(idCorte, idSeccion, trabajoId).pipe(
+            catchError(() => of(null))
+          )),
+          tap((progreso) => {
+            if (!progreso) return;
+            this.alumnoFaltanteEnCurso.set(progreso.alumnoEnCurso);
+            this.totalAlumnosCombinacionActual.set(progreso.total);
+            const avanceActual = progreso.finalizado ? 1 : progreso.porcentaje / 100;
+            const avanceTotal = (this.combinacionesFaltantesProcesadas() + avanceActual) / combinaciones.length;
+            this.progresoFaltantes.set(Math.min(99, Math.floor(avanceTotal * 100)));
+          }),
+          takeWhile((progreso) => !progreso?.finalizado, true),
+          takeLast(1)
+        );
+        return forkJoin({
+          respuesta: this.corteSeguimientoService.recalcularFaltantesCorte(idCorte, idSeccion, trabajoId),
+          progreso: progreso$
+        }).pipe(
+          map(({ respuesta }) => ({
+            matriculasProcesadas: respuesta.matriculasProcesadas,
+            erroresPrediccion: respuesta.erroresPrediccion
+          })),
+          catchError(() => {
+            errores += 1;
+            return of({ matriculasProcesadas: 0, erroresPrediccion: 0 });
+          }),
+          tap((respuesta) => {
+            errores += respuesta.erroresPrediccion;
+            const completadas = this.combinacionesFaltantesProcesadas() + 1;
+            this.combinacionesFaltantesProcesadas.set(completadas);
+            this.matriculasFaltantesProcesadas.update((total) => total + respuesta.matriculasProcesadas);
+            this.progresoFaltantes.set(Math.floor((completadas / combinaciones.length) * 100));
+          })
+        );
+      }),
+      finalize(() => {
+        this.completandoFaltantes.set(false);
+        this.corteFaltanteEnCurso.set(null);
+        this.seccionFaltanteEnCurso.set(null);
+        if (!errores) this.corteSeguimientoService.marcarFaltantesVerificados(claveVerificacion);
+        else this.corteSeguimientoService.liberarVerificacionFaltantes(claveVerificacion);
+        this.cargarVista();
+        if (errores) {
+          this.error.set(`Se generaron ${this.matriculasFaltantesProcesadas()} predicciones, pero hubo ${errores} errores durante el recálculo. Se volverá a intentar al entrar nuevamente.`);
+          this.alertaConexionAbierta.set(true);
+        }
+      })
+    ).subscribe();
+  }
+
   reintentarCarga(): void {
     this.alertaConexionAbierta.set(false);
     this.error.set(null);
 
     if (this.periodosEvaluacion().length && this.secciones().length) {
-      this.cargarVista();
+      this.completarPrediccionesFaltantesAlAbrir();
       return;
     }
 
@@ -1315,7 +1422,7 @@ export class Predicciones {
     this.cargandoFiltros.set(false);
 
     if (this.periodoEvaluacionSeleccionadoId() && this.seccionSeleccionadaId()) {
-      this.cargarVista();
+      this.completarPrediccionesFaltantesAlAbrir();
     }
 
     const esRegreso = Boolean(

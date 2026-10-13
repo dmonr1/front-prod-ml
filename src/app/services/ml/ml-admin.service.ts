@@ -42,7 +42,6 @@ export interface ComparativaModelos {
   fechaEvaluacion: string;
   totalRegistrosEvaluados: number;
   tipoModelo: 'GLOBAL' | 'CURSO';
-  origenDatos: string;
   variables: string[];
   registrosEntrenamiento: number;
   alumnosPrueba: number;

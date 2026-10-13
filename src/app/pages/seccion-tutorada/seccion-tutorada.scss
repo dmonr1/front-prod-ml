@@ -262,13 +262,27 @@
 }
 
 @keyframes slideLeft {
-  from { opacity: 0.4; transform: translateX(12px); }
-  to { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0.4;
+    transform: translateX(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @keyframes slideRight {
-  from { opacity: 0.4; transform: translateX(-12px); }
-  to { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0.4;
+    transform: translateX(-12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -652,6 +666,7 @@
     width: 7px;
     height: 7px;
   }
+
   &::-webkit-scrollbar-thumb {
     background: color-mix(in srgb, var(--color-text-muted) 35%, transparent);
     border-radius: 4px;
@@ -692,7 +707,9 @@
         color: rgba(255, 255, 255, 0.9) !important;
       }
 
-      i, span, strong {
+      i,
+      span,
+      strong {
         color: #ffffff !important;
       }
     }
@@ -713,7 +730,7 @@
       background: color-mix(in srgb, #f43f5e 3%, transparent);
 
       .col-student {
-        background: color-mix(in srgb, #f43f5e 3%, transparent);
+        background: color-mix(in srgb, #f43f5e 3%, #ffffff);
       }
     }
 
@@ -1170,6 +1187,7 @@
   &::-webkit-scrollbar {
     width: 6px;
   }
+
   &::-webkit-scrollbar-thumb {
     background: color-mix(in srgb, var(--color-text-muted) 35%, transparent);
     border-radius: 4px;
@@ -1306,9 +1324,17 @@
   border-radius: 999px;
   transition: width 0.3s ease;
 
-  &.fill-emerald { background: #10b981; }
-  &.fill-amber { background: #f59e0b; }
-  &.fill-rose { background: #f43f5e; }
+  &.fill-emerald {
+    background: #10b981;
+  }
+
+  &.fill-amber {
+    background: #f59e0b;
+  }
+
+  &.fill-rose {
+    background: #f43f5e;
+  }
 }
 
 .courses-summary-block {
@@ -1391,15 +1417,18 @@
     background: rgba(16, 185, 129, 0.1);
     color: #047857;
   }
+
   &.mini-mid {
     background: rgba(245, 158, 11, 0.1);
     color: #b45309;
   }
+
   &.mini-low {
     background: rgba(244, 63, 94, 0.12);
     color: #be123c;
     font-weight: 800;
   }
+
   &.mini-none {
     background: var(--color-bg-primary);
     color: var(--color-text-muted);
@@ -1526,8 +1555,13 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .expediente-modal {
@@ -1545,8 +1579,15 @@
 }
 
 @keyframes scaleUp {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .expediente-head {
@@ -1590,7 +1631,9 @@
   margin-top: 3px;
 }
 
-.code-badge, .period-badge, .risk-badge {
+.code-badge,
+.period-badge,
+.risk-badge {
   font-size: 10.5px;
   padding: 2px 7px;
   border-radius: 6px;
@@ -1910,9 +1953,17 @@
 // ---------------------------------------------------------------------------
 // Helpers de color para texto y badges
 // ---------------------------------------------------------------------------
-.text-emerald { color: #059669 !important; }
-.text-amber { color: #d97706 !important; }
-.text-rose { color: #e11d48 !important; }
+.text-emerald {
+  color: #059669 !important;
+}
+
+.text-amber {
+  color: #d97706 !important;
+}
+
+.text-rose {
+  color: #e11d48 !important;
+}
 
 .empty-state {
   display: flex;
@@ -1961,20 +2012,23 @@
 }
 
 .skeleton {
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--color-text-muted) 10%, transparent) 0%,
-    color-mix(in srgb, var(--color-text-muted) 20%, transparent) 50%,
-    color-mix(in srgb, var(--color-text-muted) 10%, transparent) 100%
-  );
+  background: linear-gradient(90deg,
+      color-mix(in srgb, var(--color-text-muted) 10%, transparent) 0%,
+      color-mix(in srgb, var(--color-text-muted) 20%, transparent) 50%,
+      color-mix(in srgb, var(--color-text-muted) 10%, transparent) 100%);
   background-size: 200% 100%;
   animation: pulseSkeleton 1.4s infinite;
   border-radius: 8px;
 }
 
 @keyframes pulseSkeleton {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .skeleton-quick-bar {
@@ -2313,12 +2367,27 @@
   cursor: pointer;
 }
 
-.section-action.primary { background: var(--color-brand-primary); color: #fff; }
-.section-action.secondary { background: var(--color-bg-secondary); color: var(--color-text-primary); }
-.section-action:hover { filter: brightness(.96); }
+.section-action.primary {
+  background: var(--color-brand-primary);
+  color: #fff;
+}
+
+.section-action.secondary {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
+.section-action:hover {
+  filter: brightness(.96);
+}
 
 @media (max-width: 420px) {
-  .tutoria-card-actions, .flow-card-actions { grid-template-columns: 1fr; flex-direction: column; }
+
+  .tutoria-card-actions,
+  .flow-card-actions {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 768px) {
@@ -2333,4 +2402,3 @@
     }
   }
 }
-
