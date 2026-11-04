@@ -58,7 +58,6 @@ export class HallazgosRecomendaciones {
       id: -(index + 1),
       matriculaId: 0,
       alumnoId: 0,
-      codigoAlumno: 'SECCION',
       alumnoNombreCompleto: 'Recomendación para la sección seleccionada',
       cursoId: hallazgo.cursoId,
       curso: hallazgo.curso,
@@ -409,6 +408,14 @@ export class HallazgosRecomendaciones {
   }
 
   private humanizarKey(value: string): string {
+    const etiquetas: Record<string, string> = {
+      porcentaje_seccion: 'Porcentaje de la sección',
+      promedio_asistencia_seccion: 'Promedio de asistencia de la sección'
+    };
+    if (etiquetas[value]) {
+      return etiquetas[value];
+    }
+
     return value
       .replace(/_/g, ' ')
       .replace(/\s+/g, ' ')

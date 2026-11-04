@@ -69,16 +69,25 @@
             <div class="ml-model-badge-row">
               <div class="ml-model-info">
                 <span class="ml-badge-tag"><i class="fa-solid fa-microchip"></i> Modelo global</span>
-                <strong>{{ mlStatus()?.algoritmoActivo }}</strong>
-                @if (mlStatus()?.f1Score != null) {
+                <strong>{{ mlStatus()?.algoritmoActivo ?? 'Consultando modelo...' }}</strong>
+                @if (!mlStatus()) {
+                  <small>Consultando evaluación del modelo.</small>
+                } @else if (mlStatus()?.f1Score != null && mlStatus()?.precision != null && mlStatus()?.recall != null) {
                   <small>F1: {{ mlStatus()?.f1Score }}% · Precisión: {{ mlStatus()?.precision }}% · Recall: {{ mlStatus()?.recall }}%</small>
+                } @else if (comparativaMlError() === 'SIN_EVALUACION') {
+                  <small>Sin evaluación registrada. Ejecuta un entrenamiento en «Configurar modelos».</small>
+                } @else if (comparativaMlError() === 'SERVICIO_NO_DISPONIBLE') {
+                  <small>No se pudo consultar la evaluación del servicio ML.</small>
                 } @else {
-                  <small>Métricas no disponibles</small>
+                  <small>El modelo no entregó métricas válidas.</small>
                 }
               </div>
               <div class="ml-retrain-info">
-                <span>Próximo reentrenamiento:</span>
-                <strong>{{ mlStatus()?.proximoReentrenamiento }}</strong>
+                <span>{{ mlStatus()?.cadencia === 'Manual' ? 'Reentrenamiento:' : 'Próximo reentrenamiento:' }}</span>
+                <strong>{{ mlStatus()?.proximoReentrenamiento ?? 'Consultando planificador...' }}</strong>
+                @if (planificadorMlError()) {
+                  <small>Revisa la conexión con el servicio ML.</small>
+                }
               </div>
             </div>
 

@@ -905,6 +905,19 @@
   }
 }
 
+.nav-child {
+  height: auto;
+  padding-block: 8px;
+
+  .nav-label {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+    line-height: 1.25;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Estado Colapsado
 // ---------------------------------------------------------------------------

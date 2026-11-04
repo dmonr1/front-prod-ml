@@ -74,6 +74,7 @@ export class AsignacionesTutorias {
   readonly busquedaTablaAsignaciones = signal('');
   readonly cursoFiltroAsignaciones = signal('');
   readonly seccionFiltroAsignaciones = signal('');
+  readonly estadoFiltroAsignaciones = signal('ACTIVO');
   readonly busquedaTablaTutorias = signal('');
   readonly nivelFiltroTutorias = signal('');
   readonly estadoFiltroTutorias = signal('');
@@ -231,10 +232,12 @@ export class AsignacionesTutorias {
     const query = this.normalizarTexto(this.busquedaTablaAsignaciones());
     const cursoId = this.cursoFiltroAsignaciones();
     const seccionId = this.seccionFiltroAsignaciones();
+    const estado = this.estadoFiltroAsignaciones();
 
     return this.asignaciones().filter((asignacion) => {
       if (cursoId && String(asignacion.cursoId) !== cursoId) return false;
       if (seccionId && String(asignacion.seccionId) !== seccionId) return false;
+      if (estado && (asignacion.estado ?? 'ACTIVO') !== estado) return false;
       if (!query) return true;
 
       const texto = this.normalizarTexto([
@@ -492,6 +495,7 @@ export class AsignacionesTutorias {
     this.busquedaTablaAsignaciones.set('');
     this.cursoFiltroAsignaciones.set('');
     this.seccionFiltroAsignaciones.set('');
+    this.estadoFiltroAsignaciones.set('ACTIVO');
   }
 
   limpiarFiltrosTutorias(): void {

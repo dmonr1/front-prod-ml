@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { SlicePipe } from '@angular/common';
 import { forkJoin, of } from 'rxjs';
@@ -93,6 +94,8 @@ export class DashboardAdmin implements OnInit {
   readonly actividad = signal<DashboardActivity[]>([]);
   readonly pendientes = signal<DashboardPending[]>([]);
   readonly mlStatus = signal<DashboardMlStatus | null>(null);
+  readonly comparativaMlError = signal<'SIN_EVALUACION' | 'SERVICIO_NO_DISPONIBLE' | null>(null);
+  readonly planificadorMlError = signal(false);
   readonly riesgoDistribucion = signal<DashboardRiesgoDistribucion>({
     alto: 0,
     medio: 0,
@@ -125,6 +128,8 @@ export class DashboardAdmin implements OnInit {
   }
 
   private cargarDashboard(): void {
+    this.comparativaMlError.set(null);
+    this.planificadorMlError.set(false);
     forkJoin({
       periodosAcademicos: this.periodoAcademicoService.listar().pipe(catchError(() => of([]))),
       periodosEvaluacion: this.periodoEvaluacionService.listar().pipe(catchError(() => of([]))),
@@ -133,8 +138,14 @@ export class DashboardAdmin implements OnInit {
       cursosBase: this.cursoService.listar().pipe(catchError(() => of([]))),
       auditoriaLogs: this.auditoriaService.listarLogs({ limite: 4 }).pipe(catchError(() => of([]))),
       auditoriaStats: this.auditoriaService.obtenerEstadisticas().pipe(catchError(() => of(null))),
-      comparativaMl: this.mlAdminService.obtenerComparativaModelos().pipe(catchError(() => of(null))),
-      planificadorMl: this.mlAdminService.obtenerPlanificadorReentrenamiento().pipe(catchError(() => of(null))),
+      comparativaMl: this.mlAdminService.obtenerComparativaModelos().pipe(catchError((error: HttpErrorResponse) => {
+        this.comparativaMlError.set(error.status === 409 ? 'SIN_EVALUACION' : 'SERVICIO_NO_DISPONIBLE');
+        return of(null);
+      })),
+      planificadorMl: this.mlAdminService.obtenerPlanificadorReentrenamiento().pipe(catchError(() => {
+        this.planificadorMlError.set(true);
+        return of(null);
+      })),
       alertasCount: this.alertaService.contarPendientes().pipe(catchError(() => of(0)))
     })
       .pipe(
@@ -259,9 +270,13 @@ export class DashboardAdmin implements OnInit {
       data.comparativaMl?.algoritmos[0] ??
       null;
 
-    const f1ScoreVal = activeAlgo ? Math.round(activeAlgo.f1Score * 100) : null;
-    const precisionVal = activeAlgo ? Math.round(activeAlgo.precision * 100) : null;
-    const recallVal = activeAlgo ? Math.round(activeAlgo.recall * 100) : null;
+    const porcentajeMetrica = (valor: number | undefined): number | null =>
+      typeof valor === 'number' && Number.isFinite(valor) && valor >= 0 && valor <= 1
+        ? Math.round(valor * 100)
+        : null;
+    const f1ScoreVal = porcentajeMetrica(activeAlgo?.f1Score);
+    const precisionVal = porcentajeMetrica(activeAlgo?.precision);
+    const recallVal = porcentajeMetrica(activeAlgo?.recall);
 
     this.mlStatus.set({
       algoritmoActivo: activeAlgo?.nombre ?? 'Evaluación no disponible',
@@ -269,7 +284,7 @@ export class DashboardAdmin implements OnInit {
       precision: precisionVal,
       recall: recallVal,
       totalModelos: data.comparativaMl?.algoritmos.length ?? 0,
-      proximoReentrenamiento: data.planificadorMl?.proximaEjecucionProgramada ?? 'No disponible',
+      proximoReentrenamiento: this.formatearProximoReentrenamiento(data.planificadorMl),
       cadencia: data.planificadorMl?.cadencia ?? 'No disponible',
       estado: activeAlgo?.estado ?? 'NO_DISPONIBLE'
     });
@@ -441,6 +456,26 @@ export class DashboardAdmin implements OnInit {
     }
 
     return [...periodos].sort((a, b) => b.anio - a.anio)[0] ?? null;
+  }
+
+  private formatearProximoReentrenamiento(planificador: PlanificadorReentrenamiento | null): string {
+    if (!planificador) {
+      return 'No se pudo consultar';
+    }
+
+    if (planificador.cadencia?.trim().toLowerCase() === 'manual') {
+      return 'Manual · sin fecha programada';
+    }
+
+    const proxima = planificador.proximaEjecucionProgramada?.trim();
+    if (!proxima || proxima.toLowerCase() === 'no programada') {
+      return 'Sin fecha programada';
+    }
+
+    const fecha = new Date(proxima);
+    return Number.isNaN(fecha.getTime())
+      ? proxima
+      : new Intl.DateTimeFormat('es-PE', { dateStyle: 'medium', timeStyle: 'short' }).format(fecha);
   }
 
   private resolverPeriodoEvaluacionActivo(

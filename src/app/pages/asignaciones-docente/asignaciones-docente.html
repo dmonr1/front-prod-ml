@@ -19,12 +19,13 @@
             (change)="cambiarPeriodoListado($any($event.target).value)">
             @for (periodo of periodos(); track periodo.id) {
             <option [value]="periodo.id"
-              [selected]="periodo.id === (vistaActiva() === 'asignaciones' ? asignacionPeriodo()?.id : tutoriaPeriodo()?.id)">{{ periodo.nombre }} ({{ periodo.anio }})</option>
+              [selected]="periodo.id === (vistaActiva() === 'asignaciones' ? asignacionPeriodo()?.id : tutoriaPeriodo()?.id)">
+              {{ periodo.anio }}</option>
             }
           </select>
-          @if (((vistaActiva() === 'asignaciones' ? asignacionPeriodo()?.anio : tutoriaPeriodo()?.anio) ?? currentYear) < currentYear) {
-          <small>Histórico · solo lectura</small>
-          }
+          @if (((vistaActiva() === 'asignaciones' ? asignacionPeriodo()?.anio : tutoriaPeriodo()?.anio) ?? currentYear)
+          < currentYear) { <small>Histórico · solo lectura</small>
+            }
         </label>
       </div>
 
@@ -42,7 +43,7 @@
             <div class="assignment-search-actions">
               <button class="assignment-search-button" type="button" aria-label="Limpiar filtros"
                 title="Limpiar filtros"
-                [disabled]="!busquedaTablaAsignaciones() && !cursoFiltroAsignaciones() && !seccionFiltroAsignaciones()"
+                [disabled]="!busquedaTablaAsignaciones() && !cursoFiltroAsignaciones() && !seccionFiltroAsignaciones() && estadoFiltroAsignaciones() === 'ACTIVO'"
                 (click)="limpiarFiltrosAsignaciones()">
                 <i class="fa-solid fa-xmark" aria-hidden="true"></i>
               </button>
@@ -66,6 +67,15 @@
               @for (seccion of seccionesFiltroAsignaciones(); track seccion.id) {
               <option [value]="seccion.id">{{ seccion.nombre }}</option>
               }
+            </select>
+          </label>
+          <label class="assignment-filter-select">
+            <span>Estado</span>
+            <select aria-label="Filtrar asignaciones por estado" [value]="estadoFiltroAsignaciones()"
+              (change)="estadoFiltroAsignaciones.set($any($event.target).value)">
+              <option value="ACTIVO">Activas</option>
+              <option value="INACTIVO">Inactivas</option>
+              <option value="">Todas</option>
             </select>
           </label>
           @if (esAsignacionEditable()) {
@@ -122,9 +132,12 @@
                           <i class="fa-solid fa-chalkboard-user"></i>
                         </div>
                         <strong class="empty-state-title">No se encontraron asignaciones</strong>
-                        <p class="empty-state-desc">No hay asignaciones docentes que coincidan con la búsqueda o filtros
-                          aplicados.</p>
-                        @if (busquedaTablaAsignaciones() || cursoFiltroAsignaciones() || seccionFiltroAsignaciones()) {
+                        @if (estadoFiltroAsignaciones() === 'ACTIVO' && !busquedaTablaAsignaciones() && !cursoFiltroAsignaciones() && !seccionFiltroAsignaciones()) {
+                        <p class="empty-state-desc">No hay asignaciones activas en este período. Selecciona «Inactivas» o «Todas» en el filtro Estado para consultar las demás.</p>
+                        } @else {
+                        <p class="empty-state-desc">No hay asignaciones docentes que coincidan con la búsqueda o filtros aplicados.</p>
+                        }
+                        @if (busquedaTablaAsignaciones() || cursoFiltroAsignaciones() || seccionFiltroAsignaciones() || estadoFiltroAsignaciones() !== 'ACTIVO') {
                         <button type="button" class="empty-state-btn" (click)="limpiarFiltrosAsignaciones()">
                           <i class="fa-solid fa-rotate-left"></i> Limpiar filtros
                         </button>
@@ -160,7 +173,8 @@
                         </span>
                       </button>
                       } @else {
-                      <span class="historical-state">{{ (asignacion.estado ?? 'ACTIVO') === 'ACTIVO' ? 'Activo' : 'Inactivo' }}</span>
+                      <span class="historical-state">{{ (asignacion.estado ?? 'ACTIVO') === 'ACTIVO' ? 'Activo' :
+                        'Inactivo' }}</span>
                       }
                     </td>
                     <td>
@@ -382,7 +396,8 @@
                         </span>
                       </button>
                       } @else {
-                      <span class="historical-state">{{ (tutoria.estado ?? 'ACTIVO') === 'ACTIVO' ? 'Activo' : 'Inactivo' }}</span>
+                      <span class="historical-state">{{ (tutoria.estado ?? 'ACTIVO') === 'ACTIVO' ? 'Activo' :
+                        'Inactivo' }}</span>
                       }
                     </td>
                     <td>
@@ -525,7 +540,8 @@
   </div>
 
   @if (asignacionEditando()) {
-  <div class="create-modal-backdrop" (click)="cerrarModalEdicionAsignacion()" (keydown.escape)="cerrarModalEdicionAsignacion()">
+  <div class="create-modal-backdrop" (click)="cerrarModalEdicionAsignacion()"
+    (keydown.escape)="cerrarModalEdicionAsignacion()">
     <section class="create-modal centered-modal-heading tutoria-create-modal" role="dialog" aria-modal="true"
       aria-labelledby="asignacionEditTitle" (click)="$event.stopPropagation()">
       <header class="create-modal-head">
@@ -544,8 +560,8 @@
               <div class="lookup-field">
                 <input type="text" placeholder="Escribe para buscar docente" [value]="edicionAsignacionDocenteQuery()"
                   (input)="onDocenteInput('asignacion-edit', $any($event.target).value)" />
-                <button class="lookup-button" type="button" aria-label="Buscar docente"
-                  title="Buscar docente" (click)="abrirModal('asignacion-edit')">
+                <button class="lookup-button" type="button" aria-label="Buscar docente" title="Buscar docente"
+                  (click)="abrirModal('asignacion-edit')">
                   <i class="fa-solid fa-magnifying-glass"></i>
                 </button>
               </div>
@@ -580,8 +596,8 @@
             Sección
             <div class="lookup-field">
               <input type="text" placeholder="Seleccionar sección" [value]="edicionAsignacionSeccionQuery()" readonly />
-              <button class="lookup-button" type="button" aria-label="Seleccionar sección"
-                title="Seleccionar sección" (click)="abrirModalSeccion('asignacion-edit')">
+              <button class="lookup-button" type="button" aria-label="Seleccionar sección" title="Seleccionar sección"
+                (click)="abrirModalSeccion('asignacion-edit')">
                 <i class="fa-solid fa-magnifying-glass"></i>
               </button>
             </div>
@@ -600,7 +616,8 @@
   }
 
   @if (tutoriaEditando()) {
-  <div class="create-modal-backdrop" (click)="cerrarModalEdicionTutoria()" (keydown.escape)="cerrarModalEdicionTutoria()">
+  <div class="create-modal-backdrop" (click)="cerrarModalEdicionTutoria()"
+    (keydown.escape)="cerrarModalEdicionTutoria()">
     <section class="create-modal centered-modal-heading tutoria-create-modal" role="dialog" aria-modal="true"
       aria-labelledby="tutoriaEditTitle" (click)="$event.stopPropagation()">
       <header class="create-modal-head">
@@ -628,8 +645,7 @@
               @if (dropdownActivo() === 'tutoria-edit' && docentesFiltrados('tutoria-edit').length) {
               <div class="lookup-dropdown">
                 @for (docente of docentesFiltrados('tutoria-edit'); track docente.id) {
-                <button class="lookup-option" type="button"
-                  (mousedown)="seleccionarDocente('tutoria-edit', docente)">
+                <button class="lookup-option" type="button" (mousedown)="seleccionarDocente('tutoria-edit', docente)">
                   <strong>{{ formatearDocente(docente) }}</strong>
                   <span>{{ docente.tipoDocumentoNombre }} {{ docente.numeroDocumento || 'Sin documento' }} · {{
                     docente.especialidad || 'Sin especialidad' }}</span>
@@ -644,8 +660,8 @@
             Sección
             <div class="lookup-field">
               <input type="text" placeholder="Seleccionar sección" [value]="edicionTutoriaSeccionQuery()" readonly />
-              <button class="lookup-button" type="button" aria-label="Seleccionar sección"
-                title="Seleccionar sección" (click)="abrirModalSeccion('tutoria-edit')">
+              <button class="lookup-button" type="button" aria-label="Seleccionar sección" title="Seleccionar sección"
+                (click)="abrirModalSeccion('tutoria-edit')">
                 <i class="fa-solid fa-magnifying-glass"></i>
               </button>
             </div>

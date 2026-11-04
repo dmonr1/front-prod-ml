@@ -22,7 +22,7 @@
           <span>Período</span>
           <select [ngModel]="periodoId()" (ngModelChange)="cambiarPeriodo($event)" aria-label="Seleccionar período">
             @for (periodo of periodos(); track periodo.id) {
-            <option [ngValue]="periodo.id">{{ periodo.nombre }}</option>
+            <option [ngValue]="periodo.id">{{ periodo.anio }}</option>
             }
           </select>
         </label>
@@ -45,14 +45,15 @@
           <button type="button" [class.active]="categoriaNivel() === 'SECUNDARIA'"
             (click)="cambiarCategoriaNivel('SECUNDARIA')">Secundaria</button>
         </div>
-        @if (esPeriodoEditable()) { <button class="action-button secondary block-config-trigger" type="button" (click)="abrirModalBloque()">
+        @if (esPeriodoEditable()) { <button class="action-button secondary block-config-trigger" type="button"
+          (click)="abrirModalBloque()">
           <i class="fa-regular fa-clock"></i><span>Programar bloques</span>
         </button> }
         <label class="period-select-control">
           <span>Período</span>
           <select [ngModel]="periodoId()" (ngModelChange)="cambiarPeriodo($event)" aria-label="Seleccionar período">
             @for (periodo of periodos(); track periodo.id) {
-            <option [ngValue]="periodo.id">{{ periodo.nombre }}</option>
+            <option [ngValue]="periodo.id">{{ periodo.anio }}</option>
             }
           </select>
         </label>
@@ -74,14 +75,16 @@
     <div class="empty-state-card">
       <div class="empty-state-badge"><i class="fa-solid fa-book-open"></i></div>
       <strong class="empty-state-title">No hay niveles disponibles</strong>
-      <p class="empty-state-desc">No se encontraron niveles ni secciones activas para configurar horarios en este período.</p>
+      <p class="empty-state-desc">No se encontraron niveles ni secciones activas para configurar horarios en este
+        período.</p>
     </div>
     } @else if (vista() === 'secciones') {
     <div class="section-picker-container">
       <header class="section-picker-heading">
         <div class="heading-title-box">
           <h2>Secciones de {{ categoriaNivel() === 'PRIMARIA' ? 'primaria' : 'secundaria' }}</h2>
-          <p>{{ esPeriodoEditable() ? 'Elige una sección para consultar y programar sus clases semanales.' : 'Elige una sección para consultar el horario histórico.' }}</p>
+          <p>{{ esPeriodoEditable() ? 'Elige una sección para consultar y programar sus clases semanales.' : 'Elige una
+            sección para consultar el horario histórico.' }}</p>
         </div>
         <span class="section-count-badge">
           <i class="fa-solid fa-shapes"></i>
@@ -102,7 +105,8 @@
                 <i class="fa-solid" [class.fa-circle-check]="seccion.estado === 'COMPLETO'"
                   [class.fa-clock]="seccion.estado === 'PENDIENTE'"
                   [class.fa-book-open]="seccion.estado === 'SIN_ASIGNACIONES'"></i>
-                {{ seccion.estado === 'SIN_ASIGNACIONES' ? 'SIN CURSOS' : (seccion.estado === 'PENDIENTE' ? 'PENDIENTE' : 'COMPLETO') }}
+                {{ seccion.estado === 'SIN_ASIGNACIONES' ? 'SIN CURSOS' : (seccion.estado === 'PENDIENTE' ? 'PENDIENTE'
+                : 'COMPLETO') }}
               </span>
             </div>
 
@@ -133,7 +137,8 @@
                   <strong class="progress-percent">{{ porcentajeProgramacion(seccion) }}%</strong>
                   <span class="progress-state-text">
                     {{ seccion.estado === 'SIN_ASIGNACIONES' ? 'Aún no tiene cursos asignados' :
-                      (seccion.estado === 'COMPLETO' ? 'Completado' : ('En progreso · ' + seccion.programadas + ' de ' + seccion.asignaciones)) }}
+                    (seccion.estado === 'COMPLETO' ? 'Completado' : ('En progreso · ' + seccion.programadas + ' de ' +
+                    seccion.asignaciones)) }}
                   </span>
                 </div>
 
@@ -165,7 +170,8 @@
             <i class="fa-solid fa-chalkboard-user"></i>
           </div>
           <strong class="empty-state-title">No hay secciones creadas</strong>
-          <p class="empty-state-desc">Crea una sección para este nivel y período; aparecerá aquí aunque todavía no tenga cursos asignados.</p>
+          <p class="empty-state-desc">Crea una sección para este nivel y período; aparecerá aquí aunque todavía no tenga
+            cursos asignados.</p>
         </div>
         }
       </div>
@@ -195,18 +201,16 @@
               </article>
               }
               @for (dia of dias; track dia.value) {
-              <div class="timetable-day-lane" [class.has-dragging-active]="arrastrando()" [style.height.px]="rangoProgramacion().alto">
+              <div class="timetable-day-lane" [class.has-dragging-active]="arrastrando()"
+                [style.height.px]="rangoProgramacion().alto">
                 @for (marca of rangoProgramacion().marcas; track marca) { <span class="timetable-grid-mark"
                   [style.top.px]="posicionMarcaProgramacion(marca)"></span> }
 
                 <!-- Celdas disponibles para soltar (Drop Targets) -->
                 @for (bloque of (esPeriodoEditable() ? bloquesVaciosPorDia(dia.value) : []); track bloque.id) {
-                <div class="timetable-empty-slot"
-                  [class.is-drop-target]="isDropTarget(dia.value, bloque.id)"
-                  [class.is-drag-active]="arrastrando()"
-                  [style.top.px]="posicionBloque(bloque)"
-                  [style.height.px]="altoBloque(bloque)"
-                  (dragover)="onDragOverSlot($event, dia.value, bloque.id)"
+                <div class="timetable-empty-slot" [class.is-drop-target]="isDropTarget(dia.value, bloque.id)"
+                  [class.is-drag-active]="arrastrando()" [style.top.px]="posicionBloque(bloque)"
+                  [style.height.px]="altoBloque(bloque)" (dragover)="onDragOverSlot($event, dia.value, bloque.id)"
                   (dragleave)="onDragLeaveSlot($event, dia.value, bloque.id)"
                   (drop)="onDropOnSlot($event, dia.value, bloque.id)"
                   (click)="seleccionarCeldaVacia(dia.value, bloque.id)"
@@ -226,7 +230,8 @@
                     } @else {
                     <div class="slot-idle-box">
                       <span class="slot-idle-label">{{ bloque.nombre }}</span>
-                      <small class="slot-idle-time">{{ formatearHora(bloque.horaInicio) }}–{{ formatearHora(bloque.horaFin) }}</small>
+                      <small class="slot-idle-time">{{ formatearHora(bloque.horaInicio) }}–{{
+                        formatearHora(bloque.horaFin) }}</small>
                     </div>
                     }
                   </div>
@@ -235,19 +240,15 @@
 
                 <!-- Clases programadas (draggable para mover/intercambiar) -->
                 @for (item of horariosPorDia(dia.value); track item.id) {
-                <article [class]="'timetable-class ' + tonoClase(item)"
-                  [class.is-readonly-class]="!esPeriodoEditable()"
+                <article [class]="'timetable-class ' + tonoClase(item)" [class.is-readonly-class]="!esPeriodoEditable()"
                   [class.is-class-dragging]="dragItem()?.tipo === 'HORARIO' && dragItem()?.horarioId === item.id"
-                  [class.is-drop-target-class]="isDropTargetClass(item.id)"
-                  [style.top.px]="posicionProgramacion(item)"
-                  [style.height.px]="altoProgramacion(item)"
-                  [draggable]="esPeriodoEditable()"
-                  (dragstart)="iniciarArrastreHorario($event, item)"
-                  (dragend)="finalizarArrastre()"
-                  (dragover)="onDragOverOccupied($event, item)"
-                  (dragleave)="onDragLeaveOccupied($event, item)"
+                  [class.is-drop-target-class]="isDropTargetClass(item.id)" [style.top.px]="posicionProgramacion(item)"
+                  [style.height.px]="altoProgramacion(item)" [draggable]="esPeriodoEditable()"
+                  (dragstart)="iniciarArrastreHorario($event, item)" (dragend)="finalizarArrastre()"
+                  (dragover)="onDragOverOccupied($event, item)" (dragleave)="onDragLeaveOccupied($event, item)"
                   (drop)="onDropOnOccupied($event, item)">
-                  @if (esPeriodoEditable()) { <div class="timetable-class-drag-indicator" title="Arrastra para mover a otro día u horario">
+                  @if (esPeriodoEditable()) { <div class="timetable-class-drag-indicator"
+                    title="Arrastra para mover a otro día u horario">
                     <i class="fa-solid fa-grip-vertical"></i>
                   </div> }
                   <div class="timetable-class-content">
@@ -305,10 +306,8 @@
           @if (!bloquesAsignacion().length) { <button class="action-button secondary" type="button"
             (click)="abrirModalBloque()"><i class="fa-regular fa-clock"></i> Configurar bloques</button> }
           }
-          <div class="pending-assignment-list"
-            [class.is-drop-zone-unschedule]="dragItem()?.tipo === 'HORARIO'"
-            (dragover)="onDragOverUnschedule($event)"
-            (dragleave)="onDragLeaveUnschedule($event)"
+          <div class="pending-assignment-list" [class.is-drop-zone-unschedule]="dragItem()?.tipo === 'HORARIO'"
+            (dragover)="onDragOverUnschedule($event)" (dragleave)="onDragLeaveUnschedule($event)"
             (drop)="onDropUnschedule($event)">
             <h4>
               <span>Cursos pendientes</span>
@@ -325,13 +324,10 @@
             </div>
             }
             @for (pendiente of cursosPendientes(); track pendiente.key) {
-            <button type="button"
-              [class]="'pending-course-item ' + tonoCursoPorId(pendiente.asignacion.cursoId)"
+            <button type="button" [class]="'pending-course-item ' + tonoCursoPorId(pendiente.asignacion.cursoId)"
               [class.is-dragging]="dragItem()?.tipo === 'PENDIENTE' && dragItem()?.horarioPendienteId === pendiente.horarioPendienteId && dragItem()?.asignacionId === pendiente.asignacion.id"
-              [class.is-selected]="asignacionId() === pendiente.asignacion.id"
-              draggable="true"
-              (dragstart)="iniciarArrastrePendiente($event, pendiente)"
-              (dragend)="finalizarArrastre()"
+              [class.is-selected]="asignacionId() === pendiente.asignacion.id" draggable="true"
+              (dragstart)="iniciarArrastrePendiente($event, pendiente)" (dragend)="finalizarArrastre()"
               (click)="seleccionarCursoPendiente(pendiente)"
               title="Arrastra este curso y suéltalo en cualquier celda libre del horario">
               <div class="pending-course-drag-handle">
@@ -339,7 +335,8 @@
               </div>
               <div class="pending-course-info">
                 <strong>{{ pendiente.asignacion.curso }}</strong>
-                <small>{{ pendiente.asignacion.docenteNombreCompleto }}{{ pendiente.horarioPendienteId ? ' · Hora retirada' : '' }}</small>
+                <small>{{ pendiente.asignacion.docenteNombreCompleto }}{{ pendiente.horarioPendienteId ? ' · Hora
+                  retirada' : '' }}</small>
               </div>
               <div class="pending-course-badge" title="Listo para ubicar">
                 <i class="fa-solid fa-calendar-plus"></i>
@@ -358,7 +355,8 @@
           <div class="readonly-panel-icon"><i class="fa-solid fa-lock"></i></div>
           <span class="panel-kicker">Registro histórico</span>
           <h3>Horario de {{ periodoSeleccionado()?.nombre }}</h3>
-          <p>Este horario se conserva para consulta. Puedes revisar las clases y sus docentes, pero no cambiar la programación.</p>
+          <p>Este horario se conserva para consulta. Puedes revisar las clases y sus docentes, pero no cambiar la
+            programación.</p>
         </aside>
         }
       </div>
